@@ -6,7 +6,7 @@
 
 适用于 **DeepSeek Harness（DSH）** 的插件系统。DSH 的 `plugin` 命令将包参数传给 pnpm，因此支持 GitHub 源码和 HTTP 安装包。普通 DeepSeek 网页聊天没有这套 DSH 插件加载器。
 
-推荐使用带构建产物的版本包；无需安装 Python 或手动编译：
+推荐使用带构建产物的版本包；无需安装 Python 或手动编译。桌面版必须先启动过一次以初始化 `desktop` profile，之后从托盘**完全退出 DSH**再执行安装（仅关闭窗口可能仍在后台运行）：
 
 ```powershell
 dsh plugin --profile desktop add "https://github.com/censki-sketch/dsh-game-material-master/releases/download/v0.12.0-motion.1/dsh-game-material-master-0.12.0-motion.1.tgz"
@@ -18,7 +18,7 @@ dsh plugin --profile desktop add "https://github.com/censki-sketch/dsh-game-mate
 dsh plugin --profile desktop add "github:censki-sketch/dsh-game-material-master#v0.12.0-motion.1"
 ```
 
-使用其他 profile（例如 `web`）时替换名称。重启 DSH 后打开侧栏「游戏素材大师」。如果终端找不到 `dsh`，请先启用 DSH 的命令行入口；Windows 也可使用安装目录下 `resources/runtime/cli/bin/dsh.cmd`。这版保留原插件 ID，应替换已有安装，避免同时加载两份。GitHub 仓库为公开 MIT Fork，任何人可克隆；内置白模为 CC0，每个使用者自行配置 API Key，仓库不附带账号额度或私人角色素材。
+使用其他 profile（例如 `web`）时替换名称。已使用 DSH 自带 CLI 在独立临时 `web` profile 实测从上述公开 GitHub 安装包下载并安装成功（0.12.0-motion.1）。重新启动 DSH 后打开侧栏「游戏素材大师」。如果终端找不到 `dsh`，请先启用 DSH 的命令行入口；Windows 也可使用安装目录下 `resources/runtime/cli/bin/dsh.cmd`。这版保留原插件 ID，应替换已有安装，避免同时加载两份。GitHub 仓库为公开 MIT Fork，任何人可克隆；内置白模为 CC0，每个使用者自行配置 API Key，仓库不附带账号额度或私人角色素材。
 
 ## 操作顺序
 

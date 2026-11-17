@@ -6,7 +6,7 @@
 >
 > 本仓库是 [universe-st/dsh-game-material-master](https://github.com/universe-st/dsh-game-material-master) 的公开 Fork，保留原作者 MIT 许可。在 DSH 内新增「角色与动作 → 白模参考与提示词 → 视频分段与抽帧 → 可选逐帧高清重绘 → 分动作导出」流程。4 秒默认安排 2 种动作，最多 3 种（实验性），八方向同时生成 480P 视频。安装和本地处理免费，图片与视频 API 使用自己的账号，按服务商计费。
 >
-> **安装此 Fork**（DSH 桌面版通常使用 `desktop` profile；其他 profile 请替换名称）：
+> **安装此 Fork**：桌面版先打开过一次 DSH 完成初始化，再从托盘**完全退出 DSH**后执行（使用 `desktop` profile；其他 profile 请替换名称）：
 >
 > ```powershell
 > dsh plugin --profile desktop add "https://github.com/censki-sketch/dsh-game-material-master/releases/download/v0.12.0-motion.1/dsh-game-material-master-0.12.0-motion.1.tgz"

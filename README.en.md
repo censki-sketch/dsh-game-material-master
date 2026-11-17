@@ -6,7 +6,7 @@ English | [中文](README.md)
 >
 > Public fork of [universe-st/dsh-game-material-master](https://github.com/universe-st/dsh-game-material-master), retaining its MIT license. Adds an in-plugin workflow: character and actions → reference and prompt → video range review and extraction → optional frame redraw → per-action export. One 4-second 480P video contains eight directions and 2 actions by default (3 maximum, experimental). Installation and local processing are free; image/video API use is billed to your own provider account.
 >
-> Install this fork in DSH (replace `desktop` if you use another profile):
+> For DSH Desktop, launch it once to initialize its profile, then **fully quit it (including the tray)** before installing. Replace `desktop` if you use another profile:
 >
 > ```powershell
 > dsh plugin --profile desktop add "https://github.com/censki-sketch/dsh-game-material-master/releases/download/v0.12.0-motion.1/dsh-game-material-master-0.12.0-motion.1.tgz"
