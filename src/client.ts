@@ -44,6 +44,78 @@
     /** 中文原文 → 英文译文。key 里可能带 `{nN}` 占位符。 */
 /* i18n-ignore-start */
     const EN: Record<string, string> = {
+      "优化提示词": "Optimize prompt",
+      "基础提示词": "Base prompt",
+      "主提示词": "Main prompt",
+      "重启DSH以加载模板": "Restart DSH to load templates",
+      "替换": "Replace",
+      "查看模板内容": "View template text",
+      "当前模板已不存在，请刷新后重新选择。": "This template no longer exists. Refresh and select another.",
+      "提示词保存失败，本次未提交生成。": "Could not save the prompt. Generation was not submitted.",
+      "角色素材": "Character asset",
+      "像素角色": "Pixel character",
+      "八方向外观": "Eight-direction views",
+      "只读": "Read only",
+      "管理模板": "Manage templates",
+      "返回": "Back",
+      "查看原 Key": "Show saved key",
+      "高级设置": "Advanced settings",
+      "隐藏 Key": "Hide key",
+      "正在读取 Key…": "Reading key…",
+      "读取 Key 失败，请完全退出DSH（包括托盘）后重新打开。": "Could not read the key. Quit DSH completely, including the tray, then reopen it.",
+      "不使用模板": "No template",
+      "模板已更新，点击「同步更新」可采用新内容；当前仍使用已保存内容。": "This template has changed. Click Sync to use the new text; the saved text is still in use.",
+      "同步更新": "Sync",
+      "已保存的提示词": "Saved prompt",
+      "模板已删除，当前任务保留已保存内容。": "This template was deleted. The task keeps its saved text.",
+      "套用会替换当前任务已保存的基础提示词。": "Applying this template replaces the task's saved base prompt.",
+      "新模板": "New template",
+      "模板名称不能为空且最多60字，内容不能为空且最多6000字。": "Template names must contain 1-60 characters and content must contain 1-6000 characters.",
+      "提示词模板未保存成功，请重启DSH后重试。": "Templates were not saved. Restart DSH and try again.",
+      "模板已保存，返回生成页选择模板或同步更新即可使用。": "Templates saved. Select a template or sync it on the generation page to use it.",
+      "生成页仅选择和查看。内置模板可编辑或恢复，不能删除；自定义模板可新增、编辑和删除。修改后保存，已有任务可手动同步更新。": "The generation page lets you select and view templates. Built-ins can be edited or restored, but cannot be deleted. Custom templates can be added, edited and deleted. Save your edits; existing tasks can be synced manually.",
+      "新增模板": "Add template",
+      "模板列表": "Template list",
+      "内置": "Built-in",
+      "模板语言": "Template language",
+      "中文": "Chinese",
+      "恢复内置内容": "Restore built-in text",
+      "删除模板": "Delete template",
+      "删除此模板？已有任务的提示词内容会保留。": "Delete this template? Existing tasks will keep their saved prompt text.",
+      "确认删除": "Confirm deletion",
+      "模板名称": "Template name",
+      "模板内容": "Template content",
+      "{n0} / 6000 字 · 未填写的语言使用另一语言内容。": "{n0} / 6000 characters · Empty languages use the other language's text.",
+      "还没有模板，点击新增模板开始。": "No templates yet. Add one to get started.",
+      "保存模板": "Save templates",
+      "放弃修改": "Discard edits",
+      "提示词模板": "Prompt templates",
+      "提示词模板管理": "Prompt template management",
+      "撤销优化": "Undo optimization",
+      "正在读取DSH模型…": "Loading the DSH model…",
+      "正在优化提示词…": "Optimizing prompt…",
+      "文字模型未返回提示词": "The text model did not return a prompt",
+      "使用DSH默认模型（与新会话一致），沿用已有登录和用量规则，无需单独填写Key。": "Uses the DSH default model, as new chats do, with your existing sign-in and usage rules. No separate key is needed.",
+      "只优化文字，使用DSH现有模型；图片仍需单独点击生成。": "Optimizes text using your existing DSH model. Generate images separately.",
+      "DSH模型：{n0}": "DSH model: {n0}",
+      "无法读取DSH模型；更新插件后请完全退出DSH（包括托盘）再打开。": "Could not read the DSH model. After updating the plugin, quit DSH completely, including the tray, then reopen it.",
+      "原提示词": "Original prompt",
+      "优化结果（可编辑）": "Optimized prompt (editable)",
+      "点击优化后，结果会显示在这里。": "The result will appear here after optimization.",
+      "基础提示词保持原文。点击优化才调用DSH模型，仅发送通过@图片引用的参考图，图片输入需模型支持。": "The base prompt stays unchanged. DSH is called only when you click Optimize, and receives only mentioned reference images. The model must support image input.",
+      "输入 @ 引用已上传的参考图": "Type @ to mention an uploaded reference image",
+      "引用图片": "Mention an image",
+      "参考图片": "Reference images",
+      "请先在生成页上传参考图。": "Upload reference images on the generation page first.",
+      "没有匹配的参考图": "No matching reference images",
+      "引用的图片不存在，请重新选择参考图。": "A mentioned image no longer exists. Select the reference image again.",
+      "当前DSH未提供图片引用功能，请完全退出DSH（包括托盘）再打开；仍不可用时请更新DSH。": "Image references are unavailable. Fully exit DSH, including its tray icon, and reopen it. Update DSH if they remain unavailable.",
+      "原提示词或参考图已修改，请重新优化后再采用。": "The source prompt or reference images changed. Optimize again before applying.",
+      "采用优化结果": "Apply optimized prompt",
+      "请输入提示词后再优化。": "Enter a prompt before optimizing.",
+      "当前任务已切换，未修改提示词。": "The current task changed. Its prompt was not modified.",
+      "提示词保存失败，尚未采用优化结果。": "Could not save the prompt. The optimized result has not been applied.",
+      "查看{n0}说明": "View {n0} description",
       "ToAPIs：图片和视频使用独立的异步协议；每次生成会计费。": "ToAPIs uses asynchronous image/video endpoints. Each generation is billable.",
       "ToAPIs 图片模型": "ToAPIs image model",
       "ToAPIs 图片尺寸": "ToAPIs image size",
@@ -363,7 +435,6 @@
       "行走": "Walk",
       "方向按屏幕方位映射：按 ↑ 向北走（背对镜头）、↓ 向南走（正对镜头）、← 向西、→ 向东；斜向同时按两个键。": "Directions map to screen positions: ↑ walks north (back to camera), ↓ walks south (facing camera), ← walks west, → walks east; hold two keys at once for diagonals.",
       "「播放速度」只改步频快慢，不影响角色移动速度；「移动速度」只改走得多快，不影响动画帧率。切图用的是整图自己记录的行序，所以改完行序即使还没重新合成，预览也不会取错方向。": "\"Playback speed\" only changes how fast the steps cycle and does not affect how fast the character moves; \"Movement speed\" only changes how fast it walks and does not affect the animation frame rate. Frame switching uses the row order recorded in the sheet itself, so even if you change the row order before recomposing, the preview still picks the right direction.",
-      "选择文件": "Choose file",
       "{n0}（{n1}）": "{n0} ({n1})",
       "还没有内容，点右上角新建一个。": "Nothing here yet. Click New in the top right to create one.",
       "新建": "New",
@@ -378,10 +449,13 @@
       "正在新建…": "Creating…",
       "新建任务": "New task",
       "删除任务": "Delete task",
+      "更多任务操作": "More task actions",
+      "任务「{n0}」的更多操作": "More actions for task \"{n0}\"",
+      "重命名任务": "Rename task",
+      "任务及其素材文件将被永久删除，此操作无法撤销。": "The task and its asset files will be permanently deleted. This cannot be undone.",
       "正在调用接口…": "Calling the API…",
       "请选择或新建一个图片任务": "Select or create an image task",
-      "① 提示词": "① Prompt",
-      "统一附加提示词会接在主提示词后面，用来写跨批次的共同要求。": "The shared suffix prompt is appended after the main prompt, for requirements that apply across batches.",
+      "主提示词用于描述主体。基础提示词从模板中选择，可展开查看；编辑模板请进入设置。": "Describe the subject in the main prompt. Select a base prompt from templates and expand it to view the text; edit templates in settings.",
       "描述你要生成的图片…": "Describe the image you want to generate…",
       "统一附加提示词（可留空）": "Shared suffix prompt (optional)",
       "生图模型": "Image model",
@@ -390,21 +464,27 @@
       "已开始生成 {n0} 张": "Started generating {n0} images",
       "正在生成 {n0} 张图片…": "Generating {n0} images…",
       "生成 {n0} 张": "Generate {n0}",
-      "② 参考图（可留空）": "② Reference images (optional)",
-      "最多 10 张。有参考图时走图生图；引用多张时可在提示词里写「图一」「图二」。": "Up to 10. With reference images it runs image-to-image; to cite several, write \"image 1\" and \"image 2\" in the prompt.",
+      "参考图（可留空）": "Reference images (optional)",
+      "最多 10 张。有参考图时走图生图；在提示词里输入 @ 选择图片，点击列表可预览原图。": "Up to 10. With reference images it runs image-to-image. Type @ in the prompt to select an image; click a list item to preview the original.",
+      "预览参考图": "Preview reference image",
+      "预览 {n0}": "Preview {n0}",
+      "透明背景": "Transparent background",
+      "操作提示": "Notification",
+      "关闭提示": "Dismiss notification",
+      "更多": "More",
+      "第 {n0} 张图片的更多操作": "More actions for image {n0}",
+      "开启后自动补充纯色背景要求，生成完成后在本地抠成透明 PNG；不会修改输入内容。": "Automatically add solid-background instructions and remove the background locally after generation to produce a transparent PNG. Your input stays unchanged.",
+      "抠像背景色：{n0}": "Key background: {n0}",
+      "高级抠像与已有图片": "Advanced keying and existing images",
       "把参考图拖到这里": "Drag reference images here",
       "已移除参考图": "Reference image removed",
       "移除": "Remove",
-      "③ 背景抠像": "③ Background keying",
-      "开启后每张生成完会自动抠一遍；也可以上传已有图片只做抠像。": "When on, each image is keyed automatically after it is generated; you can also upload existing images to key them only.",
-      "不抠像": "No keying",
-      "自动抠背景输出 PNG": "Auto-key the background, output PNG",
       "正在抠像…": "Keying…",
       "已开始抠像": "Keying started",
       "正在抠背景…": "Keying the background…",
       "按当前参数重新抠像": "Re-key with current settings",
       "上传一张已有图片，直接抠成透明 PNG": "Upload an existing image to key straight to a transparent PNG",
-      "④ 结果（{n0} 张）": "④ Results ({n0} images)",
+      "结果（{n0} 张）": "Results ({n0} images)",
       "还没有图片": "No images yet",
       "第 {n0} 张": "Image {n0}",
       "上传": "Upload",
@@ -900,7 +980,6 @@
       "导入 DragonBones：把 export/dragonbones/skeleton_ske.json 与 atlas/skeleton_tex.json、atlas/skeleton.png 放同一目录后加载 .json 数据与纹理。": "Importing into DragonBones: put export/dragonbones/skeleton_ske.json in the same folder as atlas/skeleton_tex.json and atlas/skeleton.png, then load the .json data and textures.",
       "正在载入配置…": "Loading configuration…",
       "配置已保存": "Configuration saved",
-      "配置生图 / 生视频的模型与整条流水线的默认参数。Key 只保存在本机 DSH 数据目录下的 game-material-master/config.json（真实路径见「功能与数据」里的「数据位置」），界面里始终脱敏显示。": "Configure the image/video models and the default parameters for the whole pipeline. Keys are stored only in game-material-master/config.json under your local DSH data directory (see \"Data location\" under \"Features & data\" for the real path) and are always masked in the UI.",
       "生图": "Images",
       "生视频": "Video",
       "画面与抠像": "Canvas & keying",
@@ -967,7 +1046,23 @@
       "连接正常：{n0} 返回 {n1} 字节图片": "Connection OK: {n0} returned a {n1}-byte image",
       "测试连接（会真实生成 1 张 1K 小图，产生少量费用）": "Test connection (generates one real 1K image, small charge)",
       "MiniMax（图生视频）": "MiniMax (image-to-video)",
-      "视频阶段使用图生视频（I2V）。建议用 MiniMax-Hailuo-02，镜头稳定性最好。": "The video stage uses image-to-video (I2V). MiniMax-Hailuo-02 is recommended for the most stable camera.",
+      "视频提交正在确认或处理中，请勿重复点击": "A video submission is being confirmed or processed. Please do not click again.",
+      "付费视频已锁定，请先打开右上角「设置 → 生视频」，检查参数后手动开启": "Paid videos are locked. Open Settings → Video in the top-right corner, check the parameters, and enable submission manually.",
+      "另含4秒参考视频输入，服务商可能另计输入费用。": "Includes a 4-second reference video input, which the provider may bill separately.",
+      "没有可提交的视频方向，请检查素材或已有任务": "No directions are available for video submission. Check your assets and existing tasks.",
+      "即将提交付费视频：\n服务：{provider}\n模型：{model}\n每段：{duration}秒 / {resolution}\n请求数量：{count}段\n{input}\n实际价格以服务商为准；确认后可能立即扣费。是否提交？": "Submit paid videos:\nProvider: {provider}\nModel: {model}\nPer video: {duration}s / {resolution}\nRequests: {count} videos\n{input}\nThe provider determines the actual price. Confirmation may incur an immediate charge. Submit?",
+      "已取消，未提交视频任务": "Cancelled. No video task was submitted.",
+      "模型、接口与费用保护": "Models, APIs and spending protection",
+      "更多项目操作": "More project actions",
+      "项目「{n0}」的更多操作": "More actions for project {n0}",
+      "项目及其素材文件将被永久删除，此操作无法撤销。": "The project and its asset files will be permanently deleted. This cannot be undone.",
+      "正在删除…": "Deleting…",
+      "付费视频保护（默认关闭）": "Paid video protection (submission disabled by default)",
+      "允许提交付费视频（MiniMax / ToAPIs）": "Allow paid video submissions (MiniMax / ToAPIs)",
+      "关闭时拦截所有新的付费视频请求；开启后每次仍需确认模型、时长、分辨率和段数。配置、准备白模、本地导入与抽帧不会提交付费视频。": "When disabled, all new paid video requests are blocked. Each submission still requires confirmation of its model, duration, resolution and count when enabled. Configuration, mannequin preparation, local imports and frame extraction do not submit paid videos.",
+      "这里不会查询余额或实时单价，提交前请核对服务商价格。": "Balance and live prices are not checked here. Verify the provider's pricing before submitting.",
+      "白模流程推荐MiniMax-H3-Lite，固定4秒480P；下方时长与分辨率用于原有视频流程。保存设置不会生成视频。": "The mannequin workflow recommends MiniMax-H3-Lite at a fixed 4s / 480P. Duration and resolution below apply to the classic video workflow. Saving settings does not generate a video.",
+      "使用白模推荐参数（4秒480P，不生成）": "Use recommended mannequin settings (4s / 480P, no generation)",
       "粘贴 MiniMax API Key": "Paste MiniMax API Key",
       "MiniMax Key 已保存": "MiniMax key saved",
       "已清除 MiniMax Key": "MiniMax key cleared",
@@ -1011,6 +1106,14 @@
       "功能菜单": "Feature menu",
       "快捷进入功能": "Jump to a feature",
       "功能管理": "Feature management",
+      "功能顺序已保存": "Feature order saved",
+      "拖动左侧手柄排序，自动保存并同步到功能栏与快捷菜单。": "Drag the handles to reorder. Changes are saved automatically and applied to the feature bar and shortcut menu.",
+      "恢复默认顺序": "Restore default order",
+      "调整「{n0}」的顺序": "Reorder {n0}",
+      "拖动排序，或按↑↓键移动": "Drag to reorder, or use the Up and Down arrow keys",
+      "正在保存顺序…": "Saving order…",
+      "DSH后台尚未加载排序功能，请完全退出DSH（包括托盘）后重新打开。": "The DSH backend has not loaded feature ordering yet. Fully quit DSH, including the system tray, then reopen it.",
+      "功能顺序未保存成功，请重试。": "The feature order was not saved. Please try again.",
       "隐藏不用的功能。隐藏后界面里不再出现它的页签与侧栏菜单项，对话里的 AI 也无法调用它（工具会直接报错）。随时可以再打开，已有的项目数据不会被删除。":
         "Hide the features you do not use. A hidden feature disappears from the workbench tabs and the sidebar menu, and the agent cannot call it either (its tools fail loudly). You can turn it back on at any time, and existing project data is never deleted.",
       "已隐藏": "Hidden",
@@ -3025,6 +3128,7 @@
       ["runMotionStep", true],
       ["motionSettings", true],
       ["getConfig", false],
+      ["revealConfigKey", true],
       ["saveConfig", true],
       ["testArk", false],
       ["testCustomImage", false],
@@ -3072,6 +3176,8 @@
       ["getImageJob", true],
       ["deleteImageJob", true],
       ["saveImageJob", true],
+      ["optimizeImagePrompt", true],
+      ["getPromptOptimizerModel", false],
       ["uploadImageRef", true],
       ["removeImageRef", true],
       ["addImageItem", true],
@@ -3441,6 +3547,53 @@
     // 一次（`hiddenModules` 存在宿主配置里，两侧读的是同一份）。只藏界面不拦
     // 工具等于没藏——模型照样能调生成类方法，真实计费。
     const hiddenModulesState = { keys: [] as string[], listeners: new Set<(keys: string[]) => void>() };
+    const moduleOrderState = { keys: MODULES.map(entry => entry.key), ready: false, listeners: new Set<(keys: string[]) => void>() };
+
+    const LAST_STUDIO_MODULE_KEY = "dsh-game-material-master:last-module";
+    let lastStudioModule = null;
+
+    function readLastStudioModule() {
+      try {
+        const saved = window.localStorage.getItem(LAST_STUDIO_MODULE_KEY);
+        lastStudioModule = MODULES.some(entry => entry.key === saved) ? saved : null;
+      } catch {
+        // 禁用浏览器存储时，当前页面内仍记住最后一次选择。
+      }
+      return lastStudioModule;
+    }
+
+    function rememberStudioModule(key) {
+      if (!MODULES.some(entry => entry.key === key)) return;
+      lastStudioModule = key;
+      try {
+        window.localStorage.setItem(LAST_STUDIO_MODULE_KEY, key);
+      } catch {
+        // 缓存不可写不影响功能切换，也不写入宿主的接口配置。
+      }
+    }
+
+    function normalizeModuleOrder(value) {
+      const keys = MODULES.map(entry => entry.key);
+      return [...new Set<string>([...(Array.isArray(value) ? value.filter(key => keys.includes(key)) : []), ...keys])];
+    }
+
+    function publishModuleOrder(value) {
+      const next = normalizeModuleOrder(value);
+      if (moduleOrderState.ready && next.every((key, index) => key === moduleOrderState.keys[index])) return;
+      moduleOrderState.keys = next;
+      moduleOrderState.ready = true;
+      for (const listener of [...moduleOrderState.listeners]) listener(next);
+    }
+
+    function useModuleOrder() {
+      const [order, setOrder] = React.useState(moduleOrderState.keys);
+      React.useEffect(() => {
+        moduleOrderState.listeners.add(setOrder);
+        setOrder(moduleOrderState.keys);
+        return () => { moduleOrderState.listeners.delete(setOrder); };
+      }, []);
+      return order;
+    }
 
     /** 收敛成合法且顺序固定的 key 数组（与宿主 `normalizeHiddenModules` 同口径）。 */
     function normalizeHiddenKeys(value) {
@@ -3468,8 +3621,10 @@
       try {
         const config = await api.getConfig();
         publishHiddenModules(config?.hiddenModules);
+        publishModuleOrder(config?.moduleOrder);
       } catch {
         // 配置读不到不是致命错误：界面照常，工具面仍然会拦。
+        publishModuleOrder(moduleOrderState.keys);
       }
     }
 
@@ -3495,8 +3650,8 @@
     }
 
     /** 可见的模块（页签、侧栏菜单都按它渲染）。 */
-    function visibleModulesOf(hidden) {
-      return MODULES.filter((entry) => !hidden.includes(entry.key));
+    function visibleModulesOf(hidden, order = moduleOrderState.keys) {
+      return normalizeModuleOrder(order).filter(key => !hidden.includes(key)).map(key => MODULES.find(entry => entry.key === key));
     }
 
 
@@ -3523,6 +3678,8 @@
     const intentListeners = new Set<any>();
     /** 最近一次意图。晚挂载的组件（切模块后才渲染）订阅时立刻拿到它。 */
     let pendingIntent = null;
+    // 面板重挂载时不重放已处理过的入口；子模块仍可读取回链中的任务参数。
+    let handledPanelIntent = null;
 
     function subscribeIntent(listener) {
       intentListeners.add(listener);
@@ -4088,6 +4245,7 @@
 .SPR_btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-solid)}
 .SPR_btn:disabled{cursor:default;opacity:.5}
 .SPR_btn[data-primary=true]{background:var(--dsw-alias-state-business-primary);border-color:transparent;color:var(--dsw-alias-state-business-on-primary, #fff)}
+.SPR_btn[data-primary=true]:hover:not(:disabled){background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 92%,#000);color:var(--dsw-alias-state-business-on-primary, #fff)}
 .SPR_btn[data-on=true]{border-color:var(--dsw-alias-state-success-primary);color:var(--dsw-alias-state-success-primary)}
 .SPR_btn[data-danger=true]{color:var(--dsw-alias-state-error-primary)}
 /* 标签当按钮用：包着隐藏 <input type=file> 的 label（选择本地视频）与下载链接。
@@ -4105,6 +4263,15 @@
 .SPR_note[data-kind=error]{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, transparent);color:var(--dsw-alias-state-error-primary)}
 .SPR_note[data-kind=info]{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 32%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 8%, transparent)}
 .SPR_note[data-kind=ok]{border-color:color-mix(in srgb, var(--dsw-alias-state-success-primary) 35%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-success-primary) 8%, transparent);color:var(--dsw-alias-state-success-primary)}
+.SPR_noticePopup.SPR_note{--SPR_noticeTone:var(--dsw-alias-state-business-primary,#4977ff);position:fixed;inset:18px auto auto 50%;transform:translateX(-50%);z-index:10000;box-sizing:border-box;display:flex;align-items:flex-start;gap:10px;width:max-content;max-width:min(480px,calc(100vw - 32px));max-height:calc(100vh - 36px);margin:0;padding:12px 14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:12px/20px system-ui;box-shadow:0 8px 32px rgba(0,0,0,.16);overflow:auto;white-space:normal}
+.SPR_noticePopup[data-kind=ok]{--SPR_noticeTone:var(--dsw-alias-state-success-primary,#19a565)}
+.SPR_noticePopup[data-kind=error]{--SPR_noticeTone:var(--dsw-alias-state-error-primary,#df4f57)}
+.SPR_noticePopup[popover]:not(:popover-open){display:none}
+.SPR_noticePopupIcon{display:flex;align-items:center;flex:none;width:18px;height:20px;color:var(--SPR_noticeTone)}
+.SPR_noticePopupText{min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.SPR_noticePopupClose{display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;margin:-1px -3px -1px 2px;padding:3px;border:0;border-radius:5px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer}
+.SPR_noticePopupClose:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
+.SPR_noticePopupClose:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
 .SPR_sheetWrap{border:1px solid var(--dsw-alias-border-l2);border-radius:12px;padding:10px;background-color:var(--dsw-alias-bg-layer-1);background-image:linear-gradient(45deg,rgba(128,128,128,.16) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.16) 75%),linear-gradient(45deg,rgba(128,128,128,.16) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.16) 75%);background-size:20px 20px;background-position:0 0,10px 10px;overflow:auto;max-height:70vh}
 .SPR_sheet{display:block;width:100%;image-rendering:pixelated}
 .SPR_log{margin-top:14px;border-top:1px solid var(--dsw-alias-border-l2);padding-top:10px}
@@ -4119,6 +4286,11 @@
 .SPR_empty{color:var(--dsw-alias-label-tertiary);font-size:13px;padding:30px 0;text-align:center}
 .SPR_drop{border:1px dashed var(--dsw-alias-border-l2);border-radius:10px;padding:14px;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:12px}
 .SPR_drop[data-over=true]{border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary)}
+.SPR_uploadDrop{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:82px;box-sizing:border-box;font:inherit;font-size:12px;background:transparent;cursor:pointer;transition:background .12s,border-color .12s,color .12s}
+.SPR_uploadDrop:hover:not(:disabled){border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 5%,transparent)}
+.SPR_uploadDrop:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:3px}
+.SPR_uploadDrop:disabled{cursor:wait;opacity:.7}
+.SPR_uploadAdd{width:22px;height:22px;flex:none}
 .SPR_sourceRow{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
 .SPR_sourcePreview{width:132px;height:132px;object-fit:contain;border-radius:8px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);flex:none}
 .SPR_rowOrder{display:flex;flex-direction:column;gap:5px;max-width:260px}
@@ -4127,14 +4299,27 @@
 .SPR_rowOrderName{flex:1}
 .SPR_miniBtn{font:inherit;font-size:11px;cursor:pointer;background:transparent;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:1px 6px;color:var(--dsw-alias-label-secondary)}
 .SPR_miniBtn:disabled{opacity:.4;cursor:default}
-.SPR_settings{max-width:720px;display:flex;flex-direction:column;gap:14px}
+.SPR_settings{max-width:960px;min-width:0;display:flex;flex-direction:column;gap:14px}
 .SPR_settingsGroup{border:1px solid var(--dsw-alias-border-l2);border-radius:12px;padding:14px;background:var(--dsw-alias-bg-layer-3)}
 .SPR_settingsGroup h3{margin:0 0 4px;font-size:13px;font-weight:600}
 .SPR_settingsGroup p{margin:0 0 10px;color:var(--dsw-alias-label-tertiary);font-size:12px}
 /* 功能管理：一行一个模块，勾选框在左、说明在中间、状态在右。 */
-.SPR_featureList{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
-.SPR_featureRow{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);cursor:pointer}
+.SPR_featureList{display:flex;flex-direction:column;gap:6px;padding:5px 0;margin-bottom:10px}
+.SPR_featureRow{position:relative;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1)}
 .SPR_featureRow[data-hidden=true]{opacity:.62}
+.SPR_featureToggle{display:flex;align-items:flex-start;gap:10px;min-width:0;flex:1;cursor:pointer}
+.SPR_featureDrag{display:flex;align-items:center;justify-content:center;width:22px;height:30px;flex:none;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab}
+.SPR_featureDrag:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
+.SPR_featureDrag:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
+.SPR_featureDrag:active{cursor:grabbing}
+.SPR_featureDrag:disabled{cursor:wait;opacity:.5}
+.SPR_featureRow[data-dragging=true]{opacity:.4}
+.SPR_featureRow[data-drop]::after{content:"";position:absolute;left:0;right:0;height:3px;border-radius:2px;background:var(--dsw-alias-state-business-primary);pointer-events:none}
+.SPR_featureRow[data-drop=before]::after{top:-5px}
+.SPR_featureRow[data-drop=after]::after{bottom:-5px}
+.SPR_featureOrderToolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.SPR_featureOrderToolbar .SPR_hint{margin:0}
+.SPR_featureOrderNotice[data-kind=error]{color:var(--dsw-alias-state-error-primary,#d84949)}
 .SPR_featureCheck{margin:2px 0 0;width:15px;height:15px;flex:none;accent-color:var(--dsw-alias-state-business-primary);cursor:pointer}
 .SPR_featureText{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .SPR_featureTitle{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--dsw-alias-label-primary)}
@@ -4143,15 +4328,35 @@
 .SPR_keyRow{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
 .SPR_keyRow .SPR_field{flex:1}
 .SPR_keyRow .SPR_btn{white-space:normal;text-align:left}
+.SPR_secretField,.SPR_secretInputWrap{position:relative;min-width:0;width:100%}
+.SPR_secretInputWrap .SPR_input{padding-right:42px}
+.SPR_secretToggle{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.SPR_secretToggle:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
+.SPR_secretToggle[aria-pressed=true]{color:var(--dsw-alias-state-business-primary)}
+.SPR_secretToggle:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px}
+.SPR_secretToggle:disabled{opacity:.4;cursor:default}
 .SPR_badge{font-size:11px;padding:1px 7px;border-radius:999px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-tertiary)}
 /* 设置页分类页签：宿主左侧只给插件一个入口，分类放在组件内部。 */
-.SPR_settingsNav{display:flex;gap:6px;flex-wrap:wrap;padding:4px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-1)}
-.SPR_settingsTab{font:inherit;font-size:12px;line-height:18px;cursor:pointer;white-space:nowrap;border:1px solid transparent;border-radius:8px;padding:6px 12px;background:transparent;color:var(--dsw-alias-label-secondary)}
-.SPR_settingsTab:hover{background:var(--dsw-alias-bg-layer-3)}
-.SPR_settingsTab[data-active=true]{background:var(--dsw-alias-bg-layer-3);border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-label-primary);box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-state-business-primary) 28%, transparent)}
-.SPR_settingsTab:focus-visible,.SPR_settingsToggle:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
+.SPR_settingsNav{display:flex;gap:22px;flex-wrap:nowrap;padding:0;max-width:100%;min-width:0;overflow-x:auto;border:0;border-bottom:1px solid var(--dsw-alias-border-l2);border-radius:0;background:transparent;scrollbar-width:thin}
+.SPR_settingsTab{flex:none;font:inherit;font-size:13px;line-height:20px;cursor:pointer;white-space:nowrap;border:0;border-bottom:2px solid transparent;border-radius:0;padding:10px 2px;background:transparent;color:var(--dsw-alias-label-secondary)}
+.SPR_settingsTab:hover{background:transparent;color:var(--dsw-alias-label-primary)}
+.SPR_settingsTab[data-active=true]{background:transparent;border-bottom-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-label-primary);font-weight:600;box-shadow:none}
+.SPR_settingsTab:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-4px}
+.SPR_settingsToggle:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
 .SPR_settingsPanel{display:flex;flex-direction:column;gap:14px}
 .SPR_settingsPanel[hidden]{display:none}
+.SPR_settingsSections{display:grid;grid-template-columns:172px minmax(0,1fr);align-items:start;gap:18px;min-width:0}
+.SPR_settingsSectionNav{display:flex;flex-direction:column;gap:4px;position:sticky;top:12px;min-width:0}
+.SPR_settingsSectionTab{display:flex;align-items:center;justify-content:space-between;gap:8px;box-sizing:border-box;width:100%;padding:11px 12px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;line-height:19px;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.SPR_settingsSectionTab:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
+.SPR_settingsSectionTab[aria-selected=true]{background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 10%,transparent);color:var(--dsw-alias-state-business-primary);font-weight:600}
+.SPR_settingsSectionTab:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px}
+.SPR_settingsSectionCurrent{flex:none;width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-state-business-primary)}
+.SPR_settingsSectionContent,.SPR_settingsSectionPanel{min-width:0}
+.SPR_settingsSectionPanel[hidden]{display:none}
+.SPR_settingsSectionPanel>.SPR_settingsGroup{margin-bottom:0}
+.SPR_settingsSectionPanel .SPR_toolbar .SPR_btn{max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:left}
+@media(max-width:600px){.SPR_settingsSections{grid-template-columns:112px minmax(0,1fr);gap:10px}.SPR_settingsSectionTab{padding:9px 8px;font-size:11px}.SPR_settingsSectionPanel>.SPR_settingsGroup{padding:12px}.SPR_settingsSectionPanel .SPR_fields{grid-template-columns:minmax(0,1fr)}.SPR_settingsSectionPanel .SPR_keyRow .SPR_field{flex-basis:100%;min-width:0}}
 .SPR_settingsGroupHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:4px}
 .SPR_settingsGroupHead h3{margin:0}
 .SPR_settingsToggle{font:inherit;font-size:12px;line-height:1;cursor:pointer;width:24px;height:24px;flex:none;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;color:var(--dsw-alias-label-secondary)}
@@ -4507,12 +4712,360 @@
 .SPR_isoMarkerName{flex:1;min-width:0;text-align:left;background:transparent;border:none;color:#f3e7d3;font:inherit;font-size:12px;cursor:text;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .SPR_isoFile{display:block;font-size:11px;color:#8ab4f8;word-break:break-all}
 .SPR_isoGuide{width:420px}
-
+/* ══ 主题统一覆盖层 ═════════════════════════════════════════════════════
+   原则：整个插件只跟随 DSH 的深 / 浅主题，浅色下不出现深色块，深色下不出现浅色块。
+   地图编辑器（mapEd / iso）早期写死了深灰 + 木质配色，通用界面的播放器 / 舞台 / 画布写死了 #fff，
+   这里统一改成 --dsw-alias-* 变量。放在样式表最后，同权重下后写的生效。 */
+.SPR_root,.SPR_mapEdDlgMask,.SPR_isoDlgMask,.SPR_mapEdTip,.SPR_gateMask{
+  --ed-bg:var(--dsw-alias-bg-layer-2);--ed-panel:var(--dsw-alias-bg-layer-1);--ed-bar:var(--dsw-alias-bg-layer-3);
+  --ed-sunken:color-mix(in srgb, var(--dsw-alias-bg-layer-3) 88%, var(--dsw-alias-label-primary) 4%);
+  --ed-line:var(--dsw-alias-border-l2);--ed-text:var(--dsw-alias-label-primary);--ed-dim:var(--dsw-alias-label-secondary);--ed-mute:var(--dsw-alias-label-tertiary);
+  --ed-accent:var(--dsw-alias-state-business-primary);--ed-on:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);
+  --ed-hover:var(--dsw-alias-interactive-bg-hover-solid);--ed-shadow:0 10px 28px rgba(0,0,0,.18)}
+/* 容器与分区 */
+.SPR_mapEdRoot,.SPR_isoRoot,.SPR_mapEdEmpty,.SPR_isoEmpty{background:var(--ed-bg);color:var(--ed-text);border-color:var(--ed-line)}
+.SPR_mapEdTop,.SPR_isoTop,.SPR_mapEdFoot{background:var(--ed-bar);border-color:var(--ed-line)}
+.SPR_mapEdSide,.SPR_isoSide{background:var(--ed-panel);border-color:var(--ed-line)}
+.SPR_mapEdPalette,.SPR_isoPalette{background:var(--ed-sunken);border-color:var(--ed-line)}
+.SPR_mapEdStage,.SPR_isoStage{background:var(--ed-sunken)}
+/* 文字三档：主 / 次 / 弱 */
+.SPR_mapEdEmptyText,.SPR_isoEmptyTitle,.SPR_mapEdProj,.SPR_isoProj,.SPR_mapEdCardHead>h4,.SPR_mapEdHelp>h5,.SPR_mapEdDlgTitle,.SPR_mapEdLayerName,.SPR_isoLayerName,.SPR_mapEdMarkerName,.SPR_isoMarkerName,.SPR_mapEdTsPick{color:var(--ed-text)}
+.SPR_mapEdGuideList,.SPR_mapEdCheck,.SPR_isoCheck,.SPR_mapEdRadio,.SPR_mapEdValue,.SPR_mapEdFiles,.SPR_mapEdWarnings,.SPR_mapEdHelp>p,.SPR_mapEdLegend,.SPR_mapEdLabel,.SPR_mapEdDlgLabel,.SPR_isoLabel,.SPR_isoPreviewSizeLabel,.SPR_mapEdSideTitle,.SPR_isoSideTitle,.SPR_mapEdMenuLabel,.SPR_isoMenuLabel,.SPR_mapEdLayerIdx,.SPR_isoLayerIdx,.SPR_mapEdTipDesc{color:var(--ed-dim)}
+.SPR_mapEdHint,.SPR_isoHint,.SPR_mapEdRowHint,.SPR_mapEdCaret,.SPR_mapEdSave,.SPR_mapEdFootText,.SPR_isoPreviewHint,.SPR_isoAssetMeta,.SPR_mapEdMarkerAt,.SPR_mapEdGuideNote,.SPR_mapEdTsMeta,.SPR_mapEdTimes,.SPR_mapEdLblSmall,.SPR_mapEdGuideCap,.SPR_mapEdGuidePage{color:var(--ed-mute)}
+.SPR_mapEdGuideTitle,.SPR_isoCardHead,.SPR_isoScaleValue,.SPR_isoAssetName,.SPR_isoFile,.SPR_mapEdFiles a{color:var(--ed-accent)}
+.SPR_isoWarn,.SPR_mapEdSave[data-busy="true"],.SPR_mapEdToast[data-busy="true"]{color:var(--dsw-alias-state-warning-primary)}
+.SPR_mapEdMark{color:var(--dsw-alias-state-success-primary)}
+.SPR_isoRange{accent-color:var(--ed-accent)}
+.SPR_mapEdToast{background:color-mix(in srgb, var(--ed-bar) 92%, transparent);color:var(--ed-text);border:1px solid var(--ed-line)}
+/* 顶栏项目名 / 菜单 / 弹出层 */
+.SPR_mapEdProj:hover,.SPR_isoProj:hover{background:var(--ed-hover)}
+.SPR_mapEdProj[data-open="true"]{background:var(--ed-hover);border-color:var(--ed-line)}
+.SPR_mapEdMenu,.SPR_isoMenu,.SPR_mapEdCard,.SPR_isoCard,.SPR_mapEdDlg,.SPR_isoDlg,.SPR_mapEdGuide,.SPR_mapEdTip{background:var(--ed-panel);color:var(--ed-text);border-color:var(--ed-line);box-shadow:var(--ed-shadow)}
+.SPR_mapEdTip::after{border-top-color:var(--ed-panel)}
+.SPR_mapEdTipKey{background:var(--ed-bar);color:var(--ed-dim)}
+.SPR_mapEdDlgHead,.SPR_mapEdDlgActions{background:var(--ed-panel)}
+.SPR_mapEdMenuItem,.SPR_isoMenuItem{color:var(--ed-text)}
+.SPR_mapEdMenuItem:hover,.SPR_isoMenuItem:hover{background:var(--ed-hover)}
+.SPR_mapEdMenuItem[data-on="true"],.SPR_isoMenuItem[data-on="true"]{background:var(--ed-on);color:var(--ed-accent)}
+.SPR_mapEdMenuItem[data-danger="true"]{color:var(--dsw-alias-state-error-primary)}
+.SPR_mapEdGuideFoot{border-color:var(--ed-line)}
+.SPR_isoCardHead,.SPR_mapEdCardHead{color:var(--ed-text)}
+.SPR_isoClose,.SPR_mapEdCardClose{color:var(--ed-dim)}
+.SPR_isoClose:hover,.SPR_mapEdCardClose:hover{background:var(--ed-hover);color:var(--ed-text)}
+/* 编辑器按钮：木质渐变 → 与通用 .SPR_btn 同一套观感 */
+.SPR_mapEdTopBtn,.SPR_mapEdSegBtn,.SPR_mapEdGuideTab,.SPR_mapEdChip,.SPR_mapEdSelect,.SPR_mapEdMiniBtn,.SPR_isoMini,.SPR_mapEdPassCell{background:var(--ed-panel);color:var(--ed-text);border:1px solid var(--ed-line)}
+.SPR_mapEdTopBtn:hover,.SPR_mapEdSegBtn:hover,.SPR_mapEdGuideTab:hover,.SPR_mapEdChip:hover,.SPR_mapEdMiniBtn:hover:not(:disabled),.SPR_isoMini:hover:not(:disabled){background:var(--ed-hover);border-color:var(--ed-accent)}
+.SPR_mapEdTopBtn[data-on="true"],.SPR_mapEdSegBtn[data-on="true"],.SPR_mapEdGuideTab[data-on="true"],.SPR_mapEdChip[data-on="true"]{background:var(--ed-on);border-color:var(--ed-accent);color:var(--ed-accent)}
+.SPR_mapEdTopBtn{background:var(--ed-panel)}
+.SPR_mapEdTop .SPR_copyId,.SPR_isoTop .SPR_copyId{color:var(--ed-dim);border-color:var(--ed-line);background:transparent}
+.SPR_mapEdTop .SPR_copyId:hover,.SPR_isoTop .SPR_copyId:hover{background:var(--ed-hover);color:var(--ed-text)}
+.SPR_mapEdTop .SPR_copyId[data-copied=true],.SPR_isoTop .SPR_copyId[data-copied=true]{border-color:var(--dsw-alias-state-success-primary);color:var(--dsw-alias-state-success-primary)}
+.SPR_mapEdMenu .SPR_copyIdInline,.SPR_isoMenu .SPR_copyIdInline{color:var(--ed-mute)}
+.SPR_mapEdMenu .SPR_copyIdInline:hover,.SPR_isoMenu .SPR_copyIdInline:hover{color:var(--ed-text)}
+/* 工具格 */
+.SPR_mapEdTool,.SPR_isoTool,.SPR_mapEdLayerBtn{background:var(--ed-panel);color:var(--ed-dim);border:1px solid var(--ed-line)}
+.SPR_mapEdTool:hover,.SPR_isoTool:hover{background:var(--ed-hover);color:var(--ed-text)}
+.SPR_mapEdTool[data-on="true"],.SPR_isoTool[data-on="true"]{background:var(--ed-on);color:var(--ed-accent);border-color:var(--ed-accent);box-shadow:none}
+.SPR_mapEdLayerHalf,.SPR_mapEdLayerNum{color:var(--ed-dim)}
+.SPR_mapEdLayerHalf:hover:not(:disabled),.SPR_mapEdLayerNum:hover{background:var(--ed-hover)}
+/* 素材格：当前笔刷从红框改成主题强调色 */
+.SPR_mapEdTile,.SPR_isoTile{background-color:var(--ed-sunken);border-color:var(--ed-line)}
+.SPR_mapEdTile:hover,.SPR_isoTile:hover{border-color:var(--ed-accent)}
+.SPR_mapEdTile[data-on="true"],.SPR_isoTile[data-on="true"]{outline:2px solid var(--ed-accent);border-color:var(--ed-accent)}
+/* 输入框 / 行 / 卡 */
+.SPR_mapEdDlgInput,.SPR_isoInput,.SPR_mapEdLayerNameInput,.SPR_mapEdMarkerName:focus{background:var(--dsw-alias-bg-layer-1);color:var(--ed-text);border:1px solid var(--ed-line)}
+.SPR_mapEdDlgInput:focus,.SPR_isoInput:focus,.SPR_mapEdLayerNameInput:focus{border-color:var(--ed-accent)}
+.SPR_mapEdLayerRow,.SPR_isoLayerRow,.SPR_mapEdMarkerRow,.SPR_isoMarkerRow,.SPR_isoAssetRow{background:var(--ed-sunken);border-color:var(--ed-line)}
+.SPR_mapEdLayerRow[data-on="true"],.SPR_isoLayerRow[data-on="true"],.SPR_mapEdMarkerRow[data-on="true"],.SPR_mapEdTsRow[data-on="true"]{background:var(--ed-on);border-color:var(--ed-accent)}
+.SPR_mapEdLayerName:hover,.SPR_isoLayerName:hover,.SPR_mapEdMarkerName:hover{border-color:var(--ed-line)}
+.SPR_mapEdHelp,.SPR_mapEdExportResult{background:var(--ed-sunken);border-color:var(--ed-line)}
+.SPR_isoBadge,.SPR_mapEdTsBadge{background:var(--ed-bar);border-color:var(--ed-line);color:var(--ed-dim)}
+.SPR_mapEdTsBadge[data-anim="true"]{background:color-mix(in srgb, var(--dsw-alias-state-success-primary) 16%, transparent);color:var(--dsw-alias-state-success-primary)}
+.SPR_mapEdMiniBtn,.SPR_isoMini{background:transparent}
+.SPR_mapEdMarkerDot,.SPR_isoMarkerDot{background:var(--ed-panel);color:var(--ed-text);border-color:var(--dsw-alias-state-warning-primary)}
+.SPR_mapEdStamp,.SPR_mapEdGuideArt,.SPR_isoPreview,.SPR_isoPreviewStage{background-color:var(--ed-sunken);border-color:var(--ed-line)}
+.SPR_isoPreviewStage{background-image:linear-gradient(45deg,rgba(128,128,128,.16) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.16) 75%),linear-gradient(45deg,rgba(128,128,128,.16) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.16) 75%)}
+.SPR_mapEdPassCell[data-pass="0"]{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 14%, transparent);border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary)}
+.SPR_mapEdPassCell[data-pass="1"]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary)}
+.SPR_mapEdPassCell[data-pass="2"]{background:color-mix(in srgb, var(--dsw-alias-state-success-primary) 14%, transparent);border-color:var(--dsw-alias-state-success-primary);color:var(--dsw-alias-state-success-primary)}
+/* 通用界面里写死的白底 / 黑底 → 跟随主题（棋盘格保留，半透明灰在深浅色下都能看） */
+.SPR_player,.SPR_stage,.SPR_rigCanvasWrap,.SPR_asmStage,.SPR_rigSideBySide img{background-color:var(--dsw-alias-bg-layer-1)}
+.SPR_asmCanvas{background-color:var(--dsw-alias-bg-layer-1)}
+.SPR_stageHint{background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 78%, transparent);color:var(--dsw-alias-label-primary)}
+.SPR_rigPreview{background:var(--dsw-alias-bg-layer-3)}
+.SPR_asmHandle{background:var(--dsw-alias-bg-layer-1)}
+.SPR_hud{background:color-mix(in srgb, var(--dsw-alias-bg-layer-3) 88%, transparent);color:var(--dsw-alias-label-primary);border:1px solid var(--dsw-alias-border-l2)}
+.SPR_rigBoxLabel{background:color-mix(in srgb, var(--dsw-alias-bg-layer-3) 90%, transparent);color:var(--dsw-alias-label-primary)}
+.SPR_modeTag{color:var(--dsw-alias-state-business-on-primary,#fff)}
+.SPR_gateMask,.SPR_mapEdDlgMask,.SPR_isoDlgMask{background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 55%, rgba(0,0,0,.28))}
+/* 工作台外壳：标题下显示隐藏提示，功能入口使用单行选项卡。 */
+/* ⚠️ 这里不能加 backdrop-filter / filter / transform：它们会让 .SPR_root 里所有
+   position:fixed 的弹窗、看图遮罩改成相对 .SPR_root 定位，全部错位或被裁掉。
+   壁纸透出的问题只用不透明度更高的底色解决。 */
+.SPR_root{background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 94%, transparent)}
+.SPR_head{padding:16px 22px;gap:12px;background:transparent}
+.SPR_headInfo{flex:1;min-width:0}
+.SPR_headTitleLine{display:flex;align-items:center;gap:12px;min-width:0}
+.SPR_head h2{font-size:16px;letter-spacing:.2px}
+.SPR_headTitleLine h2{flex:none}
+.SPR_headSub{font-size:12px;line-height:18px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_headActions{display:flex;align-items:center;gap:10px;flex:none}
+.SPR_modulePanel{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0}
+.SPR_projectMore{display:inline-flex;flex:none;align-items:center}
+.SPR_projectMoreButton{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.SPR_projectMoreButton:hover,.SPR_projectMoreButton[aria-expanded=true]{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
+.SPR_projectMoreButton:focus-visible,.SPR_projectMenu button:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px}
+.SPR_projectRow{position:relative;flex:none;min-width:0}
+.SPR_projectRow>.SPR_projItem{padding-right:40px}
+.SPR_projectMoreInline{position:absolute;right:5px;top:6px}
+.SPR_projectMoreInline .SPR_projectMoreButton{width:28px;height:28px;opacity:0;transition:opacity .12s}
+.SPR_projectRow:hover .SPR_projectMoreButton,.SPR_projectRow:focus-within .SPR_projectMoreButton,.SPR_projectRow[data-active=true] .SPR_projectMoreButton{opacity:1}
+.SPR_projectMenu{position:fixed;z-index:90;width:196px;box-sizing:border-box;padding:6px;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 8px 28px rgba(0,0,0,.14);color:var(--dsw-alias-label-primary)}
+.SPR_projectMenu button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer;font:inherit;text-align:left;line-height:20px}
+.SPR_projectMenu button:hover,.SPR_projectMenu button:focus-visible{background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_projectMenu button[data-danger=true]{color:var(--dsw-alias-state-error-primary,#d84949)}
+.SPR_projectMenuSeparator{height:1px;margin:5px 4px;background:var(--dsw-alias-border-l2)}
+.SPR_projectRenameMask{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.25)}
+.SPR_projectRenameDialog{box-sizing:border-box;width:min(380px,100%);padding:22px;border:1px solid var(--dsw-alias-border-l2);border-radius:16px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 18px 60px rgba(0,0,0,.2);color:var(--dsw-alias-label-primary)}
+.SPR_projectRenameDialog h3{margin:0 0 18px;font-size:15px}
+.SPR_projectRenameActions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.SPR_projectRenameDialog[data-kind=delete]{width:min(420px,100%);padding:26px}
+.SPR_projectDeleteIcon{display:flex;align-items:center;justify-content:center;width:40px;height:40px;margin-bottom:18px;border-radius:12px;color:var(--dsw-alias-state-error-primary,#d84949);background:color-mix(in srgb,var(--dsw-alias-state-error-primary,#d84949) 10%,transparent)}
+.SPR_projectDeleteIcon svg{width:21px;height:21px}
+.SPR_projectRenameDialog[data-kind=delete] h3{margin-bottom:12px;font-size:17px}
+.SPR_projectDeleteName{margin:0 0 8px;font-weight:600;overflow-wrap:anywhere;white-space:pre-wrap}
+.SPR_projectDeleteDescription{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:22px}
+.SPR_projectDeleteConfirm{background:var(--dsw-alias-state-error-primary,#d84949);border-color:transparent;color:#fff}
+.SPR_projectDeleteConfirm:hover:not(:disabled){background:color-mix(in srgb,var(--dsw-alias-state-error-primary,#d84949) 90%,#000);color:#fff}
+.SPR_templateDeleteDialog.SPR_projectRenameDialog[data-kind=delete]{width:min(420px,calc(100vw - 32px));max-height:calc(100vh - 32px);margin:auto;overflow:auto;font:inherit;text-align:left}
+.SPR_templateDeleteDialog::backdrop{background:rgba(0,0,0,.35)}
+@media(hover:none){.SPR_projectMoreInline .SPR_projectMoreButton{opacity:1}}
+.SPR_root>.SPR_modules{display:flex;flex-wrap:nowrap;gap:20px;padding:0 22px;overflow-x:auto;align-items:stretch;background:transparent;scrollbar-width:thin}
+.SPR_root>.SPR_modules>.SPR_module{position:relative;display:inline-flex;flex-direction:row;align-items:center;flex:none;gap:6px;min-height:44px;padding:10px 2px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--dsw-alias-label-secondary);box-shadow:none;white-space:nowrap;transition:color .12s,border-color .12s}
+.SPR_root>.SPR_modules>.SPR_module:hover{background:transparent;color:var(--dsw-alias-label-primary)}
+.SPR_root>.SPR_modules>.SPR_module[data-active=true]{border-bottom-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-label-primary);box-shadow:none;background:transparent}
+.SPR_root>.SPR_modules>.SPR_module:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-4px;border-radius:5px}
+.SPR_root>.SPR_modules .SPR_moduleTitle{font-size:13px;line-height:20px;font-weight:500;color:inherit}
+.SPR_root>.SPR_modules [data-active=true] .SPR_moduleTitle{font-weight:600}
+.SPR_moduleTip{position:fixed;z-index:95;box-sizing:border-box;width:max-content;max-width:min(280px,calc(100vw - 16px));padding:10px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:0 6px 24px rgba(0,0,0,.14);font-size:12px;line-height:19px;overflow-wrap:anywhere}
+.SPR_moduleTip::before{content:"";position:absolute;left:var(--tip-arrow-left);top:-5px;width:8px;height:8px;border-top:1px solid var(--dsw-alias-border-l2);border-left:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);transform:rotate(45deg)}
+.SPR_moduleTip[data-side=above]::before{top:auto;bottom:-5px;transform:rotate(225deg)}
+.SPR_moduleTipTitle{display:flex;align-items:center;gap:6px;font-weight:600;margin-bottom:3px}
+.SPR_moduleTipText{color:var(--dsw-alias-label-secondary)}
+.SPR_modulesHiddenNote{display:block;margin:3px 0 0;font-size:11px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
+.SPR_imageMain{container-type:inline-size}
+.SPR_imageWorkspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);gap:16px;align-items:start}
+.SPR_imageEditor{container-type:inline-size;min-width:0}
+.SPR_imageResults{min-width:0}
+.SPR_imageResults>.SPR_grid{grid-template-columns:minmax(0,1fr)}
+.SPR_imageResults>.SPR_toolbar>.SPR_input{max-width:100%}
+.SPR_imageResults .SPR_refRow{overflow-wrap:anywhere}
+.SPR_card.SPR_imageAdvanced{padding:4px 18px}
+.SPR_imageAdvanced>details{padding:12px 0}
+.SPR_imageAdvanced>details+details{border-top:1px solid var(--dsw-alias-border-l2)}
+.SPR_imageAdvanced>details>summary{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;font-weight:500;line-height:22px;color:var(--dsw-alias-label-secondary);list-style:none;border-radius:5px}
+.SPR_imageAdvanced>details>summary::-webkit-details-marker{display:none}
+.SPR_imageAdvanced>details>summary::before{content:"";width:5px;height:5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform .15s;margin:0 3px}
+.SPR_imageAdvanced>details[open]>summary::before{transform:rotate(45deg)}
+.SPR_imageAdvanced>details>summary:hover,.SPR_imageAdvanced>details[open]>summary{color:var(--dsw-alias-label-primary)}
+.SPR_imageAdvanced>details>summary:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:4px}
+.SPR_imageGenerateActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.SPR_imageGenerateActions>.SPR_refRow{flex-basis:100%;line-height:18px}
+.SPR_imageReview{display:flex;align-items:center;gap:8px;margin-left:auto;min-width:0;flex:1}
+.SPR_imageReview>.SPR_refRow{display:none}
+.SPR_imageReview>.SPR_input{max-width:100%;width:100%!important;font-size:12px;cursor:pointer}
+@supports(appearance:base-select){
+  .SPR_imageReview>select,.SPR_imageReview>select::picker(select),.SPR_promptTemplateSelect,.SPR_promptTemplateSelect::picker(select){appearance:base-select}
+  .SPR_imageReview>select::picker(select),.SPR_promptTemplateSelect::picker(select){border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:5px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:0 8px 28px rgba(0,0,0,.16);margin-top:6px;max-width:calc(100vw - 16px);max-height:min(360px,60vh);overflow:auto}
+  .SPR_imageReview>select::picker-icon,.SPR_promptTemplateSelect::picker-icon{color:var(--dsw-alias-label-secondary);width:12px;font-size:10px;transition:rotate .15s}
+  .SPR_imageReview>select:open::picker-icon,.SPR_promptTemplateSelect:open::picker-icon{rotate:180deg}
+  .SPR_imageReview option,.SPR_promptTemplateSelect option{padding:8px 10px;border-radius:6px;font:12px/20px system-ui;gap:8px;cursor:pointer;overflow-wrap:anywhere;white-space:normal}
+  .SPR_imageReview option:hover,.SPR_imageReview option:focus,.SPR_promptTemplateSelect option:hover,.SPR_promptTemplateSelect option:focus{background:var(--dsw-alias-interactive-bg-hover-solid);outline:none}
+  .SPR_imageReview option:checked,.SPR_promptTemplateSelect option:checked{background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 10%,transparent);color:var(--dsw-alias-state-business-primary)}
+  .SPR_imageReview option::checkmark,.SPR_promptTemplateSelect option::checkmark{order:1;margin-left:auto}
+  .SPR_promptTemplateSelect option:disabled{opacity:.5;cursor:default}
+}
+@container(max-width:900px){
+  .SPR_imageWorkspace{grid-template-columns:minmax(0,1fr)}
+  .SPR_imageResults>.SPR_grid{grid-template-columns:repeat(auto-fill,minmax(min(232px,100%),1fr))}
+}
+.SPR_imageComposer{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,280px);gap:20px;align-items:start}
+.SPR_imagePrompts,.SPR_imageRefs{min-width:0}
+.SPR_imageRefs{padding-left:20px}
+.SPR_imageSectionHead{align-items:center;justify-content:flex-start;gap:5px}
+.SPR_imageSectionHead h3{line-height:20px}
+.SPR_promptEditor{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;margin-bottom:10px;background:var(--dsw-alias-bg-layer-1)}
+.SPR_promptEditor:focus-within{border-color:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 2px color-mix(in srgb,var(--dsw-alias-state-business-primary) 12%,transparent)}
+.SPR_promptSource[data-main=true]{gap:0}
+.SPR_promptSource[data-main=true]>.SPR_promptReferenceEditor{border-radius:10px 10px 0 0}
+.SPR_promptSource[data-main=true]>.SPR_promptReferenceEditor>.SPR_promptReferenceArea{width:100%;min-height:130px;border:0;border-radius:10px 10px 0 0;box-shadow:none;resize:vertical}
+.SPR_promptSource[data-main=true]>.SPR_promptReferenceEditor>.SPR_promptReferenceArea:focus{outline:none;box-shadow:none}
+.SPR_promptInputActions{display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 10px 9px;flex-wrap:wrap}
+.SPR_promptInlineActions{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.SPR_promptRightActions{display:flex;align-items:center;gap:10px;margin-left:auto;min-width:0;flex-wrap:wrap;justify-content:flex-end}
+.SPR_transparentToggle{display:inline-flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap;cursor:pointer;color:var(--dsw-alias-label-secondary)}
+.SPR_transparentToggle input{appearance:none;position:relative;box-sizing:border-box;width:27px;height:16px;margin:0;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-3);cursor:inherit;flex:none}
+.SPR_transparentToggle input::after{content:"";position:absolute;left:2px;top:2px;width:10px;height:10px;border-radius:50%;background:var(--dsw-alias-label-secondary);transition:transform .12s}
+.SPR_transparentToggle input:checked{background:var(--dsw-alias-state-business-primary);border-color:var(--dsw-alias-state-business-primary)}
+.SPR_transparentToggle input:checked::after{transform:translateX(11px);background:white}
+.SPR_transparentToggle input:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:3px}
+.SPR_transparentToggle:has(input:disabled){opacity:.5;cursor:default}
+.SPR_imageKeyingAdvanced>summary{font-size:12px;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.SPR_imageKeyingAdvanced[open]>summary{margin-bottom:14px}
+.SPR_promptOptimize{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:500;min-height:30px;padding:4px 9px;border:0;border-radius:7px;color:var(--dsw-alias-label-primary);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 10%,transparent);cursor:pointer;white-space:nowrap}
+.SPR_promptOptimize:hover:not(:disabled){background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 18%,transparent)}
+.SPR_promptOptimize:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
+.SPR_promptOptimize:disabled{opacity:.55;cursor:default}
+.SPR_promptOptimize svg{width:16px;height:16px;flex:none;color:var(--dsw-alias-state-business-primary)}
+.SPR_promptUndo{font-weight:400;color:var(--dsw-alias-label-secondary);background:transparent}
+.SPR_promptBase{padding:12px;border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-label-secondary) 4%,transparent);min-width:0}
+.SPR_promptBaseHead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:12px}
+.SPR_promptBaseHead strong{font-weight:500}
+.SPR_promptBaseHead .SPR_btn{margin-left:auto;padding:3px 7px;font-size:11px;box-shadow:none;background:transparent}
+.SPR_promptReadonly{color:var(--dsw-alias-label-tertiary);font-size:10px;padding:1px 5px;border:1px solid var(--dsw-alias-border-l2);border-radius:4px}
+.SPR_promptTemplateSelectRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.SPR_promptTemplateSelect{flex:1;min-width:0;max-width:360px}
+.SPR_promptTemplateChoice{font:inherit;font-size:12px;padding:6px 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-1);cursor:pointer;max-width:100%;overflow-wrap:anywhere;text-align:left}
+.SPR_promptTemplateChoice:hover:not(:disabled){color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_promptTemplateChoice[aria-pressed=true]{color:var(--dsw-alias-state-business-primary);border-color:color-mix(in srgb,var(--dsw-alias-state-business-primary) 55%,var(--dsw-alias-border-l2));background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 9%,var(--dsw-alias-bg-layer-1))}
+.SPR_promptTemplateChoice:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
+.SPR_promptTemplateChoice:disabled{opacity:.55;cursor:default}
+.SPR_promptBasePreview{font-size:12px;color:var(--dsw-alias-label-secondary);margin:12px 0 0}
+.SPR_promptBasePreview summary{cursor:pointer;width:fit-content}
+.SPR_promptBasePreview p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;max-height:240px;overflow:auto;margin:10px 0 0;padding:10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);user-select:text}
+.SPR_templateManager{display:grid;grid-template-columns:200px minmax(0,1fr);gap:20px;margin-top:18px}
+.SPR_templateList{display:flex;flex-direction:column;gap:6px;min-width:0}
+.SPR_templateList>.SPR_promptTemplateChoice{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px}
+.SPR_templateList>.SPR_promptTemplateChoice span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_templateEditor{min-width:0;padding:16px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px}
+.SPR_templateEditor .SPR_area{min-height:300px;line-height:1.8;margin-top:0}
+.SPR_templateEditorHead{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;min-width:0;overflow-x:auto;padding-bottom:2px;margin-bottom:16px;scrollbar-width:thin}
+.SPR_templateEditorHead .SPR_btnRow{margin:0;flex:none;flex-wrap:nowrap}
+.SPR_templateEditorHead .SPR_templateEditorSecondary{margin-left:auto}
+.SPR_templateManagerActions{display:flex;align-items:center;gap:8px;flex:none;flex-wrap:nowrap}
+.SPR_templateEditor .SPR_field{margin-bottom:12px}
+.SPR_templateStatus{font-size:11px;color:var(--dsw-alias-label-tertiary)}
+@media(max-width:650px){.SPR_templateManager{grid-template-columns:minmax(0,1fr)}.SPR_templateList{flex-direction:row;flex-wrap:wrap}.SPR_templateList>.SPR_promptTemplateChoice{max-width:100%}.SPR_templateEditor{padding:12px}.SPR_templateEditor .SPR_area{min-height:240px}}
+.SPR_promptDialog{box-sizing:border-box;width:min(800px,calc(100vw - 32px));max-height:calc(100vh - 32px);padding:22px;border:1px solid var(--dsw-alias-border-l2);border-radius:16px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:0 20px 70px rgba(0,0,0,.25);overflow:auto;font:inherit;font-size:13px}
+.SPR_promptDialog::backdrop{background:rgba(0,0,0,.35)}
+.SPR_promptDialogHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.SPR_promptDialogHead h3{margin:0;font-size:16px}
+.SPR_promptCompare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.SPR_promptCompare .SPR_area{min-height:240px;font:inherit;font-size:12px;line-height:1.7}
+.SPR_promptSource{position:relative;min-width:0}
+.SPR_promptReferenceEditor{position:relative;min-width:0;border-radius:9px;background:var(--dsw-alias-bg-layer-1)}
+.SPR_promptReferenceEditor>.SPR_promptReferenceArea{position:relative;display:block;margin:0;background:transparent;color:transparent;caret-color:var(--dsw-alias-label-primary)}
+.SPR_promptReferenceArea::placeholder{color:var(--dsw-alias-label-tertiary)}
+.SPR_promptReferenceEditor>.SPR_promptReferencePaint{position:absolute;left:1px;top:1px;box-sizing:border-box;min-height:0;border:0;margin:0;resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:break-word;background:transparent;pointer-events:none}
+.SPR_promptReferencePaint mark{padding:0;border-radius:3px;font:inherit;color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 14%,transparent)}
+.SPR_promptSourceActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.SPR_promptSourceActions>.SPR_hint{margin:0;font-size:11px;min-width:0}
+.SPR_promptMentionList{position:absolute;left:0;right:0;bottom:36px;z-index:3;max-height:190px;overflow:auto;padding:4px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 8px 26px rgba(0,0,0,.15)}
+.SPR_promptMentionList>button{display:flex;align-items:center;gap:8px;width:100%;padding:7px;border:0;border-radius:6px;color:inherit;background:transparent;font:inherit;text-align:left;cursor:pointer}
+.SPR_promptMentionList>button:hover,.SPR_promptMentionList>button[aria-selected=true]{background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_promptMentionList img{width:32px;height:32px;object-fit:contain;border-radius:4px;background:var(--dsw-alias-bg-layer-3);flex-shrink:0}
+.SPR_promptMentionList span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_promptMentionList p{margin:8px}
+.SPR_promptDialog .SPR_btnRow{justify-content:flex-end;margin-top:16px}
+@media(max-width:600px){.SPR_promptCompare{grid-template-columns:1fr}.SPR_promptCompare .SPR_area{min-height:140px}.SPR_promptDialog{padding:16px}.SPR_imageSectionHead{gap:3px}}
+.SPR_descriptionButton{display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;padding:3px;border:0;border-radius:50%;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer}
+.SPR_descriptionButton:hover,.SPR_descriptionButton[aria-expanded=true]{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_descriptionButton:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
+.SPR_descriptionButton svg{width:16px;height:16px}
+.SPR_imageRefs .SPR_uploadDrop{min-height:156px;flex-direction:column}
+.SPR_imageRefList{display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:300px;overflow-y:auto;padding:2px}
+.SPR_imageRefItem{display:flex;align-items:center;gap:4px;min-width:0;padding:4px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px}
+.SPR_imageRefPreview{display:flex;align-items:center;gap:9px;flex:1;min-width:0;padding:3px;border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:zoom-in}
+.SPR_imageRefPreview:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_imageRefPreview:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
+.SPR_imageRefPreview img{width:46px;height:46px;object-fit:contain;border-radius:5px;flex:none;background:var(--dsw-alias-bg-layer-3)}
+.SPR_imageRefDetails{display:flex;flex-direction:column;gap:3px;min-width:0}
+.SPR_imageRefLabel{font-size:11px;color:var(--dsw-alias-state-business-primary)}
+.SPR_imageRefName{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.SPR_imageRefItem>.SPR_btn{flex:none;padding:5px 7px;font-size:12px;box-shadow:none;opacity:0;pointer-events:none;transition:opacity .12s}
+.SPR_imageRefItem:hover>.SPR_btn,.SPR_imageRefItem:focus-within>.SPR_btn{opacity:1;pointer-events:auto}
+@media(hover:none){.SPR_imageRefItem>.SPR_btn{opacity:1;pointer-events:auto}}
+.SPR_imageRefDialog{box-sizing:border-box;width:min(900px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);padding:16px;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:0 20px 70px rgba(0,0,0,.25)}
+.SPR_imageRefDialog::backdrop{background:rgba(0,0,0,.6)}
+.SPR_imageRefDialogHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.SPR_imageRefDialogHead h3{margin:0;font-size:14px;overflow-wrap:anywhere;min-width:0}
+.SPR_imageRefDialogHead>.SPR_btn{flex:none}
+.SPR_imageRefFull{display:block;width:100%;height:auto;max-height:calc(100vh - 132px);object-fit:contain;border-radius:8px;background:var(--dsw-alias-bg-layer-3)}
+.SPR_imageResultPreview{display:block;width:100%;padding:0;border:0;border-radius:8px;background:transparent;color:inherit;cursor:zoom-in}
+.SPR_imageResultPreview:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:3px}
+.SPR_imageResultPreview>.SPR_thumb{display:block}
+.SPR_imageResultActions{display:flex;justify-content:flex-end;flex:none}
+.SPR_imageResultMore.SPR_btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);box-shadow:none}
+.SPR_imageResultMenu{position:fixed;inset:auto;box-sizing:border-box;width:192px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);margin:0;padding:5px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:0 8px 28px rgba(0,0,0,.16);overflow:auto}
+.SPR_imageResultMenu:popover-open{display:flex;flex-direction:column;gap:2px}
+.SPR_imageResultMenu>.SPR_btn{display:flex;align-items:center;gap:6px;width:100%;box-sizing:border-box;justify-content:flex-start;margin:0;padding:7px 10px;border:0;border-radius:6px;background:transparent;color:inherit;box-shadow:none;font:12px/20px system-ui;text-decoration:none;white-space:nowrap}
+.SPR_imageResultMenu>.SPR_btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_imageResultMenu>.SPR_btn:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-2px}
+.SPR_imageResultMenu>.SPR_btn[data-danger=true]{color:var(--dsw-alias-state-error-primary)}
+.SPR_imageResultMenu>.SPR_btn[data-on=true]{color:var(--dsw-alias-state-success-primary)}
+.SPR_imageResultMenu>.SPR_btn:disabled{opacity:.45;cursor:default}
+@container(max-width:680px){
+  .SPR_imageComposer{grid-template-columns:minmax(0,1fr)}
+  .SPR_imageRefs{padding:0}
+  .SPR_imageRefs .SPR_uploadDrop{min-height:100px}
+}
+/* 主体：内容区与卡片 */
+.SPR_main,.SPR_moduleBody{padding:20px 24px 48px}
+.SPR_card,.SPR_settingsGroup{padding:18px;margin-bottom:16px;border-radius:14px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.SPR_node{padding:12px;gap:10px;border-radius:12px}
+.SPR_grid{gap:14px}
+.SPR_fields{gap:14px;margin:14px 0}
+.SPR_field{gap:6px}
+.SPR_fieldLabel{font-size:12px;color:var(--dsw-alias-label-secondary)}
+.SPR_toolbar{gap:10px;margin:14px 0}
+.SPR_btnRow{gap:8px}
+.SPR_btn{padding:7px 14px;border-radius:9px;line-height:18px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.SPR_btn[data-primary=true]{box-shadow:0 2px 6px color-mix(in srgb, var(--dsw-alias-state-business-primary) 35%, transparent)}
+.SPR_input,.SPR_area{padding:8px 12px;border-radius:9px;background:var(--dsw-alias-bg-layer-1);transition:border-color .12s,box-shadow .12s}
+.SPR_input:focus,.SPR_area:focus{outline:none;border-color:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 3px color-mix(in srgb, var(--dsw-alias-state-business-primary) 18%, transparent)}
+.SPR_hint{font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);margin:0 0 14px}
+.SPR_step,.SPR_mode{padding:6px 14px}
+.SPR_steps{gap:8px;margin-bottom:18px}
+.SPR_side{width:236px;padding:16px 14px;gap:10px;background:transparent}
+.SPR_projItem{padding:9px 11px;border-radius:10px}
+/* 原生文件选择按钮：统一成与 .SPR_btn 同一套观感 */
+.SPR_root input[type=file]{font:inherit;font-size:12px;color:var(--dsw-alias-label-secondary);max-width:100%}
+.SPR_root input[type=file]::file-selector-button{font:inherit;font-size:12px;cursor:pointer;margin-right:10px;padding:6px 14px;border-radius:9px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);transition:background .12s}
+.SPR_root input[type=file]::file-selector-button:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_root select{font:inherit;font-size:12px;padding:8px 12px;border-radius:9px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);max-width:100%}
+/* 窄窗口 */
+@media (max-width:900px){
+  .SPR_root>.SPR_modules{padding:0 14px;gap:18px}
+  .SPR_main,.SPR_moduleBody{padding:16px 14px 40px}
+  .SPR_head{padding:12px 14px;flex-wrap:wrap}
+  .SPR_body{flex-direction:column}
+  .SPR_side{width:auto;border-right:0;border-bottom:1px solid var(--dsw-alias-border-l2);max-height:200px}
+  .SPR_asmBody{flex-direction:column}
+  .SPR_asmSide{width:100%;max-height:none}
+  .SPR_mapEdBody,.SPR_isoBody{flex-direction:column}
+  .SPR_mapEdSide,.SPR_isoSide{width:100%;max-width:none;min-width:0;max-height:240px;border-right:0;border-bottom:1px solid var(--ed-line)}
+  .SPR_rigPreview{height:min(620px,70vh)}
+}
+@media (max-width:560px){
+  .SPR_headInfo{flex-basis:100%}
+  .SPR_headActions{margin-left:auto}
+  .SPR_headTitleLine{flex-wrap:wrap;gap:3px 12px}
+  .SPR_fields{grid-template-columns:1fr}
+}
 `;
 
     // ── 小工具 ───────────────────────────────────────────────────────────
     function cls(...parts) {
       return parts.filter(Boolean).join(" ");
+    }
+    /** canvas 不认 CSS 变量：绘制时现读当前主题色，深浅色切换后下一帧就跟着变。 */
+    function themeColor(canvas, name, fallback) {
+      try {
+        const value = getComputedStyle(canvas).getPropertyValue(name).trim();
+        return value || fallback;
+      } catch {
+        return fallback;
+      }
     }
 
     /** 从 unknown 的 catch 参数里取一条可读消息。 */
@@ -4616,6 +5169,47 @@
      * 界面测试（Playwright）靠它定位，而按可见文字定位在中文文案改动时很脆。
      * 之前不透传，结果是「明明写了 data-testid 但测试找不到元素」。
      */
+    // One floating message at a time across modules and nested settings panels.
+    let activeNoticePopup = null;
+    function NoticePopup({ notice, onClose, kind = "error" }) {
+      const popupRef = React.useRef(null);
+      const closeRef = React.useRef(onClose);
+      closeRef.current = onClose;
+      const text = typeof notice === "string" ? notice : notice?.text;
+      const tone = typeof notice === "string" ? kind : notice?.kind ?? kind;
+      React.useEffect(() => {
+        const popup = popupRef.current;
+        if (!popup || !text) return;
+        const hide = () => { if (typeof popup.hidePopover === "function" && popup.matches(":popover-open")) popup.hidePopover(); };
+        const current = { dismiss: () => { hide(); closeRef.current?.(); } };
+        activeNoticePopup?.dismiss(); activeNoticePopup = current;
+        try { popup.showPopover(); } catch { popup.removeAttribute("popover"); }
+        let timer, started = 0, remaining = tone === "error" ? 0 : tone === "ok" ? 4000 : 6000;
+        const pause = () => { if (timer !== undefined) { clearTimeout(timer); timer = undefined; remaining = Math.max(1, remaining - (Date.now() - started)); } };
+        const resume = () => { if (remaining && timer === undefined && !popup.matches(":hover") && !popup.contains(document.activeElement)) { started = Date.now(); timer = setTimeout(current.dismiss, remaining); } };
+        const escape = event => { if (event.key === "Escape" && !event.defaultPrevented) current.dismiss(); };
+        popup.addEventListener("pointerenter", pause); popup.addEventListener("pointerleave", resume);
+        popup.addEventListener("focusin", pause); popup.addEventListener("focusout", resume);
+        window.addEventListener("keydown", escape);
+        resume();
+        return () => {
+          clearTimeout(timer);
+          popup.removeEventListener("pointerenter", pause); popup.removeEventListener("pointerleave", resume);
+          popup.removeEventListener("focusin", pause); popup.removeEventListener("focusout", resume);
+          window.removeEventListener("keydown", escape);
+          hide();
+          if (activeNoticePopup === current) activeNoticePopup = null;
+        };
+      }, [notice, kind]);
+      if (!text) return null;
+      return h("div", { ref: popupRef, popover: "manual", className: "SPR_note SPR_noticePopup", "data-kind": tone, "data-testid": "notice-popup", role: tone === "error" ? "alert" : "status", "aria-label": T("操作提示"), "aria-atomic": "true" },
+        h("span", { className: "SPR_noticePopupIcon", "aria-hidden": "true" }, h("svg", { width: 18, height: 18, viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round" },
+          h("circle", { cx: 10, cy: 10, r: 8 }), tone === "ok" ? h("path", { d: "m6 10 2.5 2.5L14 7" }) : h("path", { d: "M10 6v5m0 3v.01" }))),
+        h("span", { className: "SPR_noticePopupText" }, text),
+        h("button", { type: "button", className: "SPR_noticePopupClose", "aria-label": T("关闭提示"), title: T("关闭"), onMouseDown: event => event.preventDefault(), onClick: () => closeRef.current?.() },
+          h("svg", { width: 14, height: 14, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.5, "aria-hidden": "true" }, h("path", { d: "m4 4 8 8M12 4l-8 8" }))));
+    }
+
     function Btn({ children, onClick, disabled, primary, on, danger, title, busy, ...rest }) {
       return h(
         "button",
@@ -4634,6 +5228,123 @@
         },
         children
       );
+    }
+
+    function ProjectActionIcon({ name }) {
+      const props = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" };
+      if (name === "more") return h("svg", props, [5, 12, 19].map(cx => h("circle", { key: cx, cx, cy: 12, r: 1.3, fill: "currentColor", stroke: "none" })));
+      if (name === "rename") return h("svg", props, h("path", { d: "M13.5 5.5l5 5M4 20l4.5-1 12-12a2.1 2.1 0 0 0-5-5l-12 12L4 20Z" }));
+      if (name === "copy") return h("svg", props, h("rect", { x: 8, y: 8, width: 12, height: 12, rx: 2 }), h("path", { d: "M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4" }));
+      return h("svg", props, h("path", { d: "M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" }));
+    }
+
+    /** 列表操作绑定本行项目或任务，不依赖当前选中项。 */
+    function ProjectActionsMenu({ project, inline = false, task = false, onRename, onDelete, onNotice }) {
+      const menuLabel = task ? T("更多任务操作") : T("更多项目操作");
+      const deleteLabel = task ? T("删除任务") : T("删除项目");
+      const renameLabel = task ? T("重命名任务") : T("重命名项目");
+      const descriptionId = `${task ? "task" : "project"}-delete-description-${project.id}`;
+      const [anchor, setAnchor] = React.useState(null);
+      const [dialog, setDialog] = React.useState(null);
+      const [name, setName] = React.useState("");
+      const [saving, setSaving] = React.useState(false);
+      const [error, setError] = React.useState("");
+      const rootRef = React.useRef(null);
+      const triggerRef = React.useRef(null);
+      const menuRef = React.useRef(null);
+      const inputRef = React.useRef(null);
+      const cancelRef = React.useRef(null);
+      const submitLock = React.useRef(false);
+      const close = (focus = false) => { setAnchor(null); if (focus) triggerRef.current?.focus(); };
+      const toggle = event => {
+        event.stopPropagation();
+        if (anchor !== null) { close(true); return; }
+        const rect = triggerRef.current.getBoundingClientRect();
+        setAnchor({ left: Math.max(8, Math.min(rect.right - 196, window.innerWidth - 204)), top: rect.bottom + 6 });
+      };
+      React.useLayoutEffect(() => {
+        if (anchor === null || !menuRef.current) return;
+        const rect = menuRef.current.getBoundingClientRect();
+        if (rect.bottom > window.innerHeight - 8) {
+          setAnchor(current => current && ({ ...current, top: Math.max(8, triggerRef.current.getBoundingClientRect().top - rect.height - 6) }));
+        }
+        menuRef.current.querySelector("button")?.focus();
+      }, [anchor !== null]);
+      React.useEffect(() => {
+        if (anchor === null) return;
+        const outside = event => { if (!rootRef.current?.contains(event.target)) close(); };
+        const escape = event => { if (event.key === "Escape") { event.preventDefault(); close(true); } };
+        const dismiss = () => close();
+        document.addEventListener("pointerdown", outside);
+        document.addEventListener("keydown", escape);
+        window.addEventListener("resize", dismiss);
+        document.addEventListener("scroll", dismiss, true);
+        return () => {
+          document.removeEventListener("pointerdown", outside);
+          document.removeEventListener("keydown", escape);
+          window.removeEventListener("resize", dismiss);
+          document.removeEventListener("scroll", dismiss, true);
+        };
+      }, [anchor !== null]);
+      React.useEffect(() => {
+        if (dialog === "rename") { inputRef.current?.focus(); inputRef.current?.select(); }
+        if (dialog === "delete") cancelRef.current?.focus();
+      }, [dialog]);
+      const menuKeys = event => {
+        if (event.key === "Tab") { close(); return; }
+        const buttons = [...menuRef.current.querySelectorAll("button")];
+        const current = buttons.indexOf(document.activeElement);
+        let next;
+        if (event.key === "ArrowDown") next = (current + 1) % buttons.length;
+        if (event.key === "ArrowUp") next = (current - 1 + buttons.length) % buttons.length;
+        if (event.key === "Home") next = 0;
+        if (event.key === "End") next = buttons.length - 1;
+        if (next !== undefined) { event.preventDefault(); buttons[next].focus(); }
+      };
+      const dismissDialog = () => { if (!submitLock.current) { setDialog(null); triggerRef.current?.focus(); } };
+      const submitDialog = async event => {
+        event.preventDefault();
+        if (submitLock.current || (dialog === "rename" && !name.trim())) return;
+        submitLock.current = true;
+        setSaving(true); setError("");
+        try {
+          if (dialog === "delete") await onDelete(project);
+          else await onRename(project, name.trim());
+          setDialog(null); triggerRef.current?.focus();
+        }
+        catch (failure) { setError(msg(failure)); }
+        finally { submitLock.current = false; setSaving(false); }
+      };
+      return h("div", { className: `SPR_projectMore${inline ? " SPR_projectMoreInline" : ""}`, ref: rootRef },
+        h("button", { type: "button", className: "SPR_projectMoreButton", ref: triggerRef, title: menuLabel, "aria-label": task ? T("任务「{n0}」的更多操作", { n0: project.name }) : T("项目「{n0}」的更多操作", { n0: project.name }), "aria-haspopup": "menu", "aria-expanded": anchor !== null, onClick: toggle,
+          onKeyDown: event => { if (event.key === "ArrowDown" && anchor === null) { event.preventDefault(); toggle(event); } } }, h(ProjectActionIcon, { name: "more" })),
+        anchor !== null ? h("div", { className: "SPR_projectMenu", ref: menuRef, role: "menu", "aria-label": menuLabel, style: anchor, onKeyDown: menuKeys },
+          h("button", { type: "button", role: "menuitem", onClick: () => { close(); setName(project.name); setError(""); setDialog("rename"); } }, h(ProjectActionIcon, { name: "rename" }), T("重命名")),
+          h("button", { type: "button", role: "menuitem", onClick: async () => { close(true); const ok = await copyIdText(String(project.id)); onNotice({ kind: ok ? "ok" : "error", text: ok ? T("已复制") : T("复制失败") }); } }, h(ProjectActionIcon, { name: "copy" }), T("复制 ID")),
+          h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
+          h("button", { type: "button", role: "menuitem", "data-danger": "true", onClick: () => { close(); setError(""); setDialog("delete"); } }, h(ProjectActionIcon, { name: "delete" }), deleteLabel)) : null,
+        dialog !== null ? h("div", { className: "SPR_projectRenameMask", onPointerDown: event => { if (event.target === event.currentTarget) dismissDialog(); } },
+          h("form", { className: "SPR_projectRenameDialog", "data-kind": dialog, role: dialog === "delete" ? "alertdialog" : "dialog", "aria-modal": "true", "aria-label": dialog === "delete" ? deleteLabel : renameLabel, "aria-describedby": dialog === "delete" ? descriptionId : undefined, onSubmit: submitDialog,
+            onKeyDown: event => {
+              if (event.key === "Escape") { event.preventDefault(); dismissDialog(); }
+              if (event.key === "Tab") {
+                const controls = [...event.currentTarget.querySelectorAll("input:not(:disabled),button:not(:disabled)")];
+                const first = controls[0], last = controls[controls.length - 1];
+                if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+                else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+              }
+            } },
+            dialog === "delete" ? h(React.Fragment, null,
+              h("div", { className: "SPR_projectDeleteIcon" }, h(ProjectActionIcon, { name: "delete" })),
+              h("h3", null, deleteLabel),
+              h("p", { className: "SPR_projectDeleteName" }, project.name),
+              h("p", { className: "SPR_projectDeleteDescription", id: descriptionId }, task ? T("任务及其素材文件将被永久删除，此操作无法撤销。") : T("项目及其素材文件将被永久删除，此操作无法撤销。")))
+              : h(React.Fragment, null, h("h3", null, renameLabel),
+                h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, task ? T("新的任务名") : T("新的项目名")), h("input", { className: "SPR_input", ref: inputRef, value: name, disabled: saving, onChange: event => setName(event.target.value) }))),
+            h(NoticePopup, { notice: error, onClose: () => setError("") }),
+            h("div", { className: "SPR_projectRenameActions" },
+              h("button", { type: "button", className: "SPR_btn", ref: cancelRef, disabled: saving, onClick: dismissDialog }, T("取消")),
+              h("button", { type: "submit", className: dialog === "delete" ? "SPR_btn SPR_projectDeleteConfirm" : "SPR_btn", "data-primary": dialog === "rename" ? "true" : undefined, "aria-busy": saving, disabled: saving || (dialog === "rename" && !name.trim()) }, dialog === "delete" ? (saving ? T("正在删除…") : deleteLabel) : (saving ? T("正在保存…") : T("保存")))))) : null);
     }
 
     /**
@@ -4753,6 +5464,56 @@
         };
       }, [api]);
       return value;
+    }
+
+    /** 所有视频按钮共用入口；只在明确点击后读配置、确认，再提交一次。 */
+    function createVideoSubmitter(call) {
+      const pending = new Set<string>();
+      return async (method, payload) => {
+        const identity = `${method}:${payload?.projectId ?? payload?.jobId ?? ""}`;
+        if (pending.has(identity)) throw new Error(T("视频提交正在确认或处理中，请勿重复点击"));
+        pending.add(identity);
+        try {
+          const config = await call("getConfig");
+          const backend = config.comfyVideo === true ? "comfy" : config.toapisVideo === true ? "toapis" : "minimax";
+          if (backend === "comfy") return await call(method, payload);
+          if (config.allowPaidVideoGeneration !== true) throw new Error(T("付费视频已锁定，请先打开右上角「设置 → 生视频」，检查参数后手动开启"));
+          let duration = backend === "toapis" ? config.toapisVideoDuration : config.minimaxDuration;
+          let resolution = backend === "toapis" ? config.toapisVideoResolution : config.minimaxResolution;
+          let count = 1;
+          let inputNote = "";
+          if (method === "runMotionStep") {
+            duration = 4;
+            resolution = "480P";
+            inputNote = T("另含4秒参考视频输入，服务商可能另计输入费用。");
+          } else if (method === "runVideos") {
+            const project = await call("getProject", { projectId: payload.projectId });
+            const keys = [...new Set<string>(payload.keys ?? DIRECTION_KEYS)];
+            count = keys.filter(key => project.images?.[key]?.file !== undefined &&
+              !(project.videos?.[key]?.status === "running" && project.videos?.[key]?.taskId) &&
+              (payload.regenerate === true || project.videos?.[key]?.status !== "ready")).length;
+            if (count === 0) throw new Error(T("没有可提交的视频方向，请检查素材或已有任务"));
+          } else if (method === "runSequenceVideo" && backend === "minimax") {
+            const job = await call("getSequenceJob", { jobId: payload.jobId });
+            const caps = config.minimaxCapabilities;
+            const wanted = Math.round(Number(job.settings.duration));
+            const seconds = Number.isFinite(wanted) ? wanted : caps.durationMin;
+            duration = caps.durations?.length
+              ? [...caps.durations].sort((a, b) => Math.abs(a - seconds) - Math.abs(b - seconds) || b - a)[0]
+              : Math.min(caps.durationMax, Math.max(caps.durationMin, seconds));
+            const requested = String(job.settings.resolution ?? "").trim();
+            resolution = caps.resolutions.includes(requested) ? requested : caps.resolutions[0];
+          }
+          const model = backend === "toapis" ? config.toapisVideoModel : config.minimaxModel;
+          const message = T("即将提交付费视频：\n服务：{provider}\n模型：{model}\n每段：{duration}秒 / {resolution}\n请求数量：{count}段\n{input}\n实际价格以服务商为准；确认后可能立即扣费。是否提交？", { provider: backend === "toapis" ? "ToAPIs" : "MiniMax", model, duration, resolution, count, input: inputNote });
+          if (typeof window === "undefined" || typeof window.confirm !== "function" || !window.confirm(message)) {
+            throw new Error(T("已取消，未提交视频任务"));
+          }
+          return await call(method, { ...payload, confirmed: true });
+        } finally {
+          pending.delete(identity);
+        }
+      };
     }
 
     /** 只读展示当前生效的全局模型：模型只在设置里改，模块内不允许覆盖。 */
@@ -4990,29 +5751,34 @@
      * 与对话里的 `game_material({action:'reviewMode'})` 写的是同一份数据（存在项目 / 任务上），
      * 所以用户在界面上改了、会话里的 agent 也会按新值走，反之亦然。
      */
-    function ReviewModeBar({ api, module, id, mode, onChanged }) {
+    function ReviewModeBar({ api, module, id, mode, onChanged, compact }) {
       const [busy, setBusy] = React.useState(false);
+      const [error, setError] = React.useState("");
       const change = async (next) => {
-        if (busy || next === "" || id === null || id === undefined) return;
+        if (busy || next === (mode ?? "") || id === null || id === undefined) return;
         setBusy(true);
+        setError("");
         try {
-          await api.setReviewMode({ module, id, reviewMode: next });
-          if (onChanged !== undefined) onChanged(next);
-        } catch {
-          // 失败就保持原值；下一次轮询会把宿主上的真实值带回来。
+          await api.setReviewMode({ module, id, reviewMode: next || null });
+          if (onChanged !== undefined) await onChanged(next || null);
+        } catch (failure) {
+          setError(msg(failure));
         } finally {
           setBusy(false);
         }
       };
+      const description = mode === "manual" ? T("每一步产出后 agent 会贴出验收链接并停下来等你确认") : mode === "auto" ? T("agent 自己检查每步产出后继续推进") : T("还没定：对话里 agent 会先问你要哪种");
       return h(
         "div",
-        { className: "SPR_toolbar" },
+        { className: compact ? "SPR_imageReview" : "SPR_toolbar" },
         h("span", { className: "SPR_refRow" }, T("审核模式")),
         h(
           "select",
           {
             className: "SPR_input",
-            style: { width: 210 },
+            style: { width: compact ? 180 : 210 },
+            "aria-label": T("审核模式"),
+            title: compact ? description : undefined,
             value: mode ?? "",
             disabled: busy || id === null || id === undefined,
             onChange: (event) => void change(event.target.value)
@@ -5021,7 +5787,8 @@
           h("option", { value: "auto" }, T("自动审核")),
           h("option", { value: "manual" }, T("每一步人工审核"))
         ),
-        h(
+        h(NoticePopup, { notice: error, onClose: () => setError("") }),
+        compact ? null : h(
           "span",
           { className: "SPR_refRow" },
           mode === "manual"
@@ -5035,10 +5802,10 @@
 
     /** 单个产物的「通过 / 取消通过」。与对话里的 game_material({action:'approve'}) 同一份数据。 */
     function ApproveBtn(props) {
-      const { approved, disabled, onToggle, idleText } = props;
+      const { approved, disabled, onToggle, idleText, ...rest } = props;
       return h(
         Btn,
-        { on: approved === true, disabled: disabled === true, onClick: onToggle },
+        { ...rest, on: approved === true, disabled: disabled === true, onClick: onToggle },
         approved === true ? T("已通过") : idleText ?? T("通过")
       );
     }
@@ -5097,7 +5864,8 @@
       const rootRef = React.useRef(null);
       const menuRef = React.useRef(null);
 
-      const entries = visibleModulesOf(hidden);
+      const moduleOrder = useModuleOrder();
+      const entries = visibleModulesOf(hidden, moduleOrder);
 
       // 菜单开着时：点外面 / 按 Esc 关掉。监听挂在 document 上，
       // 用捕获阶段，避免被宿主自己的处理吞掉。
@@ -5216,6 +5984,128 @@
       );
     }
 
+    /** 横向选项卡的说明浮层：固定定位，避免被选项卡的滚动容器裁切。 */
+    function StudioModuleTab({ entry, selected, tabIndex, onClick, onKeyDown }) {
+      const [tip, setTip] = React.useState(null);
+      const triggerRef = React.useRef(null);
+      const tipRef = React.useRef(null);
+      const timerRef = React.useRef(null);
+      const clearTimer = () => { if (timerRef.current !== null) { clearTimeout(timerRef.current); timerRef.current = null; } };
+      const dismiss = () => { clearTimer(); setTip(null); };
+      const show = () => {
+        clearTimer();
+        timerRef.current = setTimeout(() => {
+          timerRef.current = null;
+          const rect = triggerRef.current?.getBoundingClientRect();
+          if (rect) setTip({ left: rect.left, top: rect.bottom + 8, side: "below" });
+        }, 280);
+      };
+      const hide = () => { clearTimer(); timerRef.current = setTimeout(() => { timerRef.current = null; setTip(null); }, 100); };
+      React.useEffect(() => () => clearTimer(), []);
+      React.useLayoutEffect(() => {
+        if (tip === null || !tipRef.current || !triggerRef.current) return;
+        const anchor = triggerRef.current.getBoundingClientRect();
+        const box = tipRef.current.getBoundingClientRect();
+        const left = Math.max(8, Math.min(anchor.left + anchor.width / 2 - box.width / 2, window.innerWidth - box.width - 8));
+        const above = anchor.bottom + 8 + box.height > window.innerHeight - 8 && anchor.top - box.height - 8 >= 8;
+        const top = Math.max(8, Math.min(above ? anchor.top - box.height - 8 : anchor.bottom + 8, window.innerHeight - box.height - 8));
+        setTip({ left, top, side: above ? "above" : "below", "--tip-arrow-left": `${Math.max(12, Math.min(box.width - 20, anchor.left + anchor.width / 2 - left - 4))}px` });
+      }, [tip !== null, entry.title, entry.hint]);
+      React.useEffect(() => {
+        const escape = event => { if (event.key === "Escape") dismiss(); };
+        const otherTab = event => {
+          const tab = event.target.closest?.(".SPR_modules [role=tab]");
+          if (tab && tab !== triggerRef.current) dismiss();
+        };
+        window.addEventListener("resize", dismiss);
+        document.addEventListener("scroll", dismiss, true);
+        document.addEventListener("keydown", escape);
+        document.addEventListener("pointerover", otherTab);
+        return () => {
+          window.removeEventListener("resize", dismiss);
+          document.removeEventListener("scroll", dismiss, true);
+          document.removeEventListener("keydown", escape);
+          document.removeEventListener("pointerover", otherTab);
+        };
+      }, []);
+      return h(React.Fragment, null,
+        h("button", {
+          type: "button", className: "SPR_module", role: "tab", ref: triggerRef,
+          id: `studio-tab-${entry.key}`, "aria-selected": selected, "aria-controls": "studio-module-panel",
+          "aria-describedby": tip !== null ? `studio-tab-tip-${entry.key}` : undefined,
+          tabIndex, "data-module": entry.key, "data-active": selected ? "true" : "false",
+          onMouseEnter: show, onMouseLeave: hide, onFocus: show, onBlur: dismiss,
+          onClick: () => { dismiss(); onClick(); },
+          onKeyDown: event => { if (event.key === "Escape") { dismiss(); return; } onKeyDown(event); }
+        }, h("span", { className: "SPR_moduleTitleRow" },
+          h("span", { className: "SPR_moduleTitle" }, entry.title),
+          entry.experimental === true ? h("span", { className: "SPR_expTag" }, T("实验性")) : null)),
+        tip !== null ? h("div", {
+          className: "SPR_moduleTip", role: "tooltip", id: `studio-tab-tip-${entry.key}`, ref: tipRef,
+          "data-side": tip.side, style: { left: tip.left, top: tip.top, "--tip-arrow-left": tip["--tip-arrow-left"] },
+          onMouseEnter: clearTimer, onMouseLeave: hide
+        }, h("div", { className: "SPR_moduleTipTitle" }, entry.title), h("div", { className: "SPR_moduleTipText" }, entry.hint)) : null);
+    }
+
+    /** 标题后的说明按钮：悬停 / 聚焦预览，点击后保持展开，Esc 或点外部收起。 */
+    function DescriptionTip({ id, label, text }) {
+      const [tip, setTip] = React.useState(null);
+      const buttonRef = React.useRef(null);
+      const tipRef = React.useRef(null);
+      const pinnedRef = React.useRef(false);
+      const timerRef = React.useRef(null);
+      const clearTimer = () => { if (timerRef.current !== null) { clearTimeout(timerRef.current); timerRef.current = null; } };
+      const dismiss = () => { clearTimer(); pinnedRef.current = false; setTip(null); };
+      const show = () => {
+        clearTimer();
+        const rect = buttonRef.current?.getBoundingClientRect();
+        if (rect) setTip(current => current ?? { left: rect.left, top: rect.bottom + 8, side: "below" });
+      };
+      const hide = () => {
+        clearTimer();
+        if (!pinnedRef.current && document.activeElement !== buttonRef.current) timerRef.current = setTimeout(dismiss, 100);
+      };
+      React.useEffect(() => () => clearTimer(), []);
+      React.useLayoutEffect(() => {
+        if (tip === null || !tipRef.current || !buttonRef.current) return;
+        const anchor = buttonRef.current.getBoundingClientRect();
+        const box = tipRef.current.getBoundingClientRect();
+        const left = Math.max(8, Math.min(anchor.left + anchor.width / 2 - box.width / 2, window.innerWidth - box.width - 8));
+        const above = anchor.bottom + 8 + box.height > window.innerHeight - 8 && anchor.top - box.height - 8 >= 8;
+        const top = Math.max(8, Math.min(above ? anchor.top - box.height - 8 : anchor.bottom + 8, window.innerHeight - box.height - 8));
+        setTip({ left, top, side: above ? "above" : "below", "--tip-arrow-left": `${Math.max(12, Math.min(box.width - 20, anchor.left + anchor.width / 2 - left - 4))}px` });
+      }, [tip !== null, text]);
+      React.useEffect(() => {
+        if (tip === null) return;
+        const outside = event => { if (!buttonRef.current?.contains(event.target) && !tipRef.current?.contains(event.target)) dismiss(); };
+        const escape = event => { if (event.key === "Escape") dismiss(); };
+        document.addEventListener("pointerdown", outside);
+        document.addEventListener("keydown", escape);
+        document.addEventListener("scroll", dismiss, true);
+        window.addEventListener("resize", dismiss);
+        return () => {
+          document.removeEventListener("pointerdown", outside);
+          document.removeEventListener("keydown", escape);
+          document.removeEventListener("scroll", dismiss, true);
+          window.removeEventListener("resize", dismiss);
+        };
+      }, [tip !== null]);
+      return h(React.Fragment, null,
+        h("button", {
+          type: "button", className: "SPR_descriptionButton", ref: buttonRef,
+          "aria-label": T("查看{n0}说明", { n0: label }), "aria-expanded": tip !== null,
+          "aria-describedby": tip !== null ? id : undefined,
+          onMouseEnter: show, onMouseLeave: hide, onFocus: show, onBlur: dismiss,
+          onClick: () => { if (pinnedRef.current) dismiss(); else { pinnedRef.current = true; show(); } }
+        }, h("svg", { viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.5, "aria-hidden": "true" },
+          h("circle", { cx: 10, cy: 10, r: 7.5 }), h("path", { d: "M10 5.5v5", strokeLinecap: "round" }), h("circle", { cx: 10, cy: 14, r: 0.8, fill: "currentColor", stroke: "none" }))),
+        tip !== null ? h("div", {
+          className: "SPR_moduleTip SPR_descriptionTip", role: "tooltip", id, ref: tipRef,
+          "data-side": tip.side, style: { left: tip.left, top: tip.top, "--tip-arrow-left": tip["--tip-arrow-left"] },
+          onMouseEnter: clearTimer, onMouseLeave: hide
+        }, text) : null);
+    }
+
     // ── 主体工作台 ───────────────────────────────────────────────────────
     function StudioPanel(props) {
       const localeTick = useLocaleTick();
@@ -5225,7 +6115,7 @@
       const [project, setProject] = React.useState(null);
       const [stage, setStage] = React.useState("images");
       const [spriteWorkflow, setSpriteWorkflow] = React.useState("motion");
-      const [module, setModule] = React.useState("sprite");
+      const [module, setModule] = React.useState(readLastStudioModule);
       const [notice, setNotice] = React.useState(null);
       const [loading, setLoading] = React.useState(true);
       const [promptDraft, setPromptDraft] = React.useState({});
@@ -5249,7 +6139,12 @@
        * （真机反馈：「我替换的时候它一秒钟又换回来」）。判定规则见 `mergeDrafts`。
        */
       const loadedPrompts = React.useRef({ projectId: null, images: {}, video: "" });
-      const visibleModules = visibleModulesOf(hidden);
+      const moduleOrder = useModuleOrder();
+      const [imageHeaderActions, setImageHeaderActions] = React.useState(null);
+      const [settingsInitialTab, setSettingsInitialTab] = React.useState("video");
+      const settingsReturnModule = React.useRef(null);
+      const visibleModules = visibleModulesOf(hidden, moduleOrder);
+      const modulePreferencesReady = moduleOrderState.ready;
       /**
        * 真正渲染的模块：当前选中项被隐藏（或压根不存在）时落到第一个可见模块。
        *
@@ -5257,14 +6152,18 @@
        * 深链接进被隐藏的模块时就会闪一下它的界面。
        */
       const activeModule =
-        visibleModules.some((entry) => entry.key === module) ? module : visibleModules.length > 0 ? visibleModules[0].key : null;
+        !modulePreferencesReady ? null : module === "settings" ? "settings" : visibleModules.some((entry) => entry.key === module) ? module : visibleModules.length > 0 ? visibleModules[0].key : null;
+      if (activeModule !== null && activeModule !== "settings") settingsReturnModule.current = activeModule;
 
       React.useEffect(() => {
+        if (!modulePreferencesReady) return;
         if (activeModule !== null && activeModule !== module) setModule(activeModule);
-      }, [activeModule, module]);
+        if (activeModule !== null && activeModule !== "settings") rememberStudioModule(activeModule);
+      }, [activeModule, module, modulePreferencesReady]);
 
       React.useEffect(() => {
-        if (intent === null) return;
+        if (intent === null || intent === handledPanelIntent) return;
+        handledPanelIntent = intent;
         if (typeof intent.module === "string") setModule(intent.module);
         if (typeof intent.projectId === "string") { setProjectId(intent.projectId); if (intent.module === "sprite") setSpriteWorkflow("classic"); }
         if (intent.module === "sprite" && typeof intent.jobId === "string" && intent.jobId.startsWith("w")) setSpriteWorkflow("motion");
@@ -5394,27 +6293,19 @@
         );
       };
 
-      const deleteCurrent = async () => {
-        if (project === null) return;
-        // eslint-disable-next-line no-alert
-        if (typeof window !== "undefined" && !window.confirm(T("确定删除项目「{n0}」？项目目录会被整个移除，无法撤销。", { n0: project.name }))) return;
-        await withApi(async () => {
-          await api.deleteProject({ projectId: project.id });
-          const list = await refreshProjects();
+      const deleteProjectEntry = async (target) => {
+        await api.deleteProject({ projectId: target.id });
+        const list = await refreshProjects();
+        if (target.id === projectId) {
           setProjectId(list.length > 0 ? list[0].id : null);
           if (list.length === 0) setProject(null);
-        });
+        }
       };
 
-      const renameCurrent = async () => {
-        if (project === null) return;
-        // eslint-disable-next-line no-alert
-        const next = typeof window === "undefined" ? null : window.prompt(T("新的项目名"), project.name);
-        if (next === null || next.trim() === "") return;
-        await withApi(async () => {
-          await api.renameProject({ projectId: project.id, name: next.trim() });
-          await refreshProjects();
-        }, { reload: true });
+      const renameProjectEntry = async (target, name) => {
+        await api.renameProject({ projectId: target.id, name });
+        await refreshProjects();
+        if (target.id === projectId) await loadProject(target.id);
       };
 
       const uploadSource = React.useCallback(
@@ -5522,53 +6413,70 @@
         h(
           "div",
           { className: "SPR_head" },
-          h("h2", null, T("游戏素材大师")),
-          h("span", { className: "SPR_headSub" }, T("火山方舟 Seedream 生图 · MiniMax 图生视频 · 谱乐 AI 音乐 · 火山引擎音效 · 本地处理")),
-          h("span", { className: "SPR_spacer" }),
+          h("div", { className: "SPR_headInfo" },
+            h("div", { className: "SPR_headTitleLine" },
+              h("h2", null, T("游戏素材大师")),
+              h("span", { className: "SPR_headSub" }, T("火山方舟 Seedream 生图 · MiniMax 图生视频 · 谱乐 AI 音乐 · 火山引擎音效 · 本地处理"))),
+            hidden.length > 0
+              ? h("span", { className: "SPR_modulesHiddenNote" }, T("已隐藏 {n0} 个功能（设置 → 游戏素材大师 → 功能管理）", { n0: hidden.length }))
+              : null),
+          h("div", { className: "SPR_headActions" },
           activeModule === "sprite" && spriteWorkflow === "classic"
             ? h(
                 React.Fragment,
                 null,
                 h(Btn, { onClick: () => void refreshProjects(), disabled: loading }, T("刷新列表")),
-                project !== null ? h(Btn, { onClick: renameCurrent }, T("重命名")) : null,
-                project !== null ? h(Btn, { onClick: deleteCurrent, danger: true }, T("删除项目")) : null,
-                project !== null ? h(CopyIdButton, { id: project.id }) : null,
                 h(Btn, { onClick: createProject, primary: true }, T("新建项目"))
               )
-            : null
+            : null,
+          activeModule === "image"
+            ? h(BusyBtn, { onClick: () => imageHeaderActions?.create(), primary: true, disabled: imageHeaderActions === null, busy: imageHeaderActions?.busy === true, busyText: T("正在新建…") }, T("新建任务"))
+            : null,
+          h(Btn, { title: activeModule === "settings" ? T("返回") : T("模型、接口与费用保护"), onClick: () => {
+            if (activeModule === "settings") {
+              const previous = settingsReturnModule.current ?? readLastStudioModule();
+              setModule(visibleModules.some(entry => entry.key === previous) ? previous : visibleModules[0]?.key ?? null);
+            } else { setSettingsInitialTab("video"); setModule("settings"); }
+          } }, activeModule === "settings" ? h(React.Fragment, null, h("span", { "aria-hidden": "true" }, "←"), " ", T("返回")) : T("设置")))
         ),
         h(
           "div",
-          { className: "SPR_modules", "data-hidden-count": String(hidden.length) },
+          { className: "SPR_modules", role: "tablist", "aria-label": T("游戏素材大师"), "data-hidden-count": String(hidden.length) },
           visibleModules.map((entry) =>
             h(
-              "button",
+              StudioModuleTab,
               {
                 key: entry.key,
-                type: "button",
-                className: "SPR_module",
-                "data-module": entry.key,
-                "data-active": activeModule === entry.key ? "true" : "false",
-                onClick: () => setModule(entry.key)
-              },
-              h(
-                "span",
-                { className: "SPR_moduleTitleRow" },
-                h("span", { className: "SPR_moduleTitle" }, entry.title),
-                entry.experimental === true ? h("span", { className: "SPR_expTag" }, T("实验性")) : null
-              ),
-              h("span", { className: "SPR_moduleHint" }, entry.hint)
+                entry,
+                selected: activeModule === entry.key,
+                tabIndex: activeModule === entry.key || (activeModule === "settings" && entry.key === visibleModules[0]?.key) ? 0 : -1,
+                onClick: () => setModule(entry.key),
+                onKeyDown: event => {
+                  const index = visibleModules.findIndex(item => item.key === entry.key);
+                  let nextIndex;
+                  if (event.key === "ArrowRight") nextIndex = (index + 1) % visibleModules.length;
+                  if (event.key === "ArrowLeft") nextIndex = (index - 1 + visibleModules.length) % visibleModules.length;
+                  if (event.key === "Home") nextIndex = 0;
+                  if (event.key === "End") nextIndex = visibleModules.length - 1;
+                  if (nextIndex === undefined) return;
+                  event.preventDefault();
+                  const next = visibleModules[nextIndex];
+                  setModule(next.key);
+                  const tab = event.currentTarget.parentElement.querySelector(`[data-module="${next.key}"]`);
+                  tab?.focus({ preventScroll: true });
+                  tab?.scrollIntoView({ block: "nearest", inline: "nearest" });
+                }
+              }
             )
-          ),
-          hidden.length > 0
-            ? h("span", { className: "SPR_modulesHiddenNote" }, T("已隐藏 {n0} 个功能（设置 → 游戏素材大师 → 功能管理）", { n0: hidden.length }))
-            : null
+          )
         ),
+        h("div", { className: "SPR_modulePanel", id: "studio-module-panel", role: activeModule !== null && activeModule !== "settings" ? "tabpanel" : undefined, "aria-labelledby": activeModule !== null && activeModule !== "settings" ? `studio-tab-${activeModule}` : undefined },
+        activeModule === "settings" ? h("div", { className: "SPR_moduleBody", "data-testid": "studio-settings-panel" }, h(ConfigSection, { api, initialTab: settingsInitialTab })) : null,
         activeModule === null
           ? h(
               "div",
               { className: "SPR_body" },
-              h("p", { className: "SPR_empty" }, T("所有功能都已被隐藏。请到「设置 → 游戏素材大师 → 功能管理」里打开至少一个。"))
+              h("p", { className: "SPR_empty" }, modulePreferencesReady ? T("所有功能都已被隐藏。请到「设置 → 游戏素材大师 → 功能管理」里打开至少一个。") : T("正在载入配置…"))
             )
           : null,
         activeModule === "sprite" ? h("div", { className: "SPR_toolbar", style: { padding: "10px 16px" } },
@@ -5588,41 +6496,29 @@
               ? h("p", { className: "SPR_hint" }, T("还没有项目，点右上角「新建项目」开始。"))
               : projects.map((summary) =>
                   h(
-                    "button",
+                    "div",
                     {
                       key: summary.id,
-                      type: "button",
-                      className: "SPR_projItem",
-                      "data-active": summary.id === projectId ? "true" : "false",
-                      onClick: () => setProjectId(summary.id)
+                      className: "SPR_projectRow",
+                      "data-active": summary.id === projectId ? "true" : "false"
                     },
+                    h("button", { type: "button", className: "SPR_projItem", "data-active": summary.id === projectId ? "true" : "false", onClick: () => setProjectId(summary.id) },
                     h("span", { className: "SPR_projNameRow" },
-                      h("span", { className: "SPR_projName" }, summary.name),
-                      h(CopyIdButton, { id: summary.id, inline: true })
+                      h("span", { className: "SPR_projName" }, summary.name)
                     ),
                     h(
                       "span",
                       { className: "SPR_projMeta" },
                       T("图 {n0}/8 · 视频 {n1}/8 · 帧 {n2}/8{n3}", { n0: summary.imageReady, n1: summary.videoReady, n2: summary.framesReady, n3: summary.sheetReady ? T(" · 整图✓") : "" })
-                    )
+                    )),
+                    h(ProjectActionsMenu, { project: summary, inline: true, onRename: renameProjectEntry, onDelete: deleteProjectEntry, onNotice: setNotice })
                   )
                 )
           ),
           h(
             "div",
             { className: "SPR_main" },
-            notice !== null
-              ? h(
-                  "div",
-                  { className: "SPR_note", "data-kind": notice.kind },
-                  notice.text,
-                  h(
-                    "span",
-                    { style: { marginLeft: 10 } },
-                    h("button", { type: "button", className: "SPR_miniBtn", onClick: () => setNotice(null) }, T("关闭"))
-                  )
-                )
-              : null,
+            h(NoticePopup, { notice, onClose: () => setNotice(null) }),
             project === null
               ? h("p", { className: "SPR_empty" }, loading ? T("正在载入…") : T("请选择或新建一个项目"))
               : h(
@@ -5794,7 +6690,7 @@
           )
         )
           : activeModule === "image"
-            ? h(ImageModule, { api })
+            ? h(ImageModule, { api, onHeaderActions: setImageHeaderActions, onManageTemplates: () => { setSettingsInitialTab("prompts"); setModule("settings"); } })
             : activeModule === "sequence"
               ? h(SequenceModule, { api })
               : activeModule === "iso"
@@ -5807,7 +6703,7 @@
                       ? h(SfxModule, { api })
                       : activeModule === "rig"
                         ? h(RigModule, { api })
-                        : null
+                        : null)
       );
     }
 
@@ -5910,7 +6806,7 @@
         ),
         h("div", { className: "SPR_main", style: { minWidth: 0, padding: 16, flex: 1 } },
           h("p", { className: "SPR_hint" }, T("白模决定动作，角色图决定外观。4秒选2种动作，最多3种；3动作仍为实验性。")),
-          notice ? h("p", { role: "alert", style: { color: "#c44" } }, notice) : null,
+          h(NoticePopup, { notice, onClose: () => setNotice(null) }),
           !job || !draft ? h("p", { className: "SPR_empty" }, T("新建或选择白模任务开始。")) : h(React.Fragment, null,
             h("nav", { className: "SPR_toolbar" }, stages.map((label, i) => h(Btn, { key: i, on: step === i, onClick: () => setStep(i) }, `${i + 1}. ${label}`))),
             busy ? h("p", { role: "status", "aria-live": "polite" }, T("任务处理中…"), " ", job.operation || "", " ", job.progress || "") : null,
@@ -7854,10 +8750,10 @@
           pos.x = Math.min(STAGE_W - spriteW / 2, Math.max(spriteW / 2, pos.x));
           pos.y = Math.min(STAGE_H - 4, Math.max(spriteH, pos.y));
 
-          g.fillStyle = "#ffffff";
+          g.fillStyle = themeColor(g.canvas, "--dsw-alias-bg-layer-1", "#ffffff");
           g.fillRect(0, 0, STAGE_W, STAGE_H);
           if (live.grid) {
-            g.strokeStyle = "rgba(0,0,0,0.06)";
+            g.strokeStyle = "rgba(128,128,128,0.2)";
             g.lineWidth = 1;
             g.beginPath();
             for (let x = 0; x <= STAGE_W; x += 40) {
@@ -8031,11 +8927,12 @@
       });
     }
 
-    /** 一个「拖进来或点按钮选文件」的上传区。 */
+    /** 整个虚线框可点击选文件，也支持拖入。 */
     function UploadBox({ label, accept, multiple, onFiles, busy }) {
       const [over, setOver] = React.useState(false);
       const inputRef = React.useRef(null);
       const handle = (files) => {
+        if (busy === true) return;
         const list = Array.from(files ?? []);
         if (list.length > 0) void onFiles(list);
       };
@@ -8043,18 +8940,22 @@
         React.Fragment,
         null,
         h(
-          "div",
+          "button",
           {
-            className: "SPR_drop",
+            type: "button", className: "SPR_drop SPR_uploadDrop", disabled: busy === true,
+            "aria-label": label, "aria-busy": busy === true,
+            onClick: () => inputRef.current?.click(),
             "data-over": over ? "true" : "false",
             "data-busy": busy === true ? "true" : undefined,
             onDragOver: (event) => {
               event.preventDefault();
-              setOver(true);
+              event.stopPropagation();
+              if (busy !== true) setOver(true);
             },
             onDragLeave: () => setOver(false),
             onDrop: (event) => {
               event.preventDefault();
+              event.stopPropagation();
               setOver(false);
               handle(event.dataTransfer?.files);
             }
@@ -8066,24 +8967,22 @@
                 h("span", { className: "SPR_spinSm" }),
                 T("正在上传…")
               )
-            : label
+            : h(React.Fragment, null,
+                h("svg", { className: "SPR_uploadAdd", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", "aria-hidden": "true" }, h("path", { d: "M12 5v14M5 12h14" })),
+                h("span", null, label))
         ),
-        h(
-          "div",
-          { className: "SPR_toolbar" },
-          h(BusyBtn, { onClick: () => inputRef.current?.click(), busy: busy === true, busyText: T("正在上传…") }, T("选择文件")),
-          h("input", {
-            ref: inputRef,
-            type: "file",
-            accept,
-            multiple: multiple === true,
-            style: { display: "none" },
-            onChange: (event) => {
-              handle(event.target.files);
-              event.target.value = "";
-            }
-          })
-        )
+        h("input", {
+          ref: inputRef,
+          type: "file",
+          accept,
+          disabled: busy === true,
+          multiple: multiple === true,
+          style: { display: "none" },
+          onChange: (event) => {
+            handle(event.target.files);
+            event.target.value = "";
+          }
+        })
       );
     }
 
@@ -8332,14 +9231,14 @@
       );
     }
 
-    function JobSidebar({ title, items, activeId, onSelect, onCreate, renderMeta }) {
+    function JobSidebar({ title, items, activeId, onSelect, onCreate, renderMeta, renderActions, createInSidebar = true }) {
       return h(
         "div",
         { className: "SPR_side" },
         h("div", { className: "SPR_sideTitle" }, T("{n0}（{n1}）", { n0: title, n1: items.length })),
         items.length === 0 ? h("p", { className: "SPR_hint" }, T("还没有内容，点右上角新建一个。")) : null,
-        items.map((item) =>
-          h(
+        items.map((item) => {
+          const select = h(
             "button",
             {
               key: item.id,
@@ -8350,12 +9249,13 @@
             },
             h("span", { className: "SPR_projNameRow" },
               h("span", { className: "SPR_projName" }, item.name),
-              h(CopyIdButton, { id: item.id, inline: true })
+              renderActions ? null : h(CopyIdButton, { id: item.id, inline: true })
             ),
             h("span", { className: "SPR_projMeta" }, renderMeta(item))
-          )
-        ),
-        items.length === 0 ? h(Btn, { onClick: onCreate, primary: true }, T("新建")) : null
+          );
+          return renderActions ? h("div", { key: item.id, className: "SPR_projectRow", "data-active": item.id === activeId ? "true" : "false" }, select, renderActions(item)) : select;
+        }),
+        items.length === 0 && createInSidebar ? h(Btn, { onClick: onCreate, primary: true }, T("新建")) : null
       );
     }
 
@@ -11715,7 +12615,7 @@
                 h(Btn, { primary: true, onClick: () => fileRef.current?.click(), busy: busyKey === "upload" }, T("选一张素材图开始")),
                 h(Btn, { onClick: () => void startWithSample(), busy: busyKey === "sample" }, T("用自带素材试试"))
               ),
-              notice === null ? null : h("div", { className: `SPR_notice SPR_notice-${notice.kind}` }, notice.text)
+              h(NoticePopup, { notice, onClose: () => setNotice(null) })
             ),
             nameDialog
           )
@@ -12588,7 +13488,7 @@
           h(
             "div",
             { className: "SPR_mapEdFoot" },
-            notice === null ? null : h("div", { className: `SPR_notice SPR_notice-${notice.kind}` }, notice.text),            planWarnings.length === 0
+            h(NoticePopup, { notice, onClose: () => setNotice(null) }),            planWarnings.length === 0
               ? null
               : h(
                   "ul",
@@ -13697,9 +14597,7 @@
       const main = h(
         "div",
         { className: "SPR_main" },
-        notice !== null
-          ? h("div", { className: "SPR_note", "data-kind": notice.kind }, notice.text, h("button", { type: "button", className: "SPR_miniBtn", style: { marginLeft: 10 }, onClick: () => setNotice(null) }, T("关闭")))
-          : null,
+        h(NoticePopup, { notice, onClose: () => setNotice(null) }),
         job === null
           ? h(React.Fragment, null,
               loading ? h("p", { className: "SPR_empty" }, T("正在载入…")) : null,
@@ -14190,7 +15088,7 @@
       const main = h(
         "div",
         { className: "SPR_main" },
-        notice !== null ? h("div", { className: "SPR_note", "data-kind": notice.kind }, notice.text) : null,
+        h(NoticePopup, { notice, onClose: () => setNotice(null) }),
         createCard,
         job === null
           ? h("p", { className: "SPR_empty" }, T("左侧选一个音效任务，或点「新建音效」开始。"))
@@ -15922,7 +16820,7 @@
                 }
               })() }, T("用自带素材试试"))
             ),
-            notice === null ? null : h("div", { className: `SPR_notice SPR_notice-${notice.kind}` }, notice.text)
+            h(NoticePopup, { notice, onClose: () => setNotice(null) })
           )
         ));
       }
@@ -16176,11 +17074,329 @@
           side,
           stage
         ),
-        notice === null ? null : h("div", { className: `SPR_notice SPR_notice-${notice.kind}` }, notice.text, h("button", { type: "button", className: "SPR_isoMini", style: { marginLeft: 8 }, onClick: () => setNotice(null) }, T("关闭"))),
+        h(NoticePopup, { notice, onClose: () => setNotice(null) }),
         card === null ? null : h("div", { className: "SPR_isoCardWrap", onClick: () => setOpenCard(null) }, h("div", { onClick: (event) => event.stopPropagation() }, card)),
         guidePage === null ? null : h("div", { className: "SPR_isoDlgMask", onClick: () => setGuidePage(null) }, h("div", { className: "SPR_isoDlg", onClick: (event) => event.stopPropagation() }, guideCard))
       );
       return shell(main);
+    }
+
+    function promptTemplateName(template) {
+      const names = { character: T("角色素材"), pixel: T("像素角色"), "eight-direction": T("八方向外观") };
+      return template?.name?.[activeLang()] ?? template?.name?.zh ?? names[template?.id] ?? template?.id ?? "";
+    }
+
+    // Task/module switching keeps local template choices without writing the host job on every click.
+    const imageTemplateDraftCache = new WeakMap();
+
+    /** Read-only task snapshot; edits belong to the global template manager. */
+    function ImagePromptTemplates(props) {
+      const [replace, setReplace] = React.useState(undefined);
+      const [error, setError] = React.useState("");
+      const templates = props.templates ?? [];
+      const selected = props.templateId ?? templates.find(item => Object.values(item.prompt).includes(props.suffix))?.id;
+      const template = templates.find(item => item.id === selected);
+      const changed = template && props.suffix !== template.prompt[props.templateLang ?? activeLang()];
+      const apply = (id, confirmed = false) => {
+        if (props.disabled) return;
+        if (props.suffix.trim() && !selected && !confirmed) { setReplace(id); return; }
+        setError("");
+        try { props.onApply(id); setReplace(undefined); }
+        catch (failure) { setError(msg(failure)); }
+      };
+      return h("div", { className: "SPR_promptBase", "data-testid": "image-base-prompt" },
+        h("div", { className: "SPR_promptBaseHead" },
+          h("strong", null, T("基础提示词")), h("span", { className: "SPR_promptReadonly" }, T("只读")),
+          h(Btn, { disabled: props.disabled, onClick: props.onManage }, T("管理模板"))),
+        h("div", { className: "SPR_promptTemplateSelectRow" },
+          h("select", { className: "SPR_input SPR_promptTemplateSelect", "aria-label": T("基础提示词"), disabled: props.disabled,
+            value: template ? selected : props.suffix ? "__saved__" : "", onChange: event => apply(event.target.value || null) },
+            !template && props.suffix ? h("option", { value: "__saved__", disabled: true }, T("已保存的提示词")) : null,
+            templates.map(item => h("option", { key: item.id, value: item.id }, promptTemplateName(item))),
+            h("option", { value: "" }, T("不使用模板"))),
+          changed ? h(Btn, { disabled: props.disabled, onClick: () => apply(selected) }, T("同步更新")) : null),
+        changed ? h("p", { className: "SPR_hint" }, T("模板已更新，点击「同步更新」可采用新内容；当前仍使用已保存内容。")) : null,
+        props.templateId && !template ? h("p", { className: "SPR_hint" }, T("模板已删除，当前任务保留已保存内容。")) : null,
+        replace !== undefined ? h("div", { className: "SPR_hint", role: "status" }, T("套用会替换当前任务已保存的基础提示词。"), " ",
+          h(Btn, { disabled: props.disabled, onClick: () => apply(replace, true) }, T("替换")), " ", h(Btn, { onClick: () => setReplace(undefined) }, T("取消"))) : null,
+        h(NoticePopup, { notice: error, onClose: () => setError("") }),
+        props.suffix ? h("details", { className: "SPR_promptBasePreview" }, h("summary", null, T("查看模板内容")), h("p", { "data-testid": "image-base-content" }, props.suffix)) : null);
+    }
+
+    function PromptReferenceInput(props) {
+      const [mention, setMention] = React.useState(null);
+      const inputRef = React.useRef(null);
+      const highlightRef = React.useRef(null);
+      const listRef = React.useRef(null);
+      const dismissedRef = React.useRef("");
+      const images = (props.references ?? []).map((ref, index) => ({ ...ref, label: `@图片${index + 1}` }));
+      const options = mention ? images.filter(ref => (ref.label + " " + ref.name).toLowerCase().includes(mention.query.toLowerCase())) : [];
+      const listId = props.id + "-images";
+      const syncHighlight = () => {
+        const input = inputRef.current, highlight = highlightRef.current;
+        if (!input || !highlight) return;
+        highlight.style.left = input.clientLeft + "px";
+        highlight.style.top = input.clientTop + "px";
+        highlight.style.width = input.clientWidth + "px";
+        highlight.style.height = input.clientHeight + "px";
+        highlight.scrollTop = input.scrollTop; highlight.scrollLeft = input.scrollLeft;
+      };
+      React.useLayoutEffect(syncHighlight, [props.value]);
+      React.useEffect(() => {
+        const observer = new ResizeObserver(syncHighlight);
+        if (inputRef.current) observer.observe(inputRef.current);
+        return () => observer.disconnect();
+      }, []);
+      const locate = input => {
+        const end = input.selectionStart;
+        const found = input.value.slice(0, end).match(/@([^@\s]*)$/);
+        let next = found ? { start: end - found[0].length, end, query: found[1], index: 0 } : null;
+        if (next && dismissedRef.current === JSON.stringify([next.start, next.end, next.query])) next = null;
+        setMention(current => next && current?.start === next.start && current.end === next.end && current.query === next.query ? current : next);
+      };
+      const updateAtCaret = (value, caret) => {
+        props.onChange(value); setMention(null);
+        setTimeout(() => { const input = inputRef.current, dialog = input?.closest("dialog"); if (input?.isConnected && (!dialog || dialog.open) && input.value === value) { input.focus(); input.setSelectionRange(caret, caret); syncHighlight(); } }, 0);
+      };
+      const deleteReference = event => {
+        if (props.disabled || event.nativeEvent?.isComposing || event.isComposing || !["Backspace", "Delete"].includes(event.key)) return false;
+        const input = event.currentTarget;
+        let start = input.selectionStart, end = input.selectionEnd, matched = false;
+        for (const token of props.value.matchAll(/@图片[1-9]\d*/g)) {
+          if (!images[Number(token[0].slice(3)) - 1]) continue;
+          const left = token.index, right = left + token[0].length;
+          const intersects = start !== end ? start < right && end > left : event.key === "Backspace"
+            ? start > left && (start <= right || (start === right + 1 && props.value[right] === " "))
+            : start >= left && start < right;
+          if (intersects) { start = Math.min(start, left); end = Math.max(end, right); matched = true; }
+        }
+        if (!matched) return false;
+        event.preventDefault(); dismissedRef.current = "";
+        updateAtCaret(props.value.slice(0, start) + props.value.slice(end), start);
+        return true;
+      };
+      const choose = image => {
+        if (!mention || props.disabled) return;
+        const token = image.label + " ";
+        const value = props.value.slice(0, mention.start) + token + props.value.slice(mention.end);
+        if (value.length > 12000) return;
+        const caret = mention.start + token.length;
+        updateAtCaret(value, caret);
+      };
+      React.useEffect(() => { if (mention) listRef.current?.querySelectorAll("[role=option]")[mention.index]?.scrollIntoView({ block: "nearest" }); }, [mention?.index]);
+      return h("div", { className: "SPR_field SPR_promptSource", "data-main": Boolean(props.main) },
+        props.main ? null : h("label", { htmlFor: props.id }, T("原提示词")),
+        h("div", { className: "SPR_promptReferenceEditor" },
+        h("div", { ref: highlightRef, className: "SPR_area SPR_promptReferencePaint", "aria-hidden": "true" },
+          props.value.split(/(@图片\d+)/g).map((text, index) => /^@图片[1-9]\d*$/.test(text) && images[Number(text.slice(3)) - 1] ? h("mark", { key: index }, text) : text), "\n"),
+        h("textarea", { id: props.id, ref: inputRef, className: "SPR_area SPR_promptReferenceArea", "aria-label": props.main ? T("主提示词") : T("原提示词"), value: props.value, maxLength: 12000, disabled: props.disabled,
+          placeholder: props.main ? T("描述你要生成的图片…") : T("输入 @ 引用已上传的参考图"), "aria-autocomplete": "list", "aria-haspopup": "listbox", "aria-expanded": Boolean(mention), "aria-controls": mention ? listId : undefined,
+          "aria-activedescendant": mention && options[mention.index] ? listId + "-" + mention.index : undefined,
+          onChange: event => { dismissedRef.current = ""; props.onChange(event.target.value); locate(event.target); }, onSelect: event => { if (!mention?.manual) locate(event.target); },
+          onBlur: event => { setMention(null); props.onBlur?.(event); },
+          onScroll: syncHighlight,
+          onKeyDown: event => {
+            if (deleteReference(event)) return;
+            if (!mention || event.nativeEvent?.isComposing || event.isComposing) return;
+            if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); dismissedRef.current = JSON.stringify([mention.start, mention.end, mention.query]); setMention(null); }
+            else if ((event.key === "ArrowDown" || event.key === "ArrowUp") && options.length) { event.preventDefault(); setMention(value => ({ ...value, index: (value.index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length })); }
+            else if (event.key === "Enter" && options[mention.index]) { event.preventDefault(); choose(options[mention.index]); }
+          } })),
+        h("div", { className: "SPR_promptSourceActions" + (props.main ? " SPR_promptInputActions" : "") },
+          h("button", { type: "button", className: "SPR_miniBtn", "aria-label": T("引用图片"), "aria-haspopup": "listbox", disabled: props.disabled || images.length === 0,
+            onMouseDown: event => event.preventDefault(), onClick: () => { const input = inputRef.current; const start = input?.selectionStart ?? props.value.length, end = input?.selectionEnd ?? props.value.length; dismissedRef.current = ""; input?.focus(); setMention({ start, end, query: "", index: 0, manual: true }); } }, "@ ", T("参考图片")),
+          props.main ? null : h("span", { className: "SPR_hint" }, images.length ? T("输入 @ 引用已上传的参考图") : T("请先在生成页上传参考图。")), props.children),
+        mention ? h("div", { ref: listRef, id: listId, role: "listbox", "aria-label": T("参考图片"), className: "SPR_promptMentionList" },
+          options.length ? options.map((ref, index) => h("button", { key: ref.file, id: listId + "-" + index, role: "option", "aria-selected": mention.index === index,
+            onMouseDown: event => event.preventDefault(), onClick: () => choose(ref) },
+            h("img", { src: `${props.assetBase ?? ""}${ref.file}`, alt: "" }), h("span", null, ref.label, " ", ref.name))) : h("p", { className: "SPR_hint" }, images.length ? T("没有匹配的参考图") : T("请先在生成页上传参考图。"))) : null);
+    }
+
+    /** DSH optimization is explicit; opening and editing never dispatch a model call. */
+    function PromptOptimizer(props) {
+      const [open, setOpen] = React.useState(false);
+      const [config, setConfig] = React.useState(null);
+      const [operation, setOperation] = React.useState(null);
+      const [error, setError] = React.useState("");
+      const [result, setResult] = React.useState(null);
+      const [undo, setUndo] = React.useState(null);
+      const [sourceDraft, setSourceDraft] = React.useState(props.prompt ?? "");
+      const dialogRef = React.useRef(null);
+      const triggerRef = React.useRef(null);
+      const lockRef = React.useRef(false);
+      const aliveRef = React.useRef(true);
+      const latestRef = React.useRef(props);
+      const sourceBaseRef = React.useRef(props.prompt ?? "");
+      const applyingRef = React.useRef(false);
+      latestRef.current = props;
+      React.useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false; }; }, []);
+      React.useEffect(() => {
+        const dialog = dialogRef.current;
+        if (open && dialog && !dialog.open) dialog.showModal();
+        if (!open && dialog?.open) dialog.close();
+      }, [open]);
+      const close = (force = false) => { if (applyingRef.current && !force) return; setOpen(false); triggerRef.current?.focus(); };
+      const referenceSignature = JSON.stringify((props.references ?? []).map(ref => ref.file));
+      const optimize = async () => {
+        if (lockRef.current) return;
+        const current = latestRef.current;
+        if (!sourceDraft.trim()) { setError(T("请输入提示词后再优化。")); return; }
+        const mentioned = [...sourceDraft.matchAll(/@图片(\d+)/g)].map(match => match[1] === String(Number(match[1])) ? (current.references ?? [])[Number(match[1]) - 1] : undefined);
+        if (mentioned.some(ref => !ref)) { setError(T("引用的图片不存在，请重新选择参考图。")); return; }
+        const referenceFiles = [...new Set(mentioned.map(ref => ref.file))];
+        lockRef.current = true; setOperation("load"); setError("");
+        const source = { prompt: sourceDraft, suffix: current.suffix };
+        const basePrompt = current.prompt;
+        const refs = JSON.stringify((current.references ?? []).map(ref => ref.file));
+        sourceBaseRef.current = basePrompt;
+        try {
+          const cfg = await current.api.getPromptOptimizerModel();
+          if (!aliveRef.current) return;
+          setConfig(cfg);
+          if (!cfg?.available) throw new Error(cfg?.message ?? T("无法读取DSH模型；更新插件后请完全退出DSH（包括托盘）再打开。"));
+          if (referenceFiles.length && cfg.imageReferencesSupported !== true) throw new Error(T("当前DSH未提供图片引用功能，请完全退出DSH（包括托盘）再打开；仍不可用时请更新DSH。"));
+          setOperation("optimize");
+          const response = await current.api.optimizeImagePrompt({ jobId: current.jobId, ...source, referenceFiles, confirmed: true });
+          if (response?.ok === false || typeof response?.prompt !== "string" || !response.prompt.trim()) throw new Error(response?.error ?? T("文字模型未返回提示词"));
+          if (aliveRef.current) setResult({ ...source, basePrompt, refs, optimized: response.prompt.trim(), model: response.model, provider: response.provider });
+        } catch (failure) { if (aliveRef.current) setError(msg(failure)); }
+        finally { lockRef.current = false; if (aliveRef.current) setOperation(null); }
+      };
+      const openDialog = () => {
+        if (lockRef.current) return;
+        if (sourceBaseRef.current !== props.prompt) { sourceBaseRef.current = props.prompt; setSourceDraft(props.prompt ?? ""); setResult(null); setError(""); }
+        setOpen(true);
+      };
+      const stale = result !== null && (result.prompt !== sourceDraft || result.basePrompt !== props.prompt || result.suffix !== props.suffix || result.refs !== referenceSignature);
+      const apply = async (revert = false) => {
+        if (lockRef.current || props.disabled || (!revert && (!result?.optimized.trim() || stale)) || (revert && (!undo || props.prompt !== undo.after))) return;
+        lockRef.current = true; applyingRef.current = true; setOperation("apply"); setError("");
+        const before = latestRef.current.prompt;
+        const after = revert ? undo.before : result.optimized.trim();
+        try {
+          await latestRef.current.onApply(after);
+          if (aliveRef.current) { setUndo(revert ? null : { before, after }); setResult(null); close(true); }
+        } catch (failure) { if (aliveRef.current) { setError(msg(failure)); setOpen(true); } }
+        finally { lockRef.current = false; applyingRef.current = false; if (aliveRef.current) setOperation(null); }
+      };
+      const busy = operation !== null;
+      const status = operation === "optimize" ? T("正在优化提示词…") : operation === "load" ? T("正在读取DSH模型…") : T("正在保存…");
+      return h("div", { className: props.inline ? "SPR_promptInlineActions" : "SPR_promptInputActions" },
+        h("button", { type: "button", className: "SPR_promptOptimize", ref: triggerRef, disabled: busy || props.disabled, "aria-label": T("优化提示词"), "aria-haspopup": "dialog", "aria-busy": busy,
+          title: T("只优化文字，使用DSH现有模型；图片仍需单独点击生成。"), onMouseDown: event => event.preventDefault(), onClick: openDialog },
+          busy ? h("span", { className: "SPR_spinSm", "aria-hidden": "true" }) : h("svg", { viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.5, "aria-hidden": "true" }, h("path", { d: "m4 16 9-9 3 3-9 9-3-3ZM11 2v3M9.5 3.5h3M17 3v3M15.5 4.5h3M3 6v3M1.5 7.5h3", strokeLinecap: "round", strokeLinejoin: "round" })), T("优化提示词")),
+        undo !== null ? h("button", { type: "button", className: "SPR_promptOptimize SPR_promptUndo", disabled: busy || props.disabled || props.prompt !== undo.after, onMouseDown: event => event.preventDefault(), onClick: () => void apply(true) }, T("撤销优化")) : null,
+        h("dialog", { className: "SPR_promptDialog", ref: dialogRef, "aria-label": T("优化提示词"), onCancel: event => { event.preventDefault(); close(); }, onClose: () => { setOpen(false); triggerRef.current?.focus(); },
+          onKeyDown: event => {
+            if (event.key !== "Tab") return;
+            const focusable = [...event.currentTarget.querySelectorAll("button:not(:disabled),textarea:not(:disabled)")];
+            const target = event.shiftKey ? focusable.at(-1) : focusable[0];
+            if (document.activeElement === (event.shiftKey ? focusable[0] : focusable.at(-1))) { event.preventDefault(); target?.focus(); }
+          },
+          onClick: event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(); } } },
+          open ? h(React.Fragment, null,
+          h("div", { className: "SPR_promptDialogHead" }, h("h3", null, T("优化提示词")), h(Btn, { disabled: operation === "apply", onClick: () => close() }, T("关闭"))),
+          h("p", { className: "SPR_hint" }, T("使用DSH默认模型（与新会话一致），沿用已有登录和用量规则，无需单独填写Key。")),
+          config?.available ? h("p", { className: "SPR_hint" }, T("DSH模型：{n0}", { n0: `${result?.provider ?? config.provider} / ${result?.model ?? config.model}` })) : null,
+          h(NoticePopup, { notice: error, onClose: () => setError("") }),
+          busy ? h("p", { role: "status" }, h("span", { className: "SPR_spinSm", "aria-hidden": "true" }), " ", status) : null,
+          h(React.Fragment, null,
+            h("div", { className: "SPR_promptCompare" },
+              h(PromptReferenceInput, { id: props.jobId + "-prompt-source", value: sourceDraft, disabled: busy, references: props.references, assetBase: props.assetBase, onChange: value => { setSourceDraft(value); setError(""); } }),
+              h("label", { className: "SPR_field" }, T("优化结果（可编辑）"), h("textarea", { className: "SPR_area", "aria-label": T("优化结果（可编辑）"), value: result?.optimized ?? "", placeholder: T("点击优化后，结果会显示在这里。"), disabled: busy || result === null, onChange: event => setResult({ ...result, optimized: event.target.value }) }))),
+            h("p", { className: "SPR_hint" }, T("基础提示词保持原文。点击优化才调用DSH模型，仅发送通过@图片引用的参考图，图片输入需模型支持。")),
+            stale ? h("p", { className: "SPR_error", role: "alert" }, T("原提示词或参考图已修改，请重新优化后再采用。")) : null,
+            h("div", { className: "SPR_btnRow" },
+              h(BusyBtn, { busy: operation === "optimize", busyText: T("正在优化提示词…"), disabled: busy || props.disabled || !sourceDraft.trim(), onClick: () => void optimize() }, T("优化提示词")),
+              h(BusyBtn, { primary: true, busy: operation === "apply", disabled: busy || props.disabled || result === null || !result.optimized.trim() || stale, onClick: () => void apply() }, T("采用优化结果"))))) : null));
+    }
+
+    function ImageResultMenu({ label, children }) {
+      const [open, setOpen] = React.useState(false);
+      const triggerRef = React.useRef(null);
+      const menuRef = React.useRef(null);
+      const focusLast = React.useRef(false);
+      const close = (focus = false) => { setOpen(false); if (focus) triggerRef.current?.focus({ preventScroll: true }); };
+      const items = () => [...(menuRef.current?.querySelectorAll("button:not(:disabled),a[href]") ?? [])];
+      React.useEffect(() => {
+        const menu = menuRef.current;
+        if (!menu) return;
+        if (!open) { if (menu.matches(":popover-open")) menu.hidePopover(); return; }
+        menu.showPopover();
+        const position = () => {
+          const rect = triggerRef.current.getBoundingClientRect(), size = menu.getBoundingClientRect();
+          if (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) { close(); return; }
+          menu.style.left = Math.max(8, Math.min(rect.right - size.width, window.innerWidth - size.width - 8)) + "px";
+          menu.style.top = (rect.bottom + size.height + 6 <= window.innerHeight - 8 ? rect.bottom + 6 : Math.max(8, rect.top - size.height - 6)) + "px";
+        };
+        position();
+        const controls = items(); (focusLast.current ? controls.at(-1) : controls[0])?.focus({ preventScroll: true });
+        const onScroll = event => { if (!menu.contains(event.target)) position(); };
+        window.addEventListener("resize", position); document.addEventListener("scroll", onScroll, true);
+        return () => { window.removeEventListener("resize", position); document.removeEventListener("scroll", onScroll, true); if (menu.matches(":popover-open")) menu.hidePopover(); };
+      }, [open]);
+      return h("div", { className: "SPR_imageResultActions" },
+        h("button", { type: "button", className: "SPR_btn SPR_imageResultMore", title: T("更多"), ref: triggerRef, "aria-label": label, "aria-haspopup": "menu", "aria-expanded": open,
+          onClick: () => { focusLast.current = false; setOpen(value => !value); }, onKeyDown: event => { if (["ArrowDown", "ArrowUp"].includes(event.key)) { event.preventDefault(); focusLast.current = event.key === "ArrowUp"; if (open) { const controls = items(); (focusLast.current ? controls.at(-1) : controls[0])?.focus({ preventScroll: true }); } else setOpen(true); } } }, h(ProjectActionIcon, { name: "more" })),
+        h("div", { ref: menuRef, className: "SPR_imageResultMenu", popover: "auto", role: "menu", "aria-label": label,
+          onToggle: event => { if (!event.currentTarget.matches(":popover-open")) setOpen(false); },
+          onClick: event => { const item = event.target.closest("[role^=menuitem]"); if (item && !item.disabled) close(true); },
+          onKeyDown: event => {
+            if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(true); return; }
+            if (event.key === "Tab") { close(); return; }
+            const controls = items(), index = controls.indexOf(document.activeElement);
+            const next = event.key === "ArrowDown" ? (index + 1) % controls.length : event.key === "ArrowUp" ? (index - 1 + controls.length) % controls.length : event.key === "Home" ? 0 : event.key === "End" ? controls.length - 1 : -1;
+            if (next >= 0) { event.preventDefault(); controls[next]?.focus({ preventScroll: true }); }
+          } }, children));
+    }
+
+    function ImageResultPreview({ src, alt, label, disabled }) {
+      const dialogRef = React.useRef(null);
+      const triggerRef = React.useRef(null);
+      const close = () => { dialogRef.current?.close(); triggerRef.current?.focus({ preventScroll: true }); };
+      React.useEffect(() => {
+        if (disabled && dialogRef.current?.open) close();
+      }, [disabled]);
+      const title = T("预览 {n0}", { n0: label });
+      return h(React.Fragment, null,
+        h("button", { ref: triggerRef, type: "button", className: "SPR_imageResultPreview", "aria-label": title, "aria-haspopup": "dialog", disabled,
+          onClick: () => dialogRef.current?.showModal() }, h("img", { className: "SPR_thumb", src, alt })),
+        h("dialog", { ref: dialogRef, className: "SPR_imageRefDialog SPR_imageResultDialog", "aria-label": title,
+          onCancel: event => { event.preventDefault(); close(); }, onClose: event => { if (!event.currentTarget.open) triggerRef.current?.focus({ preventScroll: true }); },
+          onKeyDown: event => { if (event.key === "Tab") { event.preventDefault(); event.currentTarget.querySelector("button")?.focus(); } },
+          onClick: event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(); } } },
+          h("div", { className: "SPR_imageRefDialogHead" }, h("h3", null, label), h(Btn, { onClick: close }, T("关闭"))),
+          h("img", { className: "SPR_imageRefFull", src, alt })));
+    }
+
+    function ImageReferenceList(props) {
+      const [previewFile, setPreviewFile] = React.useState(null);
+      const dialogRef = React.useRef(null);
+      const triggerRef = React.useRef(null);
+      const images = props.references ?? [];
+      const preview = images.find(ref => ref.file === previewFile);
+      const label = ref => `@图片${images.indexOf(ref) + 1}`;
+      const url = ref => `${props.assetBase ?? ""}${ref.file}?v=${encodeURIComponent(props.updatedAt ?? "")}`;
+      React.useEffect(() => {
+        const dialog = dialogRef.current;
+        if (preview && dialog && !dialog.open) dialog.showModal();
+        if (!preview && dialog?.open) dialog.close();
+      }, [preview?.file]);
+      const close = () => { setPreviewFile(null); triggerRef.current?.focus(); };
+      return h(React.Fragment, null,
+        images.length ? h("div", { className: "SPR_imageRefList" }, images.map(ref => h("div", { key: ref.file, className: "SPR_imageRefItem" },
+          h("button", { type: "button", className: "SPR_imageRefPreview", "aria-label": T("预览 {n0}", { n0: label(ref) + " " + ref.name }), "aria-haspopup": "dialog", title: ref.name,
+            onClick: event => { triggerRef.current = event.currentTarget; setPreviewFile(ref.file); } },
+            h("img", { src: url(ref), alt: "" }),
+            h("span", { className: "SPR_imageRefDetails" }, h("span", { className: "SPR_imageRefLabel" }, label(ref)), h("span", { className: "SPR_imageRefName" }, ref.name))),
+          h(Btn, { danger: true, "aria-label": T("移除 {n0}", { n0: ref.name }), disabled: props.disabled, onClick: () => props.onRemove(ref) }, T("移除"))))) : null,
+        h("dialog", { ref: dialogRef, className: "SPR_imageRefDialog", "aria-label": T("预览参考图"),
+          onCancel: event => { event.preventDefault(); close(); }, onClose: close,
+          onKeyDown: event => { if (event.key === "Tab") { event.preventDefault(); event.currentTarget.querySelector("button")?.focus(); } },
+          onClick: event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(); } } },
+          preview ? h(React.Fragment, null,
+            h("div", { className: "SPR_imageRefDialogHead" }, h("h3", null, label(preview), " · ", preview.name), h(Btn, { onClick: close }, T("关闭"))),
+            h("img", { className: "SPR_imageRefFull", src: url(preview), alt: preview.name })) : null));
     }
 
     function ImageModule(props) {
@@ -16208,6 +17424,9 @@
        */
       const loadedDrafts = React.useRef({ id: null, prompt: "", suffix: "", settings: {}, keying: {} });
       const imageSaveQueue = React.useRef(Promise.resolve());
+      const createRef = React.useRef(null);
+      const templateDrafts = imageTemplateDraftCache.get(api) ?? new Map();
+      imageTemplateDraftCache.set(api, templateDrafts);
 
       React.useEffect(() => {
         if (intent === null) return;
@@ -16231,14 +17450,16 @@
         if (id === null) return;
         try {
           const next = await api.getImageJob(id);
+          const draft = templateDrafts.get(id);
+          const effective = draft ? { ...next, ...draft } : next;
           const previous = loadedDrafts.current;
           const force = previous.id !== id;
           const settings = { ...(next.settings ?? {}) };
           const keying = { ...(next.keying ?? {}) };
-          loadedDrafts.current = { id, prompt: next.prompt ?? "", suffix: next.suffix ?? "", settings, keying };
-          setJob(next);
+          loadedDrafts.current = { id, prompt: next.prompt ?? "", suffix: effective.suffix ?? "", settings, keying };
+          setJob(effective);
           setPromptDraft((current) => mergeDrafts(current, previous.prompt, next.prompt ?? "", force));
-          setSuffixDraft((current) => mergeDrafts(current, previous.suffix, next.suffix ?? "", force));
+          setSuffixDraft((current) => mergeDrafts(current, previous.suffix, effective.suffix ?? "", force));
           setSettingsDraft((current) => mergeDrafts(current, previous.settings, settings, force));
           setKeyingDraft((current) => mergeDrafts(current, previous.keying, keying, force));
         } catch (error) {
@@ -16288,11 +17509,20 @@
         const name = askNewName(T("新图片任务的名字"), T("图片 {n0}", { n0: new Date().toLocaleString("zh-CN", { hour12: false }) }));
         if (name === null) return;
         await run(async () => {
-          const created = await api.createImageJob({ name });
+          const initialTemplate = globalConfig?.imagePromptTemplates?.find(item => item.id === "character") ?? globalConfig?.imagePromptTemplates?.[0];
+          const created = await api.createImageJob({ name, ...(initialTemplate ? { promptTemplate: initialTemplate.id, lang: activeLang() } : {}) });
           await refresh();
           setJobId(created.jobId);
         }, T("已新建图片任务"), { key: K_IMG_CREATE, label: T("正在新建任务…") });
       };
+      // 顶栏只保存稳定的调用入口；实际操作始终读取本次渲染的任务状态。
+      createRef.current = create;
+      const creating = tasks.has(K_IMG_CREATE);
+      React.useEffect(() => {
+        if (!props.onHeaderActions) return;
+        props.onHeaderActions({ create: () => void createRef.current(), busy: creating });
+        return () => props.onHeaderActions(null);
+      }, [props.onHeaderActions, creating]);
 
       const enqueueImageSave = (patch) => {
         const id = job.id;
@@ -16301,16 +17531,50 @@
         return pending;
       };
       const saveJob = (patch) => run(() => enqueueImageSave(patch), T("已保存"));
+      const applyOptimizedPrompt = async (prompt) => {
+        const id = job.id;
+        if (loadedDrafts.current.id !== id) throw new Error(T("当前任务已切换，未修改提示词。"));
+        const response = await enqueueImageSave({ prompt });
+        if (response?.ok === false) throw new Error(T("提示词保存失败，尚未采用优化结果。"));
+        if (loadedDrafts.current.id !== id) return;
+        loadedDrafts.current = { ...loadedDrafts.current, prompt };
+        setPromptDraft(prompt);
+        setJob(current => current?.id === id ? { ...current, prompt } : current);
+      };
+      const applyBasePrompt = (promptTemplate) => {
+        const id = job.id;
+        if (loadedDrafts.current.id !== id) throw new Error(T("当前任务已切换，未修改提示词。"));
+        const template = (job.promptTemplates ?? []).find(item => item.id === promptTemplate);
+        if (promptTemplate !== null && !template) throw new Error(T("当前模板已不存在，请刷新后重新选择。"));
+        const lang = activeLang();
+        const draft = { suffix: template?.prompt?.[lang] ?? template?.prompt?.zh ?? "", promptTemplateId: template?.id, promptTemplateLang: template ? lang : undefined };
+        templateDrafts.set(id, draft);
+        setSuffixDraft(draft.suffix);
+        setJob(current => current?.id === id ? { ...current, ...draft } : current);
+      };
+      const saveImageDraft = async () => {
+        const id = job.id;
+        const draft = templateDrafts.get(id);
+        const response = await enqueueImageSave({ prompt: promptDraft, settings: settingsDraft, keying: keyingDraft,
+          ...(draft ? { suffix: draft.suffix, promptTemplate: draft.promptTemplateId ?? null, lang: draft.promptTemplateLang ?? activeLang() } : {}) });
+        if (response?.ok === false) throw new Error(T("提示词保存失败，本次未提交生成。"));
+        if (draft && templateDrafts.get(id) === draft) templateDrafts.delete(id);
+      };
 
-      const del = async () => {
-        if (job === null) return;
-        if (typeof window !== "undefined" && !window.confirm(T("删除任务「{n0}」？目录会被整个移除。", { n0: job.name }))) return;
-        await run(async () => {
-          await api.deleteImageJob({ jobId: job.id });
-          const list = await refresh();
+      const deleteJobEntry = async (target) => {
+        await api.deleteImageJob({ jobId: target.id });
+        templateDrafts.delete(target.id);
+        const list = await refresh();
+        if (target.id === jobId) {
           setJobId(list.length > 0 ? list[0].id : null);
-          if (list.length === 0) setJob(null);
-        }, T("已删除"));
+          setJob(null);
+        }
+        setNotice({ kind: "ok", text: T("已删除") });
+      };
+      const renameJobEntry = async (target, name) => {
+        await api.saveImageJob({ jobId: target.id, name });
+        await refresh();
+        if (target.id === jobId) await load(target.id);
       };
 
       const upload = async (files, kind) => {
@@ -16344,52 +17608,58 @@
             activeId: jobId,
             onSelect: setJobId,
             onCreate: create,
+            createInSidebar: false,
+            renderActions: item => h(ProjectActionsMenu, { project: item, task: true, inline: true, onRename: renameJobEntry, onDelete: deleteJobEntry, onNotice: setNotice }),
             renderMeta: (item) => T("{n0} 张 · 抠像 {n1}", { n0: item.ready, n1: item.keyed })
           }),
           h(
             "div",
-            { className: "SPR_main" },
-            notice !== null
-              ? h("div", { className: "SPR_note", "data-kind": notice.kind }, notice.text,
-                  h("span", { style: { marginLeft: 10 } }, h("button", { type: "button", className: "SPR_miniBtn", onClick: () => setNotice(null) }, T("关闭"))))
-              : null,
-            h(
+            { className: "SPR_main SPR_imageMain" },
+            h(NoticePopup, { notice, onClose: () => setNotice(null) }),
+            tasks.active ? h(
               "div",
               { className: "SPR_toolbar" },
-              h(BusyBtn, { onClick: create, primary: true, busy: tasks.has(K_IMG_CREATE), busyText: T("正在新建…") }, T("新建任务")),
-              job !== null ? h(Btn, { onClick: del, danger: true }, T("删除任务")) : null,
-              job !== null ? h(CopyIdButton, { id: job.id }) : null,
               h(BusyBadge, { show: tasks.active, text: tasks.label(K_IMG_JOB) ?? tasks.label(K_IMG_KEY) ?? tasks.label(K_IMG_UPLOAD) ?? tasks.firstLabel ?? T("正在调用接口…") })
-            ),
+            ) : null,
             job === null
               ? h("p", { className: "SPR_empty" }, T("请选择或新建一个图片任务"))
               : h(
-                  React.Fragment,
-                  null,
+                  "div",
+                  { className: "SPR_imageWorkspace", key: job.id },
+                  h("div", { className: "SPR_imageEditor" },
                   h(
                     "div",
                     { className: "SPR_card" },
-                    h("div", { className: "SPR_cardHead" }, h("h3", null, T("① 提示词"))),
-                    h("p", { className: "SPR_hint" }, T("统一附加提示词会接在主提示词后面，用来写跨批次的共同要求。")),
-                    h("textarea", {
-                      className: "SPR_area",
-                      placeholder: T("描述你要生成的图片…"),
+                    h("div", { className: "SPR_imageComposer" },
+                    h("section", { className: "SPR_imagePrompts", "data-testid": "image-prompts" },
+                    h("div", { className: "SPR_cardHead SPR_imageSectionHead" }, h("h3", null, T("提示词")),
+                      h(DescriptionTip, { id: "image-prompt-description", label: T("提示词"), text: T("主提示词用于描述主体。基础提示词从模板中选择，可展开查看；编辑模板请进入设置。") })),
+                    h("div", { className: "SPR_promptEditor" },
+                    h(PromptReferenceInput, {
+                      key: job.id, id: job.id + "-prompt-main", main: true, references: job.refs, assetBase: job.assetBase,
                       value: promptDraft,
-                      onChange: (event) => setPromptDraft(event.target.value),
+                      onChange: setPromptDraft,
                       onBlur: () => {
                         if (promptDraft !== (job.prompt ?? "")) void saveJob({ prompt: promptDraft });
                       }
-                    }),
-                    h("textarea", {
-                      className: "SPR_area",
-                      style: { minHeight: 60 },
-                      placeholder: T("统一附加提示词（可留空）"),
-                      value: suffixDraft,
-                      onChange: (event) => setSuffixDraft(event.target.value),
-                      onBlur: () => {
-                        if (suffixDraft !== (job.suffix ?? "")) void saveJob({ suffix: suffixDraft });
-                      }
-                    }),
+                    }, h("div", { className: "SPR_promptRightActions" },
+                      h("label", { className: "SPR_transparentToggle", title: T("开启后自动补充纯色背景要求，生成完成后在本地抠成透明 PNG；不会修改输入内容。") + " " + T("抠像背景色：{n0}", { n0: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }) },
+                        h("input", { type: "checkbox", role: "switch", "aria-label": T("透明背景"), checked: keyingDraft.enabled === true, disabled: busy || uploading,
+                          onChange: event => { const keying = { ...keyingDraft, enabled: event.target.checked, keyColor: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }; setKeyingDraft(keying); void saveJob({ keying }); } }), T("透明背景")),
+                      h(PromptOptimizer, { key: job.id, inline: true, api, jobId: job.id, prompt: promptDraft, suffix: suffixDraft, references: job.refs, assetBase: job.assetBase, disabled: busy, onApply: applyOptimizedPrompt })))),
+                    h(ImagePromptTemplates, { key: job.id, jobId: job.id, templates: job.promptTemplates, templateId: job.promptTemplateId, templateLang: job.promptTemplateLang,
+                      suffix: suffixDraft, disabled: busy, onApply: applyBasePrompt, onManage: props.onManageTemplates })),
+                    h("section", { className: "SPR_imageRefs", "data-testid": "image-refs" },
+                      h("div", { className: "SPR_cardHead SPR_imageSectionHead" }, h("h3", null, T("参考图（可留空）")),
+                        h(DescriptionTip, { id: "image-reference-description", label: T("参考图（可留空）"), text: T("最多 10 张。有参考图时走图生图；在提示词里输入 @ 选择图片，点击列表可预览原图。") })),
+                      h(UploadBox, { label: T("把参考图拖到这里"), accept: "image/*", multiple: true, busy: uploading || tasks.has(K_IMG_UPLOAD), onFiles: (files) => void upload(files, "ref") }),
+                      h(ImageReferenceList, { key: job.id, references: job.refs, assetBase: job.assetBase, updatedAt: job.updatedAt, disabled: busy,
+                        onRemove: ref => void run(() => api.removeImageRef({ jobId: job.id, file: ref.file }), T("已移除参考图")) })
+                    ))
+                  ),
+                  h("div", { className: "SPR_card SPR_imageAdvanced" },
+                    h("details", { className: "SPR_imageGenerationAdvanced" },
+                    h("summary", null, T("高级设置")),
                     h(
                       "div",
                       { className: "SPR_fields" },
@@ -16445,77 +17715,14 @@
                             h("span", { className: "SPR_fieldLabel" }, T("在「设置 → 游戏素材大师 → 输出尺寸」里改"))
                           ),
                       h(NumField, { label: T("生成张数（1~8）"), value: settingsDraft.count ?? 1, min: 1, max: 8, onChange: (v) => { setSettingsDraft({ ...settingsDraft, count: v }); void saveJob({ settings: { ...settingsDraft, count: v } }); } })
-                    ),
+                    )),
+                  h(
+                    "details",
+                    { className: "SPR_imageKeyingAdvanced" },
+                    h("summary", null, T("高级抠像与已有图片")),
                     h(
                       "div",
                       { className: "SPR_toolbar" },
-                      h(
-                        BusyBtn,
-                        {
-                          primary: true,
-                          busy: tasks.has(K_IMG_JOB),
-                          busyText: T("正在生成 {n0} 张…", { n0: settingsDraft.count ?? 1 }),
-                          disabled: promptDraft.trim() === "" || tasks.has(K_IMG_JOB),
-                          onClick: () =>
-                            void run(
-                              async () => {
-                                await enqueueImageSave({ prompt: promptDraft, suffix: suffixDraft, settings: settingsDraft });
-                                return api.runImageJob({ jobId: job.id });
-                              },
-                              T("已开始生成 {n0} 张", { n0: settingsDraft.count ?? 1 }),
-                              { key: K_IMG_JOB, label: T("正在生成 {n0} 张图片…", { n0: settingsDraft.count ?? 1 }) }
-                            )
-                        },
-                        T("生成 {n0} 张", { n0: settingsDraft.count ?? 1 })
-                      ),
-                      h("span", { className: "SPR_refRow" }, T("按当前生图后端的账号价格计费，实际以平台账单为准"))
-                    )
-                  ),
-                  h(
-                    "div",
-                    { className: "SPR_card" },
-                    h("div", { className: "SPR_cardHead" }, h("h3", null, T("② 参考图（可留空）"))),
-                    h("p", { className: "SPR_hint" }, T("最多 10 张。有参考图时走图生图；引用多张时可在提示词里写「图一」「图二」。") ),
-                    h(UploadBox, { label: T("把参考图拖到这里"), accept: "image/*", multiple: true, busy: uploading || tasks.has(K_IMG_UPLOAD), onFiles: (files) => void upload(files, "ref") }),
-                    (job.refs ?? []).length === 0
-                      ? null
-                      : h(
-                          "div",
-                          { className: "SPR_grid" },
-                          (job.refs ?? []).map((ref) =>
-                            h(
-                              "div",
-                              { key: ref.file, className: "SPR_node" },
-                              h("img", { className: "SPR_thumb", src: `${job.assetBase}${ref.file}?v=${job.updatedAt}`, alt: ref.name }),
-                              h("span", { className: "SPR_refRow" }, ref.name),
-                              h("div", { className: "SPR_btnRow" }, h(Btn, { danger: true, onClick: () => void run(() => api.removeImageRef({ jobId: job.id, file: ref.file }), T("已移除参考图")) }, T("移除")))
-                            )
-                          )
-                        )
-                  ),
-                  h(
-                    "div",
-                    { className: "SPR_card" },
-                    h("div", { className: "SPR_cardHead" }, h("h3", null, T("③ 背景抠像"))),
-                    h("p", { className: "SPR_hint" }, T("开启后每张生成完会自动抠一遍；也可以上传已有图片只做抠像。") ),
-                    h(
-                      "div",
-                      { className: "SPR_toolbar" },
-                      h(
-                        "select",
-                        {
-                          className: "SPR_input",
-                          style: { width: 220 },
-                          value: keyingDraft.enabled ? "on" : "off",
-                          onChange: (event) => {
-                            const enabled = event.target.value === "on";
-                            setKeyingDraft({ ...keyingDraft, enabled });
-                            void saveJob({ keying: { enabled } });
-                          }
-                        },
-                        h("option", { value: "off" }, T("不抠像")),
-                        h("option", { value: "on" }, T("自动抠背景输出 PNG"))
-                      ),
                       h(
                         BusyBtn,
                         {
@@ -16533,12 +17740,37 @@
                     h(KeyingFields, { draft: keyingDraft, fallbackColor: globalConfig?.keyColor, onChange: (patch) => { const next = { ...keyingDraft, ...patch }; setKeyingDraft(next); void saveJob({ keying: patch }); } }),
                     h(UploadBox, { label: T("上传一张已有图片，直接抠成透明 PNG"), accept: "image/*", multiple: false, busy: uploading || tasks.has(K_IMG_UPLOAD), onFiles: (files) => void upload(files, "item") }),
                     tasks.has(K_IMG_UPLOAD) ? h(BusyBadge, { show: true, text: tasks.label(K_IMG_UPLOAD) }) : null
-                  ),
+                  )),
+                  h(JobLogPanel, { job })),
                   h(
                     "div",
-                    { className: "SPR_card" },
-                    h("div", { className: "SPR_cardHead" }, h("h3", null, T("④ 结果（{n0} 张）", { n0: (job.items ?? []).length }))),
-                    h(ReviewModeBar, { api, module: "image", id: job.id, mode: job.reviewMode, onChanged: () => void load(job.id) }),
+                    { className: "SPR_card SPR_imageResults" },
+                    h("div", { className: "SPR_cardHead" }, h("h3", null, T("结果（{n0} 张）", { n0: (job.items ?? []).length }))),
+                    h(
+                      "div",
+                      { className: "SPR_toolbar SPR_imageGenerateActions" },
+                      h(
+                        BusyBtn,
+                        {
+                          primary: true,
+                          busy: tasks.has(K_IMG_JOB),
+                          busyText: T("正在生成 {n0} 张…", { n0: settingsDraft.count ?? 1 }),
+                          disabled: promptDraft.trim() === "" || busy,
+                          onClick: () =>
+                            void run(
+                              async () => {
+                                await saveImageDraft();
+                                return api.runImageJob({ jobId: job.id });
+                              },
+                              T("已开始生成 {n0} 张", { n0: settingsDraft.count ?? 1 }),
+                              { key: K_IMG_JOB, label: T("正在生成 {n0} 张图片…", { n0: settingsDraft.count ?? 1 }) }
+                            )
+                        },
+                        T("生成 {n0} 张", { n0: settingsDraft.count ?? 1 })
+                      ),
+                      h(ReviewModeBar, { api, module: "image", id: job.id, mode: job.reviewMode, compact: true, onChanged: () => load(job.id) }),
+                      h("span", { className: "SPR_refRow" }, T("按当前生图后端的账号价格计费，实际以平台账单为准"))
+                    ),
                     (job.items ?? []).length === 0
                       ? h("p", { className: "SPR_empty" }, T("还没有图片"))
                       : h(
@@ -16568,62 +17800,61 @@
                                 { className: "SPR_nodeTop" },
                                 h("span", { className: "SPR_nodeTitle" }, T("第 {n0} 张", { n0: index + 1 })),
                                 overlay ? h(Chip, { kind: "running", text: T("生成中") }) : h(StatusChip, { node: item }),
-                                item.source === "uploaded" ? h(Chip, { kind: "empty", text: T("上传") }) : null
+                                item.source === "uploaded" ? h(Chip, { kind: "empty", text: T("上传") }) : null,
+                                h(
+                                  ImageResultMenu,
+                                  { label: T("第 {n0} 张图片的更多操作", { n0: index + 1 }) },
+                                  h(ApproveBtn, {
+                                    role: "menuitemcheckbox", "aria-checked": item.approved === true,
+                                    approved: item.approved === true,
+                                    disabled: overlay || item.status !== "ready",
+                                    onToggle: () =>
+                                      void run(
+                                        () => api.saveImageJob({ jobId: job.id, index, approved: item.approved !== true }),
+                                        item.approved === true ? T("已取消通过") : T("已标记通过")
+                                      )
+                                  }),
+                                  item.file !== undefined
+                                    ? h("a", { role: "menuitem", className: "SPR_btn", href: `${job.assetBase}${item.file}`, download: `image-${index + 1}.${rawExt}`, style: { textDecoration: "none" } }, T("下载原图"))
+                                    : null,
+                                  item.keyedFile !== undefined
+                                    ? h("a", { role: "menuitem", className: "SPR_btn", href: `${job.assetBase}${item.keyedFile}`, download: `keyed-${index + 1}.png`, style: { textDecoration: "none" } }, T("下载 PNG"))
+                                    : null,
+                                  item.source === "generated"
+                                    ? h(
+                                        BusyBtn,
+                                        {
+                                          role: "menuitem", disabled: overlay,
+                                          busy: tasks.has(itemKey),
+                                          busyText: T("正在提交…"),
+                                          onClick: () =>
+                                            void run(async () => { await saveImageDraft(); return api.runImageJob({ jobId: job.id, count: index + 1 }); }, T("已重新生成"), {
+                                              key: itemKey,
+                                              label: T("正在重新生成第 {n0} 张…", { n0: index + 1 })
+                                            })
+                                        },
+                                        T("重新生成")
+                                      )
+                                    : null,
+                                  h(Btn, { role: "menuitem", danger: true, disabled: overlay, onClick: () => void run(() => api.removeImageItem({ jobId: job.id, index }), T("已删除")) }, T("删除"))
+                                )
                               ),
                               h(
                                 MediaBox,
                                 { overlay, text: overlayText },
-                                item.keyedFile !== undefined
-                                  ? h("img", { className: "SPR_thumb", src: `${job.assetBase}${item.keyedFile}?v=${item.updatedAt}`, alt: T("抠像结果") })
-                                  : item.file !== undefined
-                                    ? h("img", { className: "SPR_thumb", src: `${job.assetBase}${item.file}?v=${item.updatedAt}`, alt: T("生成结果") })
+                                item.keyedFile !== undefined || item.file !== undefined
+                                  ? h(ImageResultPreview, { src: `${job.assetBase}${item.keyedFile ?? item.file}?v=${item.updatedAt}`, alt: item.keyedFile !== undefined ? T("抠像结果") : T("生成结果"), label: T("第 {n0} 张", { n0: index + 1 }), disabled: overlay })
                                     : h("div", { className: "SPR_thumbEmpty" }, overlay ? T("生成中…") : T("等待生成"))
                               ),
                               overlay ? h(BusyBadge, { show: true, text: overlayText }) : null,
                               item.backgroundFraction !== undefined
                                 ? h("span", { className: "SPR_refRow" }, T("背景占比 {n0}%", { n0: (item.backgroundFraction * 100).toFixed(0) }))
                                 : null,
-                              item.error !== undefined ? h("p", { className: "SPR_error" }, item.error) : null,
-                              h(
-                                "div",
-                                { className: "SPR_btnRow" },
-                                h(ApproveBtn, {
-                                  approved: item.approved === true,
-                                  disabled: overlay || item.status !== "ready",
-                                  onToggle: () =>
-                                    void run(
-                                      () => api.saveImageJob({ jobId: job.id, index, approved: item.approved !== true }),
-                                      item.approved === true ? T("已取消通过") : T("已标记通过")
-                                    )
-                                }),
-                                item.file !== undefined
-                                  ? h("a", { className: "SPR_btn", href: `${job.assetBase}${item.file}`, download: `image-${index + 1}.${rawExt}`, style: { textDecoration: "none" } }, T("下载原图"))
-                                  : null,
-                                item.keyedFile !== undefined
-                                  ? h("a", { className: "SPR_btn", href: `${job.assetBase}${item.keyedFile}`, download: `keyed-${index + 1}.png`, style: { textDecoration: "none" } }, T("下载 PNG"))
-                                  : null,
-                                item.source === "generated"
-                                  ? h(
-                                      BusyBtn,
-                                      {
-                                        busy: tasks.has(itemKey),
-                                        busyText: T("正在提交…"),
-                                        onClick: () =>
-                                          void run(() => api.runImageJob({ jobId: job.id, count: index + 1 }), T("已重新生成"), {
-                                            key: itemKey,
-                                            label: T("正在重新生成第 {n0} 张…", { n0: index + 1 })
-                                          })
-                                      },
-                                      T("重新生成")
-                                    )
-                                  : null,
-                                h(Btn, { danger: true, disabled: overlay, onClick: () => void run(() => api.removeImageItem({ jobId: job.id, index }), T("已删除")) }, T("删除"))
-                              )
+                              item.error !== undefined ? h("p", { className: "SPR_error" }, item.error) : null
                             );
                           })
                         )
-                  ),
-                  h(JobLogPanel, { job })
+                  )
                 )
           )
         ),
@@ -16852,10 +18083,7 @@
           h(
             "div",
             { className: "SPR_main" },
-            notice !== null
-              ? h("div", { className: "SPR_note", "data-kind": notice.kind }, notice.text,
-                  h("span", { style: { marginLeft: 10 } }, h("button", { type: "button", className: "SPR_miniBtn", onClick: () => setNotice(null) }, T("关闭"))))
-              : null,
+            h(NoticePopup, { notice, onClose: () => setNotice(null) }),
             h(
               "div",
               { className: "SPR_toolbar" },
@@ -17254,7 +18482,7 @@
           const h2 = Math.round(image.naturalHeight * live.scale);
           canvas.width = w;
           canvas.height = h2;
-          g.fillStyle = "#ffffff";
+          g.fillStyle = themeColor(canvas, "--dsw-alias-bg-layer-1", "#ffffff");
           g.fillRect(0, 0, w, h2);
           g.imageSmoothingEnabled = live.scale < 1;
           g.drawImage(image, 0, 0, w, h2);
@@ -20281,14 +21509,7 @@
           h("span", { className: "SPR_spacer" }),
           headerButtons
         ),
-        notice !== null
-          ? h(
-              "div",
-              { className: "SPR_notice", "data-kind": notice.kind === "error" ? "error" : "info" },
-              notice.text,
-              h(Btn, { onClick: () => setNotice(null) }, T("关闭"))
-            )
-          : null,
+        h(NoticePopup, { notice, onClose: () => setNotice(null) }),
         h(
           "div",
           { className: "SPR_modules" },
@@ -20301,6 +21522,7 @@
                 key: entry.key,
                 type: "button",
                 className: "SPR_module",
+                title: `${entry.title}\n${entry.hint}`,
                 "data-active": stage === entry.key ? "true" : "false",
                 onClick: () => setStage(entry.key)
               },
@@ -20776,6 +21998,291 @@
       return h("div", { className: "SPR_settingsSub" }, title ? h("h4", null, title) : null, children);
     }
 
+    /** Keep each settings form mounted so switching sections preserves input drafts. */
+    function SettingsSections({ children, ...panelProps }) {
+      const [selected, setSelected] = React.useState(0);
+      const items = [children].flat(Infinity).filter(Boolean);
+      const groups = items.filter(item => item.type === SettingsGroup || item.type === SettingsSubGroup);
+      const active = selected < groups.length ? selected : 0;
+      const sectionId = index => `${panelProps.id}-section-${index}`;
+      return h("div", panelProps,
+        items.filter(item => !groups.includes(item)),
+        h("div", { className: "SPR_settingsSections" },
+          h("div", { className: "SPR_settingsSectionNav", role: "tablist", "aria-orientation": "vertical", "aria-labelledby": panelProps["aria-labelledby"],
+            onKeyDown: event => {
+              const index = groups.findIndex((_group, i) => event.target.id === `${sectionId(i)}-tab`);
+              if (index < 0) return;
+              const next = event.key === "ArrowDown" ? (index + 1) % groups.length : event.key === "ArrowUp" ? (index - 1 + groups.length) % groups.length : event.key === "Home" ? 0 : event.key === "End" ? groups.length - 1 : -1;
+              if (next < 0) return;
+              event.preventDefault(); setSelected(next);
+              event.currentTarget.querySelector(`#${sectionId(next)}-tab`)?.focus();
+            } },
+            groups.map((group, index) => h("button", { key: index, id: `${sectionId(index)}-tab`, type: "button", className: "SPR_settingsSectionTab", role: "tab",
+              "aria-selected": active === index, "aria-controls": `${sectionId(index)}-panel`, tabIndex: active === index ? 0 : -1, onClick: () => setSelected(index) },
+              h("span", null, group.props.title), group.props.badge ? h("span", { className: "SPR_settingsSectionCurrent", role: "img", "aria-label": group.props.badge, title: group.props.badge }) : null))),
+          h("div", { className: "SPR_settingsSectionContent" },
+            groups.map((group, index) => h("div", { key: index, id: `${sectionId(index)}-panel`, className: "SPR_settingsSectionPanel", role: "tabpanel", "aria-labelledby": `${sectionId(index)}-tab`, hidden: active !== index }, group)))));
+    }
+
+    function FeatureOrderList({ order, hidden, onToggle, onSaveOrder }) {
+      const keys = normalizeModuleOrder(order);
+      const available = Array.isArray(order);
+      const [dragging, setDragging] = React.useState(null);
+      const [target, setTarget] = React.useState(null);
+      const [saving, setSaving] = React.useState(false);
+      const [notice, setNotice] = React.useState(null);
+      const sourceRef = React.useRef(null);
+      const saveLock = React.useRef(false);
+      const handleRefs = React.useRef({});
+      const focusAfterSave = React.useRef(null);
+      React.useEffect(() => {
+        if (!saving && focusAfterSave.current) {
+          handleRefs.current[focusAfterSave.current]?.focus();
+          focusAfterSave.current = null;
+        }
+      }, [saving]);
+      const finishDrag = () => { sourceRef.current = null; setDragging(null); setTarget(null); };
+      const saveOrder = async (next, focusKey?) => {
+        if (!available || saveLock.current || next.every((key, i) => key === keys[i])) return;
+        saveLock.current = true; setSaving(true); setNotice(null);
+        try {
+          await onSaveOrder(next);
+          setNotice({ kind: "ok", text: T("功能顺序已保存") });
+        } catch (error) { setNotice({ kind: "error", text: msg(error) }); }
+        finally {
+          saveLock.current = false; focusAfterSave.current = focusKey ?? null; setSaving(false);
+        }
+      };
+      // 在整个列表上接收拖放：插入线位于行间空隙，只监听行会让松手不触发保存。
+      const position = event => {
+        const rows = Array.from(event.currentTarget.querySelectorAll(".SPR_featureRow")) as HTMLElement[];
+        for (const row of rows) {
+          const rect = row.getBoundingClientRect();
+          if (event.clientY < rect.top + rect.height / 2) return { key: row.dataset.feature, after: false };
+        }
+        const last = rows[rows.length - 1];
+        return last ? { key: last.dataset.feature, after: true } : null;
+      };
+      return h(React.Fragment, null,
+        !available ? h("p", { className: "SPR_featureOrderNotice", "data-kind": "error", role: "alert" }, T("DSH后台尚未加载排序功能，请完全退出DSH（包括托盘）后重新打开。")) : null,
+        h("div", { className: "SPR_featureOrderToolbar" },
+          h("p", { className: "SPR_hint" }, T("拖动左侧手柄排序，自动保存并同步到功能栏与快捷菜单。")),
+          h(Btn, { disabled: !available || saving || keys.every((key, i) => key === MODULES[i].key), onClick: () => void saveOrder(MODULES.map(entry => entry.key)) }, T("恢复默认顺序"))),
+        h("div", {
+          className: "SPR_featureList", "aria-busy": saving,
+          onDragOver: event => {
+            if (saveLock.current || !sourceRef.current) return;
+            event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = "move";
+            const next = position(event);
+            setTarget(current => current?.key === next?.key && current?.after === next?.after ? current : next);
+          },
+          onDrop: event => {
+            if (saveLock.current || !sourceRef.current) return;
+            event.preventDefault(); event.stopPropagation();
+            const source = sourceRef.current;
+            const drop = position(event);
+            finishDrag();
+            if (!drop || source === drop.key) return;
+            const next = keys.filter(item => item !== source);
+            next.splice(next.indexOf(drop.key) + (drop.after ? 1 : 0), 0, source);
+            void saveOrder(next, source);
+          }
+        }, keys.map(key => {
+          const entry = MODULES.find(item => item.key === key);
+          const isHidden = hidden.includes(key);
+          return h("div", {
+            key, className: "SPR_featureRow", "data-hidden": isHidden ? "true" : "false", "data-feature": key,
+            "data-dragging": dragging === key ? "true" : undefined,
+            "data-drop": target?.key === key && dragging !== key ? (target.after ? "after" : "before") : undefined
+          },
+            h("button", {
+              type: "button", className: "SPR_featureDrag", draggable: available && !saving, disabled: !available || saving,
+              ref: element => { handleRefs.current[key] = element; },
+              "aria-label": T("调整「{n0}」的顺序", { n0: entry.title }), title: T("拖动排序，或按↑↓键移动"),
+              onDragStart: event => {
+                if (saveLock.current) { event.preventDefault(); return; }
+                event.stopPropagation();
+                sourceRef.current = key; setDragging(key); setNotice(null);
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", key);
+                event.dataTransfer.setDragImage(event.currentTarget.parentElement, 20, 20);
+              },
+              onDragEnd: finishDrag,
+              onKeyDown: event => {
+                if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                event.preventDefault();
+                const from = keys.indexOf(key), to = from + (event.key === "ArrowUp" ? -1 : 1);
+                if (to < 0 || to >= keys.length) return;
+                const next = [...keys]; [next[from], next[to]] = [next[to], next[from]];
+                void saveOrder(next, key);
+              }
+            }, h("svg", { width: 14, height: 18, viewBox: "0 0 14 18", "aria-hidden": "true", fill: "currentColor" },
+              [4, 9, 14].flatMap(cy => [4, 10].map(cx => h("circle", { key: `${cx}-${cy}`, cx, cy, r: 1.2 }))))),
+            h("label", { className: "SPR_featureToggle" },
+              h("input", { type: "checkbox", className: "SPR_featureCheck", "data-testid": `cfg-feature-${key}`, checked: !isHidden, disabled: saving, onChange: event => onToggle(key, event.target.checked) }),
+              h("span", { className: "SPR_featureText" },
+                h("span", { className: "SPR_featureTitle" }, entry.title, entry.experimental === true ? h("span", { className: "SPR_expTag" }, T("实验性")) : null),
+                h("span", { className: "SPR_featureHint" }, entry.hint)),
+              h("span", { className: "SPR_featureState" }, isHidden ? T("已隐藏") : T("显示中"))));
+        })),
+        saving ? h("p", { className: "SPR_hint", role: "status" }, T("正在保存顺序…")) : null,
+        h(NoticePopup, { notice, onClose: () => setNotice(null) }));
+    }
+
+    function PromptTemplateManager(props) {
+      const [templates, setTemplates] = React.useState(() => JSON.parse(JSON.stringify(props.templates ?? [])));
+      const [selected, setSelected] = React.useState(props.templates?.[0]?.id ?? null);
+      const [lang, setLang] = React.useState(activeLang);
+      const [saving, setSaving] = React.useState(false);
+      const [error, setError] = React.useState("");
+      const [notice, setNotice] = React.useState("");
+      const [deleting, setDeleting] = React.useState(false);
+      const deleteDialogRef = React.useRef(null);
+      const deleteTriggerRef = React.useRef(null);
+      const deleteCancelRef = React.useRef(null);
+      const templateListRef = React.useRef(null);
+      const baseline = React.useRef(JSON.stringify(props.templates ?? []));
+      const lock = React.useRef(false);
+      const alive = React.useRef(true);
+      React.useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+      const dirty = JSON.stringify(templates) !== baseline.current;
+      const current = templates.find(item => item.id === selected);
+      const builtin = (props.defaults ?? []).find(item => item.id === selected);
+      React.useEffect(() => {
+        if (!deleting || builtin || !current) return;
+        deleteDialogRef.current?.showModal();
+        deleteCancelRef.current?.focus();
+      }, [deleting]);
+      const dismissDelete = () => {
+        deleteDialogRef.current?.close();
+        setDeleting(false);
+        deleteTriggerRef.current?.focus();
+      };
+      const update = (field, value) => { setTemplates(items => items.map(item => item.id === selected ? { ...item, [field]: { ...item[field], [lang]: value } } : item)); setNotice(""); setError(""); };
+      const add = () => {
+        if (templates.length >= 24) return;
+        const id = "custom-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        const name = T("新模板");
+        setTemplates(items => [...items, { id, name: { zh: name, en: name }, prompt: { zh: "", en: "" } }]);
+        setSelected(id); setDeleting(false); setNotice(""); setError("");
+      };
+      const save = async () => {
+        if (lock.current || !dirty) return;
+        setError(""); setNotice("");
+        const normalized = templates.map(item => {
+          const pair = value => { const zh = value.zh.trim(), en = value.en.trim(); return { zh: zh || en, en: en || zh }; };
+          return { id: item.id, name: pair(item.name), prompt: pair(item.prompt) };
+        });
+        const invalid = normalized.find(item => !item.name.zh || !item.prompt.zh || Object.values(item.name).some(text => String(text).length > 60) || Object.values(item.prompt).some(text => String(text).length > 6000));
+        if (invalid) { setSelected(invalid.id); setError(T("模板名称不能为空且最多60字，内容不能为空且最多6000字。")); return; }
+        lock.current = true; setSaving(true);
+        try {
+          const saved = await props.onSave(normalized);
+          if (JSON.stringify(saved) !== JSON.stringify(normalized)) throw new Error(T("提示词模板未保存成功，请重启DSH后重试。"));
+          if (alive.current) { baseline.current = JSON.stringify(saved); setTemplates(saved); setNotice(T("模板已保存，返回生成页选择模板或同步更新即可使用。")); }
+        } catch (failure) { if (alive.current) setError(msg(failure)); }
+        finally { lock.current = false; if (alive.current) setSaving(false); }
+      };
+      return h("div", { "data-testid": "prompt-template-manager" },
+        h("p", { className: "SPR_hint" }, T("生成页仅选择和查看。内置模板可编辑或恢复，不能删除；自定义模板可新增、编辑和删除。修改后保存，已有任务可手动同步更新。")),
+        h("div", { className: "SPR_btnRow" },
+          h(Btn, { disabled: saving || templates.length >= 24, onClick: add }, h("span", { "aria-hidden": "true" }, "+"), " ", T("新增模板"))),
+        h("div", { className: "SPR_templateManager" },
+          h("div", { className: "SPR_templateList", role: "group", ref: templateListRef, "aria-label": T("模板列表") },
+            templates.map(item => h("button", { key: item.id, type: "button", className: "SPR_promptTemplateChoice", "aria-pressed": selected === item.id, disabled: saving,
+              onClick: () => { setSelected(item.id); setDeleting(false); } }, h("span", null, promptTemplateName(item)),
+              h("span", { className: "SPR_templateStatus" }, (props.defaults ?? []).some(row => row.id === item.id) ? T("内置") : T("自定义"))))),
+          current ? h("div", { className: "SPR_templateEditor" },
+            h("div", { className: "SPR_templateEditorHead" },
+              h("div", { className: "SPR_btnRow", role: "group", "aria-label": T("模板语言") },
+                h(Btn, { on: lang === "zh", disabled: saving, onClick: () => setLang("zh") }, T("中文")),
+                h(Btn, { on: lang === "en", disabled: saving, onClick: () => setLang("en") }, "English")),
+              h("div", { className: "SPR_templateManagerActions" },
+                h(BusyBtn, { primary: true, busy: saving, disabled: saving || !dirty, onClick: () => void save() }, T("保存模板")),
+                h(Btn, { disabled: saving || !dirty, onClick: () => { const saved = JSON.parse(baseline.current); setTemplates(saved); setSelected(saved.some(item => item.id === selected) ? selected : saved[0]?.id ?? null); setDeleting(false); setError(""); setNotice(""); } }, T("放弃修改"))),
+              h("div", { className: "SPR_btnRow SPR_templateEditorSecondary" },
+                builtin ? h(Btn, { disabled: saving || JSON.stringify(current) === JSON.stringify(builtin), onClick: () => { setTemplates(items => items.map(item => item.id === selected ? JSON.parse(JSON.stringify(builtin)) : item)); setNotice(""); } }, T("恢复内置内容")) : null,
+                !builtin ? h("button", { type: "button", className: "SPR_btn", ref: deleteTriggerRef, "data-danger": "true", disabled: saving, onClick: () => setDeleting(true) }, T("删除模板")) : null)),
+            h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("模板名称")),
+              h("input", { className: "SPR_input", "aria-label": T("模板名称"), value: current.name[lang], maxLength: 60, disabled: saving, onChange: event => update("name", event.target.value) })),
+            h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("模板内容")),
+              h("textarea", { className: "SPR_area", "aria-label": T("模板内容"), value: current.prompt[lang], maxLength: 6000, disabled: saving, onChange: event => update("prompt", event.target.value) })),
+            h("div", { className: "SPR_templateStatus" }, T("{n0} / 6000 字 · 未填写的语言使用另一语言内容。", { n0: current.prompt[lang].length }))) : h("p", { className: "SPR_hint" }, T("还没有模板，点击新增模板开始。"))),
+        h(NoticePopup, { notice: error, onClose: () => setError("") }),
+        h(NoticePopup, { notice, kind: "ok", onClose: () => setNotice("") }),
+        deleting && current && !builtin ? h("dialog", { ref: deleteDialogRef, className: "SPR_projectRenameDialog SPR_templateDeleteDialog", "data-kind": "delete", role: "alertdialog", "aria-modal": "true", "aria-label": T("删除模板"), "aria-describedby": "prompt-template-delete-description",
+          onCancel: event => { event.preventDefault(); dismissDelete(); } },
+          h("form", { onKeyDown: event => {
+            if (event.key !== "Tab") return;
+            const controls = [...event.currentTarget.querySelectorAll("button:not(:disabled)")];
+            const first = controls[0], last = controls[controls.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+          }, onSubmit: event => {
+            event.preventDefault();
+            if (saving || builtin) return;
+            const next = templates.filter(item => item.id !== selected);
+            deleteDialogRef.current?.close();
+            setTemplates(next); setSelected(next[0]?.id ?? null); setDeleting(false); setNotice("");
+            templateListRef.current?.querySelector("button")?.focus();
+          } },
+            h("div", { className: "SPR_projectDeleteIcon" }, h(ProjectActionIcon, { name: "delete" })),
+            h("h3", null, T("删除模板")),
+            h("p", { className: "SPR_projectDeleteName" }, promptTemplateName(current)),
+            h("p", { className: "SPR_projectDeleteDescription", id: "prompt-template-delete-description" }, T("删除此模板？已有任务的提示词内容会保留。")),
+            h("div", { className: "SPR_projectRenameActions" },
+              h("button", { type: "button", className: "SPR_btn", ref: deleteCancelRef, onClick: dismissDelete }, T("取消")),
+              h("button", { type: "submit", className: "SPR_btn SPR_projectDeleteConfirm", disabled: saving }, T("确认删除"))))) : null);
+    }
+
+    /** Reveal only on demand; viewing never writes the saved secret into the edit draft. */
+    function ConfigKeyInput({ api, keyName, isSet, resetToken, ...inputProps }) {
+      const [shown, setShown] = React.useState(false);
+      const [revealed, setRevealed] = React.useState(null);
+      const [editing, setEditing] = React.useState(false);
+      const [loading, setLoading] = React.useState(false);
+      const [error, setError] = React.useState("");
+      const requestRef = React.useRef(0);
+      const loadingRef = React.useRef(false);
+      const hide = () => { requestRef.current++; loadingRef.current = false; setShown(false); setRevealed(null); setEditing(false); setLoading(false); setError(""); };
+      React.useEffect(hide, [resetToken]);
+      React.useEffect(() => {
+        const onVisibility = () => { if (document.hidden) hide(); };
+        window.addEventListener("blur", hide);
+        document.addEventListener("visibilitychange", onVisibility);
+        return () => { requestRef.current++; window.removeEventListener("blur", hide); document.removeEventListener("visibilitychange", onVisibility); };
+      }, []);
+      const toggle = async () => {
+        if (shown) { hide(); return; }
+        if (loadingRef.current) return;
+        if (inputProps.value) { setShown(true); return; }
+        if (!isSet) return;
+        const request = ++requestRef.current;
+        loadingRef.current = true; setLoading(true); setError("");
+        try {
+          const result = await api.revealConfigKey({ key: keyName });
+          if (request !== requestRef.current) return;
+          if (typeof result?.value !== "string") throw new Error();
+          setRevealed(result.value); setShown(true);
+        } catch {
+          if (request === requestRef.current) setError(T("读取 Key 失败，请完全退出DSH（包括托盘）后重新打开。"));
+        } finally {
+          if (request === requestRef.current) { loadingRef.current = false; setLoading(false); }
+        }
+      };
+      const label = loading ? T("正在读取 Key…") : shown ? T("隐藏 Key") : T("查看原 Key");
+      return h("div", { className: "SPR_secretField", onBlur: event => { if (!event.currentTarget.contains(event.relatedTarget)) hide(); } },
+        h("div", { className: "SPR_secretInputWrap" },
+          h("input", { autoComplete: "off", spellCheck: false, ...inputProps, type: shown ? "text" : "password", value: inputProps.value || (shown && revealed !== null ? revealed : isSet && !editing ? "••••••••" : ""),
+            onFocus: event => { setEditing(true); inputProps.onFocus?.(event); },
+            onBlur: event => { setEditing(false); inputProps.onBlur?.(event); },
+            onChange: event => { requestRef.current++; loadingRef.current = false; setLoading(false); setRevealed(null); setError(""); inputProps.onChange(event); } }),
+          h("button", { type: "button", className: "SPR_secretToggle", title: label, "aria-label": label, "aria-pressed": shown, "aria-busy": loading, disabled: inputProps.disabled || loading || (!isSet && !inputProps.value), onClick: () => void toggle() },
+            loading ? "…" : h("svg", { width: 17, height: 17, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
+              h("path", { d: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" }), h("circle", { cx: 12, cy: 12, r: 3 }), shown ? h("path", { d: "M3 3l18 18" }) : null))),
+        h(NoticePopup, { notice: error, onClose: () => setError("") }));
+    }
+
     function ConfigSection(props) {
       useLocaleTick();
       const api = props?.api;
@@ -20815,7 +22322,7 @@
        * ⚠️ 必须留在所有既有 `useState` 之后（槽位 15）：`verify-feedback.mjs`
        * 用位置桩喂 Hook 值，插在中间会让后面的状态读到别人的值。
        */
-      const [settingsTab, setSettingsTab] = React.useState("image");
+      const [settingsTab, setSettingsTab] = React.useState(props?.initialTab ?? "image");
 
       const load = React.useCallback(async () => {
         if (api === undefined) return;
@@ -20825,6 +22332,7 @@
           // 可见性是全插件共享的状态（侧栏菜单 / 工作台页签都订阅它），
           // 每次读到配置就广播一次——包括保存后的重读。
           publishHiddenModules(next?.hiddenModules);
+          publishModuleOrder(next?.moduleOrder);
         } catch (error) {
           setNotice({ kind: "error", text: msg(error) });
         }
@@ -20859,6 +22367,19 @@
       }
 
       const patch = (values) => run(() => api.saveConfig(values), T("配置已保存"));
+      const saveModuleOrder = async (order) => {
+        const verifyOrder = (value) => {
+          if (!Array.isArray(value?.moduleOrder)) throw new Error(T("DSH后台尚未加载排序功能，请完全退出DSH（包括托盘）后重新打开。"));
+          if (value.moduleOrder.length !== order.length || value.moduleOrder.some((key, index) => key !== order[index])) throw new Error(T("功能顺序未保存成功，请重试。"));
+        };
+        if (!Array.isArray(config.moduleOrder)) throw new Error(T("DSH后台尚未加载排序功能，请完全退出DSH（包括托盘）后重新打开。"));
+        const next = await api.saveConfig({ moduleOrder: order });
+        verifyOrder(next);
+        const persisted = await api.getConfig();
+        verifyOrder(persisted);
+        setConfig(persisted);
+        publishModuleOrder(persisted.moduleOrder);
+      };
 
       /**
        * 功能管理：`hiddenModules` 的当前值（以宿主返回的为准）。
@@ -20933,6 +22454,7 @@
       // 正则比对骨骼角色表，这里写成 label 会被误认成多出来的角色。
       const settingsTabs = [
         { key: "image", text: T("生图") },
+        { key: "prompts", text: T("提示词模板") },
         { key: "video", text: T("生视频") },
         { key: "pipeline", text: T("画面与抠像") },
         { key: "music", text: T("音乐") },
@@ -20946,16 +22468,19 @@
       return h(
         "section",
         { className: "SPR_settings" },
-        h("h2", { style: { margin: 0, fontSize: 15 } }, T("游戏素材大师")),
-        h("p", { className: "SPR_hint" }, T("配置生图 / 生视频的模型与整条流水线的默认参数。Key 只保存在本机 DSH 数据目录下的 game-material-master/config.json（真实路径见「功能与数据」里的「数据位置」），界面里始终脱敏显示。")),
-
-        notice !== null
-          ? h("div", { className: "SPR_note", "data-kind": notice.kind }, notice.text)
-          : null,
+        h(NoticePopup, { notice, onClose: () => setNotice(null) }),
 
         h(
           "div",
-          { className: "SPR_settingsNav", role: "tablist", "aria-label": T("游戏素材大师") },
+          { className: "SPR_settingsNav", role: "tablist", "aria-label": T("游戏素材大师"),
+            onKeyDown: event => {
+              const index = settingsTabs.findIndex(tab => `cfg-tab-${tab.key}` === event.target.id);
+              if (index < 0) return;
+              const next = event.key === "ArrowRight" ? (index + 1) % settingsTabs.length : event.key === "ArrowLeft" ? (index - 1 + settingsTabs.length) % settingsTabs.length : event.key === "Home" ? 0 : event.key === "End" ? settingsTabs.length - 1 : -1;
+              if (next < 0) return;
+              event.preventDefault(); setSettingsTab(settingsTabs[next].key);
+              const target = event.currentTarget.querySelector(`#cfg-tab-${settingsTabs[next].key}`); target?.focus(); target?.scrollIntoView({ block: "nearest", inline: "nearest" });
+            } },
           settingsTabs.map((tab) =>
             h(
               "button",
@@ -20969,6 +22494,7 @@
                 "data-active": activeTab === tab.key ? "true" : "false",
                 "aria-selected": activeTab === tab.key,
                 "aria-controls": `cfg-panel-${tab.key}`,
+                tabIndex: activeTab === tab.key ? 0 : -1,
                 onClick: () => setSettingsTab(tab.key)
               },
               tab.text
@@ -20978,6 +22504,23 @@
 
         h(
           "div",
+          {
+            className: "SPR_settingsPanel",
+            role: "tabpanel",
+            id: "cfg-panel-prompts",
+            "data-testid": "cfg-panel-prompts",
+            "aria-labelledby": "cfg-tab-prompts",
+            hidden: activeTab !== "prompts"
+          },
+          h(SettingsGroup, { title: T("提示词模板管理") },
+            Array.isArray(config.imagePromptTemplates) ? h(PromptTemplateManager, { templates: config.imagePromptTemplates, defaults: config.imagePromptTemplateDefaults,
+              onSave: async (templates) => {
+                const next = await api.saveConfig({ imagePromptTemplates: templates });
+                if (!Array.isArray(next?.imagePromptTemplates)) throw new Error(T("提示词模板未保存成功，请重启DSH后重试。"));
+                setConfig(next); return next.imagePromptTemplates;
+              } }) : h("p", { className: "SPR_hint" }, T("重启DSH以加载模板")))),
+        h(
+          SettingsSections,
           {
             className: "SPR_settingsPanel",
             role: "tabpanel",
@@ -21024,8 +22567,6 @@
           {
             title: T("火山方舟（生图）"),
             badge: imageProvider === "ark" ? T("当前使用") : null,
-            collapsible: true,
-            defaultOpen: imageProvider === "ark",
             testId: "cfg-ark-group"
           },
           h(
@@ -21035,15 +22576,15 @@
               "label",
               { className: "SPR_field" },
               h("span", { className: "SPR_fieldLabel" }, T("API Key {n0}", { n0: config.arkApiKeySet ? T("（已配置 {n0}）", { n0: config.arkApiKeyHint }) : T("（未配置）") })),
-              h("input", {
+              h(ConfigKeyInput, {
+                api, keyName: "arkApiKey", isSet: config.arkApiKeySet, resetToken: config,
                 className: "SPR_input",
-                type: "password",
                 placeholder: config.arkApiKeySet ? T("留空表示不修改") : T("粘贴 ARK_API_KEY"),
                 value: arkKey,
                 onChange: (event) => setArkKey(event.target.value)
               })
             ),
-            h(Btn, { onClick: () => run(async () => { await api.saveConfig({ arkApiKey: arkKey }); setArkKey(""); }, T("火山方舟 Key 已保存")) }, T("保存 Key")),
+            h(Btn, { disabled: !arkKey.trim(), onClick: () => run(async () => { await api.saveConfig({ arkApiKey: arkKey }); setArkKey(""); }, T("火山方舟 Key 已保存")) }, T("保存 Key")),
             h(Btn, { disabled: !config.arkApiKeySet, onClick: () => run(() => api.saveConfig({ clearArkApiKey: true }), T("已清除火山方舟 Key")) }, T("清除"))
           ),
           h(
@@ -21142,8 +22683,6 @@
             title: T("ToAPIs（图片）"),
             hint: T("ToAPIs：图片和视频使用独立的异步协议；每次生成会计费。"),
             badge: imageProvider === "toapis" ? T("当前使用") : null,
-            collapsible: true,
-            defaultOpen: imageProvider === "toapis",
             testId: "cfg-toapis"
           },
           h(
@@ -21223,15 +22762,15 @@
               "label",
               { className: "SPR_field" },
               h("span", { className: "SPR_fieldLabel" }, T("API Key")),
-              h("input", {
+              h(ConfigKeyInput, {
+                api, keyName: "toapisApiKey", isSet: config.toapisApiKeySet, resetToken: config,
                 className: "SPR_input",
-                type: "password",
                 value: toapisKey,
                 onChange: (event) => setToapisKey(event.target.value),
                 placeholder: config.toapisApiKeySet ? T("留空表示不修改") : "ToAPIs API Key"
               })
             ),
-            h(Btn, { onClick: () => run(async () => { await api.saveConfig({ toapisApiKey: toapisKey }); setToapisKey(""); }, T("ToAPIs Key 已保存")) }, T("保存 Key")),
+            h(Btn, { disabled: !toapisKey.trim(), onClick: () => run(async () => { await api.saveConfig({ toapisApiKey: toapisKey }); setToapisKey(""); }, T("ToAPIs Key 已保存")) }, T("保存 Key")),
             h(Btn, { disabled: !config.toapisApiKeySet, onClick: () => run(() => api.saveConfig({ clearToapisApiKey: true }), T("已清除 ToAPIs Key")) }, T("清除"))
           ),
           h("p", { className: "SPR_hint" }, config.toapisApiKeySet ? T("ToAPIs Key 已配置") : T("ToAPIs Key 未配置"))
@@ -21250,8 +22789,6 @@
             title: T("自定义生图模型"),
             hint: T("填「主机根地址」即可，具体端点由插件按协议拼；本地服务通常不需要 API Key。"),
             badge: imageProvider === "custom" ? T("当前使用") : null,
-            collapsible: true,
-            defaultOpen: imageProvider === "custom",
             testId: "cfg-custom-group"
           },
           h(
@@ -21328,15 +22865,15 @@
               "label",
               { className: "SPR_field" },
               h("span", { className: "SPR_fieldLabel" }, T("API Key {n0}", { n0: config.customApiKeySet ? T("（已配置 {n0}）", { n0: config.customApiKeyHint }) : T("（未配置，本地服务可以留空）") })),
-              h("input", {
+              h(ConfigKeyInput, {
+                api, keyName: "customApiKey", isSet: config.customApiKeySet, resetToken: config,
                 className: "SPR_input",
-                type: "password",
                 placeholder: config.customApiKeySet ? T("留空表示不修改") : T("粘贴 API Key（A1111 的 user:pass 也认）"),
                 value: customKey,
                 onChange: (event) => setCustomKey(event.target.value)
               })
             ),
-            h(Btn, { onClick: () => run(async () => { await api.saveConfig({ customApiKey: customKey }); setCustomKey(""); }, T("自定义后端 Key 已保存")) }, T("保存 Key")),
+            h(Btn, { disabled: !customKey.trim(), onClick: () => run(async () => { await api.saveConfig({ customApiKey: customKey }); setCustomKey(""); }, T("自定义后端 Key 已保存")) }, T("保存 Key")),
             h(Btn, { disabled: !config.customApiKeySet, onClick: () => run(() => api.saveConfig({ clearCustomApiKey: true }), T("已清除自定义后端 Key")) }, T("清除"))
           ),
 
@@ -21475,7 +23012,7 @@
         ),
 
         h(
-          "div",
+          SettingsSections,
           {
             className: "SPR_settingsPanel",
             role: "tabpanel",
@@ -21485,16 +23022,21 @@
             hidden: activeTab !== "video"
           },
           h("p", { className: "SPR_hint" }, T("图生视频三选一：MiniMax（云端，默认）、ToAPIs（云端异步）、本机 ComfyUI；勾选后两者之一会替换 MiniMax，取消勾选即回到 MiniMax。ToAPIs 的 Base URL / Key / 超时在「生图」里配置，图片与视频共用。")),
+          h(SettingsGroup, { title: T("付费视频保护（默认关闭）"), testId: "paid-video-safety" },
+            h("label", { className: "SPR_check" },
+              h("input", { type: "checkbox", checked: config.allowPaidVideoGeneration === true, onChange: event => void patch({ allowPaidVideoGeneration: event.target.checked }) }),
+              T("允许提交付费视频（MiniMax / ToAPIs）")),
+            h("p", { className: "SPR_hint" }, T("关闭时拦截所有新的付费视频请求；开启后每次仍需确认模型、时长、分辨率和段数。配置、准备白模、本地导入与抽帧不会提交付费视频。")),
+            h("p", { className: "SPR_hint" }, T("这里不会查询余额或实时单价，提交前请核对服务商价格。"))),
           h(
             SettingsGroup,
             {
               title: T("MiniMax（图生视频）"),
-              hint: T("视频阶段使用图生视频（I2V）。建议用 MiniMax-Hailuo-02，镜头稳定性最好。"),
+              hint: T("白模流程推荐MiniMax-H3-Lite，固定4秒480P；下方时长与分辨率用于原有视频流程。保存设置不会生成视频。"),
               badge: videoBackend === "minimax" ? T("当前使用") : null,
-              collapsible: true,
-              defaultOpen: videoBackend === "minimax",
               testId: "cfg-minimax-group"
             },
+            h(Btn, { onClick: () => void patch({ minimaxModel: "MiniMax-H3-Lite", minimaxDuration: 4, minimaxResolution: "480P", comfyVideo: false, toapisVideo: false }) }, T("使用白模推荐参数（4秒480P，不生成）")),
             h(
               "div",
               { className: "SPR_keyRow" },
@@ -21502,15 +23044,15 @@
               "label",
               { className: "SPR_field" },
               h("span", { className: "SPR_fieldLabel" }, T("API Key {n0}", { n0: config.minimaxApiKeySet ? T("（已配置 {n0}）", { n0: config.minimaxApiKeyHint }) : T("（未配置）") })),
-              h("input", {
+              h(ConfigKeyInput, {
+                api, keyName: "minimaxApiKey", isSet: config.minimaxApiKeySet, resetToken: config,
                 className: "SPR_input",
-                type: "password",
                 placeholder: config.minimaxApiKeySet ? T("留空表示不修改") : T("粘贴 MiniMax API Key"),
                 value: minimaxKey,
                 onChange: (event) => setMinimaxKey(event.target.value)
               })
             ),
-            h(Btn, { onClick: () => run(async () => { await api.saveConfig({ minimaxApiKey: minimaxKey }); setMinimaxKey(""); }, T("MiniMax Key 已保存")) }, T("保存 Key")),
+            h(Btn, { disabled: !minimaxKey.trim(), onClick: () => run(async () => { await api.saveConfig({ minimaxApiKey: minimaxKey }); setMinimaxKey(""); }, T("MiniMax Key 已保存")) }, T("保存 Key")),
             h(Btn, { disabled: !config.minimaxApiKeySet, onClick: () => run(() => api.saveConfig({ clearMinimaxApiKey: true }), T("已清除 MiniMax Key")) }, T("清除"))
           ),
           h(
@@ -21629,8 +23171,6 @@
             title: T("ToAPIs（视频）"),
             hint: T("ToAPIs 视频参数独立于 MiniMax；目前仅支持文生视频或一张首帧，不支持尾帧及多模态参考。"),
             badge: videoBackend === "toapis" ? T("当前使用") : null,
-            collapsible: true,
-            defaultOpen: videoBackend === "toapis",
             testId: "cfg-toapis-video",
             lead: h(
               "label",
@@ -21699,8 +23239,6 @@
             title: T("本地 ComfyUI（图生视频）"),
             hint: T("勾选后，视频阶段改由本机 ComfyUI 生成，不再调用 MiniMax。工作流贴「导出（API 格式）」的那份 JSON；插件只负责把提示词、首帧图、尺寸、时长、种子注入进去，其余节点原样提交。"),
             badge: videoBackend === "comfy" ? T("当前使用") : null,
-            collapsible: true,
-            defaultOpen: videoBackend === "comfy",
             testId: "cfg-comfy-video-group",
             lead: h(
               "label",
@@ -21868,6 +23406,7 @@
               title: T("新建项目的默认参数"),
               hint: T("这些值会成为每个新项目的初始设置，之后可在项目里单独调整。")
             },
+            h(SettingsSections, { id: "cfg-pipeline-sections", "aria-labelledby": "cfg-tab-pipeline" },
             h(
               SettingsSubGroup,
               { title: T("画布与抽帧") },
@@ -21986,11 +23525,12 @@
                 })
               )
             )
+            )
           )
         ),
 
         h(
-          "div",
+          SettingsSections,
           {
             className: "SPR_settingsPanel",
             role: "tabpanel",
@@ -22015,9 +23555,9 @@
               "label",
               { className: "SPR_field" },
               h("span", { className: "SPR_fieldLabel" }, T("API Key")),
-              h("input", {
+              h(ConfigKeyInput, {
+                api, keyName: "musicApiKey", isSet: config.musicApiKeySet, resetToken: config,
                 className: "SPR_input",
-                type: "password",
                 autoComplete: "off",
                 "data-testid": "cfg-music-key",
                 placeholder: config.musicApiKeySet ? T("已配置 {n0}（留空表示不修改）", { n0: config.musicApiKeyHint }) : T("粘贴谱乐 AI API Key（sk-live-…）"),
@@ -22194,9 +23734,9 @@
               "label",
               { className: "SPR_field" },
               h("span", { className: "SPR_fieldLabel" }, T("API Key")),
-              h("input", {
+              h(ConfigKeyInput, {
+                api, keyName: "sfxApiKey", isSet: config.sfxApiKeySet, resetToken: config,
                 className: "SPR_input",
-                type: "password",
                 autoComplete: "off",
                 "data-testid": "cfg-sfx-key",
                 placeholder: config.sfxApiKeySet ? T("已配置 {n0}（留空表示不修改）", { n0: config.sfxApiKeyHint }) : T("粘贴语音控制台 API Key"),
@@ -22286,7 +23826,7 @@
         ),
 
         h(
-          "div",
+          SettingsSections,
           {
             className: "SPR_settingsPanel",
             role: "tabpanel",
@@ -22299,41 +23839,7 @@
             SettingsGroup,
             { title: T("功能管理") },
             h("p", null, T("隐藏不用的功能。隐藏后界面里不再出现它的页签与侧栏菜单项，对话里的 AI 也无法调用它（工具会直接报错）。随时可以再打开，已有的项目数据不会被删除。")),
-            h(
-            "div",
-            { className: "SPR_featureList" },
-            MODULES.map((entry) => {
-              const isHidden = hiddenNow.includes(entry.key);
-              return h(
-                "label",
-                {
-                  key: entry.key,
-                  className: "SPR_featureRow",
-                  "data-hidden": isHidden ? "true" : "false",
-                  "data-feature": entry.key
-                },
-                h("input", {
-                  type: "checkbox",
-                  className: "SPR_featureCheck",
-                  "data-testid": `cfg-feature-${entry.key}`,
-                  checked: !isHidden,
-                  onChange: (event) => toggleFeature(entry.key, event.target.checked)
-                }),
-                h(
-                  "span",
-                  { className: "SPR_featureText" },
-                  h(
-                    "span",
-                    { className: "SPR_featureTitle" },
-                    entry.title,
-                    entry.experimental === true ? h("span", { className: "SPR_expTag" }, T("实验性")) : null
-                  ),
-                  h("span", { className: "SPR_featureHint" }, entry.hint)
-                ),
-                h("span", { className: "SPR_featureState" }, isHidden ? T("已隐藏") : T("显示中"))
-              );
-            })
-          ),
+            h(FeatureOrderList, { order: config.moduleOrder, hidden: hiddenNow, onToggle: toggleFeature, onSaveOrder: saveModuleOrder }),
           hiddenNow.length === 0
             ? h("p", { className: "SPR_hint" }, T("当前功能全部可见。"))
             : h(
@@ -22405,8 +23911,10 @@
         return result.value;
       };
 
+      const submitVideo = createVideoSubmitter(call);
       const api = {
         getConfig: () => call("getConfig"),
+        revealConfigKey: (payload) => call("revealConfigKey", payload),
         saveConfig: (payload) => call("saveConfig", payload),
         testArk: () => call("testArk"),
         testCustomImage: () => call("testCustomImage"),
@@ -22430,13 +23938,13 @@
         runImage: (payload) => call("runImage", payload),
         runImages: (payload) => call("runImages", payload),
         setImageMode: (payload) => call("setImageMode", payload),
-        runTurnVideo: (payload) => call("runTurnVideo", payload),
+        runTurnVideo: (payload) => submitVideo("runTurnVideo", payload),
         runTurnFrames: (payload) => call("runTurnFrames", payload),
         setTurnPick: (payload) => call("setTurnPick", payload),
         setTurnPicks: (payload) => call("setTurnPicks", payload),
         resetTurnPicks: (payload) => call("resetTurnPicks", payload),
         cutTurnFrames: (payload) => call("cutTurnFrames", payload),
-        runVideos: (payload) => call("runVideos", payload),
+        runVideos: (payload) => submitVideo("runVideos", payload),
         pollVideos: (payload) => call("pollVideos", payload),
         clearVideos: (payload) => call("clearVideos", payload),
         runFrames: (payload) => call("runFrames", payload),
@@ -22452,6 +23960,8 @@
         getImageJob: (jobId) => call("getImageJob", { jobId }),
         deleteImageJob: (payload) => call("deleteImageJob", payload),
         saveImageJob: (payload) => call("saveImageJob", payload),
+        optimizeImagePrompt: (payload) => call("optimizeImagePrompt", payload),
+        getPromptOptimizerModel: () => call("getPromptOptimizerModel"),
         uploadImageRef: (payload) => call("uploadImageRef", payload),
         removeImageRef: (payload) => call("removeImageRef", payload),
         addImageItem: (payload) => call("addImageItem", payload),
@@ -22464,7 +23974,7 @@
         getMotionJob: (payload) => call("getMotionJob", payload),
         saveMotionJob: (payload) => call("saveMotionJob", payload),
         uploadMotionAsset: (payload) => call("uploadMotionAsset", payload),
-        runMotionStep: (payload) => call("runMotionStep", payload),
+        runMotionStep: (payload) => payload.step === "video" ? submitVideo("runMotionStep", payload) : call("runMotionStep", payload),
         motionSettings: (payload) => call("motionSettings", payload),
         listSequenceJobs: () => call("listSequenceJobs"),
         createSequenceJob: (payload) => call("createSequenceJob", payload),
@@ -22473,7 +23983,7 @@
         saveSequenceJob: (payload) => call("saveSequenceJob", payload),
         uploadSequenceRef: (payload) => call("uploadSequenceRef", payload),
         removeSequenceRef: (payload) => call("removeSequenceRef", payload),
-        runSequenceVideo: (payload) => call("runSequenceVideo", payload),
+        runSequenceVideo: (payload) => submitVideo("runSequenceVideo", payload),
         pollSequenceVideo: (payload) => call("pollSequenceVideo", payload),
         clearSequenceVideo: (payload) => call("clearSequenceVideo", payload),
         runSequenceFrames: (payload) => call("runSequenceFrames", payload),
@@ -22630,6 +24140,7 @@
           disposeInterceptor();
           intentListeners.clear();
           pendingIntent = null;
+          handledPanelIntent = null;
         };
       }, T("{n0}: 深链接拦截", { n0: PACKAGE }));
 
@@ -22695,7 +24206,8 @@
      * `mapgeom` / `mapdoc` 的真实现做黄金对照逐点比对 —— 界面复刻的那部分几何
      * 必须有守门的，否则「预览与导出错位」会以静默的方式回来。
      */
-    bundleModule.exports.__test = { StudioPanel, MotionModule, MotionAnimationPreview, IsoModule, ImageModule, SequenceModule, mergeDrafts, RigSemanticsPanel, MapModule, MusicModule, SfxModule, ISO_pointToCell, ISO_cellCenter, ISO_cellTopLeft, ISO_lineCells, MAP_pointToCell, MAP_cellAnchor, MAP_cellTopLeft, MAP_lineCells, usePendingTasks, LoadingOverlay, MediaBox, BusyBtn, BusyBadge, NumField, ZoomableImage, CSS, subscribeIntent, parseIntents, openStudioIntent, OPEN_QUERY_KEY, StudioGlyph, StudioGlyphIcon, publishHiddenModules, useHiddenModules, visibleModulesOf, normalizeHiddenKeys, ConfigSection, attachSessionBridge, openAssetChat, openMusicChat, buildAssetRequestPrompt, buildIsoAssetRequestPrompt, buildMusicRequestPrompt, buildComposeRequestPrompt, openIsoAssetChat, deriveAssetName, deriveMusicName, ASSET_FRAMES_MIN, ASSET_FRAMES_MAX };
+    bundleModule.exports.__test = { createVideoSubmitter, StudioPanel, MotionModule, MotionAnimationPreview, IsoModule, ImageModule, SequenceModule, mergeDrafts, RigSemanticsPanel, MapModule, MusicModule, SfxModule, ISO_pointToCell, ISO_cellCenter, ISO_cellTopLeft, ISO_lineCells, MAP_pointToCell, MAP_cellAnchor, MAP_cellTopLeft, MAP_lineCells, usePendingTasks, LoadingOverlay, MediaBox, BusyBtn, BusyBadge, NumField, ZoomableImage, CSS, subscribeIntent, parseIntents, openStudioIntent, OPEN_QUERY_KEY, StudioGlyph, StudioGlyphIcon, publishHiddenModules, publishModuleOrder, readLastStudioModule, rememberStudioModule, useHiddenModules, visibleModulesOf, normalizeHiddenKeys, ConfigSection, attachSessionBridge, openAssetChat, openMusicChat, buildAssetRequestPrompt, buildIsoAssetRequestPrompt, buildMusicRequestPrompt, buildComposeRequestPrompt, openIsoAssetChat, deriveAssetName, deriveMusicName, ASSET_FRAMES_MIN, ASSET_FRAMES_MAX };
+    bundleModule.exports.__test.NoticePopup = NoticePopup;
     return bundleModule.exports;
   }
 });

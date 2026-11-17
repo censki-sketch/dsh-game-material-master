@@ -17,7 +17,7 @@
  */
 
 import { assertToapisReady, assertToapisModel, submitToapisVideo, queryToapisVideo, downloadToapis } from "./toapis.js";
-import type { Config } from "./config.js";
+import { loadConfig, type Config } from "./config.js";
 import {
   fetchComfyObjectInfo,
   normalizeComfyCookies,
@@ -80,13 +80,31 @@ export function videoBackendOf(config: Config): VideoBackend {
  * 由请求本身报错（测试按钮负责提前发现）。
  */
 export function assertVideoBackendReady(config: Config): void {
+  if (videoBackendOf(config) !== "comfy") assertPaidVideoEnabled(config);
   if (videoBackendOf(config) === "toapis") {assertToapisReady(config);assertToapisModel(config.toapisVideoModel);return;}
   if (videoBackendOf(config) === "comfy") return;
   if (config.minimaxApiKey.trim() === "") throw new Error("尚未配置 MiniMax API Key");
 }
 
+function assertPaidVideoEnabled(config: Pick<Config, "allowPaidVideoGeneration">): void {
+  if (config.allowPaidVideoGeneration !== true) {
+    throw new Error("付费视频生成已锁定，请在右上角「设置 → 生视频」或「设置 → 游戏素材大师 → 生视频」手动开启；保存配置不会生成视频");
+  }
+}
+
+/** 确认必须在清空旧产物、创建后台任务之前检查。查询、下载和本地处理不受影响。 */
+export function assertVideoSubmissionConfirmed(config: Config, confirmed: unknown): void {
+  assertVideoBackendReady(config);
+  if (videoBackendOf(config) !== "comfy" && confirmed !== true) {
+    throw new Error("请先确认本次视频的模型、时长、分辨率、请求数量与费用，再传 confirmed:true 提交");
+  }
+}
+
 /** 提交一个视频任务。返回的 taskId 与 backend 必须一起存进节点。 */
 export async function submitVideoTask(config: Config, request: VideoSubmitRequest): Promise<VideoSubmitResult> {
+  assertVideoBackendReady(config);
+  // 批量任务会保留配置快照；每次 POST 前再读总开关，关锁后不继续提交余下方向。
+  if (videoBackendOf(config) !== "comfy") assertPaidVideoEnabled(await loadConfig());
   if (videoBackendOf(config) === "toapis") return {taskId:await submitToapisVideo(config,request),backend:"toapis",notes:["ToAPIs video uses its own configured model, duration and resolution"]};
   if (videoBackendOf(config) === "comfy") return submitViaComfy(config, request);
 

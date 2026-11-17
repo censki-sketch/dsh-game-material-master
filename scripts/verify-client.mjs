@@ -506,7 +506,7 @@ for (const file of files) {
 
   // 工作台页签与侧栏菜单都必须按可见性过滤，而不是照旧渲染全部模块。
   check("工作台页签按可见性过滤", /visibleModules\.map\(/.test(clientText));
-  check("侧栏菜单按可见性过滤", /const entries = visibleModulesOf\(hidden\);/.test(clientText));
+  check("侧栏菜单按可见性与顺序渲染", /const entries = visibleModulesOf\(hidden, moduleOrder\);/.test(clientText));
   check("工作台在选中模块被隐藏时落到第一个可见模块", /const activeModule =/.test(clientText) && /visibleModules\[0\]\.key/.test(clientText));
 
   // 细节样式缺了不会报错，只会「看着不对劲」，所以把关键类名也钉住。
@@ -770,8 +770,8 @@ function checkRigContracts(text, label) {
   // “api.xxx is not a function”——编译期完全看不出来（api 是隐式 any）。
   const declared = [...text.matchAll(/\["([A-Za-z0-9_]+)",\s*(?:true|false)\]/g)].map((m) => m[1]);
   const unique = [...new Set(declared)];
-  // 实现侧的判据是「出现了 call("方法名")」，与缩进无关（src 与打包后的 lib 缩进不同）。
-  const missing = unique.filter((name) => !text.includes(`call("${name}"`));
+  // 视频方法先走带费用确认的 submitVideo，其余方法直接走 call。
+  const missing = unique.filter((name) => !text.includes(`call("${name}"`) && !text.includes(`submitVideo("${name}"`));
   check(
     `${label}：REMOTE_METHODS 的每个方法都有 api 实现（共 ${unique.length} 个）`,
     missing.length === 0,

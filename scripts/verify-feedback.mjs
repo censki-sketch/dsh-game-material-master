@@ -342,8 +342,8 @@ const api = new Proxy(
  * 本地却什么都看不出来。数字变了就说明 Hook 顺序改了，必须同步这里的槽位。
  */
 const EXPECTED_HOOKS = {
-  StudioPanel: 22,
-  ImageModule: 17,
+  StudioPanel: 26,
+  ImageModule: 18,
   SequenceModule: 17
 };
 
@@ -368,14 +368,14 @@ const EXPECTED_HOOKS = {
  *
  * `hidden` 就是第 19 槽：传 `["rig"]` 之类就能测「隐藏后页签里不再出现」。
  */
-function renderStage(project, stage, tasks, hidden = [], workflow = "classic") {
+function renderStage(project, stage, tasks, hidden = [], workflow = "classic", module = "sprite") {
   HOOK.slots = [];
   HOOK.slots[0] = 0;
   HOOK.slots[1] = ["p1"];
   HOOK.slots[2] = "p1";
   HOOK.slots[3] = project;
   HOOK.slots[4] = stage;
-  HOOK.slots[5] = "sprite";
+  HOOK.slots[5] = module;
   HOOK.slots[6] = null;
   HOOK.slots[7] = false;
   HOOK.slots[8] = {};
@@ -397,6 +397,8 @@ function renderStage(project, stage, tasks, hidden = [], workflow = "classic") {
 }
 
 if (typeof panel !== "function") report();
+// 下方阶段夹具代表配置已加载；浏览器用例另行覆盖配置延迟。
+bundle.__test.publishModuleOrder(undefined);
 
 // ── 阶段①：用户点名的场景 ────────────────────────────────────────────────
 section("阶段① 八方向绿幕图");
@@ -992,8 +994,8 @@ if (typeof ImageModule === "function") {
     const upload = renderModule(ImageModule, makeImageJob(), makeTasks(["img:upload"]));
     check("上传时出现忙碌徽章", byClass(upload.tree, "SPR_busyBadge").length >= 1);
     check(
-      "上传时上传区的按钮转圈",
-      byClass(upload.tree, "SPR_btn").some((node) => node.props["data-busy"] === "true")
+      "上传时可点击虚线框禁用并转圈",
+      byTag(upload.tree, "button").some((node) => node.props.className?.includes("SPR_uploadDrop") && node.props.disabled === true && byClass(node, "SPR_spinSm").length === 1)
     );
 
     // 宿主侧 running：还没轮到的那些也要盖住
@@ -1343,7 +1345,7 @@ section("功能管理（隐藏模块）");
     // 4 toapisKey / 5 minimaxKey / 6 notice / 7 testing / 8 workflowDraft /
     // 9 comfyWorkflowDraft / 10 comfyProbe / 11 comfyCookie / 12 musicKey /
     // 13 scorePaths / 14 sfxKey / 15 settingsTab。
-    HOOK.slots = [0, featureConfig, "", "", "", null, null, "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, "image"];
+    HOOK.slots = [0, featureConfig, "", "", "", "", null, "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, "image"];
     HOOK.cursor = 0;
     hookOverflow = false;
     const settings = ConfigSection({ api: configApi });
@@ -1369,8 +1371,37 @@ section("功能管理（隐藏模块）");
     check("取消勾选后写回宿主", JSON.stringify(saved.at(-1)) === JSON.stringify({ hiddenModules: ["sprite", "rig"] }), JSON.stringify(saved.at(-1)));
     check("设置页说明隐藏后 AI 也调不到", textOf(settings).includes("对话里的 AI 也无法调用它"));
 
+    // 插入线画在两行之间，必须由列表接收事件；只给行绑定 drop 会显示能放但不保存。
+    const FeatureOrderList = collect(settings, node => node.type?.name === "FeatureOrderList")[0]?.type;
+    const layoutRows = MODULE_KEYS.map((key, i) => ({
+      dataset: { feature: key }, getBoundingClientRect: () => ({ top: 100 + i * 62, height: 56 })
+    }));
+    for (const [label, source, y, expected] of [
+      ["行间插入线", "music", 159, ["sprite", "music", ...MODULE_KEYS.filter(key => !["sprite", "music"].includes(key))]],
+      ["列表顶部留白", "sfx", 96, ["sfx", ...MODULE_KEYS.filter(key => key !== "sfx")]],
+      ["列表底部留白", "sprite", 593, [...MODULE_KEYS.filter(key => key !== "sprite"), "sprite"]]
+    ]) {
+      HOOK.slots = []; HOOK.cursor = 0;
+      const saves = [];
+      const tree = FeatureOrderList({ order: MODULE_KEYS, hidden: [], onToggle() {}, onSaveOrder: async next => { saves.push(next); } });
+      const list = byClass(tree, "SPR_featureList")[0];
+      const handle = byClass(tree, "SPR_featureRow").find(node => node.props["data-feature"] === source).children[0];
+      const calls = { prevented: 0, stopped: 0 };
+      const event = {
+        clientY: y, currentTarget: { querySelectorAll: () => layoutRows, parentElement: {} },
+        dataTransfer: { setData() {}, setDragImage() {} },
+        preventDefault() { calls.prevented++; }, stopPropagation() { calls.stopped++; }
+      };
+      handle.props.onDragStart(event);
+      check(`${label}由整个列表接收拖放`, typeof list.props.onDragOver === "function" && typeof list.props.onDrop === "function");
+      list.props.onDragOver?.(event); list.props.onDrop?.(event);
+      check(`${label}放下后提交正确顺序且只保存一次`, saves.length === 1 && JSON.stringify(saves[0]) === JSON.stringify(expected), JSON.stringify(saves));
+      check(`${label}阻止宿主把排序误当成外部文件拖放`, calls.prevented === 2 && calls.stopped === 3);
+    }
+    HOOK.slots = []; HOOK.cursor = 0;
+
     /**
-     * 生图后端：ark / custom 两组配置同屏，只由「当前使用」那一个下拉决定用哪一组。
+     * 生图后端：配置表单常驻，左侧页签决定显示哪一组，实际后端由下拉决定。
      *
      * 这两组**必须同时渲染**：用户经常要先配好自定义服务、点一次「测试连接」，
      * 确认能出图之后再把它切成当前后端。只渲染「当前那一组」的话，
@@ -1393,18 +1424,18 @@ section("功能管理（隐藏模块）");
 
     // ── 分类页签：六个入口、六个面板常驻挂载 ──────────────────────────────
     const tabButtons = collect(settings, (node) => typeof node.props?.["data-testid"] === "string" && node.props["data-testid"].startsWith("cfg-tab-"));
-    const panels = collect(settings, (node) => typeof node.props?.["data-testid"] === "string" && node.props["data-testid"].startsWith("cfg-panel-"));
-    check("设置页有 6 个分类页签", tabButtons.length === 6, `${tabButtons.length} 个`);
+    const panels = collect(settings, (node) => node.type === "div" && typeof node.props?.["data-testid"] === "string" && node.props["data-testid"].startsWith("cfg-panel-"));
+    check("设置页有 7 个分类页签", tabButtons.length === 7, `${tabButtons.length} 个`);
     check("默认停在「生图」页签", tabButtons.find((node) => node.props["data-testid"] === "cfg-tab-image")?.props?.["data-active"] === "true");
-    check("六个页签面板都常驻挂载（只是 hidden）", panels.length === 6, `${panels.length} 个`);
+    check("七个页签面板都常驻挂载（只是 hidden）", panels.length === 7, `${panels.length} 个`);
     check("非当前面板被 hidden", panels.find((node) => node.props["data-testid"] === "cfg-panel-music")?.props?.hidden === true);
     check("当前面板没有 hidden", panels.find((node) => node.props["data-testid"] === "cfg-panel-image")?.props?.hidden === false);
-    // 当前生图后端（ark）展开，另外两张折叠；内容仍在树里，方便先配置再切换。
+    // 后端表单不再折叠，由左右选项卡切换；表单常驻，切换不会丢草稿。
     const arkGroup = collect(settings, (node) => node.props?.["data-testid"] === "cfg-ark-group")[0];
     const customGroup = collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-group")[0];
-    check("当前后端卡默认展开", arkGroup?.props?.["data-open"] === "true");
-    check("非当前后端卡默认折叠", customGroup?.props?.["data-open"] === "false");
-    check("折叠的后端仍渲染，可先配置再切换", collect(customGroup, (node) => node.props?.["data-testid"] === "cfg-custom-protocol").length === 1);
+    check("当前后端表单完整展开", arkGroup?.props?.["data-open"] === "true");
+    check("非当前后端也可由选项卡打开", customGroup?.props?.["data-open"] === "true" && customGroup?.props?.["data-collapsible"] === undefined);
+    check("隐藏的后端仍渲染，可先配置再切换", collect(customGroup, (node) => node.props?.["data-testid"] === "cfg-custom-protocol").length === 1);
     check("ToAPIs 视频单独成组", collect(settings, (node) => node.props?.["data-testid"] === "cfg-toapis-video").length === 1);
     const miscPanel = panels.find((node) => node.props["data-testid"] === "cfg-panel-misc");
     check("ffmpeg 状态归到「功能与数据」", textOf(miscPanel).includes("ffmpeg"));
@@ -1439,7 +1470,7 @@ section("功能管理（隐藏模块）");
       testCustomImage: () => Promise.resolve({ provider: "自定义 · ComfyUI API", bytes: 1 }),
       testMinimax: () => Promise.resolve({})
     };
-    HOOK.slots = [0, comfyConfig, "", "", "", null, null, null, undefined, undefined, undefined, undefined, undefined, undefined, undefined, "image"];
+    HOOK.slots = [0, comfyConfig, "", "", "", "", null, null, undefined, undefined, undefined, undefined, undefined, undefined, undefined, "image"];
     HOOK.cursor = 0;
     hookOverflow = false;
     const comfySettings = ConfigSection({ api: api2 });
@@ -1448,7 +1479,7 @@ section("功能管理（隐藏模块）");
     check("工作流文本框里是已经存过的那份", workflowBox?.props?.value === '{"1":{}}', String(workflowBox?.props?.value).slice(0, 40));
     check("后端切换器选中自定义", collect(comfySettings, (node) => node.props?.["data-testid"] === "cfg-image-provider")[0]?.props?.value === "custom");
     check("切到自定义后该卡展开", collect(comfySettings, (node) => node.props?.["data-testid"] === "cfg-custom-group")[0]?.props?.["data-open"] === "true");
-    check("非当前 Ark 卡折叠", collect(comfySettings, (node) => node.props?.["data-testid"] === "cfg-ark-group")[0]?.props?.["data-open"] === "false");
+    check("非当前 Ark 表单仍可完整配置", collect(comfySettings, (node) => node.props?.["data-testid"] === "cfg-ark-group")[0]?.props?.["data-open"] === "true");
     check("后端就绪时给出「后端已就绪」而不是阻塞提示", textOf(comfySettings).includes("后端已就绪") && !textOf(comfySettings).includes("还不能开跑"));
     // NumField 是函数组件，`textOf` 展不开它，只能按 props.label 找。
     check(
@@ -1636,6 +1667,32 @@ section("白模动作流程：五阶段、费用确认与选择反馈");
   HOOK.slots[5]=undefined;HOOK.cursor=0;
   const defaultTree=panel({api});
   check('插件默认显示白模入口且原流程可切换',collect(defaultTree,n=>n.type===MotionModule).length===1 && Boolean(button(defaultTree,'原有八方向流程')));
+}
+
+// ── 工作台功能缓存（不读写真实浏览器或宿主配置）─────────────────────────
+{
+  const test = bundle.__test;
+  const storage = new Map();
+  windowStub.localStorage = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) };
+  const cacheKey = "dsh-game-material-master:last-module";
+  check("无功能缓存时返回空值", test.readLastStudioModule() === null);
+  test.rememberStudioModule("image");
+  check("保存并读取上次功能", test.readLastStudioModule() === "image" && storage.get(cacheKey) === "image");
+  test.rememberStudioModule("settings");
+  check("设置页不覆盖上次功能", test.readLastStudioModule() === "image");
+  storage.set(cacheKey, "removed-module");
+  check("失效功能缓存被忽略", test.readLastStudioModule() === null);
+  windowStub.localStorage = { getItem() { throw Error("Storage unavailable"); }, setItem() { throw Error("Storage unavailable"); } };
+  test.rememberStudioModule("sequence");
+  check("浏览器禁用存储时保留页面内选择", test.readLastStudioModule() === "sequence");
+  windowStub.localStorage = undefined;
+  test.publishModuleOrder(["sequence", "image", "sprite"]);
+  const selected = (module, hidden = []) => byClass(renderStage(makeProject(), "images", makeTasks(), hidden, "classic", module).tree, "SPR_module").find(node => node.props["aria-selected"] === true)?.props["data-module"];
+  check("无缓存按保存后的顺序打开第一个功能", selected(null) === "sequence");
+  check("有效缓存优先于功能排序", selected("image") === "image");
+  check("缓存功能隐藏后打开第一个可见功能", selected("image", ["sequence", "image"]) === "sprite");
+  check("缓存功能无效时打开第一个功能", selected("removed-module") === "sequence");
+  test.publishModuleOrder(undefined);
 }
 
 report();

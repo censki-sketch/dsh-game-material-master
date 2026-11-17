@@ -1051,6 +1051,9 @@ export function registerStudioTools(host: StudioToolHost, gateway: GameStudioGat
             "hiddenModules（功能可见性）只能由用户在「设置 → 游戏素材大师 → 功能管理」里修改，工具面不允许改动。"
           );
         }
+        if (method === "saveConfig" && payload?.allowPaidVideoGeneration === true) {
+          throw new Error("付费视频开关只能由用户在右上角「设置 → 生视频」或「设置 → 游戏素材大师 → 生视频」手动开启，工具不能代为开启。可以保存其他配置或关闭开关。");
+        }
         const fn = (gateway as any)[method];
         if (typeof fn !== "function") throw new Error(`方法未实现：${method}`);
         let value: unknown;

@@ -1,4 +1,4 @@
-import {assertVideoBackendReady,videoBackendOf} from "./videogen.js";
+import {assertVideoBackendReady,assertVideoSubmissionConfirmed,videoBackendOf} from "./videogen.js";
 /**
 * dsh-8dir-sprites —— 宿主半区。
 *
@@ -82,6 +82,8 @@ import {
 } from "./pipeline.js";
 import { assetPath, createProject, deleteProject, listProjects, log, patchProject, projectDir, projectExists, readProject, resetDerivedFromSource, } from "./store.js";
 import * as imagegen from "./imagegen.js";
+import { optimizeImagePrompt, promptOptimizerModel } from "./promptoptimizer.js";
+import { IMAGE_PROMPT_TEMPLATES, validateImagePromptTemplates } from "./imageprompts.js";
 import * as seqgen from "./seqgen.js";
 import * as riggen from "./riggen.js";
 import * as isogen from "./isogen.js";
@@ -280,6 +282,7 @@ export class GameStudioGateway extends TypertRemoteService {
       ...maskConfig(config),
       rowOrder: [...config.rowOrder],
       defaults: { ...DEFAULT_CONFIG },
+      imagePromptTemplateDefaults: IMAGE_PROMPT_TEMPLATES,
       arkModels: ARK_MODEL_PRESETS,
       /**
        * 生图后端的呈现材料。
@@ -352,6 +355,15 @@ export class GameStudioGateway extends TypertRemoteService {
   async getConfig() {
     return this.configView();
   }
+  /** Explicit settings UI read; never included in the model tool surface or config snapshots. */
+  async revealConfigKey(payload) {
+    const key = asString(asRecord(payload).key, "");
+    if (!["arkApiKey", "customApiKey", "toapisApiKey", "minimaxApiKey", "musicApiKey", "sfxApiKey"].includes(key)) {
+      throw new Error("不支持查看此凭据");
+    }
+    const config = await loadConfig();
+    return { value: config[key] };
+  }
   /**
   * 保存配置。
   * 约定：`arkApiKey` / `minimaxApiKey` / `customApiKey` **只有用户确实改了才带**——
@@ -361,6 +373,8 @@ export class GameStudioGateway extends TypertRemoteService {
     const input = asRecord(payload);
     const patch: any = {};
     const directKeys = [
+      "allowPaidVideoGeneration",
+      "imagePromptTemplates",
       "toapisBaseUrl",
       "toapisImageModel",
       "toapisImageSize",
@@ -444,12 +458,14 @@ export class GameStudioGateway extends TypertRemoteService {
       "concurrency",
       // 功能可见性：设置页的「功能管理」写它，`normalizeConfig` 会收敛成合法子集。
       // 对话工具面**不允许**改它（见 tools.ts），否则模型可以自己把隐藏的功能放出来。
-      "hiddenModules"
+      "hiddenModules",
+      "moduleOrder"
     ];
     for (const key of directKeys) {
       if (input[key] !== undefined)
         patch[key] = input[key];
     }
+    if (input.imagePromptTemplates !== undefined) patch.imagePromptTemplates = validateImagePromptTemplates(input.imagePromptTemplates);
     if (typeof input.toapisApiKey === "string") patch.toapisApiKey = input.toapisApiKey.trim();
     if (input.clearToapisApiKey === true) patch.toapisApiKey = "";
     if (typeof input.arkApiKey === "string")
@@ -931,29 +947,30 @@ export class GameStudioGateway extends TypertRemoteService {
     const input = asRecord(payload);
     const id = asString(input.id);
     const module = asString(input.module);
-    const reviewMode = asString(input.reviewMode);
-    if (reviewMode !== "auto" && reviewMode !== "manual")
-      throw new Error(`未知审核模式：${reviewMode}`);
+    const requestedMode = input.reviewMode;
+    if (requestedMode !== null && requestedMode !== "auto" && requestedMode !== "manual")
+      throw new Error(`未知审核模式：${requestedMode}`);
+    const reviewMode: "auto" | "manual" | undefined = requestedMode === null ? undefined : requestedMode;
     if (module === "sprite") {
       await patchProject(id, (project) => {
         project.reviewMode = reviewMode;
-        log(project, "info", `审核模式：${reviewMode === "manual" ? "每一步人工审核" : "agent 自动审核"}`);
+        log(project, "info", `审核模式：${reviewMode === undefined ? "未设置" : reviewMode === "manual" ? "每一步人工审核" : "agent 自动审核"}`);
       });
-      return { ok: true, id, module, reviewMode };
+      return { ok: true, id, module, reviewMode: reviewMode ?? null };
     }
     if (module === "image") {
       const job = await imagegen.readImageJob(id);
       if (job === undefined) throw new Error(`任务不存在：${id}`);
       job.reviewMode = reviewMode;
       await imagegen.writeImageJob(job);
-      return { ok: true, id, module, reviewMode };
+      return { ok: true, id, module, reviewMode: reviewMode ?? null };
     }
     if (module === "sequence") {
       const job = await seqgen.readSequenceJob(id);
       if (job === undefined) throw new Error(`任务不存在：${id}`);
       job.reviewMode = reviewMode;
       await seqgen.writeSequenceJob(job);
-      return { ok: true, id, module, reviewMode };
+      return { ok: true, id, module, reviewMode: reviewMode ?? null };
     }
     // 骨骼动画：模块四的 RigJob 也有 reviewMode 字段，但早期版本的这里与 wire 的
     // module 枚举都漏了 rig —— 于是「固定流程第 0 步必须问清审核模式」这条规则对
@@ -963,14 +980,14 @@ export class GameStudioGateway extends TypertRemoteService {
       if (job === undefined) throw new Error(`任务不存在：${id}`);
       job.reviewMode = reviewMode;
       await riggen.writeRigJob(job);
-      return { ok: true, id, module, reviewMode };
+      return { ok: true, id, module, reviewMode: reviewMode ?? null };
     }
     // 45° 地图编辑器（模块五 · iso）。与模块六同一套「固定流程第 0 步问审核模式」。
     if (module === "iso") {
       await isogen.patchIsoProject(id, (project) => {
         project.reviewMode = reviewMode;
       });
-      return { ok: true, id, module, reviewMode };
+      return { ok: true, id, module, reviewMode: reviewMode ?? null };
     }
     // 地图编辑器（模块六）。**别重犯 rig / tile 那两个漏**：wire 的 module 枚举
     // 与这里必须成对加，否则「固定流程第 0 步必须问清审核模式」对 map 落不了地。
@@ -978,26 +995,26 @@ export class GameStudioGateway extends TypertRemoteService {
       // 同样走带写队列的 `patchMapProject`：地图文档的防抖落盘也在同一条队列上。
       await mapgen.patchMapProject(id, (project) => {
         project.reviewMode = reviewMode;
-        appendJobLog(project.logs, "info", `审核模式：${reviewMode === "manual" ? "每一步人工审核" : "agent 自动审核"}`);
+        appendJobLog(project.logs, "info", `审核模式：${reviewMode === undefined ? "未设置" : reviewMode === "manual" ? "每一步人工审核" : "agent 自动审核"}`);
       });
-      return { ok: true, id, module, reviewMode };
+      return { ok: true, id, module, reviewMode: reviewMode ?? null };
     }
     // 音乐生成编辑（模块七）。**别重犯 rig / tile / map 那三个漏**：wire 的
     // module 枚举、tools 的模块表与这里必须成对加。
     if (module === "music") {
       await musicgen.patchMusicJob(id, (job) => {
         job.reviewMode = reviewMode;
-        musicgen.musicLog(job, "info", `审核模式：${reviewMode === "manual" ? "每一步人工审核" : "agent 自动审核"}`);
+        musicgen.musicLog(job, "info", `审核模式：${reviewMode === undefined ? "未设置" : reviewMode === "manual" ? "每一步人工审核" : "agent 自动审核"}`);
       });
-      return { ok: true, id, module, reviewMode };
+      return { ok: true, id, module, reviewMode: reviewMode ?? null };
     }
     // 音效生成（模块八）。同样：wire 的 module 枚举、tools 的模块表与这里必须成对加。
     if (module === "sfx") {
       await sfxgen.patchSfxJob(id, (job) => {
         job.reviewMode = reviewMode;
-        sfxgen.sfxLog(job, "info", `审核模式：${reviewMode === "manual" ? "每一步人工审核" : "agent 自动审核"}`);
+        sfxgen.sfxLog(job, "info", `审核模式：${reviewMode === undefined ? "未设置" : reviewMode === "manual" ? "每一步人工审核" : "agent 自动审核"}`);
       });
-      return { ok: true, id, module, reviewMode };
+      return { ok: true, id, module, reviewMode: reviewMode ?? null };
     }
     throw new Error(`未知模块：${module}`);
   }
@@ -1483,7 +1500,7 @@ export class GameStudioGateway extends TypertRemoteService {
     const project = await readProject(projectId);
     if (project === undefined)
       throw new Error(`项目不存在：${projectId}`);
-    const keys = Array.isArray(input.keys) ? input.keys.filter((k) => directionOf(k) !== undefined) : undefined;
+    const keys = Array.isArray(input.keys) ? [...new Set<string>(input.keys.filter((k): k is string => typeof k === "string" && directionOf(k) !== undefined))] : undefined;
     // 「重新生成」只允许点名方向：批量提交带这个标记会把八段视频全部重跑一遍，
     // 用户点一下「生成全部视频」就白花八段视频的钱。
     const regenerate = input.regenerate === true;
@@ -1504,6 +1521,7 @@ export class GameStudioGateway extends TypertRemoteService {
     if (pending.length === 0) {
       throw new Error(`这些方向已经在生成中，请等它们跑完：${running.join("、")}`);
     }
+    assertVideoSubmissionConfirmed(await loadConfig(), input.confirmed);
     // 「重新生成」：先把旧视频与它抽出来的帧作废，否则 startVideos 会把 ready 的方向
     // 当成「已完成」跳过——界面表现为转一圈就结束，失败信息只留在日志里
     // （实测报错：「没有可提交的方向：请先生成绿幕图，或先清掉已完成的视频」）。
@@ -1611,7 +1629,8 @@ export class GameStudioGateway extends TypertRemoteService {
   }
   /** 生成转圈视频（**花钱**：一次 MiniMax 调用）。整圈只有这一段视频。 */
   async runTurnVideo(payload) {
-    const projectId = asString(asRecord(payload).projectId);
+    const input = asRecord(payload);
+    const projectId = asString(input.projectId);
     const project = await readProject(projectId);
     if (project === undefined)
       throw new Error(`项目不存在：${projectId}`);
@@ -1620,6 +1639,7 @@ export class GameStudioGateway extends TypertRemoteService {
     const running = project.turn?.video?.status === "running";
     if (running)
       throw new Error("转圈视频正在生成中，请等它跑完（重复提交会覆盖正在跑的任务）");
+    assertVideoSubmissionConfirmed(await loadConfig(), input.confirmed);
     return startTurnVideo(projectId);
   }
   /** 抽取转圈候选帧（本机 ffmpeg，不花钱），并按当前截帧位置切出八张方向图。 */
@@ -1701,7 +1721,11 @@ export class GameStudioGateway extends TypertRemoteService {
   }
 
   async createImageJob(payload) {
-    const job = await imagegen.createImageJob(asString(asRecord(payload).name, ""));
+    const input = asRecord(payload);
+    const template = (await loadConfig()).imagePromptTemplates.find(item => item.id === input.promptTemplate);
+    if (input.promptTemplate && !template) throw new Error("提示词模板已不存在，请刷新后重新选择。");
+    const job = await imagegen.createImageJob(asString(input.name, ""), template?.prompt[input.lang === "en" ? "en" : "zh"] ?? "");
+    if (template) { job.promptTemplateId = template.id; job.promptTemplateLang = input.lang === "en" ? "en" : "zh"; await imagegen.writeImageJob(job); }
     return { jobId: job.id };
   }
 
@@ -1714,12 +1738,33 @@ export class GameStudioGateway extends TypertRemoteService {
      * （例如 `composeMapAsset` 整理地图素材），而 `assetBase` 是给浏览器用的 URL。
      * 产物绝对路径 = `dir + "/" + item.file`（`out/img-00.png`）。
      */
-    return { ...job, dir: imagegen.imageJobDir(jobId), assetBase: assetBasePath(`${ROUTE_PREFIX}/image-assets/${jobId}/`) };
+    return { ...job, promptTemplates: (await loadConfig()).imagePromptTemplates, dir: imagegen.imageJobDir(jobId), assetBase: assetBasePath(`${ROUTE_PREFIX}/image-assets/${jobId}/`) };
   }
 
   async deleteImageJob(payload) {
     await imagegen.deleteImageJob(asString(asRecord(payload).jobId));
     return { ok: true };
+  }
+
+  async getPromptOptimizerModel() { return promptOptimizerModel(this.ctx); }
+  async optimizeImagePrompt(payload) {
+    const input = asRecord(payload);
+    const jobId = asString(input.jobId);
+    const job = await imagegen.readImageJob(jobId);
+    if (job === undefined) throw new Error(`任务不存在：${jobId}`);
+    const prompt = asString(input.prompt);
+    const files = input.referenceFiles ?? [];
+    if (!Array.isArray(files) || files.length > 10 || new Set(files).size !== files.length) throw new Error("引用的参考图无效，请重新选择。");
+    const references = files.map(file => {
+      const index = job.refs.findIndex(ref => ref.file === file);
+      if (index < 0) throw new Error("引用的参考图已不存在，请重新选择。");
+      return { ...job.refs[index], label: `@图片${index + 1}` };
+    });
+    if (input.referenceFiles !== undefined) {
+      const mentioned = new Set([...prompt.matchAll(/@图片(\d+)/g)].map(match => match[1] === String(Number(match[1])) ? job.refs[Number(match[1]) - 1]?.file : undefined));
+      if (mentioned.has(undefined) || mentioned.size !== files.length || files.some(file => !mentioned.has(file))) throw new Error("参考图引用与当前图片列表不一致，请重新选择。");
+    }
+    return optimizeImagePrompt(this.ctx, { jobId, prompt, suffix: asString(input.suffix, ""), references, confirmed: input.confirmed === true });
   }
 
   async saveImageJob(payload) {
@@ -1729,7 +1774,18 @@ export class GameStudioGateway extends TypertRemoteService {
     if (job === undefined) throw new Error(`任务不存在：${jobId}`);
     if (typeof input.name === "string" && input.name.trim() !== "") job.name = input.name.trim().slice(0, 80);
     if (typeof input.prompt === "string") job.prompt = input.prompt;
-    if (typeof input.suffix === "string") job.suffix = input.suffix;
+    if (typeof input.suffix === "string") { job.suffix = input.suffix; delete job.promptTemplateId; delete job.promptTemplateLang; }
+    if (input.promptTemplate !== undefined) {
+      if (input.promptTemplate === null) { job.suffix = ""; delete job.promptTemplateId; delete job.promptTemplateLang; }
+      else {
+        const template = (await loadConfig()).imagePromptTemplates.find(item => item.id === input.promptTemplate);
+        if (!template && typeof input.suffix !== "string") throw new Error("提示词模板已不存在，请刷新后重新选择。");
+        job.promptTemplateId = input.promptTemplate;
+        job.promptTemplateLang = input.lang === "en" ? "en" : "zh";
+        // Deferred UI choices submit their visible text once with generation; keep that exact snapshot.
+        job.suffix = typeof input.suffix === "string" ? input.suffix : template!.prompt[job.promptTemplateLang];
+      }
+    }
     if (input.settings !== undefined) {
       const raw = asRecord(input.settings);
       const current = await loadConfig();
@@ -1928,7 +1984,8 @@ export class GameStudioGateway extends TypertRemoteService {
   }
 
   async runSequenceVideo(payload) {
-    const jobId = asString(asRecord(payload).jobId);
+    const input = asRecord(payload);
+    const jobId = asString(input.jobId);
     const job = await seqgen.readSequenceJob(jobId);
     if (job === undefined) throw new Error(`任务不存在：${jobId}`);
     if (job.video.status === "running" && typeof job.video.taskId === "string") {
@@ -1944,6 +2001,7 @@ export class GameStudioGateway extends TypertRemoteService {
     if (job.frames.raw !== undefined && job.video.status === "empty") {
       throw new Error("清空视频后才能重新生成");
     }
+    assertVideoSubmissionConfirmed(await loadConfig(), input.confirmed);
     return seqgen.startSequenceVideo(jobId);
   }
 

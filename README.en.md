@@ -241,19 +241,26 @@ images are sharper, which suits cases where you only need a few directions or wa
 
 ## ② Image generation
 
-Generate images from a prompt, with optional reference images. After generation the green screen is
-**keyed automatically** into a transparent PNG — or you can upload an existing image and run only the keying,
+Generate images from a prompt, with optional reference images. Enable **Transparent background** inside the prompt
+box to add solid-background instructions and automatically key the same color locally into a transparent PNG,
+without configuring keying parameters. You can also upload an existing image and run only the keying,
 without spending anything on generation.
 
 ### How to use it
 
 1. Write the main prompt; put requirements you reuse across batches (for example "no text watermarks") into the
    **common suffix prompt**.
-2. Optional: drop in **reference images** (up to 10); with references present, it runs image-to-image. To cite
-   several of them, refer to "image one", "image two" in the prompt.
-3. Pick the model / size / count and click **Generate**.
-4. In the results area, review **image by image**: approve, download the original / download the PNG (the keyed
-   result), regenerate, delete. The background percentage is shown right there so you can judge how clean the keying is.
+2. Optional: drop in **reference images** (up to 10); with references present, it runs image-to-image. Each image
+   has its own row with a thumbnail, `@图片N` identifier and filename. Click to preview the original. Both the
+   main prompt and the optimization dialog support typing `@` to select and highlight image references.
+   Backspace / Delete removes a complete valid reference. Advanced keying and existing-image uploads are collapsed by default.
+3. Expand **Advanced settings** below the prompt card to set the model / size / count, then click **Generate** in the right-hand results card. Review mode sits on the same row as Generate and can be reset to Not set. Template and review dropdowns share themed menus with rounded corners and selected indicators. The two advanced sections share one card and expand independently.
+4. Results appear on the far right, or below the editor on narrow screens. Click an image to preview it. Each card's **⋯** menu beside its status badge contains approve, download the original /
+   download the PNG (the keyed result), regenerate and delete. The background percentage is shown right there so you can judge how clean the keying is.
+
+The transparent-background switch sits at the bottom right of the prompt box, beside Optimize. Save, upload and
+operation feedback across modules uses floating notifications without shifting the page. Success messages dismiss
+automatically; errors stay until dismissed.
 
 ![Image generation · prompt and reference images](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-06-image.png)
 
@@ -474,8 +481,8 @@ installation tree.
 | Sound effects (Volcengine Seed-Audio) | Speech console API key (not the Ark key), base URL, default model `seed-audio-1.0`, default format / sample rate and timeout; "Test connection" really generates one very short sound effect (small charge) |
 | Feature management | Per-module switches: a disabled module disappears from the UI **and the agent cannot call it either** (see below) |
 
-Keys are written only to `<DSH_HOME>/game-material-master/config.json` on your machine, and the UI always
-masks them when displaying them back. **The image backend and model are plugin-level settings shared by
+Keys are written only to `<DSH_HOME>/game-material-master/config.json` on your machine and show a masked value after saving. Focus the input to enter a replacement; leaving it empty keeps the saved key.
+In settings, click the eye icon inside a key input to view the saved key; click again or leave the input area to hide it. Viewing does not change settings or call generation APIs. Model tools cannot read saved keys. **The image backend and model are plugin-level settings shared by
 every module that generates images**; after you switch, tasks align to the new tier automatically.
 Image-to-video always goes through MiniMax and is unaffected by the image backend.
 

@@ -147,7 +147,10 @@ check("map.json 格式正确", json.format === "dsh-gem-iso-map@1" && json.proje
 check("map.json 带对象与标记源数据", Array.isArray(json.objects) && Array.isArray(json.markers));
 const zip = await readFile(join(dir, view2.exportFiles.find((file) => file.endsWith(".zip"))));
 check("zip 以 PK 开头", zip[0] === 0x50 && zip[1] === 0x4b);
-const listing = execFileSync("unzip", ["-l", join(dir, view2.exportFiles.find((file) => file.endsWith(".zip")))], { encoding: "utf8" });
+const zipFile = join(dir, view2.exportFiles.find((file) => file.endsWith(".zip")));
+const listing = process.platform === "win32"
+  ? execFileSync("tar", ["-tf", zipFile], { encoding: "utf8" })
+  : execFileSync("unzip", ["-l", zipFile], { encoding: "utf8" });
 check("zip 里真有 map.png / map.json", /map\.png/.test(listing) && /map\.json/.test(listing));
 
 const png1 = await readFile(join(dir, "map.png"));

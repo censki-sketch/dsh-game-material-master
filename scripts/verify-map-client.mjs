@@ -974,7 +974,9 @@ try {
   async function freshPanel(apiImpl = api, tries = 3) {
     let mounted = await renderTree(() => MapModule({ api: apiImpl }), { fresh: true });
     for (let i = 1; i < tries && textOf(mounted).includes("还没有地图项目"); i++) {
-      mounted = await renderTree(() => MapModule({ api: apiImpl }), { fresh: true });
+      // Give real filesystem reads wall-clock time to finish; remounting would discard their state.
+      await delay(25 * i);
+      mounted = await renderTree(() => MapModule({ api: apiImpl }));
     }
     return mounted;
   }
@@ -998,6 +1000,8 @@ try {
     if (node === null || node === undefined) return "";
     if (typeof node === "string" || typeof node === "number") return String(node);
     if (Array.isArray(node)) return node.map(textOf).join("");
+    // The parent passes feedback into the shared popup; real DOM/timers are covered by its browser test.
+    if (node.type === test.NoticePopup) return typeof node.props?.notice === "string" ? node.props.notice : node.props?.notice?.text ?? "";
     return (node.children ?? []).map(textOf).join("");
   };
   /** 递归展开函数组件（**只用于独立渲染的子树**：展开会消耗 Hook 槽位）。 */
@@ -1051,6 +1055,7 @@ try {
         await Promise.resolve();
         if (pendingRender || inFlight > 0) {
           quiet = 0;
+          if (inFlight > 0) await delay(1);
           if (tick > 220) {
             /**
              * 多数情况下这是**本 harness 的已知特性**，不是界面在死循环：
@@ -1075,6 +1080,7 @@ try {
         await Promise.resolve();
         if (pendingRender || inFlight > 0) {
           quietAfter = 0;
+          if (inFlight > 0) await delay(1);
           if (tick > 220) {
             if (settleNotes++ === 0) note(`⚠️ 等待稳定超时（定时器后；同上，属已知特性；tick=${tick}，inFlight=${inFlight}）`);
             break;

@@ -25,6 +25,7 @@ import {
   normalizeResolution,
 } from "./minimax.js";
 import {
+  assertVideoBackendReady,
   downloadVideoTask,
   queryVideoTask,
   submitVideoTask,
@@ -753,6 +754,7 @@ async function submit(
     throw new Error(
       "此白模流程需要支持参考视频的MiniMax后端；当前ComfyUI/ToAPIs工作流不能保证传入参考视频",
     );
+  assertVideoBackendReady(config);
   if (
     capabilityOf(config.minimaxModel).protocol !== "v2" ||
     normalizeDuration(config.minimaxModel, 4) !== 4 ||

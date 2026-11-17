@@ -27,8 +27,8 @@ const LINKS = await import("../lib/links.js");
 const source = readFileSync(new URL("../src/wire.ts", import.meta.url), "utf8");
 
 section("1) 方法表 / 模块枚举");
-check("wire 方法总数为 188", WIRE.METHODS.length === 188, String(WIRE.METHODS.length));
 const names = new Set(WIRE.METHODS.map((method) => method.method));
+check("wire 方法名不重复", names.size === WIRE.METHODS.length, String(WIRE.METHODS.length));
 for (const method of ["listIsoProjects", "createIsoProject", "getIsoProject", "saveIsoProject", "deleteIsoProject", "importIsoTileset", "importIsoSampleTileset", "composeIsoAsset", "saveIsoTileset", "removeIsoTileset", "saveIsoDoc", "applyIsoOps", "isoUndo", "isoRedo", "isoPlan", "isoInspect", "isoRender", "runIsoGenerate", "runIsoPreview", "runIsoExport", "cancelIsoJob", "setIsoApproved", "revealIsoProject"]) {
   check(`注册了 ${method}`, names.has(method));
 }

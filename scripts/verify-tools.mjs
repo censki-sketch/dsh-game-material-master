@@ -248,6 +248,7 @@ async function main() {
   check("saveSequenceJob 保留 approved / step", saveSequence.approved === true && saveSequence.step === "frames", JSON.stringify(saveSequence));
   const reviewMode = specOf("setReviewMode").payload.parse({ id: "p1", module: "sprite", reviewMode: "manual" });
   check("setReviewMode payload 完整", reviewMode.reviewMode === "manual" && reviewMode.module === "sprite", JSON.stringify(reviewMode));
+  check("setReviewMode 保留 null 清除审核模式", specOf("setReviewMode").payload.parse({ id: "i1", module: "image", reviewMode: null }).reviewMode === null);
   const originPayload = specOf("reportClientOrigin").payload.parse({ origin: "http://127.0.0.1:43120" });
   check("reportClientOrigin payload 完整", originPayload.origin === "http://127.0.0.1:43120", JSON.stringify(originPayload));
   // DSH 0.2.1 的 --public-url 路径前缀：path 不在 schema 里会被静默丢掉。
@@ -302,8 +303,8 @@ async function main() {
     Object.keys(emptyIntake.known).join("、")
   );
 
-  // 配置一个假 Key，blocker 应当消失。
-  await studio.saveConfig({ arkApiKey: "sk-verify-tools", minimaxApiKey: "mm-verify-tools" });
+  // 假接口配置仍需用户手动打开付费开关；工具本身不能开启。
+  await studio.saveConfig({ allowPaidVideoGeneration: true, arkApiKey: "sk-verify-tools", minimaxApiKey: "mm-verify-tools" });
   const withKey = await run("game_material_intake", { module: "sprite" });
   check("配好 Key 后不再报 blocker", withKey.blockers.length === 0, withKey.blockers.join("；"));
 
@@ -504,6 +505,7 @@ async function main() {
       check(name, message.includes(needle), message.slice(0, 90));
     }
   };
+  await expectThrow("工具不能打开付费视频开关", () => run("game_material_call", { method: "saveConfig", payload: { allowPaidVideoGeneration: true } }), "手动开启");
   await expectThrow("未知方法被拒绝", () => run("game_material_call", { method: "nope" }), "未知方法");
   await expectThrow("缺 payload 被拒绝", () => run("game_material_call", { method: "getProject" }), "payload");
   await expectThrow("上传不支持的种类被拒绝", () => run("game_material_upload", { module: "sprite", id: projectId, kind: "ref", path: sourcePath }), "不支持 kind");

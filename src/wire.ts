@@ -100,7 +100,7 @@ const setReviewModeSchema = z.object({
    * （骨骼动画与地图地块都踩过：走到宿主才抛「未知模块」）。模块六（map）同理。
    */
   module: z.enum(["sprite", "image", "sequence", "rig", "iso", "map", "music", "sfx"]),
-  reviewMode: z.enum(["auto", "manual"])
+  reviewMode: z.enum(["auto", "manual"]).nullable()
 });
 const runImageSchema = z.object({ projectId: z.string(), key: z.string(), prompt: z.string().optional() });
 const runImagesSchema = z.object({ projectId: z.string(), force: z.boolean().optional() });
@@ -154,6 +154,7 @@ const setWalkPicksSchema = z.object({
 const resetWalkPicksSchema = z.object({ projectId: z.string(), key: z.string() });
 const runVideosSchema = z.object({
   projectId: z.string(),
+  confirmed: z.boolean().optional(),
   keys: z.array(z.string()).optional(),
   /**
    * 「重新生成」：已经完成的视频也重新提交。
@@ -168,12 +169,14 @@ const runVideosSchema = z.object({
 
 // ── 图片生成模块 ────────────────────────────────────────────────────────
 const imageJobIdSchema = z.object({ jobId: z.string() });
-const createImageJobSchema = z.object({ name: z.string().optional() });
+const createImageJobSchema = z.object({ name: z.string().optional(), promptTemplate: z.string().max(64).optional(), lang: z.enum(["zh", "en"]).optional() });
 const saveImageJobSchema = z.object({
   jobId: z.string(),
   name: z.string().optional(),
   prompt: z.string().optional(),
   suffix: z.string().optional(),
+  promptTemplate: z.string().max(64).nullable().optional(),
+  lang: z.enum(["zh", "en"]).optional(),
   settings: z.record(z.string(), z.unknown()).optional(),
   keying: z.record(z.string(), z.unknown()).optional(),
   /** 验收打标：不带 index 就是整个任务，带 index 只改那一张。 */
@@ -1200,6 +1203,7 @@ const exportSfxSchema = z.object({
 });
 
 export const METHODS: MethodSpec[] = [  { method: "getConfig", result: configViewSchema },
+  { method: "revealConfigKey", clientOnly: true, payload: z.object({ key: z.enum(["arkApiKey", "customApiKey", "toapisApiKey", "minimaxApiKey", "musicApiKey", "sfxApiKey"]) }), result: z.object({ value: z.string() }) },
   { method: "saveConfig", payload: saveConfigSchema, result: configViewSchema },
   { method: "testArk", result: jsonObject },
   { method: "testCustomImage", result: jsonObject },
@@ -1230,7 +1234,7 @@ export const METHODS: MethodSpec[] = [  { method: "getConfig", result: configVie
   { method: "runImage", payload: runImageSchema, result: startedSchema },
   { method: "runImages", payload: runImagesSchema, result: startedSchema },
   { method: "setImageMode", payload: setImageModeSchema, result: okSchema },
-  { method: "runTurnVideo", payload: projectOnlySchema, result: startedSchema },
+  { method: "runTurnVideo", payload: projectOnlySchema.extend({ confirmed: z.boolean().optional() }), result: startedSchema },
   { method: "runTurnFrames", payload: runTurnFramesSchema, result: startedSchema },
   { method: "setTurnPick", payload: setTurnPickSchema, result: jsonObject },
   { method: "setTurnPicks", payload: setTurnPicksSchema, result: jsonObject },
@@ -1253,6 +1257,8 @@ export const METHODS: MethodSpec[] = [  { method: "getConfig", result: configVie
   { method: "getImageJob", payload: imageJobIdSchema, result: projectViewSchema },
   { method: "deleteImageJob", payload: imageJobIdSchema, result: okSchema },
   { method: "saveImageJob", payload: saveImageJobSchema, result: okSchema },
+  { method: "getPromptOptimizerModel", result: z.object({ available: z.boolean(), model: z.string(), provider: z.string(), message: z.string().optional(), imageReferencesSupported: z.boolean().optional() }), clientOnly: true },
+  { method: "optimizeImagePrompt", payload: z.object({ jobId: z.string(), prompt: z.string().min(1).max(12000), suffix: z.string().max(6000).optional(), referenceFiles: z.array(z.string().max(300)).max(10).optional(), confirmed: z.boolean() }), result: z.object({ prompt: z.string(), model: z.string(), provider: z.string(), attemptId: z.string() }), clientOnly: true },
   { method: "uploadImageRef", payload: uploadSchema2, result: okSchema },
   { method: "removeImageRef", payload: removeRefSchema2, result: okSchema },
   { method: "addImageItem", payload: uploadSchema2, result: okSchema },
@@ -1277,7 +1283,7 @@ export const METHODS: MethodSpec[] = [  { method: "getConfig", result: configVie
   { method: "saveSequenceJob", payload: saveSequenceJobSchema, result: okSchema },
   { method: "uploadSequenceRef", payload: uploadSequenceRefSchema, result: okSchema },
   { method: "removeSequenceRef", payload: removeSequenceRefSchema, result: okSchema },
-  { method: "runSequenceVideo", payload: sequenceJobIdSchema, result: startedSchema },
+  { method: "runSequenceVideo", payload: sequenceJobIdSchema.extend({ confirmed: z.boolean().optional() }), result: startedSchema },
   { method: "pollSequenceVideo", payload: sequenceJobIdSchema, result: okSchema },
   { method: "clearSequenceVideo", payload: sequenceJobIdSchema, result: okSchema },
   { method: "runSequenceFrames", payload: runSequenceFramesSchema, result: startedSchema },

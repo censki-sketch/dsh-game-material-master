@@ -159,6 +159,9 @@ try {
   check('local reference is exactly 4 seconds, 864×480', Math.abs(await media.probeDuration(motion.motionAssetPath(id,job.prepared.video))-4)<.01 && (await media.probeSize(motion.motionAssetPath(id,job.prepared.video))).width===864);
   await step(id,'video',{},/确认/);
   check('no video request without cost confirmation', videoPosts===0);
+  await step(id,'video',{ confirmed:true },/已锁定/);
+  check('default video lock makes no paid request and leaves no submission ledger', videoPosts===0 && !(await motion.readMotion(id)).video);
+  await gw('saveConfig', { allowPaidVideoGeneration:true });
   await gw('runMotionStep', { jobId:id,step:'video',confirmed:true });
   await assert.rejects(()=>gw('runMotionStep',{ jobId:id,step:'video',confirmed:true }),/重复/);
   await settled(id);
@@ -166,10 +169,11 @@ try {
   check('double click and pending state cause exactly one submission', videoPosts===1);
   check('video request has reference video, two images, 480P and 4 seconds', postedVideo.duration===4 && postedVideo.resolution==='480P' && postedVideo.content.filter(v=>v.type==='video_url').length===1 && postedVideo.content.filter(v=>v.type==='image_url').length===2);
   // Changing the default model/endpoint must not redirect an in-flight task.
-  await config.saveConfig({ minimaxModel:'MiniMax-Hailuo-02', minimaxBaseUrl:'http://invalid.invalid' });
+  await config.saveConfig({ allowPaidVideoGeneration:false, minimaxModel:'MiniMax-Hailuo-02', minimaxBaseUrl:'http://invalid.invalid' });
   await step(id,'poll');
   job = await motion.readMotion(id);
   check('queries and download use recorded endpoint/model', videoQueries===1 && job.video.status==='ready');
+  await config.saveConfig({ allowPaidVideoGeneration:true });
   await step(id,'extract',{},/确认抽帧范围/);
   await gw('saveMotionJob',{ jobId:id,ranges:defaults,rangesConfirmed:true });
   await step(id,'extract');

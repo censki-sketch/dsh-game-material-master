@@ -2,7 +2,7 @@
  * 插件配置：API 凭证、模型选择、以及整条流水线的默认参数。
  *
  * 落盘位置：`${DSH_HOME:-~/.dsh}/game-material-master/config.json`。
- * Key 只存在宿主本机，从不回传给浏览器明文（`maskConfig` 负责脱敏）。
+ * Key 保存在宿主本机，常规配置视图由 `maskConfig` 脱敏；仅设置页显式查看时按项读取明文。
  */
 
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { DEFAULT_ROW_ORDER } from "./directions.js";
 import { DEFAULT_KEY_COLOR, normalizeKeyColor } from "./keycolor.js";
 import { STUDIO_MODULES } from "./links.js";
+import { normalizeImagePromptTemplates, type ImagePromptTemplate } from "./imageprompts.js";
 import { MUSIC_DEFAULT_MODEL } from "./musicmodels.js";
 import {
   SFX_DEFAULT_BASE_URL,
@@ -160,6 +161,7 @@ export const CUSTOM_PROTOCOL_DEFAULTS: Record<CustomProtocol, { baseUrl: string;
 };
 
 export interface Config {
+  imagePromptTemplates: ImagePromptTemplate[];
   toapisBaseUrl: string;
   toapisApiKey: string;
   toapisImageModel: string;
@@ -237,6 +239,8 @@ export interface Config {
   /** 请求超时（毫秒）。 */
   arkTimeoutMs: number;
 
+  /** 付费视频提交总开关。旧配置缺字段时也保持关闭，只由用户在设置里开启。 */
+  allowPaidVideoGeneration: boolean;
   /** MiniMax API Key。 */
   minimaxApiKey: string;
   /**
@@ -341,7 +345,7 @@ export interface Config {
    * **音乐生成编辑（模块七）**。
    *
    * 目前只接谱乐 AI（`puyue`）。`musicApiKey` 与其它凭据同一档：落盘明文，
-   * 但**从不回传浏览器**（配置视图里只有 `musicApiKeySet` / hint）。
+   * 常规配置视图只返回 `musicApiKeySet` / hint；设置页显式查看时单项读取明文。
    */
   musicProvider: "puyue";
   musicApiKey: string;
@@ -367,7 +371,7 @@ export interface Config {
   /**
    * **音效生成（模块八，火山引擎 Seed-Audio）**。
    *
-   * `sfxApiKey` 与其它凭据同一档：落盘明文，但**从不回传浏览器**。
+   * `sfxApiKey` 与其它凭据同一档：落盘明文，配置视图脱敏，设置页可显式查看。
    * 注意它是**语音控制台**的 API Key（请求头 `X-Api-Key`），不是火山方舟的
    * `ARK_API_KEY`——两者不能混用。
    */
@@ -391,12 +395,15 @@ export interface Config {
    * 空数组（默认）= 八个模块全部可见。全隐藏是允许的：面板会显示一句空态。
    */
   hiddenModules: string[];
+  /** 界面功能顺序：全部合法模块各出现一次，隐藏不改变顺序。 */
+  moduleOrder: string[];
 
   /** 并发请求数（生图 / 视频 / 抽帧各自受限）。 */
   concurrency: number;
 }
 
 export const DEFAULT_CONFIG: Config = {
+  imagePromptTemplates: normalizeImagePromptTemplates(undefined),
   toapisBaseUrl: "https://toapis.cn/v1",
   toapisApiKey: "",
   toapisImageModel: "gpt-image-2-vip",
@@ -447,6 +454,7 @@ export const DEFAULT_CONFIG: Config = {
   arkWatermark: false,
   arkTimeoutMs: 180000,
 
+  allowPaidVideoGeneration: false,
   minimaxApiKey: "",
   minimaxBaseUrl: "https://api.minimaxi.com",
   minimaxModel: "MiniMax-H3",
@@ -508,6 +516,7 @@ export const DEFAULT_CONFIG: Config = {
   rowOrder: [...DEFAULT_ROW_ORDER],
   rowOrderVersion: ROW_ORDER_VERSION,
   hiddenModules: [],
+  moduleOrder: [...STUDIO_MODULES],
   concurrency: 3
 };
 
@@ -575,6 +584,12 @@ export function normalizeHiddenModules(value: unknown): string[] {
   return STUDIO_MODULES.filter((key) => wanted.has(key));
 }
 
+/** 保留用户顺序，去除未知值和重复项；升级新增的模块自动补到末尾。 */
+export function normalizeModuleOrder(value: unknown): string[] {
+  const wanted = Array.isArray(value) ? value : [];
+  return [...new Set<string>([...wanted.filter((key): key is string => typeof key === "string" && (STUDIO_MODULES as readonly string[]).includes(key)), ...STUDIO_MODULES])];
+}
+
 /** 把任意读入的 JSON 收敛成一份合法配置，缺项一律回落默认值。 */
 export function normalizeConfig(input: unknown): Config {
   const raw = (input ?? {}) as Record<string, unknown>;
@@ -599,6 +614,7 @@ export function normalizeConfig(input: unknown): Config {
   const comfyWorkflow = comfyWorkflowRaw.trim() === "" ? DEFAULT_CONFIG.comfyWorkflow : comfyWorkflowRaw;
 
   return {
+    imagePromptTemplates: normalizeImagePromptTemplates(raw.imagePromptTemplates),
     toapisBaseUrl: asString(raw.toapisBaseUrl, DEFAULT_CONFIG.toapisBaseUrl).trim(),
     toapisApiKey: asString(raw.toapisApiKey, DEFAULT_CONFIG.toapisApiKey).trim(),
     toapisImageModel: asString(raw.toapisImageModel, DEFAULT_CONFIG.toapisImageModel).trim(),
@@ -638,6 +654,7 @@ export function normalizeConfig(input: unknown): Config {
     arkWatermark: asBool(raw.arkWatermark, DEFAULT_CONFIG.arkWatermark),
     arkTimeoutMs: asInt(raw.arkTimeoutMs, DEFAULT_CONFIG.arkTimeoutMs, 10000, 900000),
 
+    allowPaidVideoGeneration: raw.allowPaidVideoGeneration === true,
     minimaxApiKey: asString(raw.minimaxApiKey, DEFAULT_CONFIG.minimaxApiKey),
     minimaxBaseUrl,
     minimaxModel,
@@ -700,6 +717,7 @@ export function normalizeConfig(input: unknown): Config {
     rowOrder,
     rowOrderVersion: ROW_ORDER_VERSION,
     hiddenModules: normalizeHiddenModules(raw.hiddenModules),
+    moduleOrder: normalizeModuleOrder(raw.moduleOrder),
     concurrency: asInt(raw.concurrency, DEFAULT_CONFIG.concurrency, 1, 8)
   };
 }
@@ -712,7 +730,7 @@ export async function loadConfig(): Promise<Config> {
     const text = await readFile(configPath(), "utf8");
     cache = normalizeConfig(JSON.parse(text));
   } catch {
-    cache = { ...DEFAULT_CONFIG, rowOrder: [...DEFAULT_ROW_ORDER], hiddenModules: [] };
+    cache = { ...DEFAULT_CONFIG, rowOrder: [...DEFAULT_ROW_ORDER], hiddenModules: [], moduleOrder: [...STUDIO_MODULES] };
   }
   return cache;
 }
@@ -755,6 +773,7 @@ export function maskConfig(config: Config): ConfigView {
     rowOrder: [...config.rowOrder],
     // 复制一份再回传：界面改勾选后会把它当草稿改，共享同一个数组会互相写花。
     hiddenModules: [...config.hiddenModules],
+    moduleOrder: [...config.moduleOrder],
     toapisApiKeySet: toapisApiKey.trim() !== "",
     toapisApiKeyHint: hintOf(toapisApiKey),
     arkApiKeySet: arkApiKey.trim() !== "",

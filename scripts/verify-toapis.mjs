@@ -132,6 +132,7 @@ async function reject(name, fn, pattern) {
 }
 const key = "private-test-key-never-return-to-browser";
 const config = normalizeConfig({
+  allowPaidVideoGeneration: true,
   imageProvider: "toapis",
   toapisBaseUrl: origin + "/v1/",
   toapisApiKey: key,

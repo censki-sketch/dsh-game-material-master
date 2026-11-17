@@ -18,7 +18,7 @@ import { extractFrames, probeDuration, probeSize, workingSize } from "../lib/med
 import { composeSheet, keyGreen, segmentBackground, segmentBackgroundDetailed, unionBoundingBox } from "../lib/chroma.js";
 import { encodePng } from "../lib/png.js";
 
-const ROOT = fileURLToPath(new URL("../.verify/", import.meta.url));
+const ROOT = fileURLToPath(new URL("../.verify/pipeline/", import.meta.url));
 const CELL = 64;
 const FRAMES = 8;
 const DIRECTIONS = ["front", "back", "downLeft", "downRight", "upLeft", "upRight", "left", "right"];

@@ -132,7 +132,7 @@ async function main() {
   // 「AI 生成素材」新增 composeMapAsset（整理一批帧 → 一张待确认的素材图），134 → 135。
   // 「原地重烘」新增 recomposeMapTileset（按现在的规则重烘一张素材，保留图块序号），135 → 136。
   // 音效生成（模块八）新增 13 个方法（testSfx + 12 个 sfx 方法），163 → 176。
-  check("manifest 方法数为 195（含白模流程七个方法）", invocations.length === 195, `实际 ${invocations.length}`);
+  check("manifest 方法数为 198（含设置页按项查看原Key）", invocations.length === 198, `实际 ${invocations.length}`);
   const ids = new Set(invocations.map((i) => i.id));
   check("方法 id 唯一", ids.size === invocations.length);
   check("所有方法都声明在 gameStudio 服务下", invocations.every((i) => i.service === "gameStudio" && i.namespace === "gameStudio"));
@@ -268,6 +268,17 @@ async function main() {
   check("回传的数组是副本（界面改草稿不会写花宿主缓存）", JSON.stringify((await studio.getConfig()).hiddenModules) === JSON.stringify(["sprite", "iso"]));
   await studio.saveConfig({ hiddenModules: [] });
   check("可以全部恢复成可见", JSON.stringify((await studio.getConfig()).hiddenModules) === JSON.stringify([]));
+  const { STUDIO_MODULES } = await import("../lib/links.js");
+  check("缺少功能顺序时使用默认顺序", JSON.stringify(initial.moduleOrder) === JSON.stringify(STUDIO_MODULES));
+  const ordered = await studio.saveConfig({ moduleOrder: ["sfx", "image", "nope", "sfx"] });
+  const expectedOrder = ["sfx", "image", ...STUDIO_MODULES.filter(key => !["sfx", "image"].includes(key))];
+  check("功能顺序保留用户顺序并补齐合法模块", JSON.stringify(ordered.moduleOrder) === JSON.stringify(expectedOrder));
+  ordered.moduleOrder.reverse();
+  check("功能顺序视图不共享宿主缓存", JSON.stringify((await studio.getConfig()).moduleOrder) === JSON.stringify(expectedOrder));
+  await studio.saveConfig({ hiddenModules: ["image"] });
+  check("隐藏功能不会改变保存的顺序", JSON.stringify((await studio.getConfig()).moduleOrder) === JSON.stringify(expectedOrder));
+  await studio.saveConfig({ hiddenModules: [], moduleOrder: [] });
+  check("清空顺序可恢复默认排列", JSON.stringify((await studio.getConfig()).moduleOrder) === JSON.stringify(STUDIO_MODULES));
 
   // ── 2b. 优云智算版 H3 是模型下拉里的独立选项（不由 Base URL 推断）─────
   const compshareId = initial.minimaxCompshareModelId;
@@ -304,6 +315,32 @@ async function main() {
   check("Key 只回传尾号提示", saved.arkApiKeyHint === "…1234", saved.arkApiKeyHint);
   check("返回体里没有明文 Key", JSON.stringify(saved).includes("test-ark-key-1234") === false);
   check("尺寸改动已生效", saved.cellWidth === 300);
+
+  const { METHODS: keyMethods, TOOL_METHODS: keyToolMethods } = await import("../lib/wire.js");
+  const revealSpec = keyMethods.find(method => method.method === "revealConfigKey");
+  check("查看原Key仅供设置界面，不暴露给模型工具", revealSpec?.clientOnly === true && !keyToolMethods.some(method => method.method === "revealConfigKey"));
+  const keyFields = ["arkApiKey", "customApiKey", "toapisApiKey", "minimaxApiKey", "musicApiKey", "sfxApiKey"];
+  const dummyKeys = Object.fromEntries(keyFields.map(key => [key, `test-only-${key}-5678`]));
+  const { configPath: testConfigPath } = await import("../lib/config.js");
+  const { readFile: readKeyConfigFile } = await import("node:fs/promises");
+  const maskedKeyView = await studio.saveConfig(dummyKeys);
+  const beforeKeyView = await readKeyConfigFile(testConfigPath(), "utf8");
+  for (const key of keyFields) {
+    check(`${key}普通配置返回体不包含明文`, !JSON.stringify(maskedKeyView).includes(dummyKeys[key]));
+    const payload = revealSpec.payload.parse({ key });
+    const result = revealSpec.result.parse(await studio.revealConfigKey(payload));
+    check(`${key}显式查看可读取原值且只回传该项`, result.value === dummyKeys[key] && Object.keys(result).length === 1);
+  }
+  check("查看原Key不会写入配置文件", beforeKeyView === await readKeyConfigFile(testConfigPath(), "utf8"));
+  const afterKeyView = await studio.getConfig();
+  check("重新读取配置不会带回已查看的Key", keyFields.every(key => !JSON.stringify(afterKeyView).includes(dummyKeys[key])));
+  for (const key of ["__proto__", "comfyCookies", "arkBaseUrl"]) {
+    let rejected = false;
+    try { await studio.revealConfigKey({ key }); } catch { rejected = true; }
+    check(`查看接口拒绝非Key字段 ${key}`, rejected && !revealSpec.payload.safeParse({ key }).success);
+  }
+  await studio.saveConfig(Object.fromEntries(keyFields.map(key => [key, key === "arkApiKey" ? "test-ark-key-1234" : ""])));
+  check("清除后的Key查看返回空值", (await studio.revealConfigKey({ key: "customApiKey" })).value === "");
 
   const clamped = await studio.saveConfig({ keyHigh: 3, keyLow: 200, frameCount: 999, concurrency: 99 });
   check("keyHigh 被夹到 keyLow 之上", clamped.keyHigh > clamped.keyLow, `${clamped.keyLow} < ${clamped.keyHigh}`);
@@ -520,6 +557,10 @@ async function main() {
   await studio.setReviewMode({ module: "sprite", id: projectId, reviewMode: "auto" });
   project = await studio.getProject({ projectId });
   check("审核模式可改选", project.reviewMode === "auto", String(project.reviewMode));
+  await studio.setReviewMode({ module: "sprite", id: projectId, reviewMode: null });
+  project = await studio.getProject({ projectId });
+  check("审核模式可恢复未设置并落盘", project.reviewMode === undefined);
+  await studio.setReviewMode({ module: "sprite", id: projectId, reviewMode: "auto" });
   await expectReject("审核模式取值必须是 auto/manual", () => studio.setReviewMode({ module: "sprite", id: projectId, reviewMode: "sometimes" }), "未知审核模式");
   await expectReject("审核模式必须指名模块", () => studio.setReviewMode({ module: "nope", id: projectId, reviewMode: "auto" }), "未知模块");
 
@@ -547,7 +588,7 @@ async function main() {
       check(name, message.includes(needle), message.slice(0, 80));
     }
   };
-  await expectThrow("无绿幕图时拒绝生成视频", () => studio.runVideos({ projectId }), "绿幕图");
+  await expectThrow("无绿幕图时拒绝生成视频", () => studio.runVideos({ confirmed: true, projectId }), "绿幕图");
   await expectThrow("无视频时拒绝抽帧", () => studio.runFrames({ projectId }), "视频");
   await expectThrow("无抽帧时拒绝合成", () => studio.compose({ projectId }), "序列帧");
   await expectThrow("无抽帧时拒绝重抠像", () => studio.rekey({ projectId }), "序列帧");
@@ -962,15 +1003,25 @@ async function main() {
   await new Promise((resolve) => fakeGateway.listen(0, "127.0.0.1", resolve));
   const gatewayPort = fakeGateway.address().port;
   await studio.saveConfig({
+    allowPaidVideoGeneration: true,
     minimaxApiKey: "fake-key-for-verification",
     minimaxBaseUrl: `http://127.0.0.1:${gatewayPort}`
   });
 
   try {
     // 批量提交带 regenerate 会把八段视频全重跑一遍（真金白银），必须直接拒绝。
-    await expectThrow("批量带 regenerate 被拒绝", () => studio.runVideos({ projectId, regenerate: true }), "必须指定方向");
+    await expectThrow("批量带 regenerate 被拒绝", () => studio.runVideos({ confirmed: true, projectId, regenerate: true }), "必须指定方向");
 
-    const regenKick = await studio.runVideos({ projectId, keys: ["front"], regenerate: true });
+    await studio.saveConfig({ allowPaidVideoGeneration: false });
+    await expectThrow("锁定时拒绝重新生成视频", () => studio.runVideos({ confirmed: true, projectId, keys: ["front"], regenerate: true }), "已锁定");
+    const lockedProject = await studio.getProject({ projectId });
+    check("被锁定的重新生成保留旧视频与帧", lockedProject.videos.front.status === "ready" && lockedProject.frames.front.status === "ready");
+    await studio.saveConfig({ allowPaidVideoGeneration: true });
+    await expectThrow("未确认费用时拒绝重新生成视频", () => studio.runVideos({ projectId, keys: ["front"], regenerate: true }), "confirmed:true");
+    const unconfirmedProject = await studio.getProject({ projectId });
+    check("未确认的重新生成保留旧视频与帧", unconfirmedProject.videos.front.status === "ready" && unconfirmedProject.frames.front.status === "ready");
+
+    const regenKick = await studio.runVideos({ confirmed: true, projectId, keys: ["front"], regenerate: true });
     check("单方向重新生成被接受", regenKick.started === true, JSON.stringify(regenKick));
 
     // 作废发生在 RPC 返回之前，所以这里可以直接断言，不需要等异步任务。
@@ -1030,7 +1081,7 @@ async function main() {
       project.videos.front = { status: "ready", file: "videos/front.mp4", approved: false };
       project.videos.back = { status: "ready", file: "videos/back.mp4", approved: false };
     });
-    await expectThrow("已完成的方向默认不重跑，并给出可读原因", () => studio.runVideos({ projectId, keys: ["front"] }), "都已经生成完成");
+    await expectThrow("已完成的方向默认不重跑，并给出可读原因", () => studio.runVideos({ confirmed: true, projectId, keys: ["front"] }), "都已经生成完成");
   } finally {
     await new Promise((resolve) => fakeGateway.close(resolve));
     await studio.saveConfig({ minimaxBaseUrl: "https://api.minimaxi.com", clearMinimaxApiKey: true });
@@ -1233,11 +1284,12 @@ async function main() {
     });
     await new Promise((resolve) => turnGateway.listen(0, "127.0.0.1", resolve));
     await studio.saveConfig({
-      minimaxApiKey: "fake-key-for-verification",
+      allowPaidVideoGeneration: true,
+    minimaxApiKey: "fake-key-for-verification",
       minimaxBaseUrl: `http://127.0.0.1:${turnGateway.address().port}`
     });
     try {
-      const videoKick = await studio.runTurnVideo({ projectId });
+      const videoKick = await studio.runTurnVideo({ confirmed: true, projectId });
       check("转圈视频提交被接受", videoKick.started === true, JSON.stringify(videoKick));
       let videoSettled = null;
       for (let i = 0; i < 40; i++) {
@@ -1527,6 +1579,10 @@ async function main() {
   const createdImage = await studio.createImageJob({ name: "测试图片任务" });
   const imageId = createdImage.jobId;
   check("图片任务 id 形如 i…", /^i[a-z0-9]+$/.test(imageId), imageId);
+  await studio.setReviewMode({ module: "image", id: imageId, reviewMode: "manual" });
+  check("图片审核模式可设为人工", (await studio.getImageJob({ jobId: imageId })).reviewMode === "manual");
+  await studio.setReviewMode({ module: "image", id: imageId, reviewMode: null });
+  check("图片审核模式可清除并重新读取", (await studio.getImageJob({ jobId: imageId })).reviewMode === undefined);
 
   await studio.uploadImageRef({ jobId: imageId, name: "ref.png", data: greenPng.toString("base64") });
   let imageJob = await studio.getImageJob({ jobId: imageId });
@@ -1676,7 +1732,7 @@ async function main() {
   await (async () => {
     let threw = "";
     try {
-      await studio.runSequenceVideo({ jobId: seqId });
+      await studio.runSequenceVideo({ confirmed: true, jobId: seqId });
     } catch (error) {
       threw = String(error?.message ?? error);
     }
@@ -1692,7 +1748,7 @@ async function main() {
     await m.writeSequenceJob(job2);
     let threw = "";
     try {
-      await studio.runSequenceVideo({ jobId: seqId });
+      await studio.runSequenceVideo({ confirmed: true, jobId: seqId });
     } catch (error) {
       threw = String(error?.message ?? error);
     }
@@ -2064,11 +2120,12 @@ async function main() {
     });
     await new Promise((resolve) => gateway.listen(0, "127.0.0.1", resolve));
     await studio.saveConfig({
-      minimaxApiKey: "fake-key-for-verification",
+      allowPaidVideoGeneration: true,
+    minimaxApiKey: "fake-key-for-verification",
       minimaxBaseUrl: `http://127.0.0.1:${gateway.address().port}`
     });
     try {
-      const kicked = await studio.runTurnVideo({ projectId: freshId });
+      const kicked = await studio.runTurnVideo({ confirmed: true, projectId: freshId });
       check("转圈视频提交被接受（首帧保险）", kicked.started === true, JSON.stringify(kicked));
       let guarded = null;
       for (let i = 0; i < 40; i++) {
