@@ -21,6 +21,9 @@ export interface ProviderImageRequest {
   prompt: string;
   /** 参考图：data URI 或 http(s) URL（两条后端同形）。 */
   images: string[];
+  /** Optional editing mask; only the custom OpenAI edit protocol supports it. */
+  mask?: string;
+  quality?: "low" | "medium" | "high" | "auto";
   size: string;
   watermark: boolean;
   /** 覆盖模型（部件重绘会用单独的模型）。省略 = 用配置里的当前模型。 */
@@ -120,6 +123,7 @@ export function imageProviderSummary(config: Config): string {
 export async function generateImageWithProvider(request: ProviderImageRequest, signal?: AbortSignal): Promise<ProviderImageResult> {
   const config = await loadConfig();
   assertImageProviderReady(config);
+  if (request.mask && !(config.imageProvider === "custom" && config.customProtocol === "openai")) throw new Error("当前生图后端不支持带遮罩的高清重绘");
   if (config.imageProvider === "toapis") return generateToapisImage(config, request, signal);
   if (isCustomProvider(config)) {
     return generateCustomImage(
@@ -130,6 +134,8 @@ export async function generateImageWithProvider(request: ProviderImageRequest, s
         model: request.model?.trim() || config.customModel,
         prompt: request.prompt,
         images: request.images,
+        mask: request.mask,
+        quality: request.quality,
         size: request.size,
         timeoutMs: request.timeoutMs ?? config.customTimeoutMs,
         negativePrompt: config.customNegativePrompt,

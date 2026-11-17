@@ -1,13 +1,26 @@
-English | [中文](https://github.com/universe-st/dsh-game-material-master/blob/main/README.md)
+English | [中文](README.md)
 
 # Game Material Master
+
+> **Community white-model workflow · 0.12.0-motion.1 (preview)**
+>
+> Public fork of [universe-st/dsh-game-material-master](https://github.com/universe-st/dsh-game-material-master), retaining its MIT license. Adds an in-plugin workflow: character and actions → reference and prompt → video range review and extraction → optional frame redraw → per-action export. One 4-second 480P video contains eight directions and 2 actions by default (3 maximum, experimental). Installation and local processing are free; image/video API use is billed to your own provider account.
+>
+> Install this fork in DSH (replace `desktop` if you use another profile):
+>
+> ```powershell
+> dsh plugin --profile desktop add "https://github.com/censki-sketch/dsh-game-material-master/releases/download/v0.12.0-motion.1/dsh-game-material-master-0.12.0-motion.1.tgz"
+> ```
+>
+> Source install: `dsh plugin --profile desktop add "github:censki-sketch/dsh-game-material-master#v0.12.0-motion.1"`. Restart DSH, then open Game Material Master. This fork keeps the upstream plugin ID and replaces the existing installation. The npm release and historical notes below describe upstream, not this fork. [Workflow and configuration (Chinese)](docs/MOTION_WORKFLOW.md).
+>
+> Local mock API, ffmpeg, React browser and existing-module checks pass. Real model motion fidelity and temporal consistency still require review; generated assets are not guaranteed to be ready for game use.
 
 **Start from a single character sheet and batch-produce the assets your game actually needs.**
 
 Volcengine Ark **Seedream** handles image generation, **MiniMax** (or a local **ComfyUI**) handles
 image-to-video, and keying, frame extraction, pixel quantization and spritesheet composition all happen
-locally through `ffmpeg` — no system image libraries required, and your assets are never uploaded to a
-third-party service.
+locally through `ffmpeg` — no system image libraries required. AI generation sends reference assets to your configured provider.
 
 [![npm](https://img.shields.io/npm/v/dsh-game-material-master?color=blue)](https://www.npmjs.com/package/dsh-game-material-master)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -114,6 +127,10 @@ and move on automatically, or stop at every step and wait for your go-ahead.
 ---
 
 ## ① Eight-direction sprite sheet
+
+The new default **white-model workflow** stays inside the DSH plugin: import character and eight-direction appearance references → choose 2 actions (3 maximum, experimental) → prepare a local 4-second reference → edit the prompt → generate one 480P video containing all eight directions → review actual action ranges → extract frames → optionally redraw selected frames → export each action as transparent PNGs, an eight-row sheet and timing JSON. Prompts work with templates, manual editing, or an optional local / third-party text model.
+
+Includes 40 CC0 motion templates from [Hormelz](https://hormelz.itch.io/8-directional-melee-character). Video and image requests are billed by the configured provider; local preparation and export are free. Costs shown are editable estimates. Enlarging 480P crops does not recover native detail; AI motion fidelity and temporal consistency require review. See [workflow documentation (Chinese)](docs/MOTION_WORKFLOW.md). The original workflow below remains available through its own switch.
 
 Feed in one front-facing character sheet and get all eight directions in one pass:
 **green-screen images → walk videos → sequence frames → final spritesheet → interactive preview**.
@@ -400,6 +417,8 @@ the `projectId` / `jobId` to the clipboard so you can paste it to the agent.
 ---
 
 ## Installation
+
+**Use the GitHub release or source command at the top of this page for this fork.** The npm commands below install upstream and do not include this fork's white-model workflow.
 
 ```bash
 # install from npm

@@ -5,8 +5,8 @@
  *   node scripts/verify-host.mjs
  *
  * 全部数据写在临时 DSH_HOME 下，不会碰用户真正的项目目录。
- * 生图那一步会用假 Key 真实打一次火山方舟接口，预期拿到鉴权失败——
- * 这正是要验证的「错误能一路冒到节点状态里」。
+ * 生图步骤模拟 HTTP 401，验证「错误能一路冒到节点状态里」；
+ * 除本机静态资源测试外不发网络请求，不花 API 费用。
  */
 
 import { mkdtemp, readFile, rm } from "node:fs/promises";
@@ -18,6 +18,15 @@ import { createServer } from "node:http";
 
 const HOME = await mkdtemp(join(tmpdir(), "dsh-gmm-verify-"));
 process.env.DSH_HOME = HOME;
+
+const localFetch = globalThis.fetch;
+globalThis.fetch = (input, init) => {
+  const url = new URL(input instanceof Request ? input.url : String(input));
+  if (["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) return localFetch(input, init);
+  return Promise.resolve(new Response(JSON.stringify({ error: { message: "The API key format is incorrect (offline test)." } }), {
+    status: 401, headers: { "Content-Type": "application/json" }
+  }));
+};
 
 const { Context } = await import("@deepseek-ai/cordis");
 const plugin = await import("../lib/index.js");
@@ -123,7 +132,7 @@ async function main() {
   // 「AI 生成素材」新增 composeMapAsset（整理一批帧 → 一张待确认的素材图），134 → 135。
   // 「原地重烘」新增 recomposeMapTileset（按现在的规则重烘一张素材，保留图块序号），135 → 136。
   // 音效生成（模块八）新增 13 个方法（testSfx + 12 个 sfx 方法），163 → 176。
-  check("manifest 方法数为 188（新增远程方法时同步改这个数）", invocations.length === 188, `实际 ${invocations.length}`);
+  check("manifest 方法数为 195（含白模流程七个方法）", invocations.length === 195, `实际 ${invocations.length}`);
   const ids = new Set(invocations.map((i) => i.id));
   check("方法 id 唯一", ids.size === invocations.length);
   check("所有方法都声明在 gameStudio 服务下", invocations.every((i) => i.service === "gameStudio" && i.namespace === "gameStudio"));

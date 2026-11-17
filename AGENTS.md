@@ -37,6 +37,8 @@ DSH 插件「游戏素材大师」：从一张角色设定图出发批量产出�
 
 ## 硬约束（改错了不报错，只是静默坏掉）
 
+白模流程真源为 `src/motiongen.ts`，属于 `sprite` 模块，任务前缀 `w`（`m` 已被地图占用）。文档见 [docs/MOTION_WORKFLOW.md](docs/MOTION_WORKFLOW.md)。收费步骤必须有确认与落盘尝试记录，结果未知不自动重试，恢复只查已有任务。新增字段同步 wire、客户端方法表、工具归属与深链接；模板 `assets/motion-templates` 必须进发布包并保留独立 CC0 许可。不要用真实账户运行验证；`verify-motion.mjs` 使用本机假 API。
+
 | 约束 | 原因 |
 |---|---|
 | `src/client.ts` **必须是经典脚本**：不能有 `import` / `export`，React 元素一律 `React.createElement` | 它由宿主以 `/plugins/dsh-game-material-master/client.js` 直接发给浏览器，浏览器半区不参与打包。构建脚本 `scripts/strip-client-export.mjs` 会剥掉结尾的 `export`，但别指望它兜住真正的模块化写法 |
@@ -180,6 +182,8 @@ Conventional Commits，中文描述：`feat(rig): …` / `docs: …` / `fix(spri
 ---
 
 ## 发布到 npm
+
+本 Fork（`censki-sketch/dsh-game-material-master`）通过 GitHub Releases 发布预览版，当前 `0.12.0-motion.1`。下文的 npm 账号与历史记录属于上游，不用于发布此 Fork。插件 ID 保留原值以便升级替换，安装使用本 Fork README 的 GitHub 链接。
 
 包名 [`dsh-game-material-master`](https://www.npmjs.com/package/dsh-game-material-master)，
 发布账号 **kuangthree**，`license: MIT`，`access: public`（默认）。

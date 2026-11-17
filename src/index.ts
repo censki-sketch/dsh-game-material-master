@@ -10,6 +10,7 @@ import {assertVideoBackendReady,videoBackendOf} from "./videogen.js";
 * 直接发给浏览器——否则界面每帧都要靠 RPC 传 base64，又慢又费内存。
 */
 import { createReadStream, readdirSync, statSync } from "node:fs";
+import * as motiongen from "./motiongen.js";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1820,6 +1821,14 @@ export class GameStudioGateway extends TypertRemoteService {
 
   // ── 序列帧生成模块 ────────────────────────────────────────────────────
 
+  async listMotionJobs() { return { jobs: await motiongen.listMotionJobs() }; }
+  async createMotionJob(payload) { const job = await motiongen.createMotionJob(asString(asRecord(payload).name, "")); return { jobId: job.id }; }
+  async getMotionJob(payload) { const jobId = asString(asRecord(payload).jobId); return { ...await motiongen.motionView(jobId), assetBase: assetBasePath(`${ROUTE_PREFIX}/motion-assets/${jobId}/`) }; }
+  async saveMotionJob(payload) { const input = asRecord(payload); await motiongen.saveMotionJob(asString(input.jobId), input); return { ok: true }; }
+  async uploadMotionAsset(payload) { const input = asRecord(payload); await motiongen.uploadMotionAsset(asString(input.jobId), asString(input.kind), asString(input.data)); return { ok: true }; }
+  async runMotionStep(payload) { const input = asRecord(payload); return motiongen.runMotionStep(asString(input.jobId), input); }
+  async motionSettings(payload) { return motiongen.motionSettings(asRecord(payload)); }
+
   async listSequenceJobs() {
     return { jobs: await seqgen.listSequenceJobs() };
   }
@@ -2925,7 +2934,7 @@ const SERVABLE_MUSIC_DIRS = musicgen.SERVABLE_MUSIC_DIRS;
 /** 音效生成（模块八）：参考素材、每次生成的音频、导出。 */
 const SERVABLE_SFX_DIRS = sfxgen.SERVABLE_SFX_DIRS;
 
-type AssetScope = "assets" | "image-assets" | "sequence-assets" | "rig-assets" | "iso-assets" | "map-assets" | "music-assets" | "sfx-assets";
+type AssetScope = "assets" | "image-assets" | "sequence-assets" | "rig-assets" | "iso-assets" | "map-assets" | "music-assets" | "sfx-assets" | "motion-assets";
 
 interface AssetTarget {
   file: string;
@@ -2933,6 +2942,10 @@ interface AssetTarget {
 }
 
 function resolveAssetTarget(scope: AssetScope, id: string, relative: string): AssetTarget | undefined {
+  if (scope === "motion-assets") {
+    if (!motiongen.isMotionId(id)) return undefined;
+    return { file: motiongen.motionAssetPath(id, relative), dirs: motiongen.MOTION_DIRS };
+  }
   if (scope === "assets") {
     if (!PROJECT_ID_PATTERN.test(id)) return undefined;
     return { file: assetPath(id, relative), dirs: SERVABLE_DIRS };
@@ -3013,7 +3026,7 @@ async function handleAsset(req, res): Promise<void> {
   // 三处同步。只改类型不改这里，TypeScript 一句话都不会说 —— `scope` 是断言出来的，
   // 而漏掉的那个 scope 会在这里直接掉进 404（界面表现只是「图裂了」）。
   // 实测：`iso-assets` / `tile-assets` 这类 scope 都漏过一轮，素材全 404。
-  const SCOPES: readonly string[] = ["assets", "image-assets", "sequence-assets", "rig-assets", "iso-assets", "map-assets", "music-assets", "sfx-assets"];
+  const SCOPES: readonly string[] = ["assets", "image-assets", "sequence-assets", "rig-assets", "iso-assets", "map-assets", "music-assets", "sfx-assets", "motion-assets"];
   if (!SCOPES.includes(scope)) {
     sendText(res, 404, "Not Found");
     return;
@@ -3123,6 +3136,7 @@ export function apply(ctx) {
   riggen.activateRig();
   musicgen.activateMusic();
   sfxgen.activateSfx();
+  motiongen.activateMotion();
 
   // 旧版本的数据目录叫 8dir-sprites，插件改名后搬一次，已有项目无缝接上。
   void migrateLegacyDataRoot()
@@ -3179,11 +3193,13 @@ export function apply(ctx) {
   void musicgen.resumeMusicJobs().catch(() => undefined);
   // 音效任务（模块八）：同步接口没有远端 taskId 可续查，残留的 running 标失败。
   void sfxgen.resumeSfxJobs().catch(() => undefined);
+  void motiongen.resumeMotionJobs().catch(() => undefined);
   ctx.effect(() => () => {
     disposePipeline();
     seqgen.disposeSequence();
     riggen.disposeRig();
     musicgen.disposeMusic();
     sfxgen.disposeSfx();
+    motiongen.disposeMotion();
   }, "dsh-game-material-master: pipeline cleanup");
 }

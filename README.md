@@ -1,11 +1,25 @@
-[English](https://github.com/universe-st/dsh-game-material-master/blob/main/README.en.md) | 中文
+[English](README.en.md) | 中文
 
 # 游戏素材大师
+
+> **白模动作流程社区版 · 0.12.0-motion.1（预览版）**
+>
+> 本仓库是 [universe-st/dsh-game-material-master](https://github.com/universe-st/dsh-game-material-master) 的公开 Fork，保留原作者 MIT 许可。在 DSH 内新增「角色与动作 → 白模参考与提示词 → 视频分段与抽帧 → 可选逐帧高清重绘 → 分动作导出」流程。4 秒默认安排 2 种动作，最多 3 种（实验性），八方向同时生成 480P 视频。安装和本地处理免费，图片与视频 API 使用自己的账号，按服务商计费。
+>
+> **安装此 Fork**（DSH 桌面版通常使用 `desktop` profile；其他 profile 请替换名称）：
+>
+> ```powershell
+> dsh plugin --profile desktop add "https://github.com/censki-sketch/dsh-game-material-master/releases/download/v0.12.0-motion.1/dsh-game-material-master-0.12.0-motion.1.tgz"
+> ```
+>
+> 也可从 GitHub 源码安装：`dsh plugin --profile desktop add "github:censki-sketch/dsh-game-material-master#v0.12.0-motion.1"`。随后重启 DSH，侧栏打开「游戏素材大师」。[使用和配置说明](docs/MOTION_WORKFLOW.md)。这版与原插件沿用同一插件 ID，应作为升级替换安装。下文的 npm 版本和历史更新属于上游；只安装 npm 的 `dsh-game-material-master` 不会获得此 Fork 的新流程。
+>
+> 已通过本地模拟接口、真实 ffmpeg、React 浏览器与原模块回归检查；真实 API 的动作、方向、轮廓和帧间一致性仍须验收，预览版不保证每次生成都可直接用于游戏。
 
 **从一张角色设定图出发，批量做出游戏里真正要用的素材。**
 
 火山方舟 **Seedream** 负责生图，**MiniMax**（或本机 **ComfyUI**）负责图生视频，抠像、抽帧、
-像素量化、合图全部在本机用 `ffmpeg` 完成——不需要任何系统图像库，素材也不会被传到第三方服务。
+像素量化、合图全部在本机用 `ffmpeg` 完成——不需要任何系统图像库；AI 生成步骤会把参考素材发送到你配置的服务。
 
 [![npm](https://img.shields.io/npm/v/dsh-game-material-master?color=blue)](https://www.npmjs.com/package/dsh-game-material-master)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -40,9 +54,9 @@
 
 ![游戏素材大师 · 工作台](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-00-workbench.png)
 
-> **30 秒上手**：`dsh plugin --profile web add dsh-game-material-master` → 重启 DSH →
-> 侧栏点「游戏素材大师」→ 设置里填好要用的 API Key（生图 / 视频；音效另填语音 Key）→ 新建项目、上传设定图 → 点「生成转圈视频」
->（默认路径：角色原地匀速转一圈，再自动截出八个方向；要逐方向生图就在阶段①切一下方式）。
+> **白模流程上手**：按上方 GitHub 命令安装 → 重启 DSH → 侧栏点「游戏素材大师」→
+> 配置 MiniMax-H3-Lite 视频接口及可选高清重绘接口 → 新建白模任务 → 导入角色和八方向图 → 默认选两个动作。
+> 原有转圈截帧 / 逐方向生图仍可通过「原有八方向流程」进入。
 >
 > 侧栏那个入口上还有一个**小折角菜单按钮**：点它直接弹出八个功能，一步跳进要用的那个；
 > 不用的功能可以在设置里关掉（见「功能管理」）。
@@ -96,6 +110,10 @@
 ---
 
 ## ① 八方向图生成
+
+新增默认入口 **「白模动作流程」**：角色与八方向外观图 → 选择 2 种动作（最多 3 种，实验性）→ 本地拼接 4 秒白模参考 → 编辑提示词 → 一次生成 480P 八方向多动作视频 → 确认实际分段并抽帧 → 可选逐帧高清重绘 → 按动作导出 PNG / 图集 / 时长 JSON。全程可在 DSH 操作，提示词支持模板、手动编辑或可选本地 / 第三方文字模型。
+
+内置 [Hormelz](https://hormelz.itch.io/8-directional-melee-character) 的 40 种 CC0 动作。视频和重绘真实计费，提交前显示数量与可编辑估算；裁切和导出免费。480P 放大不能还原原生细节，AI 重绘的动作与帧间一致性仍需验收。配置、恢复与限制见 [白模动作流程](docs/MOTION_WORKFLOW.md)。以下原有流程仍可通过「原有八方向流程」进入。
 
 一张正面设定图进去，八个方位一次做完：**绿幕图 → 行走视频 → 序列帧 → 精灵整图 → 可操控预览**。
 
@@ -333,6 +351,8 @@ game_material({ action: "call", method: "mapRender", payload: { projectId, regio
 ---
 
 ## 安装
+
+**本 Fork 请使用页首的 GitHub 版本包或源码安装命令。** 以下 npm 命令安装的是上游版本，不包含此 Fork 的白模流程。
 
 ```bash
 # npm 安装

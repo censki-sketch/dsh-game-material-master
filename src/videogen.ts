@@ -34,6 +34,7 @@ import type { VideoBackend } from "./store.js";
 export type VideoPhase = "pending" | "running" | "succeeded" | "failed";
 
 export interface VideoSubmitRequest {
+  ratio?: string;
   prompt: string;
   /** 首帧图（data URI）。ComfyUI 后端必须有，MiniMax 视模式而定。 */
   firstFrameImage?: string;
@@ -101,6 +102,7 @@ export async function submitVideoTask(config: Config, request: VideoSubmitReques
     referenceVideos: request.referenceVideos,
     duration: request.duration,
     resolution: request.resolution,
+    ratio: request.ratio,
     promptOptimizer: request.promptOptimizer
   });
   return { taskId, backend: "minimax", notes: [] };

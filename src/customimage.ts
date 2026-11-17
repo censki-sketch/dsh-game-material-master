@@ -28,6 +28,8 @@ export interface CustomImageRequest {
    * 所以调用点不必为「换了后端」分叉。各协议自己决定怎么把它变成对方要的形态。
    */
   images: string[];
+  mask?: string;
+  quality?: "low" | "medium" | "high" | "auto";
   /** `1024x1024` / `1024×1024` / `1K` / `2K` / `4K`，或空串（交给服务端默认）。 */
   size: string;
   timeoutMs: number;
@@ -257,10 +259,15 @@ async function generateOpenAi(request: CustomImageRequest, context: SignalContex
     form.set("model", request.model);
     form.set("prompt", request.prompt);
     form.set("n", "1");
+    if (request.quality) form.set("quality", request.quality);
+    if (request.mask) {
+      const { blob, filename } = await toBlob(request.mask, context, "edit-mask.png");
+      form.set("mask", blob, filename);
+    }
     if (size !== undefined) form.set("size", `${size.width}x${size.height}`);
     for (const [index, image] of request.images.entries()) {
       const { blob, filename } = await toBlob(image, context, `reference-${index + 1}.png`);
-      form.append(index === 0 ? "image" : "image[]", blob, filename);
+      form.append(request.mask ? "image[]" : index === 0 ? "image" : "image[]", blob, filename);
     }
     const edits = await fetchOrThrow(joinUrl(base, "/images/edits"), { method: "POST", headers: auth, body: form }, context);
     if (edits.status !== 404 && edits.status !== 405) {
@@ -268,6 +275,7 @@ async function generateOpenAi(request: CustomImageRequest, context: SignalContex
       const payload = (await edits.json().catch(() => undefined)) as any;
       return readOpenAiPayload(payload, context);
     }
+    if (request.mask) throw new CustomImageError("带遮罩的编辑端点不可用，未退回文生图，也未自动重试");
   }
 
   const body: Record<string, unknown> = { model: request.model, prompt: request.prompt, n: 1 };

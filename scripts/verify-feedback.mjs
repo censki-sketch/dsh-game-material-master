@@ -52,7 +52,7 @@ const ReactStub = {
   useState(initial) {
     const index = HOOK.cursor++;
     const value = HOOK.slots[index];
-    return [value === undefined ? (typeof initial === "function" ? initial() : initial) : value, () => {}];
+    return [value === undefined ? (typeof initial === "function" ? initial() : initial) : value, next => { if (HOOK.capture) HOOK.capture.push({ index, next }); }];
   },
   useRef(initial) {
     HOOK.cursor++;
@@ -342,7 +342,7 @@ const api = new Proxy(
  * 本地却什么都看不出来。数字变了就说明 Hook 顺序改了，必须同步这里的槽位。
  */
 const EXPECTED_HOOKS = {
-  StudioPanel: 21,
+  StudioPanel: 22,
   ImageModule: 17,
   SequenceModule: 17
 };
@@ -352,6 +352,8 @@ const EXPECTED_HOOKS = {
  *
  * StudioPanel 的 Hook 顺序（**槽位下标**，顺序不能错；useRef 不读槽位，
  * 但同样占一个下标）：
+ * 以下为原流程基准索引；实际第 5 槽是 spriteWorkflow，原第 5 槽起顺延一位。
+ * renderStage 先填基准索引，再 splice 插入流程选择，便于维护旧阶段夹具。
  *   0 useLocaleTick / 1 projects / 2 projectId / 3 project / 4 stage / 5 module /
  *   6 notice / 7 loading / 8 promptDraft / 9 promptOpen / 10 videoPromptDraft /
  *   11 settingsDraft / 12 sourceBusy / 13 dropOver /
@@ -366,7 +368,7 @@ const EXPECTED_HOOKS = {
  *
  * `hidden` 就是第 19 槽：传 `["rig"]` 之类就能测「隐藏后页签里不再出现」。
  */
-function renderStage(project, stage, tasks, hidden = []) {
+function renderStage(project, stage, tasks, hidden = [], workflow = "classic") {
   HOOK.slots = [];
   HOOK.slots[0] = 0;
   HOOK.slots[1] = ["p1"];
@@ -386,6 +388,8 @@ function renderStage(project, stage, tasks, hidden = []) {
   HOOK.slots[15] = tasks.map;
   HOOK.slots[16] = null;
   HOOK.slots[19] = hidden;
+  // The workflow selector follows stage; existing fixtures exercise classic sprites.
+  HOOK.slots.splice(5, 0, workflow);
   HOOK.cursor = 0;
   hookOverflow = false;
   const tree = panel({ api });
@@ -1580,6 +1584,58 @@ section("图片提示词保存与生成时序");
   releaseFirst();
   await generated;
   check("所有保存完成后才使用最新提示词生成", calls.map(x=>x.type).join(",") === "save,save,generate" && calls.at(-1).prompt === "latest typed prompt", JSON.stringify(calls));
+}
+
+section("白模动作流程：五阶段、费用确认与选择反馈");
+{
+  const { MotionModule } = bundle.__test;
+  const segments = [{action:'walkfoward',start:0,end:2,frameCount:4},{action:'runforward',start:2,end:4,frameCount:4}];
+  const frames = [{id:'walk-front-0',action:'walkfoward',direction:'front',index:0,keyed:'frames/raw.png'}, {id:'walk-front-1',action:'walkfoward',direction:'front',index:1,keyed:'frames/raw1.png',redraw:{status:'ready',file:'redraw/hd.png'}}];
+  const job = {id:'w123456789',name:'测试角色',description:'白发蓝衣',prompt:'固定动作和颜色',segments,ranges:segments,rangesConfirmed:false,frames,prepared:{video:'prepared/ref.mp4'},costs:{video:1.28,imageRate:.1},templates:[{key:'walkfoward',name:'行走',originalName:'walk'},{key:'runforward',name:'奔跑',originalName:'run'}],assetBase:'/dsh-game-material-master/motion-assets/w123456789/'};
+  const renderMotion = (stage, overrides={}, slotOverrides={}) => {
+    const value={...job,...overrides};
+    HOOK.slots=[0,[value],[],"",value.id,value,stage,{...value},null,{baseUrl:'http://localhost:11434/v1',model:'',videoRate:.16,imageRate:.1},'',false,false,false,false,[],"",'front'];
+    HOOK.slots[20]={}; // usePendingTasks map, after two refs
+    for(const [key,val] of Object.entries(slotOverrides))HOOK.slots[Number(key)]=val;
+    HOOK.cursor=0;
+    return MotionModule({api});
+  };
+  const button = (tree,label) => byTag(tree,'button').find(n=>textOf(n)===label);
+  check('白模组件可从构建产物加载',typeof MotionModule==='function');
+  const first=renderMotion(0);
+  check('导航含五个阶段',byTag(first,'nav').some(n=>byTag(n,'button').length===5));
+  check('默认选择两动作，最多三动作',byTag(first,'select').some(n=>n.props.value===2 && modeOptions(n).includes(3) && !modeOptions(n).includes(4)));
+  check('已有八方向项目提供免费导入',Boolean(button(first,'导入已有角色和八方向图（免费）')));
+  check('两种角色参考输入存在',byTag(first,'input').filter(n=>n.props.type==='file').length===2);
+  const second=renderMotion(1);
+  check('未确认费用时不能生成视频',button(second,'生成八方向多动作视频')?.props.disabled===true);
+  check('已确认且有参考时允许提交',button(renderMotion(1,{}, {11:true}),'生成八方向多动作视频')?.props.disabled===false);
+  check('已有视频须显式重新生成',button(renderMotion(1,{video:{status:'ready'}},{11:true}),'生成八方向多动作视频')?.props.disabled===true);
+  check('手动提示词保持可编辑',byTag(second,'textarea').some(n=>n.props.value==='固定动作和颜色'&&!n.props.disabled));
+  check('未配文字模型时禁用整理，模板仍可用',button(second,'使用文字模型整理角色描述')?.props.disabled===true && !button(second,'按当前动作重建提示词')?.props.disabled);
+  const busy=renderMotion(1,{active:true,operation:'prepare'});
+  check('本地处理显示状态和停止入口',byTag(busy,'p').some(n=>n.props.role==='status')&&Boolean(button(busy,'停止后续处理（已提交请求可能计费）')));
+  check('本地处理时禁止重复提交',button(busy,'正在提交视频…')?.props.disabled===true);
+  const third=renderMotion(2,{video:{status:'ready',file:'videos/test.mp4',duration:4}});
+  check('未验收范围时禁止抽帧',button(third,'按动作抽取八方向帧')?.props.disabled===true);
+  check('确认实际范围后可抽帧',button(renderMotion(2,{video:{status:'ready',duration:4},rangesConfirmed:true}),'按动作抽取八方向帧')?.props.disabled===false);
+  check('视频分段页面支持本地视频导入',byTag(third,'input').some(n=>n.props.accept==='video/mp4,video/webm'));
+  const fourth=renderMotion(3,{}, {15:frames.map(f=>f.id)});
+  check('已完成重绘不重复计入调用数量',textOf(fourth).includes('本次新增图片调用：1张'));
+  check('未确认图片费用禁用重绘',button(fourth,'重绘选中帧')?.props.disabled===true);
+  check('确认图片费用才允许重绘',button(renderMotion(3,{}, {12:true,15:[frames[0].id]}),'重绘选中帧')?.props.disabled===false);
+  HOOK.capture=[];
+  button(fourth,'选择当前可见帧').props.onClick();
+  check('改变批量选择会撤销旧费用确认',HOOK.capture.some(u=>u.index===12&&u.next===false));
+  HOOK.capture=undefined;
+  const fifth=renderMotion(4,{archive:'out/sprites.zip'});
+  check('导出包链接使用相对assetBase',saveHrefs(fifth).some(s=>s.startsWith(job.assetBase)&&s.includes('sprites.zip')));
+  check('空帧任务不能导出',button(renderMotion(4,{frames:[]}),'打包全部动作')?.props.disabled===true);
+  renderStage(makeProject(),'images',makeTasks(),[],undefined);
+  // Exercise the actual default by omitting the selector fixture.
+  HOOK.slots[5]=undefined;HOOK.cursor=0;
+  const defaultTree=panel({api});
+  check('插件默认显示白模入口且原流程可切换',collect(defaultTree,n=>n.type===MotionModule).length===1 && Boolean(button(defaultTree,'原有八方向流程')));
 }
 
 report();

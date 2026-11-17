@@ -105,6 +105,10 @@ export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
     durationMax: 15,
     note: "v2 极速 · 480P/768P · 5~15 秒"
   },
+  "MiniMax-H3-Lite": {
+    protocol: "v2", resolutions: ["480P", "768P"], durationMin: 4, durationMax: 15,
+    note: "v2 Lite · 480P/768P · 4~15 秒（4秒参考视频已实测）"
+  },
   "MiniMax-Hailuo-02": {
     protocol: "v1",
     resolutions: ["768P", "1080P"],

@@ -35,6 +35,10 @@ research/*/out/_*.png
 research/*/out/map-seamtest*.png
 
 # 日志与系统文件
+.env
+.env.*
+!.env.example
+*.tgz
 *.log
 npm-debug.log*
 .DS_Store

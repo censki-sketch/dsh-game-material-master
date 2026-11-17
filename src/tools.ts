@@ -34,6 +34,7 @@ import { isoSnapshot, listIsoProjects, readIsoProject } from "./isogen.js";
 import { listMapProjects, mapSnapshot, readMapProject } from "./mapgen.js";
 import { listMusicJobs, musicSnapshot, readMusicJob } from "./musicgen.js";
 import { listSfxJobs, readSfxJob, sfxNextActions, sfxSnapshot } from "./sfxgen.js";
+import { isMotionId, listMotionJobs, motionView } from "./motiongen.js";
 import { TOOL_METHODS } from "./wire.js";
 import { MUSIC_STAGES, MAP_STAGES, SFX_STAGES, SPRITE_STAGES, ISO_STAGES, PANEL_KEY, STUDIO_MODULES, assetBasePath, buildOpenLink, originForLinks, type OpenIntent } from "./links.js";
 import { loadConfig } from "./config.js";
@@ -69,6 +70,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
  * 新加方法忘了归类会直接红，不会静默漏过。
  */
 export const METHOD_MODULE: Record<string, ModuleKey> = {
+  listMotionJobs: "sprite", createMotionJob: "sprite", getMotionJob: "sprite", saveMotionJob: "sprite", uploadMotionAsset: "sprite", runMotionStep: "sprite",
   // 模块一 八方向图
   listProjects: "sprite",
   createProject: "sprite",
@@ -472,6 +474,7 @@ function assertActionArgs(action: string, args: any): void {
 
 /** 任务 id 前缀决定它属于哪个模块（p… / i… / s… / r… / t… / m… / a… / f…）。 */
 export function moduleForId(id: string): ModuleKey | undefined {
+  if (isMotionId(id)) return "sprite";
   if (/^p[a-z0-9]+$/.test(id)) return "sprite";
   if (/^i[a-z0-9]+$/.test(id)) return "image";
   if (/^s[a-z0-9]+$/.test(id)) return "sequence";
@@ -737,6 +740,19 @@ function sequenceSnapshot(job: any) {
 /** 读一个目标（项目 / 图片任务 / 序列帧任务 / 骨骼动画任务）的快照。 */
 async function snapshotOf(module: ModuleKey, id: string): Promise<any> {
   if (module === "sprite") {
+    if (isMotionId(id)) {
+      const job = await motionView(id);
+      const assetBase = assetBasePath(`${ROUTE_PREFIX}/motion-assets/${id}/`);
+      const cell = (key: string, file?: string, status?: string) => ({ key, status: status ?? (file ? "ready" : "empty"), approved: false, url: assetUrl(assetBase, file) });
+      const stages = [
+        { stage: "images", title: "① 角色与白模参考", cells: [cell("character", job.character), cell("directions", job.directions), cell("reference", job.prepared?.video)] },
+        { stage: "videos", title: "② 八方向多动作视频", cells: [cell("video", job.video?.file, job.video?.status)] },
+        { stage: "frames", title: "③ 动作分段与高清帧", cells: job.frames.map((f: any) => ({ ...cell(f.id, f.redraw?.file ?? f.keyed), direction: f.direction, action: f.action, rawUrl: assetUrl(assetBase, f.redraw?.raw) })) },
+        { stage: "sheet", title: "④ 素材包", cells: [cell("archive", job.archive)] }
+      ].map(s => ({ ...s, total: s.cells.length, ready: s.cells.filter(c => c.status === "ready").length, running: s.cells.filter(c => ["submitting", "pending", "running"].includes(c.status)).length, error: s.cells.filter(c => ["failed", "unknown"].includes(c.status)).length, approved: 0 }));
+      return { module, workflow: "motion", id, name: job.name, busy: job.active || ["submitting", "pending", "running"].includes(job.video?.status), assetBase, stages, operation: job.operation, error: job.error, character: job.character, directions: job.directions, prompt: job.prompt, segments: job.segments, ranges: job.ranges, rangesConfirmed: job.rangesConfirmed, costs: job.costs,
+        nextActions: ["使用 getMotionJob 查看完整状态，saveMotionJob 调整分段，runMotionStep 推进；收费步骤要求 confirmed:true，结果未知时不重试。"] };
+    }
     const project = await readProject(id);
     if (project === undefined) throw new Error(`找不到八方向图项目：${id}`);
     return spriteSnapshot(project);
@@ -788,7 +804,7 @@ function resolveTarget(module: unknown, id: string): ModuleKey {
 
 /** 目标 → 深链接意图。 */
 function intentOf(module: ModuleKey, id: string, extra: { stage?: string; direction?: string } = {}): OpenIntent {
-  if (module === "sprite") return { module, projectId: id, ...extra };
+  if (module === "sprite" && !isMotionId(id)) return { module, projectId: id, ...extra };
   return { module, jobId: id, ...extra };
 }
 
@@ -835,6 +851,10 @@ function sfxStageOf(method: string): "generate" | "export" | undefined {
  * `value` 只有少数方法用得上：链接里要带的**产物路径**是算出来的，不在入参里。
  */
 function intentFromCall(method: string, payload: Record<string, any>, value?: any): OpenIntent | undefined {
+  if (["listMotionJobs", "createMotionJob", "getMotionJob", "saveMotionJob", "uploadMotionAsset", "runMotionStep"].includes(method)) {
+    const targetId = asString(payload.jobId) || asString(value?.jobId);
+    return { module: "sprite", ...(targetId ? { jobId: targetId } : {}) };
+  }
   const projectId = asString(payload.projectId);
   const jobId = asString(payload.jobId);
   const stage = typeof payload.stage === "string" ? payload.stage : undefined;
@@ -1071,7 +1091,7 @@ export function registerStudioTools(host: StudioToolHost, gateway: GameStudioGat
         if (id === "") {
           // 只列可见模块的清单：隐藏的模块连「有哪些项目」都不给模型看一眼。
           await assertModuleVisible(moduleOf(args?.module));
-          const [projects, images, sequences, rigs, isos, maps, music, sfx] = await Promise.all([
+          const [projects, images, sequences, rigs, isos, maps, music, sfx, motion] = await Promise.all([
             hidden.has("sprite") ? [] : listProjects(),
             hidden.has("image") ? [] : listImageJobs(),
             hidden.has("sequence") ? [] : listSequenceJobs(),
@@ -1079,7 +1099,8 @@ export function registerStudioTools(host: StudioToolHost, gateway: GameStudioGat
             hidden.has("iso") ? [] : listIsoProjects(),
             hidden.has("map") ? [] : listMapProjects(),
             hidden.has("music") ? [] : listMusicJobs(),
-            hidden.has("sfx") ? [] : listSfxJobs()
+            hidden.has("sfx") ? [] : listSfxJobs(),
+            hidden.has("sprite") ? [] : listMotionJobs()
           ]);
           const links: Record<string, string> = {};
           for (const key of MODULES) if (!hidden.has(key)) links[key] = buildOpenLink({ module: key });
@@ -1094,6 +1115,7 @@ export function registerStudioTools(host: StudioToolHost, gateway: GameStudioGat
             mapProjects: maps,
             musicJobs: music,
             sfxJobs: sfx,
+            motionJobs: motion,
             links,
             hint: "用 game_material({action:'status', module, id}) 看某个目标的细节；八方向图的四步是 images → videos → frames → sheet，45°地图编辑器是 assets（素材）→ paint（地图）→ export（导出），俯视地图编辑器是 assets（素材）→ rules（自动连接）→ paint（地图）→ export（导出），全本地不花钱；音乐是 generate（生成）→ edit（编辑）→ export（导出），生成按谱乐 AI 积分计费；音效是 generate（生成，火山引擎 Seed-Audio）→ export（导出），每次生成真实计费。"
           };
@@ -1168,7 +1190,7 @@ export function registerStudioTools(host: StudioToolHost, gateway: GameStudioGat
         properties: {
           module: { type: "string", enum: [...MODULES], description: "目标所属模块。" },
           id: { type: "string", description: "项目 id（p…）或任务 id（i… / s…）。" },
-          kind: { type: "string", enum: ["source", "video", "ref", "item", "firstFrame", "lastFrame", "referenceImage", "referenceVideo", "part", "tileset", "referenceAudio"], description: "上传到哪个槽位。" },
+          kind: { type: "string", enum: ["character", "directions", "source", "video", "ref", "item", "firstFrame", "lastFrame", "referenceImage", "referenceVideo", "part", "tileset", "referenceAudio"], description: "上传到哪个槽位。" },
           key: { type: "string", description: "仅 sprite + kind=video 用：槽位 `turn`（转圈视频）或某个方向 key。" },
           path: { type: "string", description: "本机文件路径。" },
           name: { type: "string", description: "可选：展示用的文件名。" },
@@ -1220,6 +1242,7 @@ export function registerStudioTools(host: StudioToolHost, gateway: GameStudioGat
         const module = moduleOf(args?.module);
         if (module === undefined) throw new Error(`未知模块：${String(args?.module)}`);
         await assertModuleVisible(module);
+        if (isMotionId(asString(args?.id))) throw new Error("白模流程按步骤人工验收；请用 saveMotionJob 的 rangesConfirmed 确认抽帧范围。");
         const result = await (gateway as any).setReviewMode({
           module,
           id: asString(args?.id),
@@ -1331,7 +1354,7 @@ export function registerStudioTools(host: StudioToolHost, gateway: GameStudioGat
           packet.imageMode = snapshot.imageMode;
           packet.turn = snapshot.turn;
           packet.turnPicks = snapshot.turnPicks;
-          packet.nextActions = spriteNextActions(snapshot, stage, direction);
+          packet.nextActions = snapshot.workflow === "motion" ? snapshot.nextActions : spriteNextActions(snapshot, stage, direction);
         } else if (module === "image") {
           const items = (snapshot.items as any[]).filter((item) => index === undefined || item.index === index);
           if (items.length === 0) throw new Error(index === undefined ? "这个任务还没有产物" : `没有第 ${index} 张`);
@@ -1483,6 +1506,8 @@ export function registerStudioTools(host: StudioToolHost, gateway: GameStudioGat
         const module = resolveTarget(args?.module, id);
         await assertModuleVisible(module);
         const approved = args.approved === true;
+
+        if (isMotionId(id)) throw new Error("白模流程请用 saveMotionJob({jobId,ranges,rangesConfirmed:true}) 确认实际动作范围；不使用原流程的通过标记。");
 
         if (module === "sprite") {
           const stage = asString(args?.stage, "images");
@@ -1704,6 +1729,18 @@ function intakeFor(module: ModuleKey, id: string, told: Set<string>, config: any
     if (told.has(key)) return;
     questions.push({ key, question, why, how });
   };
+
+  if (module === "sprite" && target?.workflow === "motion") {
+    known.流程 = "角色与动作 → 白模参考与提示词 → 视频分段与抽帧 → 可选高清重绘 → 导出；4秒480P，默认2动作，最多3动作（实验性）";
+    known.动作 = target.segments;
+    known.估算 = target.costs;
+    known.审核 = "先确认实际视频动作范围，rangesConfirmed:true 后才能抽帧；视频与重绘费用逐次确认。";
+    if (target.character && target.directions) known.角色参考 = "角色细节图与八方向外观已导入";
+    else ask("references", "使用哪个已有八方向项目或角色参考图？", "白模只定义动作，角色图提供外观。", "uploadMotionAsset kind:'project'，或 action:'upload',kind:'character'|'directions',path。");
+    if (target.prompt) known.提示词 = target.prompt;
+    if (config?.videoProviderBackend !== "minimax" || config?.minimaxApiKeySet !== true || config?.minimaxModel !== "MiniMax-H3-Lite") blockers.push("生成视频前需要配置 MiniMax-H3-Lite 参考视频接口与 Key；本地准备和导入已有视频不受影响。高清重绘后端仅在选择该步骤时需要。");
+    return { module, id, workflow:"motion", blockers, questions, known, reviewModeQuestion:null, nextStep:"读取 sprite 指南；准备并查看参考和提示词，收费步骤先核对次数与报价。", afterAnswered:"用 getMotionJob / saveMotionJob / runMotionStep 推进；不使用旧流程的 reviewMode 或 approve。" };
+  }
 
   if (module === "sprite" || module === "image" || module === "rig") {
     // 「配好了没」由宿主算好回传（`imageProviderBlocker`），工具面不再自己判 arkApiKey：
@@ -1980,7 +2017,8 @@ async function uploadFromPath(
   options?: Record<string, any>
 ): Promise<Record<string, any>> {
   if (id === "") throw new Error("id 不能为空");
-  if (!UPLOAD_KINDS[module].includes(kind)) {
+  const motion = module === "sprite" && isMotionId(id);
+  if (!(motion ? ["character", "directions", "video"] : UPLOAD_KINDS[module]).includes(kind)) {
     throw new Error(`${module} 不支持 kind=${kind}（可用：${UPLOAD_KINDS[module].join(" / ")}）`);
   }
   const absolute = resolve(path);
@@ -2010,6 +2048,10 @@ async function uploadFromPath(
   }
 
   const call = gateway as any;
+  if (motion) {
+    await call.uploadMotionAsset({ jobId: id, kind, data: base64 });
+    return { module, id, kind, name: fileName, bytes: info.size, ...openInfo({module, jobId:id}, "点开确认白模素材") };
+  }
   /** sprite 的本地视频要额外回报「落到哪个槽位、有没有顺手抽帧」。 */
   let videoResult: Record<string, any> | undefined;
   if (module === "sprite") {
@@ -2090,8 +2132,10 @@ function renderIntake(value: any): string {
     lines.push(`  ? [${question.key}] ${question.question}`);
     lines.push(`      ${question.why}`);
   }
-  lines.push(`必须问：${value.reviewModeQuestion.question}`);
-  for (const option of value.reviewModeQuestion.options) lines.push(`  - ${option.label}：${option.detail}`);
+  if (value.reviewModeQuestion) {
+    lines.push(`必须问：${value.reviewModeQuestion.question}`);
+    for (const option of value.reviewModeQuestion.options) lines.push(`  - ${option.label}：${option.detail}`);
+  }
   const knownKeys = Object.keys(value.known ?? {});
   if (knownKeys.length > 0) {
     lines.push("已知 / 有默认值（不必问，除非用户主动要改）：");
@@ -2383,6 +2427,8 @@ function renderStatus(value: any): string {
       ...value.sequenceJobs.map((j: any) => `  - ${j.id} ${j.name} — 视频${j.videoReady ? "✓" : "✗"} 帧${j.frameReady ? "✓" : "✗"} 条图${j.sheetReady ? "✓" : "✗"}`),
       `音乐任务（${(value.musicJobs ?? []).length}）：`,
       ...(value.musicJobs ?? []).map((j: any) => `  - ${j.id} ${j.name} — ${j.workflow === "compose" ? `谱曲 ${j.compositions ?? 0} 版 · ` : ""}${j.songsReady}/${j.songsTotal} 首 · ${j.versions} 个版本${j.busy ? " · ⏳" : ""}`),
+      `白模动作任务（${(value.motionJobs ?? []).length}）：`,
+      ...(value.motionJobs ?? []).map((j: any) => `  - ${j.id} ${j.name} — 白模动作${j.operation ? " · ⏳" : ""}`),
       `音效任务（${(value.sfxJobs ?? []).length}）：`,
       ...(value.sfxJobs ?? []).map((j: any) => `  - ${j.id} ${j.name} — ${j.takes ?? 0} 条${j.latestDuration === null || j.latestDuration === undefined ? "" : ` · 最新 ${Number(j.latestDuration).toFixed(2)}s`}${j.busy ? " · ⏳" : ""}`),
       ...(Array.isArray(value.hiddenModules) && value.hiddenModules.length > 0

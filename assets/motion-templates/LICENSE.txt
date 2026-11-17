@@ -1,0 +1,9 @@
+Motion template source: Hormelz, 8 Directional Melee Character
+https://hormelz.itch.io/8-directional-melee-character
+Retrieved 2026-11-17. Original asset declared Creative Commons Zero (CC0).
+License: https://creativecommons.org/publicdomain/zero/1.0/
+
+The bundled .rgba.gz files preserve the original sprite poses, colors, alpha,
+and eight compass directions as compressed raw pixels. Runtime previews convert
+them to neutral grayscale. Code licensing and generated output rights are separate.
+The importer is scripts/import-motion-templates.py (development-only Pillow).
