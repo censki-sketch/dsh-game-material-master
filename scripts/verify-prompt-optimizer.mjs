@@ -60,6 +60,7 @@ try {
  const options=calls[0];check('uses DSH provider/model/effort, empty tools, bounded output and abort signal',options.provider==='deepseek'&&options.model===selection.model&&options.reasoningEffort==='high'&&options.tools.length===0&&options.maxTokens===2000&&options.signal instanceof AbortSignal);
  const sent=JSON.parse(options.messages[0].content[0].text);check('uses caller draft and suffix, sends only reference count',sent.prompt===input.prompt&&sent.suffix===input.suffix&&sent.referenceCount===0&&options.messages[0].content.length===1);
  check('optimizer is asset-neutral and receives no hidden character template',!('baseGuidance'in sent)&&options.system.includes('用户文字要求优先于参考图')&&options.system.includes('Q版不等于像素画')&&options.system.includes('没有附图时不得声称已查看参考图')&&options.system.includes('不把输入默认当成角色'));
+ check('reference observations cannot become an invented preservation checklist',options.system.includes('不把图中每件衣物、发饰、颜色逐一转写成保留清单')&&options.system.includes('主提示词开头先正面描述完成后的新主体和改变')&&options.system.includes('不替用户发明用于区分性别的长发、裙装'));
  const previewCalls=calls.length;
  const plainPreview=await invoke('previewImagePrompt',{jobId:otherId,prompt:'冰晶剑，保留木质剑柄',suffix:'',keying:{enabled:false,keyColor:'#FF00FF'},lang:'zh'});
  check('free preview without a template is exactly the authored item prompt',calls.length===previewCalls&&plainPreview.prompt==='冰晶剑，保留木质剑柄'&&plainPreview.references.length===0);

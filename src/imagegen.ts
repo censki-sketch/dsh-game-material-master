@@ -428,7 +428,8 @@ export async function keyItem(job: ImageJob, index: number, keying = job.keying)
     keyHigh: keying.keyHigh,
     despill: keying.despill,
     edgeShrink: keying.edgeShrink,
-    bgTolerance: keying.bgTolerance
+    bgTolerance: keying.bgTolerance,
+    refineEdges: true
   });
   const relative = `keyed/img-${String(index).padStart(2, "0")}.png`;
   await writeFile(imageAssetPath(job.id, relative), encodePng(result.rgba, decoded.width, decoded.height));

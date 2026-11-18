@@ -17224,8 +17224,8 @@
       }, []);
       const locate = input => {
         const end = input.selectionStart;
-        const found = input.value.slice(0, end).match(/@([^@\s]*)$/);
-        let next = found ? { start: end - found[0].length, end, query: found[1], index: 0 } : null;
+        const atTrigger = input.selectionEnd === end && input.value[end - 1] === "@";
+        let next = atTrigger ? { start: end - 1, end, query: "", index: 0 } : null;
         if (next && dismissedRef.current === JSON.stringify([next.start, next.end, next.query])) next = null;
         setMention(current => next && current?.start === next.start && current.end === next.end && current.query === next.query ? current : next);
       };
@@ -17419,7 +17419,7 @@
               h("p", { className: "SPR_hint" }, result.keying?.enabled ? T("背景：透明输出，抠像底色 {n0}", { n0: result.keying.keyColor }) : T("背景：按提示词与所选模板")),
               needsClarification ? h("div", { className: "SPR_promptClarifications" }, h("strong", null, T("需要补充")), h("ul", null, result.summary.clarifications.map((question, index) => h("li", { key: index }, question))), T("请在原提示词中补充后重新优化。")) : null,
               result.optimized !== result.originalOptimized ? h("p", { className: "SPR_hint" }, T("结果已手动编辑，请重新核对修改项与参考用途。")) : null) : null,
-            result && !needsClarification ? h(ImagePromptPreview, { api: props.api, jobId: props.jobId, prompt: result.optimized, suffix: props.suffix, keying: props.keying, lang: props.lang, references: props.references }) : null,
+            h(ImagePromptPreview, { api: props.api, jobId: props.jobId, prompt: result && !stale && !needsClarification ? result.optimized : sourceDraft, suffix: props.suffix, keying: props.keying, lang: props.lang, references: props.references }),
             h("p", { className: "SPR_hint" }, T("不使用模板时不追加美术模板。指定@图片时只使用指定图片，否则使用全部已上传参考图；优化和生图使用相同范围。")),
             stale ? h("p", { className: "SPR_error", role: "alert" }, T("提示词、模板、参考图或背景设置已修改，请重新优化后再采用。")) : null,
             h("div", { className: "SPR_btnRow" },
@@ -17806,8 +17806,7 @@
                     ),
                     h("div", { className: "SPR_imageTemplateRow" },
                       h(ImagePromptTemplates, { key: job.id, jobId: job.id, templates: job.promptTemplates, templateId: job.promptTemplateId, templateLang: job.promptTemplateLang,
-                        suffix: suffixDraft, disabled: busy, onApply: applyBasePrompt, onManage: props.onManageTemplates }))),
-                    h(ImagePromptPreview, { key: job.id, api, jobId: job.id, prompt: promptDraft, suffix: suffixDraft, lang: job.promptTemplateLang, keying: { enabled: keyingDraft.enabled === true, keyColor: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }, references: job.refs })
+                        suffix: suffixDraft, disabled: busy, onApply: applyBasePrompt, onManage: props.onManageTemplates })))
                   ),
                   h("div", { className: "SPR_card SPR_imageAdvanced" },
                     h("details", { className: "SPR_imageGenerationAdvanced" },

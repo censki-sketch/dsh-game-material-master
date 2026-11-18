@@ -44,6 +44,8 @@ export interface KeyOptions {
   edgeShrink: number;
   /** 洪水填充的局部颜色容差（RGB 欧氏距离）。0 = 关闭空间分割。 */
   bgTolerance: number;
+  /** Still-image keying: recover mixed screen-colored edge pixels from nearby opaque foreground. */
+  refineEdges?: boolean;
 }
 
 export const DEFAULT_KEY_OPTIONS: KeyOptions = {
@@ -450,6 +452,7 @@ export function keyGreen(rgba: Buffer, width: number, height: number, options: K
     out[p + 3] = Math.round(alpha * 255);
   }
 
+  if (options.refineEdges && dominant.length > 0) refineKeyEdges(rgba, out, width, height, key, dominant, despill);
   if (options.edgeShrink > 0) shrinkAlpha(out, width, height, Math.min(8, Math.round(options.edgeShrink)));
 
   return {
@@ -460,6 +463,70 @@ export function keyGreen(rgba: Buffer, width: number, height: number, options: K
     borderSamples,
     borderSamplesDropped
   };
+}
+
+/** Recover a screen/foreground mixture only along the existing matte boundary; do not erode the silhouette. */
+function refineKeyEdges(source: Buffer, out: Buffer, width: number, height: number, key: { r: number; g: number; b: number }, dominant: number[], strength: number): void {
+  if (strength <= 0) return;
+  const pixels = width * height;
+  const distance = new Uint8Array(pixels).fill(255);
+  const queue = new Int32Array(pixels);
+  let head = 0, tail = 0;
+  // Distance to removed screen: opaque colors deep inside the subject are never touched.
+  for (let i = 0; i < pixels; i++) if (out[i * 4 + 3] === 0 && source[i * 4 + 3] === 255) { distance[i] = 0; queue[tail++] = i; }
+  while (head < tail) {
+    const i = queue[head++], d = distance[i];
+    if (d >= 4) continue;
+    const x = i % width, y = Math.floor(i / width);
+    const visit = (n: number) => { if (distance[n] > d + 1) { distance[n] = d + 1; queue[tail++] = n; } };
+    if (x > 0) visit(i - 1);
+    if (x + 1 < width) visit(i + 1);
+    if (y > 0) visit(i - width);
+    if (y + 1 < height) visit(i + width);
+  }
+  const screen = [key.r, key.g, key.b];
+  const others = [0, 1, 2].filter(channel => !dominant.includes(channel));
+  const excess = (p: number) => Math.min(...dominant.map(channel => source[p + channel])) - Math.max(...others.map(channel => source[p + channel]));
+  for (let i = 0; i < pixels; i++) {
+    const p = i * 4;
+    if (distance[i] === 0 || distance[i] > 4 || source[p + 3] < 250 || out[p + 3] === 0 || excess(p) < 8) continue;
+    const x = i % width, y = Math.floor(i / width);
+    let bestError = Infinity, bestAlpha = 1, best = -1, cleanNeighbor = false;
+    // Fit P = alpha * F + (1 - alpha) * screen using a nearby, uncontaminated opaque color.
+    for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) {
+      const nx = x + dx, ny = y + dy, square = dx * dx + dy * dy;
+      if (square === 0 || square > 36 || nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+      const n = ny * width + nx, q = n * 4;
+      if (distance[n] <= distance[i] || source[q + 3] < 250 || out[q + 3] < 250 || excess(q) >= 8) continue;
+      cleanNeighbor = true;
+      let dot = 0, norm = 0;
+      for (let c = 0; c < 3; c++) { const v = source[q + c] - screen[c]; dot += (source[p + c] - screen[c]) * v; norm += v * v; }
+      if (norm < 4096) continue;
+      const alpha = dot / norm;
+      if (alpha < 0.03 || alpha > 0.97) continue;
+      let error = 0;
+      for (let c = 0; c < 3; c++) error += (source[p + c] - (alpha * source[q + c] + (1 - alpha) * screen[c])) ** 2;
+      const score = error + square;
+      if (error <= 18 ** 2 && score < bestError) { bestError = score; bestAlpha = alpha; best = q; }
+    }
+    if (best < 0) {
+      // Generated colored outlines need not be a linear mixture. Neutralize only their excess screen hue,
+      // leaving alpha and relative foreground channel differences intact.
+      if (cleanNeighbor) {
+        const spill = Math.max(0, Math.min(...dominant.map(c => out[p + c])) - Math.max(...others.map(c => out[p + c])));
+        for (const c of dominant) out[p + c] = Math.round(out[p + c] - spill * Math.min(1, strength / 0.65));
+      }
+      continue;
+    }
+    // Unmix RGB as well as alpha: lowering alpha alone leaves a colored fringe on dark backgrounds.
+    const amount = Math.min(1, strength / 0.65);
+    for (let c = 0; c < 3; c++) {
+      const recovered = Math.max(0, Math.min(255, (source[p + c] - (1 - bestAlpha) * screen[c]) / bestAlpha));
+      out[p + c] = Math.round(out[p + c] + (recovered - out[p + c]) * amount);
+    }
+    const recoveredAlpha = Math.round(bestAlpha * source[p + 3]);
+    out[p + 3] = Math.min(out[p + 3], Math.round(source[p + 3] + (recoveredAlpha - source[p + 3]) * amount));
+  }
 }
 
 /** 对 alpha 通道做可分离的最小值滤波，等价于把前景边界向内收缩 n 像素。 */

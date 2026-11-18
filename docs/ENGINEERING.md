@@ -233,7 +233,11 @@ Key 只写入本机 `<DSH_HOME>/game-material-master/config.json`，常规配置
 
 提示词优化不再读取全局角色模板作为隐藏 `baseGuidance`；仅传入用户草稿、实际选择的suffix、背景设置和本次使用的参考图。系统规则只负责通用需求整理，明确修改/保留/参考用途，不擅自设计。单次模型调用返回结构化 `prompt + summary`，`wire.promptOptimizationSchema` 同时校验模型JSON与网关响应；格式、引用编号或澄清状态无效时拒绝采用且不重试。`summary.clarifications`非空时prompt必须为空，界面禁用采用并要求补充原文；不声称结构校验能证明语义正确。沿用一次请求、无Agent循环、无自动工具调用、无自动重试的费用边界。
 
-`imagegen.resolveImageReferences`是优化/预览/生成的参考选择真源：合并主提示词和suffix提取有效编号，有显式引用时只选对应图，否则用全部上传图，始终保持上传顺序与原标签；非法引用在付费请求前失败。`buildPrompt`附加图号与附件顺序映射，避免仅发@图片2时被模型误认成@图片1。`imageBackgroundInstruction`仅约束背景，不再含“主体保持不变”；优化器收到相同规则与精确底色。`imagePromptContext`接受未保存的suffix/keying/模板语言快照，供优化与免费`previewImagePrompt`（clientOnly）共用。`ImagePromptPreview`只在details展开时读取，草稿变更去抖刷新、清理旧请求响应；复用真实`buildPrompt`，不在客户端另写一套拼接。实际生成以点击时的保存草稿为准。涉及宿主与wire变更，需完全退出DSH（含托盘）再打开。自检覆盖通用素材请求、澄清/格式拒绝、未保存透明设置、无模板、参考范围和假生图接口收到的实际字节/提示词；不使用真实模型或私有图片。
+`imagegen.resolveImageReferences`是优化/预览/生成的参考选择真源：合并主提示词和suffix提取有效编号，有显式引用时只选对应图，否则用全部上传图，始终保持上传顺序与原标签；非法引用在付费请求前失败。`buildPrompt`附加图号与附件顺序映射，避免仅发@图片2时被模型误认成@图片1。`imageBackgroundInstruction`仅约束背景，不再含“主体保持不变”；优化器收到相同规则与精确底色。`imagePromptContext`接受未保存的suffix/keying/模板语言快照，供优化与免费`previewImagePrompt`（clientOnly）共用。`ImagePromptPreview`仅置于优化弹窗，未优化、结果过期或待澄清时预览sourceDraft，正常结果预览可编辑的optimized；只在details展开时读取，草稿变更去抖刷新、清理旧请求响应。复用真实`buildPrompt`，不在客户端另写一套拼接。实际生成以点击时的保存草稿为准。涉及宿主与wire变更，需完全退出DSH（含托盘）再打开。自检覆盖通用素材请求、澄清/格式拒绝、未保存透明设置、无模板、参考范围和假生图接口收到的实际字节/提示词；不使用真实模型或私有图片。
+
+`PromptReferenceInput`仅在折叠光标的前一个字符为`@`时自动打开参考图列表，继续输入、光标移出或选中文字时收起；手动「引用图片」入口保留。两处输入共用规则，已完成的`@图片N的服装`不会误弹空列表。优化SYSTEM明确区分看见的参考细节与用户明确保留要求，禁止逐件扩写服装/发饰为保留清单，先描述完成后的修改目标，不以性别刻板设计替用户决策。
+
+静态图片的`imagegen.keyItem`额外启用`chroma.KeyOptions.refineEdges`：只在已移除背景附近4px、与底色同向偏色的像素上，用6px内更靠里的干净不透明前景拟合`P=alpha*F+(1-alpha)*K`，恢复RGB与覆盖率。无法拟合的生成色边只抑制多余底色色相，不腐蚀alpha；仍遵循去溢色强度，0关闭。深处主体、已有半透明源像素及中性底色不参与，视频等调用默认不启用。合成像素测试覆盖品红/棕色混边的复现、浅/深底合成、内部紫色/白衣/绿衣/深色描边、源alpha、0强度与真实上传抠像路径。原图若已生成宽色边仍可能残留；现有图片需手动本地重新抠像才更新，不能自动重新调用生图。
 
 动态操作反馈统一由 `NoticePopup` 渲染，覆盖各模块的 `notice`、设置、模板、排序及弹窗内操作错误；静态阻塞原因与任务结果保持在原位。使用 `popover="manual"` 进入浏览器顶层，避免滚动容器或已有dialog裁切；不调用focus、不使用遮罩。工厂级活动引用保证同一时刻一条消息，组件卸载时清理计时器、事件监听和顶层节点。成功4秒、一般6秒自动关闭，悬停/聚焦暂停，错误手动关闭；Escape只关闭消息，不阻止原有dialog事件。提示词右侧操作组为 `.SPR_promptRightActions`，包含透明背景开关与优化按钮。
 

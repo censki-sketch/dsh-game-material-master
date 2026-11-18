@@ -12,6 +12,7 @@ const imagegen = await import("../lib/imagegen.js");
 const { IMAGE_PROMPT_TEMPLATES } = await import("../lib/imageprompts.js");
 const { encodePng } = await import("../lib/png.js");
 const { decodeToRgba } = await import("../lib/media.js");
+const { keyGreen } = await import("../lib/chroma.js");
 const received = [];
 let onRequest;
 const server = createServer(async (request, response) => {
@@ -52,7 +53,38 @@ globalThis.fetch = (url, options) => {
 let checks = 0;
 const check = (name, value) => { assert.ok(value, name); checks++; console.log("✓ " + name); };
 try {
+  const edgeWidth = 32, edgeHeight = 32, edgeSource = Buffer.alloc(edgeWidth * edgeHeight * 4);
+  const hair = [80, 44, 24], screen = [255, 0, 255];
+  const put = (x, y, color, alpha = 255) => { const p = (y * edgeWidth + x) * 4; color.forEach((v, c) => edgeSource[p + c] = v); edgeSource[p + 3] = alpha; };
+  for (let y = 0; y < edgeHeight; y++) for (let x = 0; x < edgeWidth; x++) put(x, y, screen);
+  for (let y = 7; y < 25; y++) for (let x = 7; x < 25; x++) put(x, y, hair);
+  for (let y = 8; y < 24; y++) put(6, y, hair.map((v, c) => Math.round((v + screen[c]) / 2)));
+  // An intended purple detail inside the opaque subject, and clean pale/green/dark outlines.
+  put(16, 16, [170, 35, 170]); put(24, 12, [238, 238, 238]); put(24, 13, [45, 150, 70]); put(24, 14, [20, 18, 15]);
+  const edgeOptions = { keyColor: '#FF00FF', keyLow: 14, keyHigh: 80, despill: 0.65, edgeShrink: 0, bgTolerance: 40 };
+  const legacyEdge = keyGreen(edgeSource, edgeWidth, edgeHeight, edgeOptions).rgba;
+  const recoveredEdge = keyGreen(edgeSource, edgeWidth, edgeHeight, { ...edgeOptions, refineEdges: true }).rgba;
+  const mixed = (12 * edgeWidth + 6) * 4;
+  check('mixed magenta/brown edge reproduces the opaque purple-fringe defect', legacyEdge[mixed + 3] === 255 && legacyEdge[mixed + 2] - legacyEdge[mixed + 1] > 80);
+  check('edge recovery restores foreground RGB and coverage without shrinking', Math.abs(recoveredEdge[mixed + 3] - 128) <= 2 && hair.every((v, c) => Math.abs(recoveredEdge[mixed + c] - v) <= 2));
+  for (const bg of [20, 245]) {
+    const alpha = recoveredEdge[mixed + 3] / 255;
+    check('recovered edge composites cleanly on background ' + bg, hair.every((v, c) => Math.abs(recoveredEdge[mixed + c] * alpha + bg * (1 - alpha) - (v * 0.5 + bg * 0.5)) < 2));
+  }
+  check('interior purple detail and clean boundary colors remain unchanged', [[16, 16], [24, 12], [24, 13], [24, 14]].every(([x, y]) => { const p = (y * edgeWidth + x) * 4; return recoveredEdge.subarray(p, p + 4).equals(edgeSource.subarray(p, p + 4)); }));
+  check('zero despill disables edge color recovery', keyGreen(edgeSource, edgeWidth, edgeHeight, { ...edgeOptions, despill: 0, refineEdges: true }).rgba.equals(keyGreen(edgeSource, edgeWidth, edgeHeight, { ...edgeOptions, despill: 0 }).rgba));
+  put(6, 12, [130, 60, 130], 128);
+  const transparentLegacy = keyGreen(edgeSource, edgeWidth, edgeHeight, edgeOptions).rgba;
+  const transparentRefined = keyGreen(edgeSource, edgeWidth, edgeHeight, { ...edgeOptions, refineEdges: true }).rgba;
+  check('already-transparent source edge is not refined a second time', transparentLegacy.subarray(mixed, mixed + 4).equals(transparentRefined.subarray(mixed, mixed + 4)));
   await saveConfig({ imageProvider: "custom", customProtocol: "openai", customBaseUrl: origin, customApiKey: "fake-local-key", customModel: "fake-image", keyColor: "#0000FF" });
+  put(6, 12, hair.map((v, c) => Math.round((v + screen[c]) / 2)));
+  const edgeJob = await imagegen.createImageJob('uploaded edge fixture');
+  edgeJob.keying = { ...edgeJob.keying, ...edgeOptions, enabled: true };
+  await imagegen.writeImageJob(edgeJob);
+  const edgeItem = await imagegen.addImageToJob(edgeJob.id, 'synthetic-edge.png', encodePng(edgeSource, edgeWidth, edgeHeight).toString('base64'));
+  const uploadedEdge = await decodeToRgba(imagegen.imageAssetPath(edgeJob.id, edgeItem.keyedFile));
+  check('real still-image upload/keying path applies edge recovery automatically without an API call', received.length === 0 && Math.abs(uploadedEdge.rgba[mixed + 3] - 128) <= 2 && hair.every((v, c) => Math.abs(uploadedEdge.rgba[mixed + c] - v) <= 2));
   const job = await imagegen.createImageJob("transparent fixture");
   job.prompt = "白色衣服的角色，参考白色背景，保持动作";
   job.suffix = IMAGE_PROMPT_TEMPLATES[0].prompt.zh;
