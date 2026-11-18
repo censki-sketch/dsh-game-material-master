@@ -286,11 +286,55 @@ export function safeName(input: string): string {
   return base === "" ? "file" : base.slice(0, 120);
 }
 
+/** Uploaded order is authoritative; explicit mentions narrow the attachments without renumbering labels. */
+export function resolveImageReferences(prompt: string, refs: ImageJob["refs"]): Array<ImageJob["refs"][number] & { label: string }> {
+  const mentioned = [...prompt.matchAll(/@图片(\d+)/g)].map(match => {
+    const index = Number(match[1]) - 1;
+    if (match[1] !== String(index + 1) || !refs[index]) throw new Error("引用的图片不存在，请重新选择参考图。");
+    return index;
+  });
+  return refs.flatMap((ref, index) => mentioned.length === 0 || mentioned.includes(index) ? [{ ...ref, label: `@图片${index + 1}` }] : []);
+}
+
+export function imageBackgroundInstruction(keying: Pick<KeyingSettings, "enabled" | "keyColor">, lang: "zh" | "en"): string {
+  if (!keying.enabled) return "";
+  return lang === "en"
+    ? "Transparent PNG output: the following rules override only background descriptions in the prompt, template and reference images. Generate the subject according to the requested changes; these background rules do not lock its appearance, clothing, pose or composition. " + backgroundClause(keying.keyColor, "en") + " No floor, cast shadow, halo, scenery or checkerboard transparency pattern. Do not make the subject the key color or tint its edges. Local processing will remove this exact color."
+    : "透明 PNG 输出模式：以下背景要求覆盖主提示词、模板和参考图中其他背景描述，仅作用于背景。主体按用户要求修改，这些背景规则不锁定主体外观、服装、动作或构图。" + backgroundClause(keying.keyColor, "zh") + "不要地面、投影、光晕、场景或透明棋盘格，不要把主体改成背景色或给边缘染色。生成后将按此颜色在本地抠像，输出透明 PNG。";
+}
+
+export interface ImagePromptDraft {
+  prompt: string;
+  suffix?: string;
+  keying?: Pick<KeyingSettings, "enabled" | "keyColor">;
+  lang?: "zh" | "en";
+}
+
+/** Free preview and optimization use exactly the same draft and attachment rules as generation. */
+export async function imagePromptContext(jobId: string, input: ImagePromptDraft) {
+  const job = await readImageJob(jobId);
+  if (!job) throw new Error(`任务不存在：${jobId}`);
+  const config = await loadConfig();
+  const draft: ImageJob = { ...job, prompt: input.prompt, suffix: input.suffix ?? job.suffix,
+    keying: { ...job.keying, ...input.keying, keyColor: normalizeKeyColor(input.keying?.keyColor ?? job.keying.keyColor, config.keyColor) },
+    promptTemplateLang: input.suffix !== undefined ? input.lang : input.lang ?? job.promptTemplateLang };
+  const references = resolveImageReferences(`${draft.prompt}\n${draft.suffix}`, draft.refs);
+  const lang = draft.promptTemplateLang ?? (/[\u4e00-\u9fff]/u.test(draft.prompt + draft.suffix) ? "zh" : "en");
+  return { draft, references, prompt: buildPrompt(draft), background: { enabled: draft.keying.enabled, keyColor: draft.keying.keyColor,
+    instruction: imageBackgroundInstruction(draft.keying, lang) } };
+}
+
 export function buildPrompt(job: ImageJob, fallbackKeyColor = DEFAULT_KEY_COLOR): string {
   const base = job.prompt.trim();
   if (base === "") return "";
   let suffix = job.suffix.trim();
-  if (!job.keying.enabled) return suffix === "" ? base : `${base}\n${suffix}`;
+  const references = resolveImageReferences(`${base}\n${suffix}`, job.refs);
+  const lang = job.promptTemplateLang ?? (/[\u4e00-\u9fff]/u.test(base + suffix) ? "zh" : "en");
+  const referenceMap = references.length === 0 ? "" : lang === "en"
+    ? `Attached image mapping: ${references.map((ref, index) => `attachment ${index + 1} = ${ref.label}`).join("; ")}. Follow the requested reference uses and changes; image labels keep their original numbers.`
+    : `本次参考图对应关系：${references.map((ref, index) => `第${index + 1}张附图=${ref.label}`).join("；")}。参考用途和修改目标按主提示词执行，图片标签保留原编号。`;
+  const append = (prompt: string) => referenceMap ? `${prompt}\n\n${referenceMap}` : prompt;
+  if (!job.keying.enabled) return append(suffix === "" ? base : `${base}\n${suffix}`);
   const color = normalizeKeyColor(job.keying.keyColor, normalizeKeyColor(fallbackKeyColor));
   // Remove only the built-in template's default white-background clause, never character colors.
   // Work on the outgoing request; the authored prompt and template snapshot remain unchanged.
@@ -298,11 +342,7 @@ export function buildPrompt(job: ImageJob, fallbackKeyColor = DEFAULT_KEY_COLOR)
     .replace("Unless a background is specified, use a uniform solid white background with ", "Use ");
   suffix = applyKeyColorToPrompt(applyKeyColorToPrompt(suffix, color, "zh"), color, "en");
   const prompt = suffix === "" ? base : `${base}\n${suffix}`;
-  const lang = job.promptTemplateLang ?? (/[\u4e00-\u9fff]/u.test(prompt) ? "zh" : "en");
-  const instruction = lang === "en"
-    ? "Transparent PNG output: the following background rules override earlier background descriptions in the prompt, template and reference images. Apply them only to the background; preserve all subject colors, clothing, poses and composition. " + backgroundClause(color, "en") + " No floor, cast shadow, halo, scenery or checkerboard transparency pattern. Do not make the subject the key color or tint its edges. Local processing will remove this exact color and keep the subject."
-    : "透明 PNG 输出模式：以下背景要求覆盖主提示词、模板和参考图中其他背景描述，仅作用于背景，保持主体配色、服装、动作和构图不变。" + backgroundClause(color, "zh") + "不要地面、投影、光晕、场景或透明棋盘格，不要把主体改成背景色或给边缘染色。生成后将按此颜色在本地抠像，保留主体并输出透明 PNG。";
-  return `${prompt}\n\n${instruction}`;
+  return `${append(prompt)}\n\n${imageBackgroundInstruction({ enabled: true, keyColor: color }, lang)}`;
 }
 
 /** 生成一张图（内部一次调用）。 */
@@ -333,7 +373,8 @@ export async function generateImageItem(jobId: string, index: number): Promise<v
   await writeImageJob(job);
 
   try {
-    const refs = await Promise.all(job.refs.map((ref) => toDataUri(imageAssetPath(jobId, ref.file), mimeOf(ref.file))));
+    const references = resolveImageReferences(`${job.prompt}\n${job.suffix}`, job.refs);
+    const refs = await Promise.all(references.map((ref) => toDataUri(imageAssetPath(jobId, ref.file), mimeOf(ref.file))));
     const result = await generateImageWithProvider({
       prompt,
       images: refs,

@@ -16,10 +16,14 @@ const received = [];
 let onRequest;
 const server = createServer(async (request, response) => {
   try {
-    assert.equal(request.url, "/images/generations");
+    assert.ok(["/images/generations", "/images/edits"].includes(request.url));
     const chunks = [];
     for await (const chunk of request) chunks.push(chunk);
-    const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    const bytes = Buffer.concat(chunks);
+    const form = request.url === "/images/edits" ? await new Request("http://127.0.0.1/images/edits", { method: "POST", headers: { "Content-Type": request.headers["content-type"] }, body: bytes }).formData() : undefined;
+    const images = form ? await Promise.all([...form.getAll("image"), ...form.getAll("image[]")].map(async file => Buffer.from(await file.arrayBuffer()).toString("base64"))) : [];
+    // Multipart text fields normalize newlines to CRLF on the wire.
+    const body = form ? { prompt: form.get("prompt").replace(/\r\n/g, "\n"), images } : JSON.parse(bytes.toString("utf8"));
     received.push(body);
     await onRequest?.();
     const rgba = Buffer.alloc(64 * 64 * 4);
@@ -88,6 +92,28 @@ try {
   await imagegen.generateImageItem(job.id, 1);
   const unkeyed = await imagegen.readImageJob(job.id);
   check("turning transparency off skips automatic keying", unkeyed.items[1].status === "ready" && !unkeyed.items[1].keyedFile && !received[1].prompt.includes("透明 PNG 输出模式"));
+  const firstRef = encodePng(Buffer.from([240, 0, 0, 255]), 1, 1).toString("base64");
+  const secondRef = encodePng(Buffer.from([0, 0, 240, 255]), 1, 1).toString("base64");
+  await imagegen.addImageRef(job.id, "red.png", firstRef);
+  await imagegen.addImageRef(job.id, "blue.png", secondRef);
+  const referenced = await imagegen.readImageJob(job.id);
+  referenced.prompt = "只参考@图片2的材质，生成冰晶剑，剑柄保留木质";
+  referenced.suffix = "";
+  await imagegen.writeImageJob(referenced);
+  const selectedPreview = await imagegen.imagePromptContext(job.id, { prompt: referenced.prompt, suffix: "", keying: { enabled: false, keyColor: "#FF00FF" } });
+  await imagegen.generateImageItem(job.id, 2);
+  check("actual edit request sends only the mentioned reference bytes", received.at(-1).images.length === 1 && received.at(-1).images[0] === secondRef);
+  assert.equal(received.at(-1).prompt, selectedPreview.prompt);
+  check("free preview exactly matches the final prompt sent to the image API", selectedPreview.prompt === received.at(-1).prompt && received.at(-1).prompt.includes("第1张附图=@图片2"));
+  referenced.prompt = "根据参考图生成一把剑";
+  await imagegen.writeImageJob(referenced);
+  await imagegen.generateImageItem(job.id, 3);
+  check("without mentions the actual API receives all references in uploaded order", JSON.stringify(received.at(-1).images) === JSON.stringify([firstRef, secondRef]));
+  referenced.prompt = "参考@图片99";
+  await imagegen.writeImageJob(referenced);
+  const beforeInvalid = received.length;
+  await assert.rejects(imagegen.generateImageItem(job.id, 4), /不存在/);
+  check("invalid references fail before any paid request or running item is written", received.length === beforeInvalid && !(await imagegen.readImageJob(job.id)).items[4]);
   console.log(`Passed ${checks} image transparency checks. Synthetic pixels and loopback API only.`);
 } finally {
   globalThis.fetch = originalFetch;

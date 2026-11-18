@@ -101,7 +101,24 @@
       "原提示词": "Original prompt",
       "优化结果（可编辑）": "Optimized prompt (editable)",
       "点击优化后，结果会显示在这里。": "The result will appear here after optimization.",
-      "基础提示词保持原文。点击优化才调用DSH模型，仅发送通过@图片引用的参考图，图片输入需模型支持。": "The base prompt stays unchanged. DSH is called only when you click Optimize, and receives only mentioned reference images. The model must support image input.",
+      "不使用模板时不追加美术模板。指定@图片时只使用指定图片，否则使用全部已上传参考图；优化和生图使用相同范围。": "No art template is added when none is selected. Explicit @ mentions select the images used; otherwise all uploaded references are used. Optimization and generation use the same selection.",
+      "需求核对": "Intent review",
+      "目标": "Goal",
+      "必须修改": "Required changes",
+      "明确保留": "Explicitly preserved",
+      "参考用途": "Reference use",
+      "未指定": "Not specified",
+      "未使用参考图": "No reference images used",
+      "需要补充": "Clarification needed",
+      "请在原提示词中补充后重新优化。": "Add the missing details to the original prompt, then optimize again.",
+      "结果已手动编辑，请重新核对修改项与参考用途。": "The result was edited manually. Recheck the changes and reference uses.",
+      "背景：透明输出，抠像底色 {n0}": "Background: transparent output, key color {n0}",
+      "背景：按提示词与所选模板": "Background: follow the prompt and selected template",
+      "查看最终生图请求": "View final image request",
+      "最终生图提示词": "Final image prompt",
+      "免费预览，不调用生成模型。实际生成使用点击生成时的最新设置。": "Free preview; no generation model is called. Generation uses the latest settings when Generate is clicked.",
+      "请先填写提示词。": "Enter a prompt first.",
+      "正在加载…": "Loading…",
       "输入 @ 引用已上传的参考图": "Type @ to mention an uploaded reference image",
       "引用图片": "Mention an image",
       "参考图片": "Reference images",
@@ -109,7 +126,7 @@
       "没有匹配的参考图": "No matching reference images",
       "引用的图片不存在，请重新选择参考图。": "A mentioned image no longer exists. Select the reference image again.",
       "当前DSH未提供图片引用功能，请完全退出DSH（包括托盘）再打开；仍不可用时请更新DSH。": "Image references are unavailable. Fully exit DSH, including its tray icon, and reopen it. Update DSH if they remain unavailable.",
-      "原提示词或参考图已修改，请重新优化后再采用。": "The source prompt or reference images changed. Optimize again before applying.",
+      "提示词、模板、参考图或背景设置已修改，请重新优化后再采用。": "The prompt, template, references or background settings changed. Optimize again before applying.",
       "采用优化结果": "Apply optimized prompt",
       "请输入提示词后再优化。": "Enter a prompt before optimizing.",
       "当前任务已切换，未修改提示词。": "The current task changed. Its prompt was not modified.",
@@ -3183,6 +3200,7 @@
       ["saveImageJob", true],
       ["optimizeImagePrompt", true],
       ["getPromptOptimizerModel", false],
+      ["previewImagePrompt", true],
       ["uploadImageRef", true],
       ["removeImageRef", true],
       ["addImageItem", true],
@@ -4985,6 +5003,16 @@
 .SPR_promptDialogTitle{display:flex;align-items:center;gap:5px;min-width:0;line-height:24px}
 .SPR_promptCompare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
 .SPR_promptCompare .SPR_area{min-height:240px;font:inherit;font-size:12px;line-height:1.7}
+.SPR_promptIntent{padding:12px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-label-secondary) 3%,transparent);margin:12px 0;overflow-wrap:anywhere}
+.SPR_promptIntent h4{margin:0 0 10px;font-size:13px}
+.SPR_promptIntent dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 12px;margin:0;font-size:12px;line-height:1.7}
+.SPR_promptIntent dt{color:var(--dsw-alias-label-secondary)}
+.SPR_promptIntent dd{margin:0;white-space:pre-wrap;min-width:0}
+.SPR_promptClarifications{margin:10px 0 0;padding:10px;border-radius:7px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 8%,transparent);line-height:1.7}
+.SPR_promptClarifications ul{margin:4px 0;padding-left:20px}
+.SPR_finalPromptPreview{margin:10px 0;font-size:12px;min-width:0}
+.SPR_finalPromptPreview summary{cursor:pointer;color:var(--dsw-alias-label-secondary);width:fit-content}
+.SPR_finalPromptPreview textarea{box-sizing:border-box;width:100%;min-height:150px;max-height:340px;margin-top:8px;font:12px/1.7 system-ui;resize:vertical;overflow:auto}
 .SPR_promptSource{position:relative;min-width:0}
 .SPR_promptReferenceEditor{position:relative;min-width:0;border-radius:9px;background:var(--dsw-alias-bg-layer-1)}
 .SPR_promptReferenceEditor>.SPR_promptReferenceArea{position:relative;display:block;margin:0;background:transparent;color:transparent;caret-color:var(--dsw-alias-label-primary)}
@@ -17259,6 +17287,34 @@
             h("img", { src: `${props.assetBase ?? ""}${ref.file}`, alt: "" }), h("span", null, ref.label, " ", ref.name))) : h("p", { className: "SPR_hint" }, images.length ? T("没有匹配的参考图") : T("请先在生成页上传参考图。"))) : null);
     }
 
+    /** The server builds previews with the generation code; only an expanded preview performs free reads. */
+    function ImagePromptPreview(props) {
+      const [open, setOpen] = React.useState(false);
+      const [preview, setPreview] = React.useState(null);
+      const [error, setError] = React.useState("");
+      const requestKey = JSON.stringify({ jobId: props.jobId, prompt: props.prompt, suffix: props.suffix, keying: props.keying, lang: props.lang });
+      const refsKey = JSON.stringify((props.references ?? []).map(ref => ref.file));
+      React.useEffect(() => {
+        if (!open || !props.prompt?.trim()) return;
+        let active = true;
+        const timer = setTimeout(() => {
+          props.api.previewImagePrompt(JSON.parse(requestKey)).then(data => {
+            if (active) { setPreview({ key: requestKey, refsKey, data }); setError(""); }
+          }).catch(failure => { if (active) setError(msg(failure)); });
+        }, 150);
+        return () => { active = false; clearTimeout(timer); };
+      }, [open, requestKey, refsKey, props.api]);
+      const current = preview?.key === requestKey && preview?.refsKey === refsKey ? preview.data : null;
+      return h("details", { className: "SPR_finalPromptPreview", onToggle: event => setOpen(event.currentTarget.open) },
+        h("summary", null, T("查看最终生图请求")),
+        open ? h(React.Fragment, null,
+          h(NoticePopup, { notice: error, onClose: () => setError("") }),
+          h("p", { className: "SPR_hint" }, T("免费预览，不调用生成模型。实际生成使用点击生成时的最新设置。")),
+          !props.prompt?.trim() ? h("p", { className: "SPR_hint" }, T("请先填写提示词。")) : current ? h(React.Fragment, null,
+            h("p", { className: "SPR_hint" }, current.references.length ? current.references.map(ref => `${ref.label} · ${ref.name}`).join("；") : T("未使用参考图")),
+            h("textarea", { className: "SPR_area", "aria-label": T("最终生图提示词"), readOnly: true, value: current.prompt })) : !error ? h("span", { className: "SPR_spinSm", "aria-label": T("正在加载…") }) : null) : null);
+    }
+
     /** DSH optimization is explicit; opening and editing never dispatch a model call. */
     function PromptOptimizer(props) {
       const [open, setOpen] = React.useState(false);
@@ -17288,11 +17344,11 @@
         if (lockRef.current) return;
         const current = latestRef.current;
         if (!sourceDraft.trim()) { setError(T("请输入提示词后再优化。")); return; }
-        const mentioned = [...sourceDraft.matchAll(/@图片(\d+)/g)].map(match => match[1] === String(Number(match[1])) ? (current.references ?? [])[Number(match[1]) - 1] : undefined);
+        const mentioned = [...`${sourceDraft}\n${current.suffix ?? ""}`.matchAll(/@图片(\d+)/g)].map(match => match[1] === String(Number(match[1])) ? (current.references ?? [])[Number(match[1]) - 1] : undefined);
         if (mentioned.some(ref => !ref)) { setError(T("引用的图片不存在，请重新选择参考图。")); return; }
-        const referenceFiles = [...new Set(mentioned.map(ref => ref.file))];
+        const referenceFiles = (current.references ?? []).filter(ref => mentioned.length === 0 || mentioned.some(item => item.file === ref.file)).map(ref => ref.file);
         lockRef.current = true; setOperation("load"); setError("");
-        const source = { prompt: sourceDraft, suffix: current.suffix };
+        const source = { prompt: sourceDraft, suffix: current.suffix, keying: current.keying, lang: current.lang };
         const basePrompt = current.prompt;
         const refs = JSON.stringify((current.references ?? []).map(ref => ref.file));
         sourceBaseRef.current = basePrompt;
@@ -17304,8 +17360,8 @@
           if (referenceFiles.length && cfg.imageReferencesSupported !== true) throw new Error(T("当前DSH未提供图片引用功能，请完全退出DSH（包括托盘）再打开；仍不可用时请更新DSH。"));
           setOperation("optimize");
           const response = await current.api.optimizeImagePrompt({ jobId: current.jobId, ...source, referenceFiles, confirmed: true });
-          if (response?.ok === false || typeof response?.prompt !== "string" || !response.prompt.trim()) throw new Error(response?.error ?? T("文字模型未返回提示词"));
-          if (aliveRef.current) setResult({ ...source, basePrompt, refs, optimized: response.prompt.trim(), model: response.model, provider: response.provider });
+          if (response?.ok === false || typeof response?.prompt !== "string" || !response.summary) throw new Error(response?.error ?? T("文字模型未返回提示词"));
+          if (aliveRef.current) setResult({ ...source, basePrompt, refs, optimized: response.prompt.trim(), originalOptimized: response.prompt.trim(), summary: response.summary, model: response.model, provider: response.provider });
         } catch (failure) { if (aliveRef.current) setError(msg(failure)); }
         finally { lockRef.current = false; if (aliveRef.current) setOperation(null); }
       };
@@ -17314,9 +17370,10 @@
         if (sourceBaseRef.current !== props.prompt) { sourceBaseRef.current = props.prompt; setSourceDraft(props.prompt ?? ""); setResult(null); setError(""); }
         setOpen(true);
       };
-      const stale = result !== null && (result.prompt !== sourceDraft || result.basePrompt !== props.prompt || result.suffix !== props.suffix || result.refs !== referenceSignature);
+      const stale = result !== null && (result.prompt !== sourceDraft || result.basePrompt !== props.prompt || result.suffix !== props.suffix || result.refs !== referenceSignature || JSON.stringify(result.keying) !== JSON.stringify(props.keying) || result.lang !== props.lang);
+      const needsClarification = (result?.summary.clarifications.length ?? 0) > 0;
       const apply = async (revert = false) => {
-        if (lockRef.current || props.disabled || (!revert && (!result?.optimized.trim() || stale)) || (revert && (!undo || props.prompt !== undo.after))) return;
+        if (lockRef.current || props.disabled || (!revert && (!result?.optimized.trim() || stale || needsClarification)) || (revert && (!undo || props.prompt !== undo.after))) return;
         lockRef.current = true; applyingRef.current = true; setOperation("apply"); setError("");
         const before = latestRef.current.prompt;
         const after = revert ? undo.before : result.optimized.trim();
@@ -17336,7 +17393,7 @@
         h("dialog", { className: "SPR_promptDialog", ref: dialogRef, "aria-label": T("优化提示词"), onCancel: event => { event.preventDefault(); close(); }, onClose: () => { setOpen(false); triggerRef.current?.focus(); },
           onKeyDown: event => {
             if (event.key !== "Tab") return;
-            const focusable = [...event.currentTarget.querySelectorAll("button:not(:disabled),textarea:not(:disabled)")];
+            const focusable = [...event.currentTarget.querySelectorAll("button:not(:disabled),textarea:not(:disabled),summary")];
             const target = event.shiftKey ? focusable.at(-1) : focusable[0];
             if (document.activeElement === (event.shiftKey ? focusable[0] : focusable.at(-1))) { event.preventDefault(); target?.focus(); }
           },
@@ -17351,13 +17408,23 @@
           h(React.Fragment, null,
             h("div", { className: "SPR_promptCompare" },
               h(PromptReferenceInput, { id: props.jobId + "-prompt-source", value: sourceDraft, disabled: busy, references: props.references, assetBase: props.assetBase, onChange: value => { setSourceDraft(value); setError(""); } }),
-              h(PromptReferenceInput, { id: props.jobId + "-prompt-result", label: T("优化结果（可编辑）"), value: result?.optimized ?? "", placeholder: T("点击优化后，结果会显示在这里。"), disabled: busy || result === null, references: props.references, assetBase: props.assetBase, referenceActions: false, onChange: value => setResult({ ...result, optimized: value }) },
+              h(PromptReferenceInput, { id: props.jobId + "-prompt-result", label: T("优化结果（可编辑）"), value: result?.optimized ?? "", placeholder: T("点击优化后，结果会显示在这里。"), disabled: busy || result === null || needsClarification, references: props.references, assetBase: props.assetBase, referenceActions: false, onChange: value => setResult({ ...result, optimized: value }) },
                 config?.available ? h("span", { className: "SPR_hint SPR_promptModelInfo" }, T("DSH模型：{n0}", { n0: `${result?.provider ?? config.provider} / ${result?.model ?? config.model}` })) : null)),
-            h("p", { className: "SPR_hint" }, T("基础提示词保持原文。点击优化才调用DSH模型，仅发送通过@图片引用的参考图，图片输入需模型支持。")),
-            stale ? h("p", { className: "SPR_error", role: "alert" }, T("原提示词或参考图已修改，请重新优化后再采用。")) : null,
+            result ? h("section", { className: "SPR_promptIntent", "aria-label": T("需求核对") },
+              h("h4", null, T("需求核对")),
+              h("dl", null, h("dt", null, T("目标")), h("dd", null, result.summary.goal),
+                h("dt", null, T("必须修改")), h("dd", null, result.summary.changes.join("；") || T("未指定")),
+                h("dt", null, T("明确保留")), h("dd", null, result.summary.preserve.join("；") || T("未指定")),
+                h("dt", null, T("参考用途")), h("dd", null, result.summary.references.map(ref => `${ref.label}：${ref.usage}`).join("\n") || T("未使用参考图"))),
+              h("p", { className: "SPR_hint" }, result.keying?.enabled ? T("背景：透明输出，抠像底色 {n0}", { n0: result.keying.keyColor }) : T("背景：按提示词与所选模板")),
+              needsClarification ? h("div", { className: "SPR_promptClarifications" }, h("strong", null, T("需要补充")), h("ul", null, result.summary.clarifications.map((question, index) => h("li", { key: index }, question))), T("请在原提示词中补充后重新优化。")) : null,
+              result.optimized !== result.originalOptimized ? h("p", { className: "SPR_hint" }, T("结果已手动编辑，请重新核对修改项与参考用途。")) : null) : null,
+            result && !needsClarification ? h(ImagePromptPreview, { api: props.api, jobId: props.jobId, prompt: result.optimized, suffix: props.suffix, keying: props.keying, lang: props.lang, references: props.references }) : null,
+            h("p", { className: "SPR_hint" }, T("不使用模板时不追加美术模板。指定@图片时只使用指定图片，否则使用全部已上传参考图；优化和生图使用相同范围。")),
+            stale ? h("p", { className: "SPR_error", role: "alert" }, T("提示词、模板、参考图或背景设置已修改，请重新优化后再采用。")) : null,
             h("div", { className: "SPR_btnRow" },
               h(BusyBtn, { busy: operation === "optimize", busyText: T("优化提示词"), disabled: busy || props.disabled || !sourceDraft.trim(), onClick: () => void optimize() }, T("优化提示词")),
-              h(BusyBtn, { primary: true, busy: operation === "apply", disabled: busy || props.disabled || result === null || !result.optimized.trim() || stale, onClick: () => void apply() }, T("采用优化结果"))))) : null));
+              h(BusyBtn, { primary: true, busy: operation === "apply", disabled: busy || props.disabled || result === null || !result.optimized.trim() || stale || needsClarification, onClick: () => void apply() }, T("采用优化结果"))))) : null));
     }
 
     function ImageResultMenu({ label, children }) {
@@ -17729,7 +17796,7 @@
                       h("label", { className: "SPR_transparentToggle", title: T("开启后自动补充纯色背景要求，生成完成后在本地抠成透明 PNG；不会修改输入内容。") + " " + T("抠像背景色：{n0}", { n0: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }) },
                         h("input", { type: "checkbox", role: "switch", "aria-label": T("透明背景"), checked: keyingDraft.enabled === true, disabled: busy || uploading,
                           onChange: event => { const keying = { ...keyingDraft, enabled: event.target.checked, keyColor: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }; setKeyingDraft(keying); void saveJob({ keying }); } }), T("透明背景")),
-                      h(PromptOptimizer, { key: job.id, inline: true, api, jobId: job.id, prompt: promptDraft, suffix: suffixDraft, references: job.refs, assetBase: job.assetBase, disabled: busy, onApply: applyOptimizedPrompt }))))),
+                      h(PromptOptimizer, { key: job.id, inline: true, api, jobId: job.id, prompt: promptDraft, suffix: suffixDraft, lang: job.promptTemplateLang, keying: { enabled: keyingDraft.enabled === true, keyColor: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }, references: job.refs, assetBase: job.assetBase, disabled: busy, onApply: applyOptimizedPrompt }))))),
                     h("section", { className: "SPR_imageRefs", "data-testid": "image-refs", "data-ref-count": (job.refs ?? []).length },
                       h("div", { className: "SPR_cardHead SPR_imageSectionHead" }, h("h3", null, T("参考图（可留空）")),
                         h(DescriptionTip, { id: "image-reference-description", label: T("参考图（可留空）"), text: T("最多 10 张。有参考图时走图生图；在提示词里输入 @ 选择图片，点击列表可预览原图。") })),
@@ -17739,7 +17806,8 @@
                     ),
                     h("div", { className: "SPR_imageTemplateRow" },
                       h(ImagePromptTemplates, { key: job.id, jobId: job.id, templates: job.promptTemplates, templateId: job.promptTemplateId, templateLang: job.promptTemplateLang,
-                        suffix: suffixDraft, disabled: busy, onApply: applyBasePrompt, onManage: props.onManageTemplates })))
+                        suffix: suffixDraft, disabled: busy, onApply: applyBasePrompt, onManage: props.onManageTemplates }))),
+                    h(ImagePromptPreview, { key: job.id, api, jobId: job.id, prompt: promptDraft, suffix: suffixDraft, lang: job.promptTemplateLang, keying: { enabled: keyingDraft.enabled === true, keyColor: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }, references: job.refs })
                   ),
                   h("div", { className: "SPR_card SPR_imageAdvanced" },
                     h("details", { className: "SPR_imageGenerationAdvanced" },
@@ -24045,6 +24113,7 @@
         saveImageJob: (payload) => call("saveImageJob", payload),
         optimizeImagePrompt: (payload) => call("optimizeImagePrompt", payload),
         getPromptOptimizerModel: () => call("getPromptOptimizerModel"),
+        previewImagePrompt: (payload) => call("previewImagePrompt", payload),
         uploadImageRef: (payload) => call("uploadImageRef", payload),
         removeImageRef: (payload) => call("removeImageRef", payload),
         addImageItem: (payload) => call("addImageItem", payload),

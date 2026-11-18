@@ -231,6 +231,10 @@ Key 只写入本机 `<DSH_HOME>/game-material-master/config.json`，常规配置
 
 图片生成的主提示词与优化弹窗共用 `PromptReferenceInput`，支持 `@图片N` 选择、高亮与光标位置插入；主输入保留失焦保存和 `mergeDrafts()`。参考图由 `ImageReferenceList` 逐行展示，单击打开原图 `<dialog>`，移除按钮独立；预览与选择引用只在客户端执行，不调用生成接口。组件按任务ID重建，切换任务不残留菜单或预览。
 
+提示词优化不再读取全局角色模板作为隐藏 `baseGuidance`；仅传入用户草稿、实际选择的suffix、背景设置和本次使用的参考图。系统规则只负责通用需求整理，明确修改/保留/参考用途，不擅自设计。单次模型调用返回结构化 `prompt + summary`，`wire.promptOptimizationSchema` 同时校验模型JSON与网关响应；格式、引用编号或澄清状态无效时拒绝采用且不重试。`summary.clarifications`非空时prompt必须为空，界面禁用采用并要求补充原文；不声称结构校验能证明语义正确。沿用一次请求、无Agent循环、无自动工具调用、无自动重试的费用边界。
+
+`imagegen.resolveImageReferences`是优化/预览/生成的参考选择真源：合并主提示词和suffix提取有效编号，有显式引用时只选对应图，否则用全部上传图，始终保持上传顺序与原标签；非法引用在付费请求前失败。`buildPrompt`附加图号与附件顺序映射，避免仅发@图片2时被模型误认成@图片1。`imageBackgroundInstruction`仅约束背景，不再含“主体保持不变”；优化器收到相同规则与精确底色。`imagePromptContext`接受未保存的suffix/keying/模板语言快照，供优化与免费`previewImagePrompt`（clientOnly）共用。`ImagePromptPreview`只在details展开时读取，草稿变更去抖刷新、清理旧请求响应；复用真实`buildPrompt`，不在客户端另写一套拼接。实际生成以点击时的保存草稿为准。涉及宿主与wire变更，需完全退出DSH（含托盘）再打开。自检覆盖通用素材请求、澄清/格式拒绝、未保存透明设置、无模板、参考范围和假生图接口收到的实际字节/提示词；不使用真实模型或私有图片。
+
 动态操作反馈统一由 `NoticePopup` 渲染，覆盖各模块的 `notice`、设置、模板、排序及弹窗内操作错误；静态阻塞原因与任务结果保持在原位。使用 `popover="manual"` 进入浏览器顶层，避免滚动容器或已有dialog裁切；不调用focus、不使用遮罩。工厂级活动引用保证同一时刻一条消息，组件卸载时清理计时器、事件监听和顶层节点。成功4秒、一般6秒自动关闭，悬停/聚焦暂停，错误手动关闭；Escape只关闭消息，不阻止原有dialog事件。提示词右侧操作组为 `.SPR_promptRightActions`，包含透明背景开关与优化按钮。
 
 图片工作台使用 `.SPR_imageWorkspace` 双列布局：左侧编辑、右侧结果；容器宽度≤900px时上下排列。左侧独立容器控制提示词/参考图区的折叠布局。模型、尺寸和数量与高级抠像共用 `.SPR_imageAdvanced` 卡片，两个details独立展开；生成按钮与紧凑审核下拉位于右侧结果卡片顶部同排，窄屏可换行。审核和基础提示词下拉用CSS `appearance:base-select` / `::picker(select)`适配主题，旧浏览器使用标准select。`setReviewMode.reviewMode`接受auto/manual/null，null从落盘数据清除模式，省略或非法值仍拒绝；客户端不再拦截空选项并显示保存失败弹窗。修改后需重启宿主。`ImageResultPreview` 用原生dialog单击预览，优先keyedFile；关闭恢复触发按钮焦点，按任务ID重建避免串任务。预览和展开设置不调用生成。

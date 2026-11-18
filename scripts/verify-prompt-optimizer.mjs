@@ -14,7 +14,7 @@ const ctx=new Context();ctx.provide('typert',{register:()=>()=>{}});ctx.provide(
 plugin.apply(ctx);const gateway=ctx.get('gameStudio');
 let checks=0;const check=(name,value)=>{assert.ok(value,name);checks++;console.log('✓ '+name);};
 const invoke=async(method,payload)=>{const spec=wire.METHODS.find(m=>m.method===method);assert.ok(spec,method);const parsed=spec.payload?.parse(payload);if(payload)assert.deepEqual(parsed,payload,'wire stripped fields');const result=await (parsed?gateway[method](parsed):gateway[method]());return spec.result.parse(result);};
-const calls=[];let mode='success',release,selection={provider:'deepseek',model:'host-default-model',reasoningEffort:'high'};
+const calls=[];let mode='success',release,replyOverride,selection={provider:'deepseek',model:'host-default-model',reasoningEffort:'high'};
 try {
  check('unavailable DSH service does not block plugin mounting',Boolean(gateway));
  const unsupported=await invoke('getPromptOptimizerModel');check('older host gets a readable blocker without asking for a key',!unsupported.available&&unsupported.message.includes('DSH'));
@@ -29,7 +29,10 @@ try {
   yield {type:'reasoning-delta',index:2,text:'private reasoning must not enter prompt'};
   yield {type:'text-delta',index:0,text:'partial text'};
   if(mode==='missing-finish')return;
-  yield {type:'block-end',index:0,block:{type:'text',text:mode==='empty'?'':options.messages[0].content.some(part=>part.type==='image')?(mode==='wrong-reference'?'按@图片1优化蓝色法师':'参考@图片2，蓝色法师，保持固定配色。'):'蓝色法师，保持八方向、32帧和固定配色。'}};
+  const sent=JSON.parse(options.messages[0].content[0].text),refs=sent.references;
+  const text=refs.length?refs.map(ref=>ref.label).join('、')+'，蓝色法师，保持固定配色。':'蓝色法师，保持八方向、32帧和固定配色。';
+  const reply={prompt:mode==='wrong-reference'?'按@图片1优化蓝色法师':text,summary:{goal:'按用户要求生成素材',changes:[],preserve:[],references:refs.map(ref=>({label:ref.label,usage:'用户指定的服装'})),clarifications:[]}};
+  yield {type:'block-end',index:0,block:{type:'text',text:mode==='empty'?'':replyOverride??JSON.stringify(reply)}};
   yield {type:'finish',reason:mode==='error'?{kind:'error',failure:{code:'RATE_LIMIT',message:'dummy-secret-must-not-leak'}}:mode==='length'?{kind:'max-tokens'}:{kind:'stop'}};
  }});
  const status=await invoke('getPromptOptimizerModel');check('reads host default provider/model without separate credentials',status.available&&status.provider==='deepseek'&&status.model===selection.model&&!JSON.stringify(status).includes('apiKey'));
@@ -56,7 +59,42 @@ try {
  check('returns complete text once, excludes reasoning and delta duplication',calls.length===1&&result.prompt==='蓝色法师，保持八方向、32帧和固定配色。');
  const options=calls[0];check('uses DSH provider/model/effort, empty tools, bounded output and abort signal',options.provider==='deepseek'&&options.model===selection.model&&options.reasoningEffort==='high'&&options.tools.length===0&&options.maxTokens===2000&&options.signal instanceof AbortSignal);
  const sent=JSON.parse(options.messages[0].content[0].text);check('uses caller draft and suffix, sends only reference count',sent.prompt===input.prompt&&sent.suffix===input.suffix&&sent.referenceCount===0&&options.messages[0].content.length===1);
- check('optimizer receives reusable guidance and distinguishes attached images from unseen references',sent.baseGuidance===templates[0].prompt.zh&&options.system.includes('用户文字要求优先于参考图')&&options.system.includes('Q版不等于像素画')&&options.system.includes('没有附图时不得声称已查看参考图'));
+ check('optimizer is asset-neutral and receives no hidden character template',!('baseGuidance'in sent)&&options.system.includes('用户文字要求优先于参考图')&&options.system.includes('Q版不等于像素画')&&options.system.includes('没有附图时不得声称已查看参考图')&&options.system.includes('不把输入默认当成角色'));
+ const previewCalls=calls.length;
+ const plainPreview=await invoke('previewImagePrompt',{jobId:otherId,prompt:'冰晶剑，保留木质剑柄',suffix:'',keying:{enabled:false,keyColor:'#FF00FF'},lang:'zh'});
+ check('free preview without a template is exactly the authored item prompt',calls.length===previewCalls&&plainPreview.prompt==='冰晶剑，保留木质剑柄'&&plainPreview.references.length===0);
+ check('free preview is UI-only and does not enter the model tool surface',!wire.TOOL_METHODS.some(spec=>spec.method==='previewImagePrompt'));
+ const subjectCases=[['角色','将角色改为女性，仅参考原图服装',['面容与体态改为女性'],['服装']],['道具','将剑身改为冰晶材质，保留剑柄',['剑身材质改为冰晶'],['剑柄']],['建筑','将木屋屋顶改为红瓦，保留墙体',['屋顶改为红瓦'],['墙体']],['场景','将森林改为秋季，保持俯视构图',['季节改为秋季'],['俯视构图']]];
+ for(const [kind,prompt,changes,preserve] of subjectCases){
+  replyOverride=JSON.stringify({prompt,summary:{goal:prompt,changes,preserve,references:[],clarifications:[]}});
+  const neutral=await invoke('optimizeImagePrompt',{jobId:otherId,prompt,suffix:'',keying:{enabled:false,keyColor:'#FF00FF'},confirmed:true});
+  const received=JSON.parse(calls.at(-1).messages[0].content[0].text);
+  check(kind+': no template stays empty and structured intent survives wire parsing',neutral.prompt===prompt&&neutral.summary.changes[0]===changes[0]&&neutral.summary.preserve[0]===preserve[0]&&received.suffix===''&&!('baseGuidance'in received));
+ }
+ replyOverride=JSON.stringify({prompt:'',summary:{goal:'修改物品',changes:[],preserve:[],references:[],clarifications:['要修改这件物品的哪些部分？']}});
+ const unclear=await invoke('optimizeImagePrompt',{jobId:otherId,prompt:'优化一下这个物品',suffix:'',confirmed:true});
+ check('ambiguous requests return a clarification without an adoptable prompt',unclear.prompt===''&&unclear.summary.clarifications.length===1);
+ for(const malformed of ['not-json',JSON.stringify({prompt:'剑'}),JSON.stringify({...unclear,prompt:'擅自扩写的剑'})]){
+  replyOverride=malformed;const before=calls.length;await assert.rejects(invoke('optimizeImagePrompt',{...input,jobId:otherId}),/未采用结果.*未自动重试/);check('malformed or conflicting structured results never retry',calls.length===before+1);
+ }
+ replyOverride=undefined;
+ const transparentInput={...input,keying:{enabled:true,keyColor:'#FF00FF'},lang:'zh'};
+ await invoke('optimizeImagePrompt',transparentInput);const backgroundSent=JSON.parse(calls.at(-1).messages[0].content[0].text).background;
+ check('unsaved transparency and exact key color reach the model',backgroundSent.enabled&&backgroundSent.keyColor==='#FF00FF'&&backgroundSent.instruction.includes('#FF00FF')&&!backgroundSent.instruction.includes('保持主体配色、服装、动作和构图不变'));
+ const transparentPreview=await invoke('previewImagePrompt',{jobId,prompt:input.prompt,suffix:input.suffix,keying:transparentInput.keying,lang:'zh'});
+ check('preview shares the submitted background instruction exactly',transparentPreview.prompt.endsWith(backgroundSent.instruction)&&transparentPreview.background.keyColor==='#FF00FF');
+ const {jobId:languageId}=await invoke('createImageJob',{name:'language draft',promptTemplate:'character',lang:'zh'});
+ const languageJobBefore=JSON.stringify(await imagegen.readImageJob(languageId));
+ const clearedLanguageDraft={jobId:languageId,prompt:'Change the blade to ice, keep the handle.',suffix:'',keying:{enabled:true,keyColor:'#FF00FF'}};
+ const clearedLanguagePreview=await invoke('previewImagePrompt',clearedLanguageDraft);
+ check('clearing an unsaved template detects draft language instead of retaining the old template language',clearedLanguagePreview.prompt.includes('Transparent PNG output:')&&!clearedLanguagePreview.prompt.includes('透明 PNG 输出模式')&&JSON.stringify(await imagegen.readImageJob(languageId))===languageJobBefore);
+ await invoke('saveImageJob',{...clearedLanguageDraft,promptTemplate:null});
+ check('cleared-template preview matches prompt assembly after saving',clearedLanguagePreview.prompt===imagegen.buildPrompt(await imagegen.readImageJob(languageId)));
+ const switchedLanguageDraft={jobId:languageId,prompt:'红色铠甲角色',suffix:templates[0].prompt.en,keying:{enabled:true,keyColor:'#FF00FF'},lang:'en'};
+ const switchedLanguagePreview=await invoke('previewImagePrompt',switchedLanguageDraft);
+ check('unsaved template language controls preview even when the main text uses a different language',switchedLanguagePreview.prompt.includes('Transparent PNG output:')&&!switchedLanguagePreview.prompt.includes('透明 PNG 输出模式'));
+ await invoke('saveImageJob',{...switchedLanguageDraft,promptTemplate:'character'});
+ check('switched-language preview matches prompt assembly after saving',switchedLanguagePreview.prompt===imagegen.buildPrompt(await imagegen.readImageJob(languageId)));
  await invoke('saveImageJob',{jobId:otherId,prompt:'Q版女性角色',suffix:templates[2].prompt.zh});
  const sheet=await imagegen.readImageJob(otherId);
  check('early built-in text-only tasks recover their selection without changing text',sheet.promptTemplateId==='eight-direction'&&sheet.promptTemplateLang==='zh'&&sheet.suffix===templates[2].prompt.zh);
@@ -82,10 +120,10 @@ try {
  const imageInput={...input,prompt:'参考@图片2的服装，Q版女性角色',referenceFiles:[refs[1].file]};
  const visualCount=calls.length;
  await assert.rejects(invoke('optimizeImagePrompt',{...imageInput,confirmed:false}),/确认/);
- await assert.rejects(invoke('optimizeImagePrompt',{...imageInput,referenceFiles:['../other-task.png']}),/不存在/);
+ await assert.rejects(invoke('optimizeImagePrompt',{...imageInput,referenceFiles:['../other-task.png']}),/不一致/);
  await assert.rejects(invoke('optimizeImagePrompt',{...imageInput,referenceFiles:[refs[0].file]}),/不一致/);
- await assert.rejects(invoke('optimizeImagePrompt',{...imageInput,prompt:'参考@图片11',referenceFiles:[]}),/不一致/);
- await assert.rejects(invoke('optimizeImagePrompt',{...imageInput,prompt:'参考@图片02'}),/不一致/);
+ await assert.rejects(invoke('optimizeImagePrompt',{...imageInput,prompt:'参考@图片11',referenceFiles:[]}),/不存在/);
+ await assert.rejects(invoke('optimizeImagePrompt',{...imageInput,prompt:'参考@图片02'}),/不存在/);
  await assert.rejects(invoke('optimizeImagePrompt',{...imageInput,referenceFiles:[refs[1].file,refs[1].file]}),/无效/);
  check('confirmation and task-owned mention mapping reject invalid images before any model call',calls.length===visualCount);
  await assert.rejects(invoke('optimizeImagePrompt',imageInput),/缺少图片输入服务/);
@@ -101,8 +139,12 @@ try {
  check('selected image is admitted as a real DSH attachment on the prepared route',visualResult.prompt.includes('@图片2')&&visualOptions.provider==='vision-provider'&&visualOptions.model==='vision-model'&&preparations===3&&visualOptions.messages[0].content[2].type==='image'&&visualOptions.messages[0].content[2].attachment.attachmentId==='sha256:mock-red');
  check('only the mentioned second image is sent with its original number and actual bytes',visualText.referenceCount===1&&JSON.stringify(visualText.references)===JSON.stringify([{label:'@图片2',name:refs[1].name}])&&admissions[0].length===2&&admissions[0][0].text==='@图片2'&&admissions[0][1].data===png);
  mode='wrong-reference';await assert.rejects(invoke('optimizeImagePrompt',imageInput),/改变了图片引用.*未自动重试/);mode='success';
- const noImageCount=preparations;await invoke('optimizeImagePrompt',{...input,referenceFiles:[]});
- check('unmentioned uploaded images stay local and text-only calls bypass image preparation',preparations===noImageCount&&calls.at(-1).messages[0].content.length===1&&JSON.parse(calls.at(-1).messages[0].content[0].text).referenceCount===0);
+ const noImageCount=preparations;await invoke('optimizeImagePrompt',{...input,referenceFiles:refs.map(ref=>ref.file)});
+ check('without explicit mentions all uploaded images reach optimization as they do generation',preparations===noImageCount+1&&calls.at(-1).messages[0].content.filter(part=>part.type==='image').length===2&&JSON.parse(calls.at(-1).messages[0].content[0].text).referenceCount===2);
+ const secondPreview=await invoke('previewImagePrompt',{jobId,prompt:imageInput.prompt,suffix:input.suffix,keying:{enabled:false,keyColor:'#FF00FF'}});
+ check('preview narrows to the same second image and preserves its original label',secondPreview.references.length===1&&secondPreview.references[0].label==='@图片2'&&secondPreview.prompt.includes('第1张附图=@图片2'));
+ const suffixPreview=await invoke('previewImagePrompt',{jobId,prompt:'剑',suffix:'只参考@图片2的材质'});
+ check('reference selection includes authored template mentions',suffixPreview.references.length===1&&suffixPreview.references[0].label==='@图片2');
  const all=await Promise.all((await readdir(join(dataRoot(),'prompt-optimization-attempts'))).map(name=>readFile(join(dataRoot(),'prompt-optimization-attempts',name),'utf8')));check('attempt records contain no mock secrets or prompt bodies',all.every(text=>!text.includes('dummy-secret')&&!text.includes(input.prompt)));
  const originalCatalog=JSON.parse(JSON.stringify(templates));
  const edited=JSON.parse(JSON.stringify(templates));edited[0].name.zh='我的角色模板';edited[0].prompt.zh='完整全身角色，纯蓝背景，不要光晕。';

@@ -265,6 +265,10 @@ automatically; errors stay until dismissed.
 
 Both the source prompt and optimized result highlight image references. DSH model details sit to the right of the reference hint; the exclamation icon beside the dialog title explains the default model, sign-in and usage rules. Optimization progress uses button loading indicators. Main-prompt actions stay on one row and scroll horizontally when space is limited.
 
+Prompt optimization works across characters, props, weapons, buildings and scenes. It separates the goal, required changes, explicitly preserved details and reference uses without inventing art direction. Selecting No template adds no hidden character template. The same model call returns an Intent review; ambiguous requests show clarification questions and cannot be adopted until the source is clarified and explicitly optimized again. This review reflects the model's interpretation for you to check; it does not guarantee image quality.
+
+Optimization and generation use the same reference selection: explicit `@图片N` mentions in the main or additional prompt select those images; otherwise all uploaded references are sent. The final request maps original labels to attachment order. The optimizer also receives the transparent-background switch and exact key color; background rules do not lock subject changes. Expand View final image request in the editor or optimization dialog to inspect the current draft plus template, attachment mapping and background rules for free. Previewing calls no model; generation uses the latest settings at the time Generate is clicked. Quit DSH completely, including its tray icon, then reopen it after updating.
+
 Transparent areas use the same checkerboard background in result images, enlarged previews and reference-image previews.
 
 ![Image generation · prompt and reference images](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-06-image.png)

@@ -132,7 +132,7 @@ async function main() {
   // 「AI 生成素材」新增 composeMapAsset（整理一批帧 → 一张待确认的素材图），134 → 135。
   // 「原地重烘」新增 recomposeMapTileset（按现在的规则重烘一张素材，保留图块序号），135 → 136。
   // 音效生成（模块八）新增 13 个方法（testSfx + 12 个 sfx 方法），163 → 176。
-  check("manifest 方法数为 198（含设置页按项查看原Key）", invocations.length === 198, `实际 ${invocations.length}`);
+  check("manifest 方法数为 199（含免费生图请求预览）", invocations.length === 199, `实际 ${invocations.length}`);
   const ids = new Set(invocations.map((i) => i.id));
   check("方法 id 唯一", ids.size === invocations.length);
   check("所有方法都声明在 gameStudio 服务下", invocations.every((i) => i.service === "gameStudio" && i.namespace === "gameStudio"));
