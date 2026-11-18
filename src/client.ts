@@ -93,7 +93,6 @@
       "提示词模板管理": "Prompt template management",
       "撤销优化": "Undo optimization",
       "正在读取DSH模型…": "Loading the DSH model…",
-      "正在优化提示词…": "Optimizing prompt…",
       "文字模型未返回提示词": "The text model did not return a prompt",
       "使用DSH默认模型（与新会话一致），沿用已有登录和用量规则，无需单独填写Key。": "Uses the DSH default model, as new chats do, with your existing sign-in and usage rules. No separate key is needed.",
       "只优化文字，使用DSH现有模型；图片仍需单独点击生成。": "Optimizes text using your existing DSH model. Generate images separately.",
@@ -4918,13 +4917,13 @@
 .SPR_imageSectionHead h3{line-height:20px}
 .SPR_promptEditor{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;margin-bottom:10px;background:var(--dsw-alias-bg-layer-1)}
 .SPR_promptEditor:focus-within{border-color:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 2px color-mix(in srgb,var(--dsw-alias-state-business-primary) 12%,transparent)}
-.SPR_promptSource[data-main=true]{gap:0}
+.SPR_promptSource[data-main=true]{gap:0;container-type:inline-size}
 .SPR_promptSource[data-main=true]>.SPR_promptReferenceEditor{border-radius:10px 10px 0 0}
 .SPR_promptSource[data-main=true]>.SPR_promptReferenceEditor>.SPR_promptReferenceArea{width:100%;min-height:130px;border:0;border-radius:10px 10px 0 0;box-shadow:none;resize:vertical}
 .SPR_promptSource[data-main=true]>.SPR_promptReferenceEditor>.SPR_promptReferenceArea:focus{outline:none;box-shadow:none}
-.SPR_promptInputActions{display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 10px 9px;flex-wrap:wrap}
-.SPR_promptInlineActions{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
-.SPR_promptRightActions{display:flex;align-items:center;gap:10px;margin-left:auto;min-width:0;flex-wrap:wrap;justify-content:flex-end}
+.SPR_promptInputActions{display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 10px 9px;flex-wrap:nowrap}
+.SPR_promptInlineActions{display:flex;align-items:center;gap:6px;margin-left:auto;flex:none;flex-wrap:nowrap;justify-content:flex-end}
+.SPR_promptRightActions{display:flex;align-items:center;gap:10px;margin-left:auto;flex:none;flex-wrap:nowrap;justify-content:flex-end}
 .SPR_transparentToggle{display:inline-flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap;cursor:pointer;color:var(--dsw-alias-label-secondary)}
 .SPR_transparentToggle input{appearance:none;position:relative;box-sizing:border-box;width:27px;height:16px;margin:0;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-3);cursor:inherit;flex:none}
 .SPR_transparentToggle input::after{content:"";position:absolute;left:2px;top:2px;width:10px;height:10px;border-radius:50%;background:var(--dsw-alias-label-secondary);transition:transform .12s}
@@ -4940,6 +4939,13 @@
 .SPR_promptOptimize:disabled{opacity:.55;cursor:default}
 .SPR_promptOptimize svg{width:16px;height:16px;flex:none;color:var(--dsw-alias-state-business-primary)}
 .SPR_promptUndo{font-weight:400;color:var(--dsw-alias-label-secondary);background:transparent}
+@container(max-width:380px){
+  .SPR_promptSource[data-main=true]>.SPR_promptInputActions{gap:4px;padding-left:6px;padding-right:6px}
+  .SPR_promptSource[data-main=true]>.SPR_promptInputActions>.SPR_miniBtn>.SPR_promptReferenceLabel{display:none}
+  .SPR_promptRightActions,.SPR_promptInlineActions{gap:4px}
+  .SPR_promptRightActions .SPR_promptOptimize{gap:4px;padding-left:6px;padding-right:6px}
+  .SPR_promptRightActions .SPR_transparentToggle{gap:4px}
+}
 .SPR_promptBase{padding:12px;border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-label-secondary) 4%,transparent);min-width:0}
 .SPR_promptBaseHead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:12px}
 .SPR_promptBaseHead strong{font-weight:500}
@@ -4972,16 +4978,21 @@
 .SPR_promptDialog::backdrop{background:rgba(0,0,0,.35)}
 .SPR_promptDialogHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
 .SPR_promptDialogHead h3{margin:0;font-size:16px}
+.SPR_promptDialogTitle{display:flex;align-items:center;gap:5px;min-width:0;line-height:24px}
 .SPR_promptCompare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
 .SPR_promptCompare .SPR_area{min-height:240px;font:inherit;font-size:12px;line-height:1.7}
 .SPR_promptSource{position:relative;min-width:0}
 .SPR_promptReferenceEditor{position:relative;min-width:0;border-radius:9px;background:var(--dsw-alias-bg-layer-1)}
 .SPR_promptReferenceEditor>.SPR_promptReferenceArea{position:relative;display:block;margin:0;background:transparent;color:transparent;caret-color:var(--dsw-alias-label-primary)}
 .SPR_promptReferenceArea::placeholder{color:var(--dsw-alias-label-tertiary)}
-.SPR_promptReferenceEditor>.SPR_promptReferencePaint{position:absolute;left:1px;top:1px;box-sizing:border-box;min-height:0;border:0;margin:0;resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:break-word;background:transparent;pointer-events:none}
+.SPR_promptReferenceEditor>.SPR_promptReferencePaint{position:absolute;left:1px;top:1px;box-sizing:border-box;max-width:100%;min-height:0;border:0;margin:0;resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:break-word;background:transparent;pointer-events:none}
 .SPR_promptReferencePaint mark{padding:0;border-radius:3px;font:inherit;color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 14%,transparent)}
 .SPR_promptSourceActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.SPR_promptSourceActions.SPR_promptInputActions{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;scrollbar-width:thin}
+.SPR_promptSourceActions.SPR_promptInputActions>.SPR_miniBtn{flex:none}
 .SPR_promptSourceActions>.SPR_hint{margin:0;font-size:11px;min-width:0}
+.SPR_promptCompare .SPR_promptSourceActions{min-height:24px}
+.SPR_promptModelInfo{overflow-wrap:anywhere}
 .SPR_promptMentionList{position:absolute;left:0;right:0;bottom:36px;z-index:3;max-height:190px;overflow:auto;padding:4px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 8px 26px rgba(0,0,0,.15)}
 .SPR_promptMentionList>button{display:flex;align-items:center;gap:8px;width:100%;padding:7px;border:0;border-radius:6px;color:inherit;background:transparent;font:inherit;text-align:left;cursor:pointer}
 .SPR_promptMentionList>button:hover,.SPR_promptMentionList>button[aria-selected=true]{background:var(--dsw-alias-interactive-bg-hover-solid)}
@@ -17154,6 +17165,7 @@
       const images = (props.references ?? []).map((ref, index) => ({ ...ref, label: `@图片${index + 1}` }));
       const options = mention ? images.filter(ref => (ref.label + " " + ref.name).toLowerCase().includes(mention.query.toLowerCase())) : [];
       const listId = props.id + "-images";
+      const label = props.label ?? (props.main ? T("主提示词") : T("原提示词"));
       const syncHighlight = () => {
         const input = inputRef.current, highlight = highlightRef.current;
         if (!input || !highlight) return;
@@ -17207,12 +17219,12 @@
       };
       React.useEffect(() => { if (mention) listRef.current?.querySelectorAll("[role=option]")[mention.index]?.scrollIntoView({ block: "nearest" }); }, [mention?.index]);
       return h("div", { className: "SPR_field SPR_promptSource", "data-main": Boolean(props.main) },
-        props.main ? null : h("label", { htmlFor: props.id }, T("原提示词")),
+        props.main ? null : h("label", { htmlFor: props.id }, label),
         h("div", { className: "SPR_promptReferenceEditor" },
         h("div", { ref: highlightRef, className: "SPR_area SPR_promptReferencePaint", "aria-hidden": "true" },
           props.value.split(/(@图片\d+)/g).map((text, index) => /^@图片[1-9]\d*$/.test(text) && images[Number(text.slice(3)) - 1] ? h("mark", { key: index }, text) : text), "\n"),
-        h("textarea", { id: props.id, ref: inputRef, className: "SPR_area SPR_promptReferenceArea", "aria-label": props.main ? T("主提示词") : T("原提示词"), value: props.value, maxLength: 12000, disabled: props.disabled,
-          placeholder: props.main ? T("描述你要生成的图片…") : T("输入 @ 引用已上传的参考图"), "aria-autocomplete": "list", "aria-haspopup": "listbox", "aria-expanded": Boolean(mention), "aria-controls": mention ? listId : undefined,
+        h("textarea", { id: props.id, ref: inputRef, className: "SPR_area SPR_promptReferenceArea", "aria-label": label, value: props.value, maxLength: 12000, disabled: props.disabled,
+          placeholder: props.placeholder ?? (props.main ? T("描述你要生成的图片…") : T("输入 @ 引用已上传的参考图")), "aria-autocomplete": "list", "aria-haspopup": "listbox", "aria-expanded": Boolean(mention), "aria-controls": mention ? listId : undefined,
           "aria-activedescendant": mention && options[mention.index] ? listId + "-" + mention.index : undefined,
           onChange: event => { dismissedRef.current = ""; props.onChange(event.target.value); locate(event.target); }, onSelect: event => { if (!mention?.manual) locate(event.target); },
           onBlur: event => { setMention(null); props.onBlur?.(event); },
@@ -17225,9 +17237,9 @@
             else if (event.key === "Enter" && options[mention.index]) { event.preventDefault(); choose(options[mention.index]); }
           } })),
         h("div", { className: "SPR_promptSourceActions" + (props.main ? " SPR_promptInputActions" : "") },
-          h("button", { type: "button", className: "SPR_miniBtn", "aria-label": T("引用图片"), "aria-haspopup": "listbox", disabled: props.disabled || images.length === 0,
-            onMouseDown: event => event.preventDefault(), onClick: () => { const input = inputRef.current; const start = input?.selectionStart ?? props.value.length, end = input?.selectionEnd ?? props.value.length; dismissedRef.current = ""; input?.focus(); setMention({ start, end, query: "", index: 0, manual: true }); } }, "@ ", T("参考图片")),
-          props.main ? null : h("span", { className: "SPR_hint" }, images.length ? T("输入 @ 引用已上传的参考图") : T("请先在生成页上传参考图。")), props.children),
+          props.referenceActions === false ? null : h("button", { type: "button", className: "SPR_miniBtn", title: T("引用图片"), "aria-label": T("引用图片"), "aria-haspopup": "listbox", disabled: props.disabled || images.length === 0,
+            onMouseDown: event => event.preventDefault(), onClick: () => { const input = inputRef.current; const start = input?.selectionStart ?? props.value.length, end = input?.selectionEnd ?? props.value.length; dismissedRef.current = ""; input?.focus(); setMention({ start, end, query: "", index: 0, manual: true }); } }, "@ ", h("span", { className: "SPR_promptReferenceLabel" }, T("参考图片"))),
+          props.main || props.referenceActions === false ? null : h("span", { className: "SPR_hint" }, images.length ? T("输入 @ 引用已上传的参考图") : T("请先在生成页上传参考图。")), props.children),
         mention ? h("div", { ref: listRef, id: listId, role: "listbox", "aria-label": T("参考图片"), className: "SPR_promptMentionList" },
           options.length ? options.map((ref, index) => h("button", { key: ref.file, id: listId + "-" + index, role: "option", "aria-selected": mention.index === index,
             onMouseDown: event => event.preventDefault(), onClick: () => choose(ref) },
@@ -17254,7 +17266,7 @@
       React.useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false; }; }, []);
       React.useEffect(() => {
         const dialog = dialogRef.current;
-        if (open && dialog && !dialog.open) dialog.showModal();
+        if (open && dialog && !dialog.open) { dialog.showModal(); dialog.querySelector("[data-prompt-close]")?.focus(); }
         if (!open && dialog?.open) dialog.close();
       }, [open]);
       const close = (force = false) => { if (applyingRef.current && !force) return; setOpen(false); triggerRef.current?.focus(); };
@@ -17302,7 +17314,7 @@
         finally { lockRef.current = false; applyingRef.current = false; if (aliveRef.current) setOperation(null); }
       };
       const busy = operation !== null;
-      const status = operation === "optimize" ? T("正在优化提示词…") : operation === "load" ? T("正在读取DSH模型…") : T("正在保存…");
+      const status = operation === "load" ? T("正在读取DSH模型…") : operation === "apply" ? T("正在保存…") : "";
       return h("div", { className: props.inline ? "SPR_promptInlineActions" : "SPR_promptInputActions" },
         h("button", { type: "button", className: "SPR_promptOptimize", ref: triggerRef, disabled: busy || props.disabled, "aria-label": T("优化提示词"), "aria-haspopup": "dialog", "aria-busy": busy,
           title: T("只优化文字，使用DSH现有模型；图片仍需单独点击生成。"), onMouseDown: event => event.preventDefault(), onClick: openDialog },
@@ -17317,19 +17329,21 @@
           },
           onClick: event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(); } } },
           open ? h(React.Fragment, null,
-          h("div", { className: "SPR_promptDialogHead" }, h("h3", null, T("优化提示词")), h(Btn, { disabled: operation === "apply", onClick: () => close() }, T("关闭"))),
-          h("p", { className: "SPR_hint" }, T("使用DSH默认模型（与新会话一致），沿用已有登录和用量规则，无需单独填写Key。")),
-          config?.available ? h("p", { className: "SPR_hint" }, T("DSH模型：{n0}", { n0: `${result?.provider ?? config.provider} / ${result?.model ?? config.model}` })) : null,
+          h("div", { className: "SPR_promptDialogHead" },
+            h("div", { className: "SPR_promptDialogTitle" }, h("h3", null, T("优化提示词")),
+              h(DescriptionTip, { id: props.jobId + "-prompt-optimizer-description", label: T("优化提示词"), text: T("使用DSH默认模型（与新会话一致），沿用已有登录和用量规则，无需单独填写Key。") })),
+            h(Btn, { "data-prompt-close": true, disabled: operation === "apply", onClick: () => close() }, T("关闭"))),
           h(NoticePopup, { notice: error, onClose: () => setError("") }),
-          busy ? h("p", { role: "status" }, h("span", { className: "SPR_spinSm", "aria-hidden": "true" }), " ", status) : null,
+          status ? h("p", { role: "status" }, h("span", { className: "SPR_spinSm", "aria-hidden": "true" }), " ", status) : null,
           h(React.Fragment, null,
             h("div", { className: "SPR_promptCompare" },
               h(PromptReferenceInput, { id: props.jobId + "-prompt-source", value: sourceDraft, disabled: busy, references: props.references, assetBase: props.assetBase, onChange: value => { setSourceDraft(value); setError(""); } }),
-              h("label", { className: "SPR_field" }, T("优化结果（可编辑）"), h("textarea", { className: "SPR_area", "aria-label": T("优化结果（可编辑）"), value: result?.optimized ?? "", placeholder: T("点击优化后，结果会显示在这里。"), disabled: busy || result === null, onChange: event => setResult({ ...result, optimized: event.target.value }) }))),
+              h(PromptReferenceInput, { id: props.jobId + "-prompt-result", label: T("优化结果（可编辑）"), value: result?.optimized ?? "", placeholder: T("点击优化后，结果会显示在这里。"), disabled: busy || result === null, references: props.references, assetBase: props.assetBase, referenceActions: false, onChange: value => setResult({ ...result, optimized: value }) },
+                config?.available ? h("span", { className: "SPR_hint SPR_promptModelInfo" }, T("DSH模型：{n0}", { n0: `${result?.provider ?? config.provider} / ${result?.model ?? config.model}` })) : null)),
             h("p", { className: "SPR_hint" }, T("基础提示词保持原文。点击优化才调用DSH模型，仅发送通过@图片引用的参考图，图片输入需模型支持。")),
             stale ? h("p", { className: "SPR_error", role: "alert" }, T("原提示词或参考图已修改，请重新优化后再采用。")) : null,
             h("div", { className: "SPR_btnRow" },
-              h(BusyBtn, { busy: operation === "optimize", busyText: T("正在优化提示词…"), disabled: busy || props.disabled || !sourceDraft.trim(), onClick: () => void optimize() }, T("优化提示词")),
+              h(BusyBtn, { busy: operation === "optimize", busyText: T("优化提示词"), disabled: busy || props.disabled || !sourceDraft.trim(), onClick: () => void optimize() }, T("优化提示词")),
               h(BusyBtn, { primary: true, busy: operation === "apply", disabled: busy || props.disabled || result === null || !result.optimized.trim() || stale, onClick: () => void apply() }, T("采用优化结果"))))) : null));
     }
 

@@ -262,6 +262,8 @@ The transparent-background switch sits at the bottom right of the prompt box, be
 operation feedback across modules uses floating notifications without shifting the page. Success messages dismiss
 automatically; errors stay until dismissed.
 
+Both the source prompt and optimized result highlight image references. DSH model details sit to the right of the reference hint; the exclamation icon beside the dialog title explains the default model, sign-in and usage rules. Optimization progress uses button loading indicators. Main-prompt actions stay on one row and scroll horizontally when space is limited.
+
 Transparent areas use the same checkerboard background in result images, enlarged previews and reference-image previews.
 
 ![Image generation · prompt and reference images](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-06-image.png)
