@@ -981,7 +981,7 @@ if (typeof ImageModule === "function") {
     check("自定义尺寸时显示任务尺寸输入框", byTag(customSize.tree, "input").some((node) => node.props["data-testid"] === "image-task-size" && node.props.value === "1024x1536"));
 
     const gen = renderModule(ImageModule, makeImageJob(), makeTasks(["img:job"]));
-    check("整批生成时两张图都被盖住", overlays(gen.tree).length >= 2, `${overlays(gen.tree).length} 个`);
+    check("整批生成时主图被盖住，所有缩略图都有忙碌反馈", overlays(gen.tree).length === 1 && byClass(gen.tree, "SPR_imageGalleryThumbBusy").length === 2);
     check("遮罩文案是生成", overlayText(gen.tree).includes("img:job"), overlayText(gen.tree));
     check("按钮转圈", byClass(gen.tree, "SPR_btn").some((node) => node.props["data-busy"] === "true"));
 
@@ -1007,9 +1007,27 @@ if (typeof ImageModule === "function") {
     const running = renderModule(ImageModule, runningJob, makeTasks());
     check("宿主 running 时出现遮罩", overlays(running.tree).length >= 1, `${overlays(running.tree).length} 个`);
 
-    // 验收：每张就绪的图都有自己的「通过」，且审核模式下拉在（固定流程的必问项）。
+    // 结果只展示当前主图，缩略图和菜单始终绑定当前结果。
     const acceptance = renderModule(ImageModule, makeImageJob(), makeTasks());
-    check("图片结果每张都有「通过」按钮", approveLabels(acceptance.tree).length === 2, approveLabels(acceptance.tree).join("、"));
+    const renderSelection = (tree, selectedIndex) => {
+      const gallery = collect(tree, node => node.type?.name === "ImageResultGallery")[0];
+      const previous = { slots: HOOK.slots, cursor: HOOK.cursor };
+      try {
+        HOOK.slots = [selectedIndex]; HOOK.cursor = 0;
+        return gallery.type(gallery.props);
+      } finally { Object.assign(HOOK, previous); }
+    };
+    check("图片结果只显示当前图片的「通过」按钮", approveLabels(acceptance.tree).length === 1, approveLabels(acceptance.tree).join("、"));
+    check("结果区只有一张主图卡片", byClass(acceptance.tree, "SPR_node").length === 1);
+    check("底部保留所有结果的缩略图", byClass(acceptance.tree, "SPR_imageGalleryThumb").length === 2);
+    const firstNav = byClass(acceptance.tree, "SPR_imageGalleryArrow");
+    check("首张禁用上一张，下一张可切换", firstNav.length === 2 && firstNav[0].props.disabled && !firstNav[1].props.disabled);
+    const secondTree = renderSelection(acceptance.tree, 1);
+    const secondNav = byClass(secondTree, "SPR_imageGalleryArrow");
+    check("切换后主图菜单指向第二张", byTag(secondTree, "button").some(node => node.props["aria-label"] === "第 2 张图片的更多操作"));
+    check("末张禁用下一张，上一张可切换", !secondNav[0].props.disabled && secondNav[1].props.disabled);
+    check("当前缩略图高亮", byClass(secondTree, "SPR_imageGalleryThumb").map(node => node.props["aria-pressed"]).join(",") === "false,true");
+    check("删除末张后越界索引回到剩余结果", byTag(renderSelection(acceptance.tree, 7), "button").some(node => node.props["aria-label"] === "第 2 张图片的更多操作"));
     check("图片任务有审核模式下拉", hasReviewModeSelect(acceptance.tree), modeOptions(acceptance.tree).join("、"));
     const approvedJob = makeImageJob();
     approvedJob.items = [
@@ -1018,7 +1036,8 @@ if (typeof ImageModule === "function") {
     ];
     const approvedTree = renderModule(ImageModule, approvedJob, makeTasks()).tree;
     check("已通过的显示「已通过」", approveLabels(approvedTree).includes("已通过"), approveLabels(approvedTree).join("、"));
-    check("未就绪的那张「通过」被禁用", collect(approvedTree, (node) => node.props?.className === "SPR_btn" && textOf(node) === "通过").every((node) => node.props.disabled === true));
+    const pendingApproval = collect(renderSelection(approvedTree, 1), node => node.props?.className === "SPR_btn" && textOf(node) === "通过");
+    check("切到未就绪的那张时「通过」被禁用", pendingApproval.length === 1 && pendingApproval[0].props.disabled === true);
   }
 }
 

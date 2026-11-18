@@ -255,7 +255,7 @@ without spending anything on generation.
    main prompt and the optimization dialog support typing `@` to select and highlight image references.
    Backspace / Delete removes a complete valid reference. Advanced keying and existing-image uploads are collapsed by default.
 3. Expand **Advanced settings** below the prompt card to set the model / size / count, then click **Generate** in the right-hand results card. Review mode sits on the same row as Generate and can be reset to Not set. Template and review dropdowns share themed menus with rounded corners and selected indicators. The two advanced sections share one card and expand independently.
-4. Results appear on the far right, or below the editor on narrow screens. Click an image to preview it. Each card's **⋯** menu beside its status badge contains approve, download the original /
+4. Results appear on the far right, or below the editor on narrow screens. One main image is shown at a time; switch with the previous / next arrows or the thumbnail strip below, which scrolls horizontally on narrow screens. Click the main image to preview it. The current image's **⋯** menu beside its status badge contains approve, download the original /
    download the PNG (the keyed result), regenerate and delete. The background percentage is shown right there so you can judge how clean the keying is.
 
 The transparent-background switch sits at the bottom right of the prompt box, beside Optimize. Save, upload and

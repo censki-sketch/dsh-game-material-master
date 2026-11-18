@@ -473,6 +473,11 @@
       "关闭提示": "Dismiss notification",
       "更多": "More",
       "第 {n0} 张图片的更多操作": "More actions for image {n0}",
+      "上一张": "Previous image",
+      "下一张": "Next image",
+      "结果缩略图": "Result thumbnails",
+      "选择第 {n0} 张图片": "Select image {n0}",
+      "当前第 {n0} 张，共 {n1} 张": "Image {n0} of {n1}",
       "开启后自动补充纯色背景要求，生成完成后在本地抠成透明 PNG；不会修改输入内容。": "Automatically add solid-background instructions and remove the background locally after generation to produce a transparent PNG. Your input stays unchanged.",
       "抠像背景色：{n0}": "Key background: {n0}",
       "高级抠像与已有图片": "Advanced keying and existing images",
@@ -4857,7 +4862,21 @@
 .SPR_imageWorkspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);gap:16px;align-items:start}
 .SPR_imageEditor{container-type:inline-size;min-width:0}
 .SPR_imageResults{min-width:0}
-.SPR_imageResults>.SPR_grid{grid-template-columns:minmax(0,1fr)}
+.SPR_imageGallery{display:flex;flex-direction:column;gap:12px;min-width:0}
+.SPR_imageGalleryStage{min-width:0}
+.SPR_imageGalleryNav{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.SPR_imageGalleryNav>span{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
+.SPR_imageGalleryArrow{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);cursor:pointer}
+.SPR_imageGalleryArrow:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_imageGalleryArrow:disabled{opacity:.3;cursor:default}
+.SPR_imageGalleryThumbs{position:relative;display:flex;gap:8px;min-width:0;overflow-x:auto;padding:3px 2px 6px;scrollbar-width:thin}
+.SPR_imageGalleryThumb{position:relative;flex:0 0 56px;box-sizing:border-box;width:56px;height:64px;padding:3px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.SPR_imageGalleryThumb:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_imageGalleryThumb[data-on=true]{border-color:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px var(--dsw-alias-state-business-primary);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 8%,transparent)}
+.SPR_imageGalleryArrow:focus-visible,.SPR_imageGalleryThumb:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
+.SPR_imageGalleryThumb>.SPR_thumb{height:100%;aspect-ratio:auto;border-radius:5px;background-size:10px 10px;background-position:0 0,5px 5px}
+.SPR_imageGalleryThumbEmpty{display:flex;align-items:center;justify-content:center;height:100%;font-size:12px}
+.SPR_imageGalleryThumbBusy{position:absolute;inset:3px;display:flex;align-items:center;justify-content:center;border-radius:5px;background:color-mix(in srgb,var(--dsw-alias-bg-layer-1) 70%,transparent)}
 .SPR_imageResults>.SPR_toolbar>.SPR_input{max-width:100%}
 .SPR_imageResults .SPR_refRow{overflow-wrap:anywhere}
 .SPR_card.SPR_imageAdvanced{padding:4px 18px}
@@ -4887,7 +4906,7 @@
 }
 @container(max-width:900px){
   .SPR_imageWorkspace{grid-template-columns:minmax(0,1fr)}
-  .SPR_imageResults>.SPR_grid{grid-template-columns:repeat(auto-fill,minmax(min(232px,100%),1fr))}
+  .SPR_imageGalleryStage .SPR_imageResultPreview>.SPR_thumb{max-height:480px}
 }
 .SPR_imageComposer{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,280px);gap:20px;align-items:start}
 .SPR_imagePrompts,.SPR_imageRefs{min-width:0}
@@ -17369,6 +17388,42 @@
           h("img", { className: "SPR_imageRefFull", src, alt })));
     }
 
+    function ImageResultGallery({ items, assetBase, tasks, renderItem }) {
+      const [selectedIndex, setSelectedIndex] = React.useState(0);
+      const thumbsRef = React.useRef(null);
+      const index = Math.min(selectedIndex, Math.max(0, items.length - 1));
+      React.useEffect(() => {
+        if (selectedIndex !== index) setSelectedIndex(index);
+        const strip = thumbsRef.current, thumb = strip?.children[index];
+        if (!thumb) return;
+        if (thumb.offsetLeft < strip.scrollLeft) strip.scrollLeft = thumb.offsetLeft;
+        else if (thumb.offsetLeft + thumb.offsetWidth > strip.scrollLeft + strip.clientWidth) strip.scrollLeft = thumb.offsetLeft + thumb.offsetWidth - strip.clientWidth;
+      }, [index, items.length]);
+      const arrow = (direction, label, disabled) => h("button", { type: "button", className: "SPR_imageGalleryArrow", "aria-label": label, title: label, disabled,
+        onClick: () => setSelectedIndex(index + direction) },
+        h("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
+          h("path", { d: direction < 0 ? "m14 6-6 6 6 6" : "m10 6 6 6-6 6" })));
+      return h("div", { className: "SPR_imageGallery" },
+        h("div", { className: "SPR_imageGalleryStage" }, items[index] ? renderItem(items[index], index) : null),
+        h("div", { className: "SPR_imageGalleryNav" },
+          arrow(-1, T("上一张"), index === 0),
+          h("span", { role: "status", "aria-live": "polite", "aria-label": T("当前第 {n0} 张，共 {n1} 张", { n0: index + 1, n1: items.length }) }, `${index + 1} / ${items.length}`),
+          arrow(1, T("下一张"), index >= items.length - 1)),
+        h("div", { className: "SPR_imageGalleryThumbs", ref: thumbsRef, role: "group", "aria-label": T("结果缩略图") }, items.map((item, i) => {
+          const loading = item.status === "running" || tasks.has(K_IMG_ITEM(i)) || tasks.has(K_IMG_JOB) || tasks.has(K_IMG_KEY);
+          const file = item.keyedFile ?? item.file;
+          const title = T("第 {n0} 张", { n0: i + 1 }) + " · " + (loading ? T("生成中") : item.status === "error" ? T("失败") : file ? T("已完成") : T("等待生成"));
+          return h("button", { key: i, type: "button", className: "SPR_imageGalleryThumb", "data-on": i === index, "aria-pressed": i === index,
+            "aria-label": T("选择第 {n0} 张图片", { n0: i + 1 }), title, onClick: () => setSelectedIndex(i),
+            onKeyDown: event => {
+              const next = event.key === "ArrowLeft" ? Math.max(0, i - 1) : event.key === "ArrowRight" ? Math.min(items.length - 1, i + 1) : event.key === "Home" ? 0 : event.key === "End" ? items.length - 1 : -1;
+              if (next >= 0) { event.preventDefault(); setSelectedIndex(next); thumbsRef.current?.children[next]?.focus({ preventScroll: true }); }
+            } },
+            file ? h("img", { className: "SPR_thumb", src: `${assetBase}${file}?v=${item.updatedAt}`, alt: "" }) : h("span", { className: "SPR_imageGalleryThumbEmpty", "aria-hidden": "true" }, i + 1),
+            loading ? h("span", { className: "SPR_imageGalleryThumbBusy", "aria-hidden": "true" }, h("span", { className: "SPR_spinSm" })) : null);
+        })));
+    }
+
     function ImageReferenceList(props) {
       const [previewFile, setPreviewFile] = React.useState(null);
       const dialogRef = React.useRef(null);
@@ -17773,10 +17828,9 @@
                     ),
                     (job.items ?? []).length === 0
                       ? h("p", { className: "SPR_empty" }, T("还没有图片"))
-                      : h(
-                          "div",
-                          { className: "SPR_grid" },
-                          (job.items ?? []).map((item, index) => {
+                      : h(ImageResultGallery, {
+                          key: job.id, items: job.items, assetBase: job.assetBase, tasks,
+                          renderItem: (item, index) => {
                             const itemKey = K_IMG_ITEM(index);
                             const itemBusy = item.status === "running" || tasks.has(itemKey);
                             // 生成的原图（未抠像时就是唯一产物）也要能存下来：
@@ -17852,8 +17906,8 @@
                                 : null,
                               item.error !== undefined ? h("p", { className: "SPR_error" }, item.error) : null
                             );
-                          })
-                        )
+                          }
+                        })
                   )
                 )
           )
