@@ -5002,6 +5002,15 @@
 .SPR_promptDialogTitle{display:flex;align-items:center;gap:5px;min-width:0;line-height:24px}
 .SPR_promptCompare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
 .SPR_promptCompare .SPR_area{min-height:240px;font:inherit;font-size:12px;line-height:1.7}
+.SPR_promptCompare .SPR_promptReferenceEditor{display:flex;flex-direction:column;flex:1}
+.SPR_promptCompare .SPR_promptReferenceArea{flex:1}
+.SPR_promptReferenceEditor[data-footer=true]{min-height:240px;border:1px solid var(--dsw-alias-border-l2)}
+.SPR_promptReferenceEditor[data-footer=true]:focus-within{border-color:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-state-business-primary) 12%,transparent)}
+.SPR_promptCompare .SPR_promptReferenceEditor[data-footer=true]>.SPR_promptReferenceArea{min-height:140px;border:0;border-radius:8px 8px 0 0;box-shadow:none;outline:none}
+.SPR_promptReferenceFooter{flex:none;min-width:0}
+.SPR_promptReferenceFooter .SPR_promptBase{padding:7px 9px 9px;border-radius:0;background:transparent}
+.SPR_promptReferenceFooter .SPR_promptBaseHead{grid-template-columns:1fr auto auto;gap:5px}
+.SPR_promptReferenceFooter .SPR_promptTemplateSelectRow{grid-column:1/-1;grid-row:2}
 .SPR_promptIntent{padding:12px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-label-secondary) 3%,transparent);margin:12px 0;overflow-wrap:anywhere}
 .SPR_promptIntent h4{margin:0 0 10px;font-size:13px}
 .SPR_promptIntent dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 12px;margin:0;font-size:12px;line-height:1.7}
@@ -17260,7 +17269,7 @@
       React.useEffect(() => { if (mention) listRef.current?.querySelectorAll("[role=option]")[mention.index]?.scrollIntoView({ block: "nearest" }); }, [mention?.index]);
       return h("div", { className: "SPR_field SPR_promptSource", "data-main": Boolean(props.main) },
         props.main ? null : h("label", { htmlFor: props.id }, label),
-        h("div", { className: "SPR_promptReferenceEditor" },
+        h("div", { className: "SPR_promptReferenceEditor", "data-footer": Boolean(props.footer) },
         h("div", { ref: highlightRef, className: "SPR_area SPR_promptReferencePaint", "aria-hidden": "true" },
           props.value.split(/(@图片\d+)/g).map((text, index) => /^@图片[1-9]\d*$/.test(text) && images[Number(text.slice(3)) - 1] ? h("mark", { key: index }, text) : text), "\n"),
         h("textarea", { id: props.id, ref: inputRef, className: "SPR_area SPR_promptReferenceArea", "aria-label": label, value: props.value, maxLength: 12000, disabled: props.disabled,
@@ -17275,7 +17284,8 @@
             if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); dismissedRef.current = JSON.stringify([mention.start, mention.end, mention.query]); setMention(null); }
             else if ((event.key === "ArrowDown" || event.key === "ArrowUp") && options.length) { event.preventDefault(); setMention(value => ({ ...value, index: (value.index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length })); }
             else if (event.key === "Enter" && options[mention.index]) { event.preventDefault(); choose(options[mention.index]); }
-          } })),
+          } }),
+        props.footer ? h("div", { className: "SPR_promptReferenceFooter" }, props.footer) : null),
         h("div", { className: "SPR_promptSourceActions" + (props.main ? " SPR_promptInputActions" : "") },
           props.referenceActions === false ? null : h("button", { type: "button", className: "SPR_miniBtn", title: T("引用图片"), "aria-label": T("引用图片"), "aria-haspopup": "listbox", disabled: props.disabled || images.length === 0,
             onMouseDown: event => event.preventDefault(), onClick: () => { const input = inputRef.current; const start = input?.selectionStart ?? props.value.length, end = input?.selectionEnd ?? props.value.length; dismissedRef.current = ""; input?.focus(); setMention({ start, end, query: "", index: 0, manual: true }); } }, "@ ", h("span", { className: "SPR_promptReferenceLabel" }, T("参考图片"))),
@@ -17406,11 +17416,11 @@
           status ? h("p", { role: "status" }, h("span", { className: "SPR_spinSm", "aria-hidden": "true" }), " ", status) : null,
           h(React.Fragment, null,
             h("div", { className: "SPR_promptCompare" },
-              h(PromptReferenceInput, { id: props.jobId + "-prompt-source", value: sourceDraft, disabled: busy, references: props.references, assetBase: props.assetBase, onChange: value => { setSourceDraft(value); setError(""); } }),
+              h(PromptReferenceInput, { id: props.jobId + "-prompt-source", value: sourceDraft, disabled: busy, references: props.references, assetBase: props.assetBase, onChange: value => { setSourceDraft(value); setError(""); },
+                footer: h(ImagePromptTemplates, { jobId: props.jobId, templates: props.templates, templateId: props.templateId, templateLang: props.lang,
+                  suffix: props.suffix, disabled: busy || props.disabled, onApply: props.onTemplateApply, onManage: () => { close(); props.onManageTemplates(); } }) }),
               h(PromptReferenceInput, { id: props.jobId + "-prompt-result", label: T("优化结果（可编辑）"), value: result?.optimized ?? "", placeholder: T("点击优化后，结果会显示在这里。"), disabled: busy || result === null || needsClarification, references: props.references, assetBase: props.assetBase, referenceActions: false, onChange: value => setResult({ ...result, optimized: value }) },
                 config?.available ? h("span", { className: "SPR_hint SPR_promptModelInfo" }, T("DSH模型：{n0}", { n0: `${result?.provider ?? config.provider} / ${result?.model ?? config.model}` })) : null)),
-            h(ImagePromptTemplates, { jobId: props.jobId, templates: props.templates, templateId: props.templateId, templateLang: props.lang,
-              suffix: props.suffix, disabled: busy || props.disabled, onApply: props.onTemplateApply, onManage: () => { close(); props.onManageTemplates(); } }),
             result ? h("section", { className: "SPR_promptIntent", "aria-label": T("需求核对") },
               h("h4", null, T("需求核对")),
               h("dl", null, h("dt", null, T("目标")), h("dd", null, result.summary.goal),
