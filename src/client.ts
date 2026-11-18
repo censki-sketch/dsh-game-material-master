@@ -471,7 +471,7 @@
       "任务及其素材文件将被永久删除，此操作无法撤销。": "The task and its asset files will be permanently deleted. This cannot be undone.",
       "正在调用接口…": "Calling the API…",
       "请选择或新建一个图片任务": "Select or create an image task",
-      "主提示词用于描述主体。基础提示词从模板中选择，可展开查看；编辑模板请进入设置。": "Describe the subject in the main prompt. Select a base prompt from templates and expand it to view the text; edit templates in settings.",
+      "主提示词用于描述主体。基础提示词在「优化提示词」弹窗中选择和查看，编辑模板可点击「管理模板」。": "Describe the subject in the main prompt. Select and view base prompts in the Optimize prompt dialog; use Manage templates to edit them.",
       "描述你要生成的图片…": "Describe the image you want to generate…",
       "统一附加提示词（可留空）": "Shared suffix prompt (optional)",
       "生图模型": "Image model",
@@ -4933,7 +4933,6 @@
 .SPR_imagePrompts,.SPR_imageRefs{min-width:0}
 .SPR_imageRefs{contain:size;align-self:stretch;display:flex;flex-direction:column;min-height:0}
 .SPR_imageRefs>.SPR_imageSectionHead,.SPR_imageRefs>.SPR_uploadDrop{flex:none}
-.SPR_imageTemplateRow{grid-column:1/-1;min-width:0}
 .SPR_imagePrompts>.SPR_promptEditor{margin-bottom:0}
 .SPR_imageSectionHead{align-items:center;justify-content:flex-start;gap:5px}
 .SPR_imageSectionHead h3{line-height:20px}
@@ -17393,7 +17392,7 @@
         h("dialog", { className: "SPR_promptDialog", ref: dialogRef, "aria-label": T("优化提示词"), onCancel: event => { event.preventDefault(); close(); }, onClose: () => { setOpen(false); triggerRef.current?.focus(); },
           onKeyDown: event => {
             if (event.key !== "Tab") return;
-            const focusable = [...event.currentTarget.querySelectorAll("button:not(:disabled),textarea:not(:disabled),summary")];
+            const focusable = [...event.currentTarget.querySelectorAll("button:not(:disabled),textarea:not(:disabled),select:not(:disabled),summary")];
             const target = event.shiftKey ? focusable.at(-1) : focusable[0];
             if (document.activeElement === (event.shiftKey ? focusable[0] : focusable.at(-1))) { event.preventDefault(); target?.focus(); }
           },
@@ -17410,6 +17409,8 @@
               h(PromptReferenceInput, { id: props.jobId + "-prompt-source", value: sourceDraft, disabled: busy, references: props.references, assetBase: props.assetBase, onChange: value => { setSourceDraft(value); setError(""); } }),
               h(PromptReferenceInput, { id: props.jobId + "-prompt-result", label: T("优化结果（可编辑）"), value: result?.optimized ?? "", placeholder: T("点击优化后，结果会显示在这里。"), disabled: busy || result === null || needsClarification, references: props.references, assetBase: props.assetBase, referenceActions: false, onChange: value => setResult({ ...result, optimized: value }) },
                 config?.available ? h("span", { className: "SPR_hint SPR_promptModelInfo" }, T("DSH模型：{n0}", { n0: `${result?.provider ?? config.provider} / ${result?.model ?? config.model}` })) : null)),
+            h(ImagePromptTemplates, { jobId: props.jobId, templates: props.templates, templateId: props.templateId, templateLang: props.lang,
+              suffix: props.suffix, disabled: busy || props.disabled, onApply: props.onTemplateApply, onManage: () => { close(); props.onManageTemplates(); } }),
             result ? h("section", { className: "SPR_promptIntent", "aria-label": T("需求核对") },
               h("h4", null, T("需求核对")),
               h("dl", null, h("dt", null, T("目标")), h("dd", null, result.summary.goal),
@@ -17783,7 +17784,7 @@
                     h("div", { className: "SPR_imageComposer" },
                     h("section", { className: "SPR_imagePrompts", "data-testid": "image-prompts" },
                     h("div", { className: "SPR_cardHead SPR_imageSectionHead" }, h("h3", null, T("提示词")),
-                      h(DescriptionTip, { id: "image-prompt-description", label: T("提示词"), text: T("主提示词用于描述主体。基础提示词从模板中选择，可展开查看；编辑模板请进入设置。") })),
+                      h(DescriptionTip, { id: "image-prompt-description", label: T("提示词"), text: T("主提示词用于描述主体。基础提示词在「优化提示词」弹窗中选择和查看，编辑模板可点击「管理模板」。") })),
                     h("div", { className: "SPR_promptEditor" },
                     h(PromptReferenceInput, {
                       key: job.id, id: job.id + "-prompt-main", main: true, references: job.refs, assetBase: job.assetBase,
@@ -17796,17 +17797,16 @@
                       h("label", { className: "SPR_transparentToggle", title: T("开启后自动补充纯色背景要求，生成完成后在本地抠成透明 PNG；不会修改输入内容。") + " " + T("抠像背景色：{n0}", { n0: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }) },
                         h("input", { type: "checkbox", role: "switch", "aria-label": T("透明背景"), checked: keyingDraft.enabled === true, disabled: busy || uploading,
                           onChange: event => { const keying = { ...keyingDraft, enabled: event.target.checked, keyColor: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }; setKeyingDraft(keying); void saveJob({ keying }); } }), T("透明背景")),
-                      h(PromptOptimizer, { key: job.id, inline: true, api, jobId: job.id, prompt: promptDraft, suffix: suffixDraft, lang: job.promptTemplateLang, keying: { enabled: keyingDraft.enabled === true, keyColor: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }, references: job.refs, assetBase: job.assetBase, disabled: busy, onApply: applyOptimizedPrompt }))))),
+                      h(PromptOptimizer, { key: job.id, inline: true, api, jobId: job.id, prompt: promptDraft, suffix: suffixDraft, lang: job.promptTemplateLang,
+                        templates: job.promptTemplates, templateId: job.promptTemplateId, onTemplateApply: applyBasePrompt, onManageTemplates: props.onManageTemplates,
+                        keying: { enabled: keyingDraft.enabled === true, keyColor: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }, references: job.refs, assetBase: job.assetBase, disabled: busy, onApply: applyOptimizedPrompt }))))),
                     h("section", { className: "SPR_imageRefs", "data-testid": "image-refs", "data-ref-count": (job.refs ?? []).length },
                       h("div", { className: "SPR_cardHead SPR_imageSectionHead" }, h("h3", null, T("参考图（可留空）")),
                         h(DescriptionTip, { id: "image-reference-description", label: T("参考图（可留空）"), text: T("最多 10 张。有参考图时走图生图；在提示词里输入 @ 选择图片，点击列表可预览原图。") })),
                       h(UploadBox, { label: (job.refs ?? []).length > 0 ? T("添加参考图") : T("把参考图拖到这里"), accept: "image/*", multiple: true, busy: uploading || tasks.has(K_IMG_UPLOAD), onFiles: (files) => void upload(files, "ref") }),
                       h(ImageReferenceList, { key: job.id, references: job.refs, assetBase: job.assetBase, updatedAt: job.updatedAt, disabled: busy,
                         onRemove: ref => void run(() => api.removeImageRef({ jobId: job.id, file: ref.file }), T("已移除参考图")) })
-                    ),
-                    h("div", { className: "SPR_imageTemplateRow" },
-                      h(ImagePromptTemplates, { key: job.id, jobId: job.id, templates: job.promptTemplates, templateId: job.promptTemplateId, templateLang: job.promptTemplateLang,
-                        suffix: suffixDraft, disabled: busy, onApply: applyBasePrompt, onManage: props.onManageTemplates })))
+                    ))
                   ),
                   h("div", { className: "SPR_card SPR_imageAdvanced" },
                     h("details", { className: "SPR_imageGenerationAdvanced" },
