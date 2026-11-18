@@ -217,6 +217,8 @@ flowchart LR
 
 「透明背景」位于提示词框右下角、优化按钮左边。各功能的保存、上传、操作失败等反馈统一以浮层消息弹窗显示；成功自动收起，错误可手动关闭，不再占用页面横条。
 
+透明区域在结果图和放大预览中均以棋盘格显示，参考图预览也采用相同背景。
+
 ![图片生成 · 提示词与参考图](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-06-image.png)
 
 ![图片生成 · 抠像结果](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-07-image-keyed.png)

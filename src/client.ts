@@ -4236,7 +4236,8 @@
 .SPR_node[data-stale=true]{border-color:color-mix(in srgb, var(--dsw-alias-state-warning-primary, #d9930d) 55%, transparent)}
 .SPR_nodeTop{display:flex;align-items:center;gap:7px}
 .SPR_nodeTitle{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.SPR_thumb{width:100%;aspect-ratio:1/1;object-fit:contain;border-radius:8px;display:block;background-color:var(--dsw-alias-bg-layer-3);background-image:linear-gradient(45deg,rgba(128,128,128,.18) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.18) 75%),linear-gradient(45deg,rgba(128,128,128,.18) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.18) 75%);background-size:16px 16px;background-position:0 0,8px 8px}
+.SPR_thumb{width:100%;aspect-ratio:1/1;object-fit:contain;border-radius:8px;display:block}
+.SPR_thumb,.SPR_imageRefFull{background-color:var(--dsw-alias-bg-layer-3);background-image:linear-gradient(45deg,rgba(128,128,128,.18) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.18) 75%),linear-gradient(45deg,rgba(128,128,128,.18) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.18) 75%);background-size:16px 16px;background-position:0 0,8px 8px}
 .SPR_thumbEmpty{width:100%;aspect-ratio:1/1;border-radius:8px;border:1px dashed var(--dsw-alias-border-l2);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-label-tertiary);font-size:12px;text-align:center;padding:8px;box-sizing:border-box}
 .SPR_refRow{color:var(--dsw-alias-label-tertiary);font-size:11px}
 .SPR_error{color:var(--dsw-alias-state-error-primary);font-size:12px;white-space:pre-wrap;word-break:break-word;margin:0}
@@ -5011,7 +5012,7 @@
 .SPR_imageRefDialogHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .SPR_imageRefDialogHead h3{margin:0;font-size:14px;overflow-wrap:anywhere;min-width:0}
 .SPR_imageRefDialogHead>.SPR_btn{flex:none}
-.SPR_imageRefFull{display:block;width:100%;height:auto;max-height:calc(100vh - 132px);object-fit:contain;border-radius:8px;background:var(--dsw-alias-bg-layer-3)}
+.SPR_imageRefFull{display:block;width:100%;height:auto;max-height:calc(100vh - 132px);object-fit:contain;border-radius:8px}
 .SPR_imageResultPreview{display:block;width:100%;padding:0;border:0;border-radius:8px;background:transparent;color:inherit;cursor:zoom-in}
 .SPR_imageResultPreview:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:3px}
 .SPR_imageResultPreview>.SPR_thumb{display:block}

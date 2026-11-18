@@ -262,6 +262,8 @@ The transparent-background switch sits at the bottom right of the prompt box, be
 operation feedback across modules uses floating notifications without shifting the page. Success messages dismiss
 automatically; errors stay until dismissed.
 
+Transparent areas use the same checkerboard background in result images, enlarged previews and reference-image previews.
+
 ![Image generation · prompt and reference images](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-06-image.png)
 
 ![Image generation · keyed result](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-07-image-keyed.png)
