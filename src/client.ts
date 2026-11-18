@@ -4864,9 +4864,11 @@
 .SPR_imageResults{min-width:0}
 .SPR_imageGallery{display:flex;flex-direction:column;gap:12px;min-width:0}
 .SPR_imageGalleryStage{min-width:0}
-.SPR_imageGalleryNav{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.SPR_imageGalleryNav>span{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
-.SPR_imageGalleryArrow{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);cursor:pointer}
+.SPR_imageGalleryMedia{position:relative;min-width:0}
+.SPR_imageGalleryNav{position:absolute;top:50%;left:8px;right:8px;z-index:3;transform:translateY(-50%);display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none}
+.SPR_imageGalleryMeta{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;min-height:20px;line-height:20px}
+.SPR_imageGalleryCount{grid-column:2;text-align:center;white-space:nowrap;font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
+.SPR_imageGalleryArrow{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-bg-layer-1) 85%,transparent);color:var(--dsw-alias-label-primary);box-shadow:0 1px 5px rgba(0,0,0,.1);cursor:pointer;pointer-events:auto}
 .SPR_imageGalleryArrow:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-solid)}
 .SPR_imageGalleryArrow:disabled{opacity:.3;cursor:default}
 .SPR_imageGalleryThumbs{position:relative;display:flex;gap:8px;min-width:0;overflow-x:auto;padding:3px 2px 6px;scrollbar-width:thin}
@@ -17403,12 +17405,10 @@
         onClick: () => setSelectedIndex(index + direction) },
         h("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
           h("path", { d: direction < 0 ? "m14 6-6 6 6 6" : "m10 6 6 6-6 6" })));
+      const navigation = h("div", { className: "SPR_imageGalleryNav" }, arrow(-1, T("上一张"), index === 0), arrow(1, T("下一张"), index >= items.length - 1));
+      const counter = h("span", { className: "SPR_imageGalleryCount", role: "status", "aria-live": "polite", "aria-label": T("当前第 {n0} 张，共 {n1} 张", { n0: index + 1, n1: items.length }) }, `${index + 1} / ${items.length}`);
       return h("div", { className: "SPR_imageGallery" },
-        h("div", { className: "SPR_imageGalleryStage" }, items[index] ? renderItem(items[index], index) : null),
-        h("div", { className: "SPR_imageGalleryNav" },
-          arrow(-1, T("上一张"), index === 0),
-          h("span", { role: "status", "aria-live": "polite", "aria-label": T("当前第 {n0} 张，共 {n1} 张", { n0: index + 1, n1: items.length }) }, `${index + 1} / ${items.length}`),
-          arrow(1, T("下一张"), index >= items.length - 1)),
+        h("div", { className: "SPR_imageGalleryStage" }, items[index] ? renderItem(items[index], index, { navigation, counter }) : null),
         h("div", { className: "SPR_imageGalleryThumbs", ref: thumbsRef, role: "group", "aria-label": T("结果缩略图") }, items.map((item, i) => {
           const loading = item.status === "running" || tasks.has(K_IMG_ITEM(i)) || tasks.has(K_IMG_JOB) || tasks.has(K_IMG_KEY);
           const file = item.keyedFile ?? item.file;
@@ -17830,7 +17830,7 @@
                       ? h("p", { className: "SPR_empty" }, T("还没有图片"))
                       : h(ImageResultGallery, {
                           key: job.id, items: job.items, assetBase: job.assetBase, tasks,
-                          renderItem: (item, index) => {
+                          renderItem: (item, index, { navigation, counter }) => {
                             const itemKey = K_IMG_ITEM(index);
                             const itemBusy = item.status === "running" || tasks.has(itemKey);
                             // 生成的原图（未抠像时就是唯一产物）也要能存下来：
@@ -17893,17 +17893,17 @@
                                   h(Btn, { role: "menuitem", danger: true, disabled: overlay, onClick: () => void run(() => api.removeImageItem({ jobId: job.id, index }), T("已删除")) }, T("删除"))
                                 )
                               ),
-                              h(
+                              h("div", { className: "SPR_imageGalleryMedia" }, h(
                                 MediaBox,
                                 { overlay, text: overlayText },
                                 item.keyedFile !== undefined || item.file !== undefined
                                   ? h(ImageResultPreview, { src: `${job.assetBase}${item.keyedFile ?? item.file}?v=${item.updatedAt}`, alt: item.keyedFile !== undefined ? T("抠像结果") : T("生成结果"), label: T("第 {n0} 张", { n0: index + 1 }), disabled: overlay })
                                     : h("div", { className: "SPR_thumbEmpty" }, overlay ? T("生成中…") : T("等待生成"))
-                              ),
+                              ), navigation),
                               overlay ? h(BusyBadge, { show: true, text: overlayText }) : null,
-                              item.backgroundFraction !== undefined
-                                ? h("span", { className: "SPR_refRow" }, T("背景占比 {n0}%", { n0: (item.backgroundFraction * 100).toFixed(0) }))
-                                : null,
+                              h("div", { className: "SPR_imageGalleryMeta" },
+                                h("span", { className: "SPR_refRow" }, item.backgroundFraction !== undefined ? T("背景占比 {n0}%", { n0: (item.backgroundFraction * 100).toFixed(0) }) : null),
+                                counter),
                               item.error !== undefined ? h("p", { className: "SPR_error" }, item.error) : null
                             );
                           }
