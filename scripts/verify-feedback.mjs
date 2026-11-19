@@ -342,7 +342,7 @@ const api = new Proxy(
  * 本地却什么都看不出来。数字变了就说明 Hook 顺序改了，必须同步这里的槽位。
  */
 const EXPECTED_HOOKS = {
-  StudioPanel: 26,
+  StudioPanel: 27,
   ImageModule: 21,
   SequenceModule: 17
 };

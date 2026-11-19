@@ -221,6 +221,9 @@
       "任务没有启动": "The task did not start",
       "正在挂载游戏素材大师…": "Mounting Game Material Master…",
       "游戏素材大师": "Game Material Master",
+      "收起侧栏": "Collapse sidebar",
+      "展开侧栏": "Expand sidebar",
+      "关闭侧栏": "Close sidebar",
       "刷新列表": "Refresh list",
       "重命名": "Rename",
       "删除项目": "Delete project",
@@ -3632,7 +3635,35 @@
     const moduleOrderState = { keys: MODULES.map(entry => entry.key), ready: false, listeners: new Set<(keys: string[]) => void>() };
 
     const LAST_STUDIO_MODULE_KEY = "dsh-game-material-master:last-module";
+    const SIDEBAR_COLLAPSED_KEY = "dsh-game-material-master:sidebar-collapsed";
     let lastStudioModule = null;
+
+    /**
+     * 工作台侧栏默认跟随屏幕宽度：窄屏第一次打开时收起，桌面宽屏保留侧栏。
+     * 用户手动切换后的状态写进本地缓存，跨模块、刷新和重新挂载都保持一致。
+     */
+    function readLastSidebarCollapsed() {
+      try {
+        const saved = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+        if (saved === "true") return true;
+        if (saved === "false") return false;
+      } catch {
+        // 禁用浏览器存储时继续按屏幕宽度给出合理默认值。
+      }
+      try {
+        return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 900px)").matches;
+      } catch {
+        return false;
+      }
+    }
+
+    function rememberSidebarCollapsed(value) {
+      try {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, value === true ? "true" : "false");
+      } catch {
+        // 缓存不可写不影响当前页面内的收起 / 展开。
+      }
+    }
 
     function readLastStudioModule() {
       try {
@@ -3979,7 +4010,7 @@
     // 实测：模块五「地图地块生成」的五个阶段加起来 810px > 面板 686px，底部的地块卡片
     // 就被切了；而前四个模块恰好都在 686 以内，所以这个坑一直没暴露出来。
     const CSS = `
-.SPR_root{display:flex;flex-direction:column;height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;color:var(--dsw-alias-label-primary);font-size:13px;line-height:20px}
+.SPR_root{position:relative;display:flex;flex-direction:column;height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;color:var(--dsw-alias-label-primary);font-size:13px;line-height:20px}
 /*
  * 六号模块（地图编辑器）自己的正文容器。
  *
@@ -3992,7 +4023,13 @@
 .SPR_headSub{color:var(--dsw-alias-label-tertiary);font-size:12px}
 .SPR_spacer{flex:1}
 .SPR_body{display:flex;flex:1;min-height:0}
+.SPR_body,.SPR_mapEdBody,.SPR_isoBody,.SPR_asmBody{position:relative}
 .SPR_side{width:220px;flex:none;border-right:1px solid var(--dsw-alias-border-l2);padding:12px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.SPR_side,.SPR_mapEdSide,.SPR_isoSide,.SPR_asmSide{transition:width .18s ease,min-width .18s ease,max-width .18s ease,padding .18s ease,border-color .18s ease,opacity .18s ease,transform .18s ease,visibility .18s ease}
+.SPR_root[data-sidebar-collapsed="true"] .SPR_side,
+.SPR_root[data-sidebar-collapsed="true"] .SPR_mapEdSide,
+.SPR_root[data-sidebar-collapsed="true"] .SPR_isoSide,
+.SPR_root[data-sidebar-collapsed="true"] .SPR_asmSide{width:0;min-width:0;max-width:0;padding:0;border-width:0;opacity:0;visibility:hidden;overflow:hidden;pointer-events:none}
 .SPR_sideTitle{font-size:12px;color:var(--dsw-alias-label-tertiary);padding:0 2px}
 .SPR_projItem{display:flex;flex-direction:column;gap:2px;text-align:left;width:100%;font:inherit;cursor:pointer;background:transparent;border:1px solid transparent;border-radius:8px;padding:7px 9px;color:var(--dsw-alias-label-primary)}
 .SPR_projItem:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -4893,6 +4930,11 @@
 .SPR_headTitleLine h2{flex:none}
 .SPR_headSub{font-size:12px;line-height:18px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .SPR_headActions{display:flex;align-items:center;gap:10px;flex:none}
+.SPR_sidebarToggle{display:inline-flex;align-items:center;justify-content:center;flex:none;width:32px;height:32px;padding:0;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+.SPR_sidebarToggle:hover{background:var(--dsw-alias-interactive-bg-hover-solid);border-color:var(--dsw-alias-border-l1);color:var(--dsw-alias-label-primary)}
+.SPR_sidebarToggle:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
+.SPR_sidebarToggle svg{display:block}
+.SPR_sidebarBackdrop{display:none}
 .SPR_modulePanel{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0}
 .SPR_projectMore{display:inline-flex;flex:none;align-items:center}
 .SPR_projectMoreButton{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
@@ -5272,12 +5314,13 @@
   .SPR_root>.SPR_modules{padding:0 14px;gap:18px}
   .SPR_main,.SPR_moduleBody{padding:16px 14px 40px}
   .SPR_head{padding:12px 14px;flex-wrap:wrap}
-  .SPR_body{flex-direction:column}
-  .SPR_side{width:auto;border-right:0;border-bottom:1px solid var(--dsw-alias-border-l2);max-height:200px}
-  .SPR_asmBody{flex-direction:column}
-  .SPR_asmSide{width:100%;max-height:none}
-  .SPR_mapEdBody,.SPR_isoBody{flex-direction:column}
-  .SPR_mapEdSide,.SPR_isoSide{width:100%;max-width:none;min-width:0;max-height:240px;border-right:0;border-bottom:1px solid var(--ed-line)}
+  .SPR_body,.SPR_mapEdBody,.SPR_isoBody,.SPR_asmBody{flex-direction:row}
+  .SPR_side,.SPR_mapEdSide,.SPR_isoSide,.SPR_asmSide{position:absolute;inset:0 auto 0 0;z-index:20;width:min(280px,85vw);min-width:0;max-width:none;height:auto;max-height:none;box-sizing:border-box;border-right:1px solid var(--dsw-alias-border-l2);border-bottom:0;padding:16px 14px;background:var(--dsw-alias-bg-layer-1);box-shadow:8px 0 28px rgba(0,0,0,.18);opacity:1;visibility:visible;overflow:auto;pointer-events:auto;transform:translateX(0)}
+  .SPR_root[data-sidebar-collapsed="true"] .SPR_side,
+  .SPR_root[data-sidebar-collapsed="true"] .SPR_mapEdSide,
+  .SPR_root[data-sidebar-collapsed="true"] .SPR_isoSide,
+  .SPR_root[data-sidebar-collapsed="true"] .SPR_asmSide{width:min(280px,85vw);min-width:0;max-width:none;padding:16px 14px;border-right:1px solid var(--dsw-alias-border-l2);border-bottom:0;opacity:0;visibility:hidden;pointer-events:none;transform:translateX(-105%);overflow:auto}
+  .SPR_root:not([data-sidebar-collapsed="true"]) .SPR_sidebarBackdrop{display:block;position:absolute;inset:0;z-index:15;padding:0;border:0;background:rgba(0,0,0,.28);cursor:pointer;opacity:1}
   .SPR_rigPreview{height:min(620px,70vh)}
 }
 @media (max-width:560px){
@@ -6340,6 +6383,18 @@
         }, text) : null);
     }
 
+    /** 顶部工作台侧栏开关：用一个窄栏 + 箭头图标表达收起 / 展开状态。 */
+    function SidebarToggleIcon({ collapsed }) {
+      const direction = collapsed ? "M8 12h8M12 8l4 4-4 4" : "M16 12H8M12 8l-4 4 4 4";
+      return h(
+        "svg",
+        { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
+        h("rect", { x: 3.5, y: 4, width: 17, height: 16, rx: 2.5 }),
+        h("path", { d: "M9 4v16" }),
+        h("path", { d: direction })
+      );
+    }
+
     // ── 主体工作台 ───────────────────────────────────────────────────────
     function StudioPanel(props) {
       const localeTick = useLocaleTick();
@@ -6377,8 +6432,35 @@
       const [imageHeaderActions, setImageHeaderActions] = React.useState(null);
       const [settingsInitialTab, setSettingsInitialTab] = React.useState("video");
       const settingsReturnModule = React.useRef(null);
+      const [sidebarCollapsed, setSidebarCollapsed] = React.useState(readLastSidebarCollapsed);
       const visibleModules = visibleModulesOf(hidden, moduleOrder);
       const modulePreferencesReady = moduleOrderState.ready;
+
+      React.useEffect(() => {
+        if (typeof document === "undefined" || typeof document.addEventListener !== "function") return undefined;
+        const onKeyDown = (event) => {
+          if (event.key !== "Escape" || sidebarCollapsed) return;
+          setSidebarCollapsed(true);
+          rememberSidebarCollapsed(true);
+        };
+        document.addEventListener("keydown", onKeyDown);
+        return () => document.removeEventListener("keydown", onKeyDown);
+      }, [sidebarCollapsed]);
+
+      const toggleSidebar = () => {
+        setSidebarCollapsed((current) => {
+          const next = !current;
+          rememberSidebarCollapsed(next);
+          return next;
+        });
+      };
+      const collapseSidebar = () => {
+        setSidebarCollapsed((current) => {
+          if (current) return current;
+          rememberSidebarCollapsed(true);
+          return true;
+        });
+      };
       /**
        * 真正渲染的模块：当前选中项被隐藏（或压根不存在）时落到第一个可见模块。
        *
@@ -6643,10 +6725,20 @@
 
       return h(
         "div",
-        { className: "SPR_root" },
+        { className: "SPR_root", "data-sidebar-collapsed": sidebarCollapsed ? "true" : "false" },
         h(
           "div",
           { className: "SPR_head" },
+          h("button", {
+            type: "button",
+            className: "SPR_sidebarToggle",
+            "aria-controls": "studio-module-panel",
+            "aria-expanded": sidebarCollapsed ? "false" : "true",
+            "aria-label": sidebarCollapsed ? T("展开侧栏") : T("收起侧栏"),
+            title: sidebarCollapsed ? T("展开侧栏") : T("收起侧栏"),
+            "data-testid": "studio-sidebar-toggle",
+            onClick: toggleSidebar
+          }, h(SidebarToggleIcon, { collapsed: sidebarCollapsed })),
           h("div", { className: "SPR_headInfo" },
             h("div", { className: "SPR_headTitleLine" },
               h("h2", null, T("游戏素材大师")),
@@ -6704,6 +6796,13 @@
             )
           )
         ),
+        sidebarCollapsed ? null : h("button", {
+          type: "button",
+          className: "SPR_sidebarBackdrop",
+          "aria-label": T("关闭侧栏"),
+          "data-testid": "studio-sidebar-backdrop",
+          onClick: collapseSidebar
+        }),
         h("div", { className: "SPR_modulePanel", id: "studio-module-panel", role: activeModule !== null && activeModule !== "settings" ? "tabpanel" : undefined, "aria-labelledby": activeModule !== null && activeModule !== "settings" ? `studio-tab-${activeModule}` : undefined },
         activeModule === "settings" ? h("div", { className: "SPR_moduleBody", "data-testid": "studio-settings-panel" }, h(ConfigSection, { api, initialTab: settingsInitialTab })) : null,
         activeModule === null
@@ -24799,7 +24898,7 @@
      * `mapgeom` / `mapdoc` 的真实现做黄金对照逐点比对 —— 界面复刻的那部分几何
      * 必须有守门的，否则「预览与导出错位」会以静默的方式回来。
      */
-    bundleModule.exports.__test = { createVideoSubmitter, StudioPanel, MotionModule, MotionAnimationPreview, IsoModule, ImageModule, SequenceModule, mergeDrafts, RigSemanticsPanel, MapModule, MusicModule, SfxModule, ISO_pointToCell, ISO_cellCenter, ISO_cellTopLeft, ISO_lineCells, MAP_pointToCell, MAP_cellAnchor, MAP_cellTopLeft, MAP_lineCells, usePendingTasks, LoadingOverlay, MediaBox, BusyBtn, BusyBadge, NumField, ZoomableImage, CSS, subscribeIntent, parseIntents, openStudioIntent, OPEN_QUERY_KEY, StudioGlyph, StudioGlyphIcon, publishHiddenModules, publishModuleOrder, readLastStudioModule, rememberStudioModule, useHiddenModules, visibleModulesOf, normalizeHiddenKeys, ConfigSection, attachSessionBridge, openAssetChat, openMusicChat, buildAssetRequestPrompt, buildIsoAssetRequestPrompt, buildMusicRequestPrompt, buildComposeRequestPrompt, openIsoAssetChat, deriveAssetName, deriveMusicName, ASSET_FRAMES_MIN, ASSET_FRAMES_MAX };
+    bundleModule.exports.__test = { createVideoSubmitter, StudioPanel, MotionModule, MotionAnimationPreview, IsoModule, ImageModule, SequenceModule, mergeDrafts, RigSemanticsPanel, MapModule, MusicModule, SfxModule, ISO_pointToCell, ISO_cellCenter, ISO_cellTopLeft, ISO_lineCells, MAP_pointToCell, MAP_cellAnchor, MAP_cellTopLeft, MAP_lineCells, usePendingTasks, LoadingOverlay, MediaBox, BusyBtn, BusyBadge, NumField, ZoomableImage, CSS, subscribeIntent, parseIntents, openStudioIntent, OPEN_QUERY_KEY, StudioGlyph, StudioGlyphIcon, SidebarToggleIcon, publishHiddenModules, publishModuleOrder, readLastStudioModule, rememberStudioModule, readLastSidebarCollapsed, rememberSidebarCollapsed, useHiddenModules, visibleModulesOf, normalizeHiddenKeys, ConfigSection, attachSessionBridge, openAssetChat, openMusicChat, buildAssetRequestPrompt, buildIsoAssetRequestPrompt, buildMusicRequestPrompt, buildComposeRequestPrompt, openIsoAssetChat, deriveAssetName, deriveMusicName, ASSET_FRAMES_MIN, ASSET_FRAMES_MAX };
     bundleModule.exports.__test.NoticePopup = NoticePopup;
     return bundleModule.exports;
   }

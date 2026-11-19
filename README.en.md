@@ -69,6 +69,10 @@ locally through `ffmpeg` — no system image libraries required. AI generation s
 > jump straight into the one you want. Features you do not use can be turned off in settings (see
 > "Feature management").
 
+The workbench header has a **sidebar toggle** like Codex: collapse the project / task list to give the content
+more room. On narrow screens it becomes a drawer; click the backdrop or press Esc to close it, and your choice
+is remembered.
+
 All eight modules share the same "generate → review → re-run" workbench. Every stage can be **redone on its
 own**, and every asset can be **approved item by item**. The "review mode" lets an agent approve each step
 and move on automatically, or stop at every step and wait for your go-ahead.

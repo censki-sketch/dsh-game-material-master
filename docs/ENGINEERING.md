@@ -416,6 +416,14 @@ comfy.ts 里**唯一**的 HTTP 出口（`/system_stats`、`/object_info`、`/upl
 隐藏后页签与菜单同时消失（**不用刷新页面**）、深链接指向被隐藏模块时落到第一个可见模块、
 全隐藏时的空态。
 
+### 工作台统一侧栏收起
+
+工作台根节点 `StudioPanel` 统一维护 `data-sidebar-collapsed` 状态，并用
+`dsh-game-material-master:sidebar-collapsed` 写入浏览器本地缓存。普通项目栏、白模流程、地图、45°地图和骨骼
+模块的侧栏都保留在 DOM 中，只通过 CSS 收起，因此表单草稿与滚动位置不会因切换丢失。宽屏收起时主内容由
+flex 自动占满；`max-width:900px` 时侧栏改为左侧抽屉，展开后显示遮罩，点击遮罩或按 Esc 收起。没有缓存的窄屏
+默认收起，已有缓存优先。
+
 ### 在外部浏览器里真机验收（Playwright 怎么进去）
 
 桌面端的 web 服务（默认 `127.0.0.1:19387`）**只认启动时那一次 token**：`GET /?token=…` 校验通过后
