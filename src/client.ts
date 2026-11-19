@@ -505,6 +505,7 @@
       "已开始抠像": "Keying started",
       "正在抠背景…": "Keying the background…",
       "按当前参数重新抠像": "Re-key with current settings",
+      "抠像参数保存失败，本次未开始抠像。": "Failed to save keying settings. Keying has not started.",
       "上传一张已有图片，直接抠成透明 PNG": "Upload an existing image to key straight to a transparent PNG",
       "结果（{n0} 张）": "Results ({n0} images)",
       "还没有图片": "No images yet",
@@ -17500,7 +17501,7 @@
           h("img", { className: "SPR_imageRefFull", src, alt })));
     }
 
-    function ImageResultGallery({ items, assetBase, tasks, renderItem }) {
+    function ImageResultGallery({ items, assetBase, tasks, keying, renderItem }) {
       const [selectedIndex, setSelectedIndex] = React.useState(0);
       const thumbsRef = React.useRef(null);
       const index = Math.min(selectedIndex, Math.max(0, items.length - 1));
@@ -17520,7 +17521,7 @@
       return h("div", { className: "SPR_imageGallery" },
         h("div", { className: "SPR_imageGalleryStage" }, items[index] ? renderItem(items[index], index, { navigation, counter }) : null),
         h("div", { className: "SPR_imageGalleryThumbs", ref: thumbsRef, role: "group", "aria-label": T("结果缩略图") }, items.map((item, i) => {
-          const loading = item.status === "running" || tasks.has(K_IMG_ITEM(i)) || tasks.has(K_IMG_JOB) || tasks.has(K_IMG_KEY);
+          const loading = item.status === "running" || tasks.has(K_IMG_ITEM(i)) || tasks.has(K_IMG_JOB) || keying;
           const file = item.keyedFile ?? item.file;
           const title = T("第 {n0} 张", { n0: i + 1 }) + " · " + (loading ? T("生成中") : item.status === "error" ? T("失败") : file ? T("已完成") : T("等待生成"));
           return h("button", { key: i, type: "button", className: "SPR_imageGalleryThumb", "data-on": i === index, "aria-pressed": i === index,
@@ -17598,7 +17599,8 @@
         if (intent.module === "image" && typeof intent.jobId === "string") setJobId(intent.jobId);
       }, [intent]);
 
-      const busy = (job !== null && (job.items ?? []).some((item) => item.status === "running")) || tasks.active;
+      const keyingBusy = tasks.has(K_IMG_KEY) || job?.tasks?.includes("image:key") === true;
+      const busy = (job !== null && ((job.items ?? []).some((item) => item.status === "running") || (job.tasks ?? []).length > 0)) || tasks.active;
 
       const refresh = React.useCallback(async () => {
         try {
@@ -17891,10 +17893,15 @@
                       h(
                         BusyBtn,
                         {
-                          busy: tasks.has(K_IMG_KEY),
+                          busy: keyingBusy,
+                          disabled: busy,
                           busyText: T("正在抠像…"),
                           onClick: () =>
-                            void run(() => api.keyImageJob({ jobId: job.id }), T("已开始抠像"), {
+                            void run(async () => {
+                              const response = await enqueueImageSave({ keying: keyingDraft });
+                              if (response?.ok === false) throw new Error(T("抠像参数保存失败，本次未开始抠像。"));
+                              return api.keyImageJob({ jobId: job.id });
+                            }, T("已开始抠像"), {
                               key: K_IMG_KEY,
                               label: T("正在抠背景…")
                             })
@@ -17938,7 +17945,7 @@
                     (job.items ?? []).length === 0
                       ? h("p", { className: "SPR_empty" }, T("还没有图片"))
                       : h(ImageResultGallery, {
-                          key: job.id, items: job.items, assetBase: job.assetBase, tasks,
+                          key: job.id, items: job.items, assetBase: job.assetBase, tasks, keying: keyingBusy,
                           renderItem: (item, index, { navigation, counter }) => {
                             const itemKey = K_IMG_ITEM(index);
                             const itemBusy = item.status === "running" || tasks.has(itemKey);
@@ -17950,7 +17957,7 @@
                               : "png";
                             // 整批生成时，还没轮到的那些也要盖住（否则旧图看着像「没反应」）
                             const waiting = item.status !== "running" && tasks.has(K_IMG_JOB);
-                            const keyingNow = item.status !== "running" && tasks.has(K_IMG_KEY);
+                            const keyingNow = item.status !== "running" && keyingBusy;
                             const overlay = itemBusy || keyingNow || waiting;
                             const overlayText =
                               tasks.label(itemKey) ??
@@ -17981,7 +17988,7 @@
                                     ? h("a", { role: "menuitem", className: "SPR_btn", href: `${job.assetBase}${item.file}`, download: `image-${index + 1}.${rawExt}`, style: { textDecoration: "none" } }, T("下载原图"))
                                     : null,
                                   item.keyedFile !== undefined
-                                    ? h("a", { role: "menuitem", className: "SPR_btn", href: `${job.assetBase}${item.keyedFile}`, download: `keyed-${index + 1}.png`, style: { textDecoration: "none" } }, T("下载 PNG"))
+                                    ? h("a", { role: "menuitem", className: "SPR_btn", href: `${job.assetBase}${item.keyedFile}?v=${item.updatedAt}`, download: `keyed-${index + 1}.png`, style: { textDecoration: "none" } }, T("下载 PNG"))
                                     : null,
                                   item.source === "generated"
                                     ? h(

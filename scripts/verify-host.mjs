@@ -1634,17 +1634,19 @@ async function main() {
   });
   const keyKick = await studio.keyImageJob({ jobId: imageId });
   check("抠像任务被接受", keyKick.started === true, JSON.stringify(keyKick));
+  check("图片视图公布后台抠像任务，提交返回后仍可继续等待", (await studio.getImageJob({ jobId: imageId })).tasks?.includes("image:key") === true);
 
   let imageSettled = null;
   for (let i = 0; i < 40; i++) {
     await sleep(500);
     const snapshot = await studio.getImageJob({ jobId: imageId });
-    if ((snapshot.items ?? []).every((item) => item.status !== "running") && (snapshot.items ?? []).some((item) => item.keyedFile !== undefined)) {
+    if (snapshot.tasks?.length === 0 && (snapshot.items ?? []).every((item) => item.status !== "running") && (snapshot.items ?? []).some((item) => item.keyedFile !== undefined)) {
       imageSettled = snapshot;
       break;
     }
   }
   check("抠像在合理时间内完成", imageSettled !== null, imageSettled === null ? "超时" : "已完成");
+  check("图片视图在抠像完成后清除后台任务", imageSettled?.tasks?.length === 0);
   check("产出透明 PNG", typeof imageSettled?.items?.[0]?.keyedFile === "string", imageSettled?.items?.[0]?.keyedFile ?? "");
   check(
     "记录了背景占比（可判断抠像可信度）",

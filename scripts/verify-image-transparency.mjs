@@ -129,6 +129,14 @@ try {
   const edgeItem = await imagegen.addImageToJob(edgeJob.id, 'synthetic-edge.png', encodePng(edgeSource, edgeWidth, edgeHeight).toString('base64'));
   const uploadedEdge = await decodeToRgba(imagegen.imageAssetPath(edgeJob.id, edgeItem.keyedFile));
   check('real still-image upload/keying path applies edge recovery automatically without an API call', received.length === 0 && Math.abs(uploadedEdge.rgba[mixed + 3] - 128) <= 2 && hair.every((v, c) => Math.abs(uploadedEdge.rgba[mixed + c] - v) <= 2));
+  const rekeyFixture = await imagegen.readImageJob(edgeJob.id);
+  rekeyFixture.items[0].updatedAt = 1;
+  rekeyFixture.keying.despill = 0;
+  await imagegen.writeImageJob(rekeyFixture);
+  const rekeyed = await imagegen.rekeyImageJob(edgeJob.id);
+  check('manual re-key advances the per-image revision used by previews and thumbnails', rekeyed.items[0].updatedAt > 1 && (await imagegen.readImageJob(edgeJob.id)).items[0].updatedAt === rekeyed.items[0].updatedAt);
+  const manualEdge = await decodeToRgba(imagegen.imageAssetPath(edgeJob.id, rekeyed.items[0].keyedFile));
+  check('manual re-key uses the saved settings and original pixels without a generation call', received.length === 0 && manualEdge.rgba.equals(keyGreen(edgeSource, edgeWidth, edgeHeight, { ...edgeOptions, despill: 0, refineEdges: true }).rgba));
   const job = await imagegen.createImageJob("transparent fixture");
   job.prompt = "白色衣服的角色，参考白色背景，保持动作";
   job.suffix = IMAGE_PROMPT_TEMPLATES[0].prompt.zh;

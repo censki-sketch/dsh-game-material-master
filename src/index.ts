@@ -1731,6 +1731,7 @@ export class GameStudioGateway extends TypertRemoteService {
 
   async getImageJob(payload) {
     const jobId = asString(asRecord(payload).jobId);
+    const tasks = [...(imageTasks.get(jobId) ?? [])];
     const job = await imagegen.readImageJob(jobId);
     if (job === undefined) throw new Error(`任务不存在：${jobId}`);
     /**
@@ -1738,7 +1739,7 @@ export class GameStudioGateway extends TypertRemoteService {
      * （例如 `composeMapAsset` 整理地图素材），而 `assetBase` 是给浏览器用的 URL。
      * 产物绝对路径 = `dir + "/" + item.file`（`out/img-00.png`）。
      */
-    return { ...job, promptTemplates: (await loadConfig()).imagePromptTemplates, dir: imagegen.imageJobDir(jobId), assetBase: assetBasePath(`${ROUTE_PREFIX}/image-assets/${jobId}/`) };
+    return { ...job, tasks, promptTemplates: (await loadConfig()).imagePromptTemplates, dir: imagegen.imageJobDir(jobId), assetBase: assetBasePath(`${ROUTE_PREFIX}/image-assets/${jobId}/`) };
   }
 
   async deleteImageJob(payload) {

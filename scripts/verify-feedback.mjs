@@ -58,7 +58,7 @@ const ReactStub = {
     HOOK.cursor++;
     return { current: initial };
   },
-  useEffect() {},
+  useEffect(fn, deps) { HOOK.effects?.push({ fn, deps }); },
   useLayoutEffect() {},
   useCallback(fn) {
     return fn;
@@ -990,6 +990,23 @@ if (typeof ImageModule === "function") {
 
     const key = renderModule(ImageModule, makeImageJob(), makeTasks(["img:key"]));
     check("重新抠像时结果被盖住", overlays(key.tree).length >= 1, `${overlays(key.tree).length} 个`);
+    HOOK.effects = [];
+    const hostKey = renderModule(ImageModule, makeImageJob({ tasks: ["image:key"] }), makeTasks());
+    const hostKeyEffects = HOOK.effects;
+    HOOK.effects = undefined;
+    check("本地pending结束后，宿主抠像任务继续覆盖主图与缩略图", overlays(hostKey.tree).length === 1 && byClass(hostKey.tree, "SPR_imageGalleryThumbBusy").length === 2);
+    check("宿主抠像未完成时按钮继续转圈并禁止重复点击", byTag(hostKey.tree, "button").some(node => node.props["data-busy"] === "true" && textOf(node).includes("正在抠像")));
+    const pollEffect = hostKeyEffects.find(effect => effect.deps?.length === 3 && effect.deps[1] === "i1" && typeof effect.deps[2] === "function");
+    const savedSetInterval = globalThis.setInterval, savedClearInterval = globalThis.clearInterval;
+    let intervalMs, clearedInterval;
+    try {
+      globalThis.setInterval = (_callback, ms) => { intervalMs = ms; return 712; };
+      globalThis.clearInterval = id => { clearedInterval = id; };
+      const cleanup = pollEffect?.fn();
+      check("宿主抠像任务使页面持续轮询，超过本地700ms等待仍可刷新", intervalMs === 2500 && typeof cleanup === "function");
+      cleanup?.();
+      check("图片轮询清理定时器", clearedInterval === 712);
+    } finally { globalThis.setInterval = savedSetInterval; globalThis.clearInterval = savedClearInterval; }
 
     const upload = renderModule(ImageModule, makeImageJob(), makeTasks(["img:upload"]));
     check("上传时出现忙碌徽章", byClass(upload.tree, "SPR_busyBadge").length >= 1);
@@ -1023,6 +1040,7 @@ if (typeof ImageModule === "function") {
     const firstNav = byClass(acceptance.tree, "SPR_imageGalleryArrow");
     check("首张禁用上一张，下一张可切换", firstNav.length === 2 && firstNav[0].props.disabled && !firstNav[1].props.disabled);
     const secondTree = renderSelection(acceptance.tree, 1);
+    check("抠像PNG下载链接与预览共用图片版本，避免下载旧缓存", byTag(secondTree, "a").some(node => node.props.download === "keyed-2.png" && node.props.href.endsWith("keyed/2.png?v=2")));
     const secondNav = byClass(secondTree, "SPR_imageGalleryArrow");
     check("切换后主图菜单指向第二张", byTag(secondTree, "button").some(node => node.props["aria-label"] === "第 2 张图片的更多操作"));
     check("末张禁用下一张，上一张可切换", !secondNav[0].props.disabled && secondNav[1].props.disabled);
@@ -1634,6 +1652,38 @@ section("图片提示词保存与生成时序");
   releaseFirst();
   await generated;
   check("所有保存完成后才使用最新提示词生成", calls.map(x=>x.type).join(",") === "save,save,generate" && calls.at(-1).prompt === "latest typed prompt", JSON.stringify(calls));
+}
+
+section("手动抠像保存时序");
+for (const failSave of [false, true]) {
+  const job = makeImageJob({ keying: { enabled: true, despill: 0.1 } });
+  const calls = [];
+  let releaseSave;
+  const pendingSave = new Promise(resolve => { releaseSave = resolve; });
+  const apiKeying = {
+    saveImageJob: async payload => {
+      calls.push({ type: "save", ...payload });
+      if (calls.length === 1) await pendingSave;
+      if (payload.keying) {
+        if (failSave) return { ok: false };
+        job.keying = payload.keying;
+      }
+      return { ok: true };
+    },
+    keyImageJob: async () => { calls.push({ type: "key", despill: job.keying.despill }); return { started: true }; },
+    getImageJob: async () => job,
+    listImageJobs: async () => ({ jobs: [job] })
+  };
+  HOOK.slots = [0, [job], job.id, job, null, false, "draft", "", {...job.settings}, { enabled: true, despill: 0.75 }, undefined, {}, null];
+  HOOK.cursor = 0;
+  const tree = ImageModule({ api: apiKeying });
+  byTag(tree, "textarea").find(node => node.props.placeholder === "描述你要生成的图片…").props.onBlur();
+  byTag(tree, "button").find(node => textOf(node) === "按当前参数重新抠像").props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
+  check(`已有保存未完成时不启动抠像（保存${failSave ? "拒绝" : "成功"}）`, calls.length === 1 && calls[0].type === "save");
+  releaseSave();
+  for (let i = 0; i < 5; i++) await new Promise(resolve => setImmediate(resolve));
+  check(failSave ? "参数保存失败不提交抠像" : "等待保存当前抠像参数后才提交，使用最新强度", failSave ? !calls.some(call => call.type === "key") : calls.map(call => call.type).join(",") === "save,save,key" && calls.at(-1).despill === 0.75);
 }
 
 section("白模动作流程：五阶段、费用确认与选择反馈");

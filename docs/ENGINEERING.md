@@ -245,6 +245,8 @@ Key 只写入本机 `<DSH_HOME>/game-material-master/config.json`，常规配置
 
 图片工作台使用 `.SPR_imageWorkspace` 网格区域布局：左侧编辑及运行日志、右侧结果；日志是工作台直接子项，不嵌套在编辑区。容器宽度≤900px时按编辑区、结果、日志顺序上下排列，DOM顺序也保持一致，避免日志挡在结果之前。左侧独立容器控制提示词/参考图区的折叠布局。模型、尺寸和数量与高级抠像共用 `.SPR_imageAdvanced` 卡片，两个details独立展开；生成按钮与紧凑审核下拉位于右侧结果卡片顶部同排，窄屏可换行。审核和基础提示词下拉用CSS `appearance:base-select` / `::picker(select)`适配主题，旧浏览器使用标准select。`setReviewMode.reviewMode`接受auto/manual/null，null从落盘数据清除模式，省略或非法值仍拒绝；客户端不再拦截空选项并显示保存失败弹窗。修改后需重启宿主。`ImageResultPreview` 用原生dialog单击预览，优先keyedFile；关闭恢复触发按钮焦点，按任务ID重建避免串任务。预览和展开设置不调用生成。
 
+手动图片抠像先沿`imageSaveQueue`保存当前keying草稿，拒绝的保存不提交抠像。`getImageJob.tasks`公布宿主`imageTasks`中的运行键（含`image:key`），在读任务文件前截取运行表，避免文件读取期间后台刚完成时返回旧数据却同时宣称空闲。客户端的轮询、抠像按钮、主图与缩略图遮罩同时读取本地pending与宿主任务，不能仅靠700ms的pending等待，否则后台重抠像尚未写完就停轮询。`keyItem`写完PNG后更新`item.updatedAt`，主图、放大预览、缩略图及PNG下载均用该版本拼URL；只更新`job.updatedAt`不会使沿用同一路径的图片重新加载。回归覆盖保存顺序/拒绝、宿主运行表及完成清除、pending结束后持续轮询和抠像版本落盘。
+
 `ImageResultMenu` 位于每张结果卡片状态徽章右侧，以紧凑三点图标将全部操作收进逐卡菜单，使用原有保存/生成/删除调用与下载链接，菜单本身不提交操作。原生auto-popover负责点击外部收起与多个菜单互斥，展开后按触发按钮定位并夹在视口内；滚动或改窗口尺寸时重新定位，触发按钮移出视口才收起，避免打开时浏览器延迟滚动让菜单立即关闭；键盘焦点切换使用preventScroll。参考图移除按钮仅在行悬停或focus-within时显示，保留布局位置，触屏始终可见。
 
 有效引用的 Backspace / Delete 会扩展选区到完整引用边界，输入法组词时不拦截。透明背景开关复用 `keying.enabled`，生成前与提示词一同排队保存；`imagegen.buildPrompt` 只修改本次请求的背景要求，移除内置模板默认白背景并追加精确底色约束。`generateImageItem` 固定本次 `keying` 快照传给 `keyItem`，防止请求期间任务或全局颜色变化导致背景不匹配。高级表单默认折叠。`verify-image-transparency.mjs` 使用独立临时配置、回环假生图API和合成像素，核对发送提示词、实际背景alpha、主体配色和中途配置变更，零真实计费。

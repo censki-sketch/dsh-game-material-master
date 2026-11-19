@@ -244,7 +244,7 @@ images are sharper, which suits cases where you only need a few directions or wa
 Generate images from a prompt, with optional reference images. Enable **Transparent background** inside the prompt
 box to add solid-background instructions and automatically key the same color locally into a transparent PNG,
 without configuring keying parameters. You can also upload an existing image and run only the keying,
-without spending anything on generation. Still images recover foreground color and coverage in mixed edges around fine hair and background gaps locally, without installing extra models or dependencies. Re-key existing images manually to apply the improvement without generating again.
+without spending anything on generation. Still images recover foreground color and coverage in mixed edges around fine hair and background gaps locally, without installing extra models or dependencies. Re-key existing images manually to apply the improvement without generating again. Re-key with current settings saves the current keying parameters first, shows processing until the host task finishes, then updates the main image, thumbnails and PNG download link to avoid showing or downloading cached results.
 
 ### How to use it
 
