@@ -307,6 +307,16 @@
       "关闭侧栏": "Close sidebar",
       "刷新列表": "Refresh list",
       "重命名": "Rename",
+      "标记为未读": "Mark as unread",
+      "标记为已读": "Mark as read",
+      "未读": "Unread",
+      "永久删除": "Delete permanently",
+      "复制名称": "Copy name",
+      "复制路径": "Copy path",
+      "复制": "Copy",
+      "图片项目操作": "Image project actions",
+      "归档": "Archive",
+      "保存失败": "Save failed",
       "删除项目": "Delete project",
       "复制 ID": "Copy ID",
       "复制项目 ID": "Copy project ID",
@@ -5201,6 +5211,17 @@
 .SPR_projectMenu button:hover,.SPR_projectMenu button:focus-visible{background:var(--dsw-alias-interactive-bg-hover-solid)}
 .SPR_projectMenu button[data-danger=true]{color:var(--dsw-alias-state-error-primary,#d84949)}
 .SPR_projectMenuSeparator{height:1px;margin:5px 4px;background:var(--dsw-alias-border-l2)}
+.SPR_imageContextMenu{position:fixed;inset:auto;margin:0;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;max-width:calc(100vw - 16px);overflow:visible}
+.SPR_imageContextMenu:popover-open{display:block}
+.SPR_imageContextMenu .SPR_projectMenu{position:static;box-sizing:border-box;width:204px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overflow:auto;padding:4px;font-size:13px;border-radius:14px;box-shadow:0 5px 16px rgba(0,0,0,.1)}
+.SPR_imageContextMenu .SPR_projectMenu button{box-sizing:border-box;min-height:31px;padding:5px 9px;gap:9px;white-space:nowrap}
+.SPR_imageContextMenu button>svg{flex:none;width:16px;height:16px}
+.SPR_imageContextMenu button>span:not(.SPR_projectSubmenuArrow){flex:1}
+.SPR_imageContextMenu .SPR_imageCopyMenu{position:fixed;width:164px}
+.SPR_projUnreadDot{position:absolute;right:13px;top:calc(50% - 3px);width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-state-business-primary);pointer-events:none}
+.SPR_projectRow:hover .SPR_projUnreadDot,.SPR_projectRow:has(:focus-visible) .SPR_projUnreadDot{opacity:0}
+.SPR_projectRow[data-unread=true] .SPR_projName{font-weight:600}
+.SPR_projectRow[data-context-open=true] .SPR_projItem{background:var(--dsw-alias-interactive-bg-hover-solid)}
 .SPR_projectRenameMask{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.25)}
 .SPR_projectRenameDialog{box-sizing:border-box;width:min(380px,100%);padding:22px;border:1px solid var(--dsw-alias-border-l2);border-radius:16px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 18px 60px rgba(0,0,0,.2);color:var(--dsw-alias-label-primary)}
 .SPR_projectRenameDialog h3{margin:0 0 18px;font-size:15px}
@@ -5780,6 +5801,7 @@
       if (name === "copy") return h("svg", props, h("rect", { x: 8, y: 8, width: 12, height: 12, rx: 2 }), h("path", { d: "M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4" }));
       if (name === "settings") return h("svg", props, h("path", { d: "m9 3-.6 2.2-2 .9-2-.6L2 10l1.7 1.5v2L2 15l2.4 4.5 2-.6 2 .9L9 22h6l.6-2.2 2-.9 2 .6L22 15l-1.7-1.5v-2L22 10l-2.4-4.5-2 .6-2-.9L15 3Z" }), h("circle", { cx: 12, cy: 12.5, r: 3 }));
       if (name === "pin") return h("svg", props, h("path", { d: "M8 3h8v6l3 4v2H5v-2l3-4V3ZM12 15v6", transform: "rotate(45 12 12)" }));
+      if (name === "unread") return h("svg", props, h("path", { d: "M20 12a8 8 0 1 1-8-8M3 13s3-5 9-5c2 0 3.5.5 5 1.5" }), h("circle", { cx: 19, cy: 5, r: 2.5 }));
       if (name === "archive") return h("svg", props, h("rect", { x: 3.5, y: 4, width: 17, height: 4, rx: 1.25 }), h("path", { d: "M5 8v10.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V8M10 11.5h4" }));
       if (name === "unarchive") return h("svg", props, h("rect", { x: 3.5, y: 4, width: 17, height: 4, rx: 1.25 }), h("path", { d: "M5 8v10.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V8M12 17v-6m-3 3 3-3 3 3" }));
       if (name === "remove") return h("svg", props, h("path", { d: "m6 6 12 12M6 18 18 6" }));
@@ -5856,6 +5878,109 @@
           h("div", { className: "SPR_projectRenameActions" },
             h("button", { ref: cancelRef, type: "button", className: "SPR_btn", disabled: working, onClick: close }, T("取消")),
             h("button", { type: "submit", className: "SPR_btn SPR_projectDeleteConfirm", disabled: working, "aria-busy": working }, working ? T("正在删除…") : T("彻底删除")))));
+    }
+
+    function ImageProjectRenameDialog({ project, onRename, onClose }) {
+      const [name, setName] = React.useState(project.name), [saving, setSaving] = React.useState(false), [error, setError] = React.useState("");
+      const dialogRef = React.useRef(null), inputRef = React.useRef(null), lock = React.useRef(false);
+      React.useEffect(() => {
+        const dialog = dialogRef.current, trigger = document.activeElement as HTMLElement;
+        dialog?.showModal(); inputRef.current?.focus(); inputRef.current?.select();
+        return () => { if (dialog?.open) dialog.close(); if (trigger?.isConnected) trigger.focus({ preventScroll: true }); };
+      }, []);
+      const close = () => { if (!lock.current) onClose(); };
+      const submit = async event => {
+        event.preventDefault();
+        if (lock.current || !name.trim()) return;
+        lock.current = true; setSaving(true); setError("");
+        try { await onRename(project, name.trim()); onClose(); }
+        catch (failure) { setError(msg(failure)); }
+        finally { lock.current = false; setSaving(false); }
+      };
+      return h("dialog", { ref: dialogRef, className: "SPR_projectRenameDialog", "data-testid": "image-project-rename-dialog", "aria-label": T("重命名项目"),
+        onCancel: event => { event.preventDefault(); close(); }, onKeyDown: event => { if (event.key === "Escape") event.stopPropagation(); } },
+        h("form", { onSubmit: submit }, h("h3", null, T("重命名项目")),
+          h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("新的项目名")),
+            h("input", { ref: inputRef, className: "SPR_input", value: name, required: true, maxLength: 80, disabled: saving, onChange: event => setName(event.target.value) })),
+          error ? h("p", { className: "SPR_taskDialogError", role: "alert" }, error) : null,
+          h("div", { className: "SPR_projectRenameActions" }, h(Btn, { disabled: saving, onClick: close }, T("取消")),
+            h(Btn, { type: "submit", primary: true, disabled: saving || !name.trim(), busy: saving }, saving ? T("正在保存…") : T("保存")))));
+    }
+
+    /** Context actions always target the row under the pointer, without selecting it. */
+    function ImageProjectContextMenu({ context, pinned, archived, unread, onClose, onRename, onPin, onUnread, onArchive, onDelete, onNotice }) {
+      const [copyOpen, setCopyOpen] = React.useState(false);
+      const menuRef = React.useRef(null), copyRef = React.useRef(null);
+      const close = (focus = false) => { if (focus && context.trigger?.isConnected) context.trigger.focus({ preventScroll: true }); onClose(); };
+      React.useLayoutEffect(() => {
+        const menu = menuRef.current;
+        menu.showPopover(); menu.querySelector("button")?.focus({ preventScroll: true });
+        const outside = event => { if (!menu.contains(event.target)) close(); };
+        const dismiss = () => close();
+        const scroll = event => { if (!menu.contains(event.target)) close(); };
+        document.addEventListener("pointerdown", outside);
+        document.addEventListener("scroll", scroll, true);
+        window.addEventListener("resize", dismiss); window.addEventListener("blur", dismiss);
+        return () => {
+          document.removeEventListener("pointerdown", outside); document.removeEventListener("scroll", scroll, true);
+          window.removeEventListener("resize", dismiss); window.removeEventListener("blur", dismiss);
+          if (menu.matches(":popover-open")) menu.hidePopover();
+        };
+      }, []);
+      React.useLayoutEffect(() => {
+        const menu = menuRef.current;
+        const rect = menu.getBoundingClientRect();
+        menu.style.left = Math.max(8, Math.min(context.left, window.innerWidth - rect.width - 8)) + "px";
+        menu.style.top = Math.max(8, Math.min(context.top, window.innerHeight - rect.height - 8)) + "px";
+        // Position the submenu independently so opening it never moves the hovered row.
+        const submenu = menu.querySelector(".SPR_imageCopyMenu");
+        if (submenu) {
+          const main = menu.getBoundingClientRect(), sub = submenu.getBoundingClientRect(), trigger = copyRef.current.getBoundingClientRect();
+          const left = main.right + 5 + sub.width <= window.innerWidth - 8 ? main.right + 5 : main.left - sub.width - 5 >= 8 ? main.left - sub.width - 5 : window.innerWidth - sub.width - 8;
+          submenu.style.left = Math.max(8, left) + "px";
+          submenu.style.top = Math.max(8, Math.min(trigger.top - 4, window.innerHeight - sub.height - 8)) + "px";
+        }
+      }, [context.left, context.top, copyOpen]);
+      const action = (icon, label, invoke, danger = false) => h("button", { type: "button", role: "menuitem", "data-danger": danger,
+        onPointerEnter: () => setCopyOpen(false), onFocus: () => setCopyOpen(false), onClick: () => { close(true); invoke(context.item); } }, h(ProjectActionIcon, { name: icon }), h("span", null, label));
+      const copy = async value => {
+        close(true);
+        const ok = await copyIdText(String(value));
+        onNotice?.({ kind: ok ? "ok" : "error", text: ok ? T("已复制") : T("复制失败") });
+      };
+      const keys = event => {
+        event.stopPropagation();
+        if (event.key === "Escape") { event.preventDefault(); close(true); return; }
+        if (event.key === "Tab") { close(); return; }
+        const submenu = event.target.closest(".SPR_imageCopyMenu");
+        const buttons = [...(submenu || menuRef.current.querySelector(".SPR_imageContextMain")).querySelectorAll("button:not(:disabled)")];
+        const index = buttons.indexOf(document.activeElement);
+        if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+          event.preventDefault();
+          const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : (index + (event.key === "ArrowUp" ? -1 : 1) + buttons.length) % buttons.length;
+          buttons[next]?.focus({ preventScroll: true });
+        }
+        if (event.key === "ArrowRight" && event.target === copyRef.current) {
+          event.preventDefault(); setCopyOpen(true);
+          requestAnimationFrame(() => menuRef.current?.querySelector(".SPR_imageCopyMenu button")?.focus({ preventScroll: true }));
+        }
+        if (event.key === "ArrowLeft" && submenu) { event.preventDefault(); copyRef.current?.focus(); setCopyOpen(false); }
+      };
+      return h("div", { ref: menuRef, popover: "manual", className: "SPR_imageContextMenu", onKeyDown: keys, onContextMenu: event => { event.preventDefault(); event.stopPropagation(); } },
+        h("div", { className: "SPR_projectMenu SPR_imageContextMain", role: "menu", "aria-label": T("图片项目操作") },
+          action("rename", T("重命名"), onRename),
+          archived ? null : action("pin", pinned ? T("取消置顶") : T("置顶"), onPin),
+          action("unread", unread ? T("标记为已读") : T("标记为未读"), onUnread),
+          h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
+          h("button", { ref: copyRef, type: "button", role: "menuitem", "aria-haspopup": "menu", "aria-expanded": copyOpen,
+            onPointerEnter: event => { if (event.pointerType !== "touch") setCopyOpen(true); }, onClick: () => setCopyOpen(value => !value) },
+            h(ProjectActionIcon, { name: "copy" }), h("span", null, T("复制")), h("span", { className: "SPR_projectSubmenuArrow", "aria-hidden": "true" }, "›")),
+          h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
+          action(archived ? "unarchive" : "archive", archived ? T("取消归档") : T("归档"), onArchive),
+          action("delete", T("永久删除"), onDelete, true)),
+        copyOpen ? h("div", { className: "SPR_projectMenu SPR_imageCopyMenu", role: "menu", "aria-label": T("复制") },
+          [[T("复制名称"), context.item.name], [T("复制 ID"), context.item.id], [T("复制路径"), context.item.dir]].map(([label, value]) =>
+            h("button", { key: label, type: "button", role: "menuitem", disabled: !value, onClick: () => void copy(value) }, h("span", null, label)))) : null);
     }
 
     function ProjectActionsMenu({ project, inline = false, task = false, local = false, onEdit, onRename, onDelete, onNotice }) {
@@ -6775,7 +6900,7 @@
         if (typeof document === "undefined" || typeof document.addEventListener !== "function") return undefined;
         const onKeyDown = (event) => {
           if (event.key !== "Escape" || sidebarCollapsed) return;
-          if (event.defaultPrevented || (typeof document.querySelector === "function" && document.querySelector("dialog[open], .SPR_projectSidebarMenu:popover-open, .SPR_taskFolderMenu:popover-open, .SPR_sidebarInfo:popover-open, .SPR_projectMenu:not([popover])"))) return;
+          if (event.defaultPrevented || (typeof document.querySelector === "function" && document.querySelector("dialog[open], .SPR_imageContextMenu:popover-open, .SPR_projectSidebarMenu:popover-open, .SPR_taskFolderMenu:popover-open, .SPR_sidebarInfo:popover-open, .SPR_projectMenu:not([popover])"))) return;
           setSidebarCollapsed(true);
           rememberSidebarCollapsed(true);
         };
@@ -9937,8 +10062,8 @@
           folders[directory] = { collapsed: folder.collapsed === true, removed: folder.removed === true, pinned: folder.pinned === true,
             ...(typeof folder.name === "string" && folder.name.trim() ? { name: folder.name.trim().slice(0, 80) } : {}), ...(sources.length ? { directories: sources } : {}) };
         }
-        return { directory: typeof value?.directory === "string" ? value.directory : "", sort: value?.sort === "manual" ? "manual" : "updated", layout: value?.layout === "merged" ? "merged" : "grouped", order: Array.isArray(value?.order) ? [...new Set(value.order.filter(id => typeof id === "string"))] : [], folderOrder: Array.isArray(value?.folderOrder) ? [...new Set(value.folderOrder.filter(path => typeof path === "string"))] : [], folders, hiddenProjects: Array.isArray(value?.hiddenProjects) ? value.hiddenProjects.filter(id => typeof id === "string") : [], archivedProjects: Array.isArray(value?.archivedProjects) ? value.archivedProjects.filter(id => typeof id === "string") : [], pinnedProjects: Array.isArray(value?.pinnedProjects) ? [...new Set(value.pinnedProjects.filter(id => typeof id === "string"))] : [], showArchived: value?.showArchived === true, pinnedCollapsed: value?.pinnedCollapsed === true };
-      } catch { return { directory: "", sort: "updated", layout: "grouped", order: [], folders: {}, hiddenProjects: [], archivedProjects: [], showArchived: false }; }
+        return { directory: typeof value?.directory === "string" ? value.directory : "", sort: value?.sort === "manual" ? "manual" : "updated", layout: value?.layout === "merged" ? "merged" : "grouped", order: Array.isArray(value?.order) ? [...new Set(value.order.filter(id => typeof id === "string"))] : [], folderOrder: Array.isArray(value?.folderOrder) ? [...new Set(value.folderOrder.filter(path => typeof path === "string"))] : [], folders, hiddenProjects: Array.isArray(value?.hiddenProjects) ? value.hiddenProjects.filter(id => typeof id === "string") : [], archivedProjects: Array.isArray(value?.archivedProjects) ? value.archivedProjects.filter(id => typeof id === "string") : [], pinnedProjects: Array.isArray(value?.pinnedProjects) ? [...new Set(value.pinnedProjects.filter(id => typeof id === "string"))] : [], unreadProjects: Array.isArray(value?.unreadProjects) ? [...new Set(value.unreadProjects.filter(id => typeof id === "string"))] : [], showArchived: value?.showArchived === true, pinnedCollapsed: value?.pinnedCollapsed === true };
+      } catch { return { directory: "", sort: "updated", layout: "grouped", order: [], folders: {}, hiddenProjects: [], archivedProjects: [], unreadProjects: [], showArchived: false }; }
     }
 
     function TaskHeaderIcon({ name, collapsed = false }) {
@@ -10129,7 +10254,7 @@
       const keyed = entries.reduce((sum, item) => sum + (item.keyedCount ?? item.keyed ?? 0), 0);
       const updated = Math.max(0, ...entries.map(item => item.updatedAt || 0)), created = entries[0]?.createdAt;
       const date = value => new Date(value).toLocaleString(activeLang() === "en" ? "en-US" : "zh-CN", { hour12: false });
-      return h("div", { ref: rootRef, className: "SPR_sidebarInfoRoot", onPointerEnter: event => { if (event.pointerType !== "touch") show(); }, onPointerLeave: hide,
+      return h("div", { ref: rootRef, className: "SPR_sidebarInfoRoot", onPointerEnter: event => { if (event.pointerType !== "touch") show(); }, onPointerLeave: hide, onContextMenu: dismiss,
         onFocus: show, onBlur: event => { if (!event.currentTarget.contains(event.relatedTarget)) hide(); },
         onPointerDown: event => { if (!popupRef.current?.contains(event.target)) dismiss(); },
         onKeyDown: event => { if (open && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); dismiss(); } } },
@@ -10216,19 +10341,29 @@
               h("button", { type: "submit", className: "SPR_btn SPR_projectDeleteConfirm" }, T("确认移除"))))) : null);
     }
 
-    function JobSidebar({ title, items, activeId, onSelect, onCreate, onOpenFolder, renderMeta, renderActions, createInSidebar = true, storageKey = "sequence", preferences, onPreferences, onReorder, onRevealFolder, onNotice, onRemoveFolder, onEditFolder, onArchiveFolder, api }) {
+    function JobSidebar({ title, items, activeId, onSelect, onCreate, onOpenFolder, renderMeta, renderActions, createInSidebar = true, storageKey = "sequence", preferences, onPreferences, onReorder, onRevealFolder, onNotice, onRemoveFolder, onEditFolder, onArchiveFolder, onProjectRename, onProjectPin, onProjectArchive, onProjectDelete, api }) {
       const key = "dsh-game-material-master:task-list-collapsed:" + storageKey;
       const [collapsed, setCollapsed] = React.useState(() => { try { return window.localStorage.getItem(key) === "true"; } catch { return false; } });
       const dragged = React.useRef(null);
       const [dropTarget, setDropTarget] = React.useState(null);
       const draggedFolder = React.useRef(null);
       const [folderDropTarget, setFolderDropTarget] = React.useState(null);
+      const [context, setContext] = React.useState(null), [renameTarget, setRenameTarget] = React.useState(null);
+      const contextEnabled = storageKey === "image" && !!onProjectRename;
+      const openContext = (event, item, keyboard = false) => {
+        if (!contextEnabled) return;
+        event.preventDefault(); event.stopPropagation();
+        const row = event.currentTarget, trigger = row.querySelector(".SPR_projItem"), rect = row.getBoundingClientRect();
+        setContext({ item, trigger, left: keyboard ? rect.left + 24 : event.clientX, top: keyboard ? rect.bottom : event.clientY });
+      };
+      React.useEffect(() => { setContext(null); setRenameTarget(null); }, [preferences?.showArchived]);
       const toggle = () => setCollapsed(current => { const next = !current; try { window.localStorage.setItem(key, String(next)); } catch { /* Optional persistence. */ } return next; });
       const manual = preferences?.sort === "manual";
       const folderGroups = preferences ? imageFolderGroups(items, preferences) : [];
       const visibleItems = preferences ? folderGroups.flatMap(folder => folder.entries) : items;
       const archiveView = preferences?.showArchived === true;
       const pinnedProjectIds = new Set(preferences?.pinnedProjects ?? []);
+      const unreadProjectIds = new Set(preferences?.unreadProjects ?? []);
       const visibleIds = new Set(visibleItems.map(item => item.id));
       const pinnedItems = archiveView ? [] : items.filter(item => visibleIds.has(item.id) && pinnedProjectIds.has(item.id));
       const pinned = archiveView ? [] : folderGroups.filter(group => group.pinned);
@@ -10271,27 +10406,35 @@
               type: "button",
               className: "SPR_projItem",
               "data-active": item.id === activeId ? "true" : "false",
-              onClick: () => onSelect(item.id)
+              "aria-haspopup": contextEnabled ? "menu" : undefined,
+              "aria-expanded": contextEnabled ? context?.item.id === item.id : undefined,
+              onClick: () => { setContext(null); if (unreadProjectIds.has(item.id)) onPreferences?.({ unreadProjects: (preferences.unreadProjects ?? []).filter(id => id !== item.id) }); onSelect(item.id); }
             },
             h("span", { className: "SPR_projNameRow" },
               h("span", { className: "SPR_projName" }, item.name),
+              unreadProjectIds.has(item.id) ? h("span", { className: "SPR_projUnreadDot", role: "img", "aria-label": T("未读") }) : null,
               renderActions ? null : h(CopyIdButton, { id: item.id, inline: true })
             ),
             renderMeta ? h("span", { className: "SPR_projMeta" }, renderMeta(item)) : null
           );
-          return renderActions ? h("div", { key: item.id, className: "SPR_projectRow", "data-active": item.id === activeId ? "true" : "false", "data-drop": dropTarget?.id === item.id ? (dropTarget.after ? "after" : "before") : undefined, draggable: manual,
+          return renderActions ? h("div", { key: item.id, className: "SPR_projectRow", "data-active": item.id === activeId ? "true" : "false", "data-project-id": item.id, "data-unread": unreadProjectIds.has(item.id), "data-context-open": context?.item.id === item.id, "data-drop": dropTarget?.id === item.id ? (dropTarget.after ? "after" : "before") : undefined, draggable: manual,
+            onContextMenu: contextEnabled ? event => openContext(event, item) : undefined,
             title: manual ? T("拖动调整顺序，或按 Alt + ↑ / ↓") : undefined,
             onDragStart: event => { dragged.current = item.id; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", item.id); },
             onDragOver: event => { if (!dragged.current || groupOf(items.find(row => row.id === dragged.current) || {}) !== groupOf(item)) return; event.preventDefault(); event.dataTransfer.dropEffect = "move"; const rect = event.currentTarget.getBoundingClientRect(); setDropTarget({ id: item.id, after: event.clientY > rect.top + rect.height / 2 }); },
             onDrop: event => { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); move(dragged.current, item.id, event.clientY > rect.top + rect.height / 2); dragged.current = null; setDropTarget(null); },
             onDragEnd: () => { dragged.current = null; setDropTarget(null); },
-            onKeyDown: event => { if (manual && event.altKey && ["ArrowUp", "ArrowDown"].includes(event.key)) { event.preventDefault(); const index = entries.findIndex(row => row.id === item.id); const other = entries[index + (event.key === "ArrowUp" ? -1 : 1)]; if (other) move(item.id, other.id, event.key === "ArrowDown"); } }
+            onKeyDown: event => { if (contextEnabled && (event.key === "ContextMenu" || event.key === "F10" && event.shiftKey)) { openContext(event, item, true); return; } if (manual && event.altKey && ["ArrowUp", "ArrowDown"].includes(event.key)) { event.preventDefault(); const index = entries.findIndex(row => row.id === item.id); const other = entries[index + (event.key === "ArrowUp" ? -1 : 1)]; if (other) move(item.id, other.id, event.key === "ArrowDown"); } }
           }, preferences ? h(ImageSidebarInfo, { id: "image-project-info-" + item.id, name: item.name, directory: item.dir || item.saveDirectory, entries: [item] }, select) : select, renderActions(item)) : select;
         }))); });
       const archivedCount = folderGroups.reduce((count, group) => count + group.allEntries.filter(item => preferences.archivedProjects?.includes(item.id)).length, 0);
       return h(
         "div",
         { className: "SPR_side", "data-kind": storageKey, "data-archive-empty": archiveView && !visibleItems.length ? "true" : undefined },
+        context && visibleIds.has(context.item.id) ? h(ImageProjectContextMenu, { key: context.item.id, context, pinned: pinnedProjectIds.has(context.item.id), archived: archiveView, unread: unreadProjectIds.has(context.item.id),
+          onClose: () => setContext(null), onRename: setRenameTarget, onPin: onProjectPin, onArchive: onProjectArchive, onDelete: onProjectDelete, onNotice,
+          onUnread: item => onPreferences({ unreadProjects: unreadProjectIds.has(item.id) ? (preferences.unreadProjects ?? []).filter(id => id !== item.id) : [...(preferences.unreadProjects ?? []), item.id] }) }) : null,
+        renameTarget ? h(ImageProjectRenameDialog, { key: renameTarget.id, project: renameTarget, onRename: onProjectRename, onClose: () => setRenameTarget(null) }) : null,
         pinned.length || pinnedItems.length ? h("section", { className: "SPR_taskPinned", "aria-label": activeLang() === "en" ? T("置顶项目") : T("置顶") },
           h("div", { className: "SPR_taskPinnedHead" }, h("button", { type: "button", className: "SPR_taskSideTitle", "aria-expanded": !preferences.pinnedCollapsed, "aria-controls": "pinned-task-list-" + storageKey, onClick: () => onPreferences({ pinnedCollapsed: !preferences.pinnedCollapsed }) },
             h("span", null, activeLang() === "en" ? T("置顶项目") : T("置顶")), h(TaskHeaderIcon, { name: "chevron", collapsed: preferences.pinnedCollapsed }))),
@@ -19003,12 +19146,12 @@
         ] });
       };
       const archiveFolder = group => archiveEntries(group.entries);
-      const deleteArchivedProject = async target => {
-        await imageSaveQueue.current;
+      const deleteImageProject = async target => {
+        await imageSaveQueue.current.catch(() => undefined);
         await api.deleteImageJob({ jobId: target.id });
         const current = sidebarStateRef.current;
         const remaining = current.jobs.filter(item => item.id !== target.id);
-        const patch = Object.fromEntries(["archivedProjects", "pinnedProjects", "hiddenProjects", "order"].map(key => [key, (current.preferences[key] ?? []).filter(id => id !== target.id)]));
+        const patch = Object.fromEntries(["archivedProjects", "pinnedProjects", "unreadProjects", "hiddenProjects", "order"].map(key => [key, (current.preferences[key] ?? []).filter(id => id !== target.id)]));
         sidebarStateRef.current = { ...current, jobs: remaining };
         setJobs(remaining); saveTaskPreferences(patch); templateDrafts.delete(target.id); writeImageEditorDraft(target.id, null);
         if (current.jobId === target.id) {
@@ -19021,6 +19164,15 @@
       const toggleProjectPin = item => {
         const pinnedProjects = sidebarStateRef.current.preferences.pinnedProjects ?? [];
         saveTaskPreferences({ pinnedProjects: pinnedProjects.includes(item.id) ? pinnedProjects.filter(id => id !== item.id) : [...pinnedProjects, item.id] });
+      };
+      const renameImageProject = async (target, name) => {
+        const pending = imageSaveQueue.current.catch(() => undefined).then(() => api.saveImageJob({ jobId: target.id, name }));
+        imageSaveQueue.current = pending;
+        const result = await pending;
+        if (result?.ok === false) throw new Error(T("保存失败"));
+        const updatedAt = Date.now();
+        setJobs(current => current.map(item => item.id === target.id ? { ...item, name, updatedAt } : item));
+        setJob(current => current?.id === target.id ? { ...current, name, updatedAt } : current);
       };
       const editFolder = async (group, value) => {
         // Validate/discover every source before updating the local sidebar arrangement.
@@ -19119,7 +19271,7 @@
       return h(
         React.Fragment,
         null,
-        deleteProjectTarget ? h(ImageProjectDeleteDialog, { key: deleteProjectTarget.id, project: deleteProjectTarget, onDelete: deleteArchivedProject, onClose: () => setDeleteProjectTarget(null) }) : null,
+        deleteProjectTarget ? h(ImageProjectDeleteDialog, { key: deleteProjectTarget.id, project: deleteProjectTarget, onDelete: deleteImageProject, onClose: () => setDeleteProjectTarget(null) }) : null,
         h(
           "div",
           { className: "SPR_body" },
@@ -19140,6 +19292,10 @@
             onRemoveFolder: removeFolder,
             onEditFolder: editFolder,
             onArchiveFolder: archiveFolder,
+            onProjectRename: renameImageProject,
+            onProjectPin: toggleProjectPin,
+            onProjectArchive: item => archiveEntries([item]),
+            onProjectDelete: setDeleteProjectTarget,
             api,
             renderActions: item => h(ImageProjectActions, { id: item.id, pinned: taskPreferences.pinnedProjects?.includes(item.id), archived: taskPreferences.archivedProjects?.includes(item.id), onPin: () => toggleProjectPin(item), onArchive: () => archiveEntries([item]), onDelete: () => setDeleteProjectTarget(item) }),
             renderMeta: null
@@ -25782,6 +25938,8 @@
     bundleModule.exports.__test.ImageSidebarInfo = ImageSidebarInfo;
     bundleModule.exports.__test.ImageProjectActions = ImageProjectActions;
     bundleModule.exports.__test.ImageProjectDeleteDialog = ImageProjectDeleteDialog;
+    bundleModule.exports.__test.ImageProjectContextMenu = ImageProjectContextMenu;
+    bundleModule.exports.__test.ImageProjectRenameDialog = ImageProjectRenameDialog;
     return bundleModule.exports;
   }
 });

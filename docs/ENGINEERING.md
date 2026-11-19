@@ -2736,6 +2736,8 @@ X-Api-Request-Id: <uuid>
 
 图片侧栏分两层：外层是打开的真实文件夹，内层是图片项目。顶部打开入口仅 `pickImageFolder` → clientOnly `attachImageFolder`，扫描一层有效 `i…/job.json` 并登记外部路径指针，不导入任意图片、不移动文件、不生成项目。目录 realpath，忽略符号链接、无效 ID 和草稿；已损坏或冲突的指针拒绝覆盖。打开空目录也有文件夹行。文件夹旁 compose 使用 `createImageJob({draft:true,reuseDraft:true,saveDirectory})` 准备落盘编辑草稿；`listImageJobs` 隐藏草稿，输入/参考图不发布项目。`runImageJob` 验证请求与后端后将草稿转正式，再发起原有生成流程；新并发闸门覆盖草稿落盘 await。明确 `addImageItem` 也转正式，便于本地抠图项目。`draft` 字段沿 wire 与 normalize 保留。原工具端 `createImageJob` 不传 draft 仍兼容。
 
+图片项目行支持右键与Shift+F10打开 `ImageProjectContextMenu`，只绑定目标行，不调用onSelect。菜单用manual popover进入顶层，外部pointerdown、Escape、滚动和窗口失焦关闭；方向键/Home/End导航，复制子菜单独立定位，避免打开子菜单后主菜单移位导致悬停反复关闭。`ImageProjectRenameDialog` 使用原生modal和提交锁，按目标jobId串行保存name，失败保留输入，不覆盖提示词。置顶与归档复用已有流程，普通视图也可在二次确认后彻底删除；删除清理pinned/unread/archived等偏好。`unreadProjects` 在image-task-preferences中保存，点击项目时清除，圆点绝对定位于行末；显示悬停/键盘快捷图标时隐藏圆点，其他时候保留。复制仅写剪贴板，支持名称、ID、真实目录。`verify-feedback` 覆盖目标绑定、反向操作、重命名并发与未读清除；浏览器使用临时目录的真实wire/网关另验证取消、失败重试、磁盘名称、删除隔离、未读刷新恢复、悬停像素位置、剪贴板值、键盘、窄屏与暗色菜单。所有测试不调用生成接口。
+
 compose现带 `draft:true,reuseDraft:true`，由 `openImageDraft` 按realpath目录串行处理，防止连击或多窗口并发创建多个草稿。扫描该目录的有效独立草稿，保留名称、提示词、参考图、模板与设置；旧版留下多个草稿时优先恢复有文字或参考图的最近编辑项，其他草稿保留。不同目录分别复用，已发布项目不复用；缺省reuseDraft的原调用仍独立新建。初始化模板仅作用于新草稿，不覆盖恢复内容。
 
 未生成草稿的编辑缓冲以 `image-editor-draft:<id>` 存于localStorage，并以模块Map兜底，保存主提示词、模板快照、尺寸及抠像设置。输入事件同步缓存文字；其他参数变化跟随React effect缓存，不新增保存或模型请求。切换项目、卸载面板及刷新后，load首次载入同一草稿时恢复缓存；后台刷新继续使用mergeDrafts保留当前输入。新建先等待已有保存队列，保存失败仍可用本地缓冲返回原草稿。明确复用历史参数、发布或彻底删除项目时清除相应缓冲，避免旧内容复活。

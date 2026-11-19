@@ -972,6 +972,44 @@ section("可撤销的归档提示");
   check("先关闭原提示再撤销，保留回调的新提示", events.join() === "close,undo");
 }
 
+section("图片项目右键菜单");
+{
+  const project = { id: "icontext1", name: "右键目标", dir: "D:/素材/icontext1" };
+  const context = { item: project, left: 200, top: 300 }, events = [];
+  const props = { context, onClose: () => events.push("close"), onRename: item => events.push("rename:" + item.id), onPin: item => events.push("pin:" + item.id), onUnread: item => events.push("unread:" + item.id), onArchive: item => events.push("archive:" + item.id), onDelete: item => events.push("delete:" + item.id) };
+  HOOK.slots = []; HOOK.cursor = 0;
+  const menu = bundle.__test.ImageProjectContextMenu(props);
+  check("右键菜单包含六项操作并使用顶层popover", menu.props.popover === "manual" && byTag(menu, "button").map(textOf).join("/") === "重命名/置顶/标记为未读/复制›/归档/永久删除");
+  for (const button of byTag(menu, "button").filter(node => !node.props["aria-haspopup"])) button.props.onClick();
+  check("菜单操作始终绑定右键目标并先关闭菜单", events.join() === "close,rename:icontext1,close,pin:icontext1,close,unread:icontext1,close,archive:icontext1,close,delete:icontext1");
+  check("永久删除具有危险操作样式", byTag(menu, "button").find(node => textOf(node) === "永久删除")?.props["data-danger"] === true);
+  HOOK.slots = [true]; HOOK.cursor = 0;
+  const copyMenu = bundle.__test.ImageProjectContextMenu({ ...props, pinned: true, unread: true });
+  check("置顶和未读的反向操作文案正确", textOf(copyMenu).includes("取消置顶") && textOf(copyMenu).includes("标记为已读"));
+  check("复制子菜单提供名称ID和真实目录", byTag(copyMenu, "div").some(node => node.props.className?.split(" ").includes("SPR_imageCopyMenu")) && byTag(copyMenu, "button").slice(-3).map(textOf).join("/") === "复制名称/复制 ID/复制路径");
+  HOOK.slots = []; HOOK.cursor = 0;
+  const archivedMenu = bundle.__test.ImageProjectContextMenu({ ...props, archived: true, pinned: true });
+  check("归档右键菜单提供恢复与删除，不显示置顶", textOf(archivedMenu).includes("取消归档") && !textOf(archivedMenu).includes("置顶") && textOf(archivedMenu).includes("永久删除"));
+  HOOK.slots = []; HOOK.cursor = 0;
+  let renameCalls = 0, renameClosed = 0, finishRename;
+  const renameDialog = bundle.__test.ImageProjectRenameDialog({ project, onRename: (target, name) => { check("重命名使用指定目标并保留名称", target === project && name === project.name); renameCalls++; return new Promise(resolve => { finishRename = resolve; }); }, onClose: () => renameClosed++ });
+  check("重命名使用自定义原生弹窗和80字限制", renameDialog.type === "dialog" && byTag(renameDialog, "input")[0].props.maxLength === 80);
+  const submit = byTag(renameDialog, "form")[0].props.onSubmit;
+  const pending = submit({ preventDefault() {} }); await submit({ preventDefault() {} }); renameDialog.props.onCancel({ preventDefault() {} });
+  check("重命名处理中阻止连击及关闭", renameCalls === 1 && renameClosed === 0);
+  finishRename(); await pending;
+  check("重命名成功后关闭弹窗", renameCalls === 1 && renameClosed === 1);
+  HOOK.slots = []; HOOK.cursor = 0;
+  let selection, unreadPatch;
+  const sidebar = bundle.__test.JobSidebar({ title: "项目", items: [project], activeId: "other", storageKey: "image", preferences: { layout: "merged", unreadProjects: [project.id] }, renderActions: () => null, onProjectRename: () => {}, onSelect: id => { selection = id; }, onPreferences: patch => { unreadPatch = patch; } });
+  const row = byClass(sidebar, "SPR_projectRow")[0];
+  check("图片项目行支持右键和未读圆点", typeof row.props.onContextMenu === "function" && row.props["data-unread"] === true && byClass(row, "SPR_projUnreadDot").length === 1);
+  row.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, currentTarget: { querySelector() { return null; }, getBoundingClientRect() { return { left: 10, bottom: 40 }; } }, clientX: 20, clientY: 30 });
+  check("右键打开不选择其他项目", selection === undefined);
+  byClass(row, "SPR_projItem")[0].props.onClick();
+  check("打开未读项目后移除未读状态", selection === project.id && unreadPatch.unreadProjects.length === 0);
+}
+
 section("图片项目侧栏与创建弹窗");
 {
   HOOK.slots = []; HOOK.cursor = 0;
