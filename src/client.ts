@@ -5062,6 +5062,11 @@
 .SPR_taskGroup+.SPR_taskGroup{margin-top:16px}
 .SPR_side[data-kind=image] .SPR_taskGroup+.SPR_taskGroup{margin-top:2px}
 .SPR_side[data-kind=image] .SPR_taskGroup{gap:2px}
+.SPR_taskGroup[data-folder-drop]{position:relative}
+.SPR_taskGroup[data-folder-drop]::after{content:"";position:absolute;left:6px;right:6px;height:2px;border-radius:2px;background:var(--dsw-alias-state-business-primary);pointer-events:none;z-index:1}
+.SPR_taskGroup[data-folder-drop=before]::after{top:-2px}
+.SPR_taskGroup[data-folder-drop=after]::after{bottom:-2px}
+.SPR_taskGroupTitle[draggable=true]{cursor:grab}
 .SPR_side[data-kind=image] .SPR_taskList{display:flex;flex-direction:column;gap:2px}
 .SPR_side[data-kind=image] .SPR_taskList[hidden]{display:none}
 .SPR_taskPinned{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
@@ -9836,7 +9841,9 @@
         if (archived.has(item.id) === (preferences?.showArchived === true)) groups.get(key).entries.push(item);
       }
       for (const folder of folders) if (!folder.removed && !groups.has(folder.key)) groups.set(folder.key, folder);
-      return [...groups.values()].sort((a, b) => Number(b.pinned === true) - Number(a.pinned === true));
+      const order = new Map<string, number>((preferences?.folderOrder ?? []).map((key, index) => [key, index]));
+      return [...groups.values()].sort((a, b) => Number(b.pinned === true) - Number(a.pinned === true)
+        || (preferences?.sort === "manual" ? (order.get(a.key) ?? Number.MAX_SAFE_INTEGER) - (order.get(b.key) ?? Number.MAX_SAFE_INTEGER) : 0));
     }
     function readImageTaskPreferences() {
       try {
@@ -9848,7 +9855,7 @@
           folders[directory] = { collapsed: folder.collapsed === true, removed: folder.removed === true, pinned: folder.pinned === true,
             ...(typeof folder.name === "string" && folder.name.trim() ? { name: folder.name.trim().slice(0, 80) } : {}), ...(sources.length ? { directories: sources } : {}) };
         }
-        return { directory: typeof value?.directory === "string" ? value.directory : "", sort: value?.sort === "manual" ? "manual" : "updated", layout: value?.layout === "merged" ? "merged" : "grouped", order: Array.isArray(value?.order) ? [...new Set(value.order.filter(id => typeof id === "string"))] : [], folders, hiddenProjects: Array.isArray(value?.hiddenProjects) ? value.hiddenProjects.filter(id => typeof id === "string") : [], archivedProjects: Array.isArray(value?.archivedProjects) ? value.archivedProjects.filter(id => typeof id === "string") : [], showArchived: value?.showArchived === true, pinnedCollapsed: value?.pinnedCollapsed === true };
+        return { directory: typeof value?.directory === "string" ? value.directory : "", sort: value?.sort === "manual" ? "manual" : "updated", layout: value?.layout === "merged" ? "merged" : "grouped", order: Array.isArray(value?.order) ? [...new Set(value.order.filter(id => typeof id === "string"))] : [], folderOrder: Array.isArray(value?.folderOrder) ? [...new Set(value.folderOrder.filter(path => typeof path === "string"))] : [], folders, hiddenProjects: Array.isArray(value?.hiddenProjects) ? value.hiddenProjects.filter(id => typeof id === "string") : [], archivedProjects: Array.isArray(value?.archivedProjects) ? value.archivedProjects.filter(id => typeof id === "string") : [], showArchived: value?.showArchived === true, pinnedCollapsed: value?.pinnedCollapsed === true };
       } catch { return { directory: "", sort: "updated", layout: "grouped", order: [], folders: {}, hiddenProjects: [], archivedProjects: [], showArchived: false }; }
     }
 
@@ -10056,7 +10063,7 @@
           onEdit ? h("button", { type: "button", className: "SPR_sidebarInfoEdit", onClick: () => { dismiss(); onEdit(); } }, h(ProjectActionIcon, { name: "settings" }), T("编辑项目")) : null) : null);
     }
 
-    function ImageFolderHeader({ group, api, onEdit, onPin, onArchive, showArchived, onCreate, onReveal, onNotice, onToggle, onRemove }) {
+    function ImageFolderHeader({ group, api, onEdit, onPin, onArchive, showArchived, onCreate, onReveal, onNotice, onToggle, onRemove, draggable = false, onDragStart, onDragEnd, onKeyDown }) {
       const directory = group.key, entries = group.entries, collapsed = group.collapsed === true;
       const [open, setOpen] = React.useState(false);
       const [confirmRemove, setConfirmRemove] = React.useState(false);
@@ -10099,7 +10106,7 @@
           event.preventDefault(); controls[event.key === "Home" ? 0 : event.key === "End" ? controls.length - 1 : (index + (event.key === "ArrowUp" ? -1 : 1) + controls.length) % controls.length]?.focus();
         }
       };
-      return h("div", { className: "SPR_taskGroupTitle", "data-menu-open": open },
+      return h("div", { className: "SPR_taskGroupTitle", "data-menu-open": open, draggable, onDragStart, onDragEnd, onKeyDown },
         h(ImageSidebarInfo, { id: "image-folder-info-" + encodeURIComponent(directory), name, directory, directories: sources, entries: group.allEntries ?? entries, folder: true, onEdit: onEdit ? () => setEditing(true) : undefined },
           h("button", { type: "button", className: "SPR_taskFolderLabel", onClick: onToggle, "aria-expanded": !collapsed, "aria-controls": "image-folder-" + encodeURIComponent(directory), title: collapsed ? T("展开项目") : T("收起项目") },
             h("span", { className: "SPR_taskFolderToggleIcon" }, h(TaskHeaderIcon, { name: collapsed ? "folderClosed" : "folderOpen" })), h("span", null, name))),
@@ -10132,25 +10139,43 @@
       const [collapsed, setCollapsed] = React.useState(() => { try { return window.localStorage.getItem(key) === "true"; } catch { return false; } });
       const dragged = React.useRef(null);
       const [dropTarget, setDropTarget] = React.useState(null);
+      const draggedFolder = React.useRef(null);
+      const [folderDropTarget, setFolderDropTarget] = React.useState(null);
       const toggle = () => setCollapsed(current => { const next = !current; try { window.localStorage.setItem(key, String(next)); } catch { /* Optional persistence. */ } return next; });
       const manual = preferences?.sort === "manual";
-      const groupOf = item => preferences?.layout === "grouped" ? item.saveDirectory || "" : "";
+      const folderGroups = preferences ? imageFolderGroups(items, preferences) : [];
+      const visibleItems = preferences ? folderGroups.flatMap(folder => folder.entries) : items;
+      const pinned = folderGroups.filter(group => group.pinned);
+      const regularFolders = folderGroups.filter(group => !group.pinned);
+      const regularIds = new Set(regularFolders.flatMap(group => group.entries.map(item => item.id)));
+      const regular = preferences?.layout === "grouped" ? regularFolders : [{ key: "", entries: preferences ? items.filter(item => regularIds.has(item.id)) : items }];
+      const groupOf = item => preferences?.layout === "grouped" ? item.saveDirectory || "" : pinned.find(group => group.entries.some(entry => entry.id === item.id))?.key ?? null;
       const move = (id, target, after) => {
         if (!manual || id === target || !id || groupOf(items.find(item => item.id === id) || {}) !== groupOf(items.find(item => item.id === target) || {})) return;
         const order = items.map(item => item.id).filter(value => value !== id);
         order.splice(order.indexOf(target) + (after ? 1 : 0), 0, id);
         onReorder?.(order);
       };
-      const folderGroups = preferences ? imageFolderGroups(items, preferences) : [];
-      const visibleItems = preferences ? folderGroups.flatMap(folder => folder.entries) : items;
-      const groups = preferences?.layout === "grouped" ? folderGroups : [{ key: "", entries: visibleItems }];
-      const renderGroups = list => list.map(group => { const directory = group.key, entries = group.entries; return h("div", { key: directory, className: "SPR_taskGroup" },
-          preferences?.layout === "grouped" ? h(ImageFolderHeader, { group, api, onEdit: onEditFolder, onCreate, onReveal: onRevealFolder, onNotice, showArchived: preferences.showArchived,
+      const canMoveFolder = (source, target) => manual && source !== null && source !== target && folderGroups.some(group => group.key === source && !!group.pinned === !!folderGroups.find(folder => folder.key === target)?.pinned);
+      const moveFolder = (source, target, after) => {
+        if (!canMoveFolder(source, target)) return;
+        const order = folderGroups.map(group => group.key).filter(directory => directory !== source);
+        order.splice(order.indexOf(target) + (after ? 1 : 0), 0, source);
+        onPreferences({ folderOrder: order });
+      };
+      const renderGroups = (list, showFolders = preferences?.layout === "grouped") => list.map(group => { const directory = group.key, entries = group.entries; return h("div", { key: directory, className: "SPR_taskGroup", "data-folder-drop": folderDropTarget?.key === directory ? folderDropTarget.after ? "after" : "before" : undefined,
+          onDragOver: event => { if (!showFolders || !canMoveFolder(draggedFolder.current, directory)) return; event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = "move"; const rect = event.currentTarget.getBoundingClientRect(); setFolderDropTarget({ key: directory, after: event.clientY > rect.top + rect.height / 2 }); },
+          onDrop: event => { if (!showFolders || draggedFolder.current === null) return; event.preventDefault(); event.stopPropagation(); const rect = event.currentTarget.getBoundingClientRect(); moveFolder(draggedFolder.current, directory, event.clientY > rect.top + rect.height / 2); draggedFolder.current = null; setFolderDropTarget(null); }
+        },
+          showFolders ? h(ImageFolderHeader, { group, api, onEdit: onEditFolder, onCreate, onReveal: onRevealFolder, onNotice, showArchived: preferences.showArchived, draggable: manual,
+            onDragStart: event => { event.stopPropagation(); draggedFolder.current = directory; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", directory); },
+            onDragEnd: () => { draggedFolder.current = null; setFolderDropTarget(null); },
+            onKeyDown: event => { if (manual && event.altKey && ["ArrowUp", "ArrowDown"].includes(event.key)) { event.preventDefault(); event.stopPropagation(); const index = list.indexOf(group), other = list[index + (event.key === "ArrowUp" ? -1 : 1)]; if (other) moveFolder(directory, other.key, event.key === "ArrowDown"); } },
             onPin: () => onPreferences({ folders: { ...preferences.folders, [directory]: { ...(preferences.folders?.[directory] ?? {}), pinned: !group.pinned } } }),
             onArchive: () => onArchiveFolder?.(group),
             onToggle: () => onPreferences({ folders: { ...preferences.folders, [directory]: { ...(preferences.folders?.[directory] ?? {}), collapsed: !group.collapsed } } }),
             onRemove: () => onRemoveFolder?.(directory) }) : null,
-          h("div", { className: "SPR_taskGroupItems", id: "image-folder-" + encodeURIComponent(directory), hidden: preferences?.layout === "grouped" && group.collapsed === true },
+          h("div", { className: "SPR_taskGroupItems", id: showFolders ? "image-folder-" + encodeURIComponent(directory) : "image-merged-" + storageKey, hidden: showFolders && group.collapsed === true },
           entries.map((item) => {
           const select = h(
             "button",
@@ -10176,8 +10201,6 @@
             onKeyDown: event => { if (manual && event.altKey && ["ArrowUp", "ArrowDown"].includes(event.key)) { event.preventDefault(); const index = entries.findIndex(row => row.id === item.id); const other = entries[index + (event.key === "ArrowUp" ? -1 : 1)]; if (other) move(item.id, other.id, event.key === "ArrowDown"); } }
           }, preferences ? h(ImageSidebarInfo, { id: "image-project-info-" + item.id, name: item.name, directory: item.dir || item.saveDirectory, entries: [item] }, select) : select, renderActions(item)) : select;
         }))); });
-      const pinned = preferences?.layout === "grouped" ? groups.filter(group => group.pinned) : [];
-      const regular = groups.filter(group => !pinned.includes(group));
       const archivedCount = folderGroups.reduce((count, group) => count + group.allEntries.filter(item => preferences.archivedProjects?.includes(item.id)).length, 0);
       return h(
         "div",
@@ -10185,7 +10208,7 @@
         pinned.length ? h("section", { className: "SPR_taskPinned", "aria-label": activeLang() === "en" ? T("置顶项目") : T("置顶") },
           h("div", { className: "SPR_taskPinnedHead" }, h("button", { type: "button", className: "SPR_taskSideTitle", "aria-expanded": !preferences.pinnedCollapsed, "aria-controls": "pinned-task-list-" + storageKey, onClick: () => onPreferences({ pinnedCollapsed: !preferences.pinnedCollapsed }) },
             h("span", null, activeLang() === "en" ? T("置顶项目") : T("置顶")), h(TaskHeaderIcon, { name: "chevron", collapsed: preferences.pinnedCollapsed }))),
-          h("div", { className: "SPR_taskList", id: "pinned-task-list-" + storageKey, hidden: preferences.pinnedCollapsed === true }, renderGroups(pinned))) : null,
+          h("div", { className: "SPR_taskList", id: "pinned-task-list-" + storageKey, hidden: preferences.pinnedCollapsed === true }, renderGroups(pinned, true))) : null,
         h("div", { className: "SPR_taskSideHead" },
           h("button", { type: "button", className: "SPR_taskSideTitle", onClick: toggle, "aria-expanded": !collapsed, "aria-controls": "task-list-" + storageKey },
             h("span", null, preferences ? preferences.showArchived ? T("已归档聊天") : title : T("{n0}（{n1}）", { n0: title, n1: items.length })), h(TaskHeaderIcon, { name: "chevron", collapsed })),
@@ -18670,7 +18693,10 @@
       const saveTaskPreferences = patch => {
         const current = sidebarStateRef.current;
         const next = { ...current.preferences, ...patch };
-        if (patch.sort === "manual" && current.preferences.sort !== "manual") next.order = current.jobs.map(item => item.id);
+        if (patch.sort === "manual" && current.preferences.sort !== "manual") {
+          next.order = current.jobs.map(item => item.id);
+          if (!next.folderOrder?.length) next.folderOrder = imageFolderGroups(current.jobs, current.preferences).map(folder => folder.key);
+        }
         sidebarStateRef.current = { ...current, preferences: next };
         try { window.localStorage.setItem(IMAGE_TASK_PREFERENCES_KEY, JSON.stringify(next)); } catch { /* Optional persistence. */ }
         setTaskPreferences(next);
