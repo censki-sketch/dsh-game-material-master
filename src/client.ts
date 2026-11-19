@@ -531,11 +531,12 @@
       "正在本地处理…": "Processing locally…",
       "每版最多点选100处，请先保存新版本再继续补抠。": "Select up to 100 spots per version. Save a new version before continuing.",
       "局部补抠已保存，旧版本保留在历史中。": "Cleanup saved. The previous version is kept in history.",
-      "点选残留颜色，只清除范围内颜色相近的连通区域。滚轮缩放，Shift + 拖动查看；保存前可撤销，取消不改原图。本地处理不消耗生图额度。": "Click a leftover color to remove a connected area of similar colors within the radius. Scroll to zoom; Shift-drag to pan. Undo before saving, or cancel without changing the image. Local processing uses no generation credits.",
+      "单击残留颜色补抠，按住鼠标拖动查看，滚轮缩放。只清除范围内颜色相近的连通区域；保存前可撤销，取消不改原图。本地处理不消耗生图额度。": "Click a leftover color to clean it up, drag to pan, and scroll to zoom. Only connected areas of similar colors within the radius are removed. Undo before saving, or cancel without changing the image. Local processing uses no generation credits.",
       "图片预览": "Image preview",
       "预览": "Preview",
       "滚轮缩放，按住鼠标拖动查看，双击恢复适应窗口。": "Scroll to zoom, drag to pan, and double-click to fit to the window.",
       "历史记录（{n0}）": "History ({n0})",
+      "历史记录": "History",
       "暂无历史记录，生成或上传后会自动保留。": "No history yet. Generated and uploaded images will be kept automatically.",
       "每次生成保留独立版本。预览、下载、设为当前和复用参数均不调用生成接口。": "Each generation keeps a separate version. Preview, download, restore and reuse do not generate images.",
       "生成批次": "Generation batch",
@@ -4959,12 +4960,12 @@
 .SPR_imageGalleryThumbEmpty{display:flex;align-items:center;justify-content:center;height:100%;font-size:12px}
 .SPR_imageGalleryThumbBusy{position:absolute;inset:3px;display:flex;align-items:center;justify-content:center;border-radius:5px;background:color-mix(in srgb,var(--dsw-alias-bg-layer-1) 70%,transparent)}
 .SPR_imageResults>.SPR_toolbar>.SPR_input{max-width:100%}
-.SPR_imageResultTabs{display:flex;gap:14px;border-bottom:1px solid var(--dsw-alias-border-l2);margin:0 0 14px}
+.SPR_imageResultTabs{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--dsw-alias-border-l2);margin:0 0 14px}
+.SPR_imageResultTabList{display:flex;gap:14px}
 .SPR_imageResultTab{font:inherit;font-size:12px;line-height:20px;padding:8px 0;color:var(--dsw-alias-label-secondary);border:0;border-bottom:2px solid transparent;background:transparent;cursor:pointer}
 .SPR_imageResultTab[aria-selected=true]{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-state-business-primary);font-weight:500}
 .SPR_imageResultTab:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px;border-radius:3px}
 .SPR_imageHistory{display:flex;flex-direction:column;gap:16px;min-width:0}
-.SPR_imageHistory>.SPR_hint{margin:0;font-size:11px;line-height:18px}
 .SPR_imageHistoryBatch{min-width:0}
 .SPR_imageHistoryBatchHead{display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;align-items:center;margin:0 0 8px;font-size:11px;line-height:18px;color:var(--dsw-alias-label-secondary)}
 .SPR_imageHistoryBatchHead time{font-variant-numeric:tabular-nums}
@@ -17688,9 +17689,17 @@
       }, [fit, zoomAt]);
       const pannable = natural.width * view.scale > (viewportRef.current?.clientWidth ?? 0) - 32 || natural.height * view.scale > (viewportRef.current?.clientHeight ?? 0) - 32;
       const endDrag = event => {
-        if (dragRef.current?.id !== event.pointerId) return;
+        const drag = dragRef.current;
+        if (drag?.id !== event.pointerId) return;
         dragRef.current = null; setDragging(false);
         if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+        // A press becomes a cleanup click only on release, after excluding drags
+        // and cancelled/lost pointer gestures. Never erase on pointerdown.
+        if (event.type !== "pointerup" || !drag.cleanup || drag.moved || Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) >= 4 || cleaningRef.current) return;
+        if (cleanup.points.length >= 100) { setNotice({ kind: "error", text: T("每版最多点选100处，请先保存新版本再继续补抠。") }); return; }
+        const rect = imageRef.current.getBoundingClientRect();
+        const x = Math.floor((event.clientX - rect.left) * natural.width / rect.width), y = Math.floor((event.clientY - rect.top) * natural.height / rect.height);
+        if (x >= 0 && x < natural.width && y >= 0 && y < natural.height) void updateCleanup([...cleanup.points, { x, y, radius, tolerance }]);
       };
       return h("dialog", { ref: dialogRef, className: "SPR_imageRefDialog SPR_imagePreviewDialog" + (result ? " SPR_imageResultDialog" : ""), "aria-label": label,
         onCancel: event => { event.preventDefault(); close(); },
@@ -17705,21 +17714,18 @@
         h("div", { ref: viewportRef, className: "SPR_imagePreviewViewport", "data-pannable": pannable, "data-dragging": dragging, "data-cleanup": cleanupMode, "aria-busy": cleaning,
           onDoubleClick: () => { if (!cleanupMode) fit(); },
           onPointerDown: event => {
-            if (event.button === 0 && cleanupMode && !event.shiftKey) {
-              event.preventDefault();
-              if (cleaningRef.current || !natural.width) return;
-              if (cleanup.points.length >= 100) { setNotice({ kind: "error", text: T("每版最多点选100处，请先保存新版本再继续补抠。") }); return; }
-              const rect = imageRef.current.getBoundingClientRect();
-              const x = Math.floor((event.clientX - rect.left) * natural.width / rect.width), y = Math.floor((event.clientY - rect.top) * natural.height / rect.height);
-              if (x >= 0 && x < natural.width && y >= 0 && y < natural.height) void updateCleanup([...cleanup.points, { x, y, radius, tolerance }]);
-              return;
-            }
-            if (event.button !== 0 || !pannable || !natural.width) return;
-            event.preventDefault(); dragRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
-            event.currentTarget.setPointerCapture(event.pointerId); setDragging(true);
+            if (event.button !== 0 || dragRef.current || !natural.width || (!pannable && !cleanupMode)) return;
+            event.preventDefault();
+            dragRef.current = { id: event.pointerId, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY,
+              moved: false, cleanup: cleanupMode && !event.shiftKey && !cleaningRef.current };
+            event.currentTarget.setPointerCapture(event.pointerId);
           },
           onPointerMove: event => {
             const drag = dragRef.current; if (!drag || drag.id !== event.pointerId) return;
+            if (!drag.moved) {
+              if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 4) return;
+              drag.moved = true; setDragging(true);
+            }
             const current = viewRef.current;
             applyView({ ...current, x: current.x + event.clientX - drag.x, y: current.y + event.clientY - drag.y });
             drag.x = event.clientX; drag.y = event.clientY;
@@ -17736,7 +17742,7 @@
           h(Btn, { disabled: !natural.width, onClick: fit }, T("适应窗口")),
           onCleanup ? h(Btn, { disabled: cleaning || !natural.width, on: cleanupMode, onClick: () => setCleanupMode(true) }, T("局部补抠")) : null),
         cleanupMode ? h("div", { className: "SPR_imageCleanupControls" },
-          h(DescriptionTip, { id: "image-cleanup-help", label: T("局部补抠"), text: T("点选残留颜色，只清除范围内颜色相近的连通区域。滚轮缩放，Shift + 拖动查看；保存前可撤销，取消不改原图。本地处理不消耗生图额度。") }),
+          h(DescriptionTip, { id: "image-cleanup-help", label: T("局部补抠"), text: T("单击残留颜色补抠，按住鼠标拖动查看，滚轮缩放。只清除范围内颜色相近的连通区域；保存前可撤销，取消不改原图。本地处理不消耗生图额度。") }),
           h("label", null, T("补抠范围"), h("select", { value: radius, disabled: cleaning, onChange: event => setRadius(Number(event.target.value)) }, [4, 8, 16, 32, 64].map(n => h("option", { key: n, value: n }, n + " px")))),
           h("label", null, T("颜色容差"), h("select", { value: tolerance, disabled: cleaning, onChange: event => setTolerance(Number(event.target.value)) }, [16, 32, 48, 80, 120, 160].map(n => h("option", { key: n, value: n }, n)))),
           h(Btn, { disabled: cleaning || !cleanup.points.length, onClick: () => void updateCleanup(cleanup.points.slice(0, -1)) }, T("撤销点选")),
@@ -17835,7 +17841,6 @@
       const kinds = { generated: T("生成批次"), uploaded: T("上传记录"), legacy: T("旧版记录"), keyed: T("本地抠像") };
       const locked = busy || working;
       return h("div", { className: "SPR_imageHistory", id: "image-history-panel", role: "tabpanel", "aria-labelledby": "image-history-tab" },
-        h("p", { className: "SPR_hint" }, T("每次生成保留独立版本。预览、下载、设为当前和复用参数均不调用生成接口。")),
         history.length === 0 ? h("p", { className: "SPR_empty" }, T("暂无历史记录，生成或上传后会自动保留。")) : null,
         [...groups].map(([batchId, entries]) => h("section", { className: "SPR_imageHistoryBatch", key: batchId },
           h("div", { className: "SPR_imageHistoryBatchHead" },
@@ -18279,7 +18284,8 @@
                       ),
                       h(ReviewModeBar, { api, module: "image", id: job.id, mode: job.reviewMode, compact: true, onChanged: () => load(job.id) })
                     ),
-                    h("div", { className: "SPR_imageResultTabs", role: "tablist", "aria-label": T("结果"), onKeyDown: event => {
+                    h("div", { className: "SPR_imageResultTabs" },
+                    h("div", { className: "SPR_imageResultTabList", role: "tablist", "aria-label": T("结果"), onKeyDown: event => {
                       if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
                       event.preventDefault();
                       const tab = event.key === "Home" ? "current" : event.key === "End" ? "history" : view.tab === "current" ? "history" : "current";
@@ -18290,6 +18296,7 @@
                         tabIndex: view.tab === "current" ? 0 : -1, onClick: () => setResultView({ ...view, jobId: job.id, tab: "current" }) }, T("当前结果")),
                       h("button", { type: "button", className: "SPR_imageResultTab", id: "image-history-tab", role: "tab", "aria-selected": view.tab === "history", "aria-controls": "image-history-panel",
                         tabIndex: view.tab === "history" ? 0 : -1, onClick: () => setResultView({ ...view, jobId: job.id, tab: "history" }) }, T("历史记录（{n0}）", { n0: (job.history ?? []).length }))),
+                    h(DescriptionTip, { id: "image-history-help", label: T("历史记录"), text: T("每次生成保留独立版本。预览、下载、设为当前和复用参数均不调用生成接口。") })),
                     view.tab === "history" ? h(ImageHistoryPanel, { key: job.id, job, busy, onAction: historyAction }) : h("div", { id: "image-current-panel", role: "tabpanel", "aria-labelledby": "image-current-tab" },
                     (job.items ?? []).length === 0
                       ? h("p", { className: "SPR_empty" }, T("还没有图片"))
