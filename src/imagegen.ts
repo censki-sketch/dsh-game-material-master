@@ -13,8 +13,10 @@
  *     keyed/   抠完背景的透明 PNG
  */
 
-import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { basename, join, resolve, sep } from "node:path";
+import { readFileSync } from "node:fs";
+import { mkdir, readFile, readdir, realpath, lstat, rm, stat, writeFile } from "node:fs/promises";
+import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
+import { homedir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { imageJobsRoot, loadConfig, type Config } from "./config.js";
 import { generateImageWithProvider, imageModelOf, imageSizeOf, imageWatermarkOf, assertImageProviderReady } from "./imageprovider.js";
@@ -128,6 +130,7 @@ export interface ImageJobSummary {
   name: string;
   createdAt: number;
   updatedAt: number;
+  saveDirectory: string;
   total: number;
   ready: number;
   keyed: number;
@@ -135,8 +138,40 @@ export interface ImageJobSummary {
 
 const JOB_ID_PATTERN = /^i[a-z0-9]{4,40}$/;
 
+function locationFile(id: string): string {
+  return join(imageJobsRoot(), `${id}.location.json`);
+}
+
 export function imageJobDir(id: string): string {
+  if (!isValidImageJobId(id)) throw new Error(`非法的图片任务 ID：${id}`);
+  let raw: string | undefined;
+  try { raw = readFileSync(locationFile(id), "utf8"); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+  if (raw !== undefined) {
+    const location = JSON.parse(raw);
+    if (location?.id !== id || typeof location.directory !== "string" || !isAbsolute(location.directory) || basename(location.directory) !== id) {
+      throw new Error(`图片任务的保存位置无效：${id}`);
+    }
+    return resolve(location.directory);
+  }
   return join(imageJobsRoot(), id);
+}
+
+/** Read-only folder picker for the host filesystem; no files or credentials are returned. */
+export async function browseImageFolders(path?: string) {
+  const requested = path?.trim() || homedir();
+  if (!isAbsolute(requested)) throw new Error("请输入完整的文件夹路径。");
+  const directory = await realpath(requested);
+  if (!(await stat(directory)).isDirectory()) throw new Error("请选择一个文件夹。");
+  const folders = (await readdir(directory, { withFileTypes: true }))
+    .filter(entry => entry.isDirectory() && !entry.name.startsWith("."))
+    .map(entry => entry.name).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const roots = process.platform === "win32"
+    ? (await Promise.all(Array.from({ length: 26 }, (_, i) => `${String.fromCharCode(65 + i)}:\\`).map(async drive => {
+        try { return (await stat(drive)).isDirectory() ? drive : null; } catch { return null; }
+      }))).filter(Boolean)
+    : ["/"];
+  return { directory, parent: dirname(directory), folders, roots, home: homedir(), defaultDirectory: imageJobsRoot() };
 }
 
 function jobFile(id: string): string {
@@ -159,7 +194,7 @@ export async function ensureImageJobLayout(id: string): Promise<void> {
   for (const sub of ["refs", "out", "keyed"]) await mkdir(join(imageJobDir(id), sub), { recursive: true });
 }
 
-export async function createImageJob(name: string, suffix = ""): Promise<ImageJob> {
+export async function createImageJob(name: string, suffix = "", saveDirectory?: string): Promise<ImageJob> {
   const config = await loadConfig();
   const id = `i${Date.now().toString(36)}${randomUUID().slice(0, 6)}`;
   const now = Date.now();
@@ -191,15 +226,33 @@ export async function createImageJob(name: string, suffix = ""): Promise<ImageJo
     history: [],
     log: []
   };
-  await ensureImageJobLayout(id);
-  await writeJsonAtomic(jobFile(id), job);
+  let directory = join(imageJobsRoot(), id);
+  const custom = saveDirectory?.trim();
+  if (custom) {
+    if (!isAbsolute(custom)) throw new Error("请输入完整的保存文件夹路径。");
+    const parent = await realpath(custom);
+    if (!(await stat(parent)).isDirectory()) throw new Error("保存位置必须是文件夹。");
+    directory = join(parent, id);
+  }
+  await mkdir(dirname(directory), { recursive: true });
+  // Always create a fresh child: never adopt or overwrite the chosen folder itself.
+  await mkdir(directory);
+  try {
+    for (const sub of ["refs", "out", "keyed"]) await mkdir(join(directory, sub));
+    await writeJsonAtomic(join(directory, "job.json"), job);
+    if (resolve(directory) !== resolve(join(imageJobsRoot(), id))) await writeJsonAtomic(locationFile(id), { id, directory });
+  } catch (error) {
+    // This directory was created exclusively above and contains only this new job.
+    if (basename(directory) === id && resolve(directory) === resolve(join(dirname(directory), id))) await rm(directory, { recursive: true, force: true });
+    throw error;
+  }
   return job;
 }
 
 export async function readImageJob(id: string): Promise<ImageJob | undefined> {
   if (!isValidImageJobId(id)) return undefined;
   const raw = await readJson<ImageJob>(jobFile(id));
-  if (raw === undefined) return undefined;
+  if (raw === undefined || raw.id !== id) return undefined;
   return normalizeImageJob(raw);
 }
 
@@ -227,17 +280,19 @@ export async function editImageJob<T>(id: string, change: (job: ImageJob) => T |
 }
 
 export async function listImageJobs(): Promise<ImageJobSummary[]> {
-  const { readdir } = await import("node:fs/promises");
   let entries: string[] = [];
   try {
     const dirents = await readdir(imageJobsRoot(), { withFileTypes: true });
-    entries = dirents.filter((d) => d.isDirectory() && isValidImageJobId(d.name)).map((d) => d.name);
+    entries = [...new Set(dirents.flatMap(entry => {
+      const id = entry.isDirectory() ? entry.name : entry.isFile() && entry.name.endsWith(".location.json") ? entry.name.slice(0, -14) : "";
+      return isValidImageJobId(id) ? [id] : [];
+    }))];
   } catch {
     return [];
   }
   const out: ImageJobSummary[] = [];
   for (const id of entries) {
-    const job = await readImageJob(id);
+    const job = await readImageJob(id).catch(() => undefined);
     if (job === undefined) continue;
     out.push(summarizeImageJob(job));
   }
@@ -251,6 +306,7 @@ export function summarizeImageJob(job: ImageJob): ImageJobSummary {
     name: job.name,
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
+    saveDirectory: dirname(imageJobDir(job.id)),
     total: job.items.length,
     ready: job.items.filter((item) => item.status === "ready").length,
     keyed: job.items.filter((item) => item.keyedFile !== undefined).length
@@ -258,7 +314,11 @@ export function summarizeImageJob(job: ImageJob): ImageJobSummary {
 }
 
 export async function deleteImageJob(id: string): Promise<void> {
-  await rm(imageJobDir(id), { recursive: true, force: true });
+  const directory = resolve(imageJobDir(id));
+  const job = await readImageJob(id);
+  if (!job || job.id !== id || basename(directory) !== id || (await lstat(directory)).isSymbolicLink()) throw new Error("无法确认任务目录，未删除文件。");
+  await rm(directory, { recursive: true, force: true });
+  await rm(locationFile(id), { force: true });
 }
 
 function normalizeImageJob(raw: any): ImageJob {

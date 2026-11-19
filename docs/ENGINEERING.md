@@ -2726,3 +2726,14 @@ X-Api-Request-Id: <uuid>
 
 
 
+
+
+### 图片项目侧栏与自定义保存目录
+
+图片模块的 UI 统一称「项目」，wire 和任务 ID 仍沿用 `imageJob` / `i…`，旧数据兼容。`JobSidebar` 标题箭头使用 `task-list-collapsed:image` 本地缓存，独立于全局 `sidebar-collapsed`。标题不显示项目数量，管理入口为原生 auto-popover 两级菜单：目录分组／合并、最近更新／手动排序。`image-task-preferences` 缓存目录、布局、排序和 ID 顺序；手动顺序显式落盘，后台刷新不重排。支持 HTML 拖放和 Alt + ↑／↓；分组时只在同目录内调整顺序。菜单支持方向键、Escape、点击外部关闭，并按视口切换左右或上下布局。Escape 优先交给活动 dialog / 项目菜单。
+
+`ImageTaskDialog` 是原生 modal dialog，打开不请求 API，只有点击文件夹入口才调用 clientOnly 的 `browseImageFolders`。浏览器读取宿主目录、可输入完整路径、选择盘符或上级目录；只列文件夹。陈旧浏览响应用版本号忽略。创建可填名称、选目录；默认保存上次成功创建时所选的目录。同步提交锁防重复，失败保留表单，提交中禁止关闭。UI 目录选择用语为保存文件夹，实际在所选父目录新建独立 `i…` 子目录。
+
+`createImageJob.saveDirectory` 同步进入 wire；宿主要求绝对、已存在的目录并用 realpath 归一。自选目录的 `job.json`、refs/out/keyed/history 均位于该独立目录；默认 `image-jobs/<id>.location.json` 保存 `{id,directory}` 指针。`imageJobDir` 是路径解析真源，所有读写和静态资源通过它，原有资源 URL 无需更改。列表发现默认目录和指针，损坏／离线项目单条跳过；指针无效不回退到另一个目录。删除前校验目录 basename、任务 ID 和非符号链接，仅删除该项目子目录及指针，不删除选中的父目录或旁边文件。备份时需同时保留 DSH 的指针文件和外部项目目录，手动移动外部目录暂不支持。
+
+`verify-image-locations.mjs` 用隔离临时目录、真实 wire/gateway、新进程读取及本地静态资源服务器验证自定义目录、参考图、上传、抠图、历史、默认兼容、损坏指针和删除边界；禁止外部网络，无真实生成请求。更新涉及宿主，需完全退出 DSH（包括托盘）再重开。

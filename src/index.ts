@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { appendJobLog } from "./jsonio.js";
-import { ARK_MODEL_PRESETS, CUSTOM_PROTOCOLS, CUSTOM_PROTOCOL_DEFAULTS, DEFAULT_CONFIG, ROW_ORDER_VERSION, MINIMAX_HOST_PRESETS, MINIMAX_MODEL_PRESETS, loadConfig, maskConfig, migrateLegacyDataRoot, projectsRoot, saveConfig } from "./config.js";
+import { ARK_MODEL_PRESETS, CUSTOM_PROTOCOLS, CUSTOM_PROTOCOL_DEFAULTS, DEFAULT_CONFIG, ROW_ORDER_VERSION, MINIMAX_HOST_PRESETS, MINIMAX_MODEL_PRESETS, loadConfig, maskConfig, migrateLegacyDataRoot, projectsRoot, imageJobsRoot, saveConfig } from "./config.js";
 import {
   DEFAULT_ROW_ORDER,
   DIRECTION_KEYS,
@@ -349,7 +349,8 @@ export class GameStudioGateway extends TypertRemoteService {
         return { key, label: direction?.label ?? key, refs: direction?.refs ?? [] };
       }),
       ffmpeg: this.ffmpegCache,
-      dataRoot: projectsRoot()
+      dataRoot: projectsRoot(),
+      imageJobsRoot: imageJobsRoot()
     };
   }
   async getConfig() {
@@ -1717,11 +1718,15 @@ export class GameStudioGateway extends TypertRemoteService {
     return { jobs: await imagegen.listImageJobs() };
   }
 
+  async browseImageFolders(payload) {
+    return imagegen.browseImageFolders(asString(asRecord(payload).path, ""));
+  }
+
   async createImageJob(payload) {
     const input = asRecord(payload);
     const template = (await loadConfig()).imagePromptTemplates.find(item => item.id === input.promptTemplate);
     if (input.promptTemplate && !template) throw new Error("提示词模板已不存在，请刷新后重新选择。");
-    const job = await imagegen.createImageJob(asString(input.name, ""), template?.prompt[input.lang === "en" ? "en" : "zh"] ?? "");
+    const job = await imagegen.createImageJob(asString(input.name, ""), template?.prompt[input.lang === "en" ? "en" : "zh"] ?? "", asString(input.saveDirectory, ""));
     if (template) { job.promptTemplateId = template.id; job.promptTemplateLang = input.lang === "en" ? "en" : "zh"; await imagegen.writeImageJob(job); }
     return { jobId: job.id };
   }

@@ -73,6 +73,11 @@ The workbench header has a **sidebar toggle** like Codex: collapse the project /
 more room. On narrow screens it becomes a drawer; click the backdrop or press Esc to close it, and your choice
 is remembered.
 
+The image sidebar now uses a **Projects** heading. Its arrow collapses only the list; the header panel icon collapses the entire sidebar. Both choices are remembered separately.
+Click **+** to create a project and choose a local save folder. A separate project subfolder holds reference images, generated images, keyed PNGs and history. Leaving the folder unset uses the DSH default location.
+The organize icon opens a two-level menu for grouping by save folder or combining the list, and for recently updated or manual order. In manual mode, drag projects or press Alt + Up / Down; the order persists after refresh.
+These local operations never call a generation API. Existing projects require no migration. This update includes host code: fully quit DSH, including its tray process, then reopen it.
+
 All eight modules share the same "generate → review → re-run" workbench. Every stage can be **redone on its
 own**, and every asset can be **approved item by item**. The "review mode" lets an agent approve each step
 and move on automatically, or stop at every step and wait for your go-ahead.

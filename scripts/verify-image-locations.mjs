@@ -1,0 +1,58 @@
+/** Real local gateway and filesystem, synthetic images only. No model or paid API calls. */
+import assert from 'node:assert/strict';
+import {mkdtemp,mkdir,writeFile,readFile,stat,rm,realpath} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join,resolve,basename,sep} from 'node:path';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {createServer} from 'node:http';
+const testRoot=await mkdtemp(join(tmpdir(),'gmm-image-locations-'));
+process.env.DSH_HOME=join(testRoot,'home');
+const {Context}=await import('@deepseek-ai/cordis');
+const plugin=await import('../lib/index.js'),wire=await import('../lib/wire.js'),imagegen=await import('../lib/imagegen.js');
+const {imageJobsRoot}=await import('../lib/config.js'),{encodePng}=await import('../lib/png.js');
+const ctx=new Context();let handler;
+ctx.provide('typert',{register:()=>()=>{}});ctx.provide('tools',{register:()=>()=>{}});
+ctx.provide('webServer',{register:route=>{handler=route.handler;return ()=>{};}});
+ctx.provide('systemPrompt',{section:()=>()=>{}});plugin.apply(ctx);
+const gateway=ctx.get('gameStudio');
+const invoke=async(method,payload)=>{const spec=wire.METHODS.find(m=>m.method===method);const parsed=spec.payload?.parse(payload);if(payload!==undefined)assert.deepEqual(parsed,payload,'wire preserves every field');return spec.result.parse(await gateway[method](parsed));};
+const server=createServer((req,res)=>void handler(req,res));await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const origin=`http://127.0.0.1:${server.address().port}`;
+const originalFetch=globalThis.fetch;globalThis.fetch=(url,options)=>{assert.equal(new URL(url instanceof Request?url.url:url).origin,origin,'only local static asset server allowed');return originalFetch(url,options);};
+const exists=async path=>stat(path).then(()=>true,()=>false);let checks=0;
+const check=(label,ok)=>{assert.ok(ok,label);checks++;console.log('✓ '+label);};
+try{
+ const parent=join(testRoot,'选定素材目录'),child=join(parent,'characters');await mkdir(child,{recursive:true});
+ await writeFile(join(parent,'keep-user-file.txt'),'keep');
+ const browsed=await invoke('browseImageFolders',{path:parent});check('folder browser reads canonical host folders only',browsed.directory===await realpath(parent)&&browsed.folders.join()==='characters'&&!browsed.folders.includes('keep-user-file.txt'));
+ check('folder browser is client-only',wire.METHODS.find(m=>m.method==='browseImageFolders').clientOnly===true);
+ await assert.rejects(invoke('browseImageFolders',{path:'relative'}));await assert.rejects(invoke('browseImageFolders',{path:join(parent,'keep-user-file.txt')}));
+ const legacy=await invoke('createImageJob',{name:'默认位置'});check('default layout remains unchanged',imagegen.imageJobDir(legacy.jobId)===join(imageJobsRoot(),legacy.jobId));
+ const {jobId}=await invoke('createImageJob',{name:'自定义位置',saveDirectory:parent,promptTemplate:'character',lang:'zh'});
+ const directory=imagegen.imageJobDir(jobId),pointer=join(imageJobsRoot(),jobId+'.location.json');
+ check('custom location creates a separate child and persistent pointer',directory===join(await realpath(parent),jobId)&&await exists(pointer)&&await exists(join(directory,'job.json')));
+ const png=encodePng(Buffer.from([240,30,20,255]),1,1),data=png.toString('base64');
+ await invoke('uploadImageRef',{jobId,name:'synthetic.png',data});await invoke('addImageItem',{jobId,name:'synthetic.png',data});
+ await invoke('saveImageJob',{jobId,prompt:'仅本地测试'});
+ let view=await invoke('getImageJob',{jobId});
+ check('references, results and history use the chosen directory',view.dir===directory&&view.refs.length===1&&view.history.length===1&&(await readFile(join(directory,view.refs[0].file))).equals(png)&&(await readFile(join(directory,view.items[0].file))).equals(png));
+ await imagegen.rekeyImageJob(jobId);view=await invoke('getImageJob',{jobId});
+ check('local transparency outputs also use the selected directory',view.items[0].keyedFile&&await exists(join(directory,view.items[0].keyedFile))&&view.history.length===2);
+ const response=await fetch(origin+view.assetBase+view.items[0].keyedFile);check('unchanged static asset URL serves external-folder results',response.status===200&&Buffer.from(await response.arrayBuffer()).equals(await readFile(join(directory,view.items[0].keyedFile))));
+ const canonicalParent=await realpath(parent);
+ check('default and custom projects appear together', (await invoke('listImageJobs')).jobs.some(j=>j.id===jobId&&j.saveDirectory===canonicalParent));
+ const fresh=await promisify(execFile)(process.execPath,['--input-type=module','-e',`import * as g from ${JSON.stringify(new URL('../lib/imagegen.js',import.meta.url).href)};console.log(JSON.stringify({dir:g.imageJobDir(${JSON.stringify(jobId)}),job:await g.readImageJob(${JSON.stringify(jobId)}),jobs:await g.listImageJobs()}));`],{env:{...process.env,DSH_HOME:process.env.DSH_HOME}});
+ const restarted=JSON.parse(fresh.stdout);check('new process rediscovers custom location and history',restarted.dir===directory&&restarted.job.history.length===2&&restarted.jobs.some(j=>j.id===jobId));
+ for(const path of ['relative',join(parent,'missing'),join(parent,'keep-user-file.txt')])await assert.rejects(invoke('createImageJob',{name:'invalid',saveDirectory:path}));
+ const savedPointer=await readFile(pointer);await writeFile(pointer,JSON.stringify({id:jobId,directory:parent}));
+ check('one damaged pointer does not hide other projects', (await invoke('listImageJobs')).jobs.some(j=>j.id===legacy.jobId));
+ assert.throws(()=>imagegen.imageJobDir(jobId));await assert.rejects(invoke('deleteImageJob',{jobId}));check('damaged location never falls back or deletes the parent',await exists(directory)&&await exists(join(parent,'keep-user-file.txt')));
+ await writeFile(pointer,savedPointer);await invoke('deleteImageJob',{jobId});
+ check('delete removes only the independent project directory and its pointer',!await exists(directory)&&!await exists(pointer)&&await exists(child)&&(await readFile(join(parent,'keep-user-file.txt'),'utf8'))==='keep');
+ await invoke('deleteImageJob',{jobId:legacy.jobId});
+ console.log(`Passed ${checks} storage checks. No external requests or real billing.`);
+}finally{
+ globalThis.fetch=originalFetch;await new Promise(r=>server.close(r));
+ const target=resolve(testRoot);assert.ok(target.startsWith(resolve(tmpdir())+sep)&&basename(target).startsWith('gmm-image-locations-'));await rm(target,{recursive:true,force:true});
+}

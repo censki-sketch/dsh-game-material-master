@@ -342,8 +342,8 @@ const api = new Proxy(
  * 本地却什么都看不出来。数字变了就说明 Hook 顺序改了，必须同步这里的槽位。
  */
 const EXPECTED_HOOKS = {
-  StudioPanel: 27,
-  ImageModule: 21,
+  StudioPanel: 26,
+  ImageModule: 23,
   SequenceModule: 17
 };
 
@@ -957,6 +957,22 @@ function renderModule(component, job, tasks) {
   HOOK.cursor = 0;
   const tree = component({ api });
   return { tree, overflow: false, hooks: HOOK.cursor };
+}
+
+section("图片项目侧栏与创建弹窗");
+{
+  HOOK.slots = []; HOOK.cursor = 0;
+  const preferences = { directory: "", sort: "updated", layout: "merged", order: [] };
+  const tree = bundle.__test.JobSidebar({ title: "项目", items: [makeImageJob()], activeId: "i1", storageKey: "image", preferences, onPreferences: () => {}, onCreate: () => {}, renderMeta: () => "" });
+  check("图片侧栏标题为项目，不显示数量", byClass(tree, "SPR_taskSideTitle").some(node => textOf(node) === "项目"));
+  check("侧栏有创建项目与整理项目图标", byTag(tree, "button").some(node => node.props["aria-label"] === "创建项目") && byTag(tree, "button").some(node => node.props["aria-label"] === "整理项目"));
+  check("列表折叠与全局侧栏使用独立控件", byClass(tree, "SPR_taskSideTitle").some(node => node.props["aria-controls"] === "task-list-image"));
+  HOOK.slots = []; HOOK.cursor = 0;
+  const dialog = bundle.__test.ImageTaskDialog({ api, preferences, defaultDirectory: "/tmp/image-jobs", onSubmit: () => {}, onClose: () => {} });
+  check("自定义创建项目弹窗使用原生modal容器", byTag(dialog, "dialog").some(node => node.props["aria-label"] === "创建项目"));
+  check("项目名称必填且有长度限制", byTag(dialog, "input").some(node => node.props["aria-label"] === "项目名称" && node.props.required && node.props.maxLength === 80));
+  check("未填写名称时禁用创建项目", byTag(dialog, "button").some(node => node.props.type === "submit" && node.props.disabled));
+  check("文件夹选择入口只有点击时读取目录", byTag(dialog, "button").some(node => node.props["aria-label"] === "选择保存文件夹" && typeof node.props.onClick === "function"));
 }
 
 if (typeof ImageModule === "function") {

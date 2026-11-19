@@ -44,6 +44,47 @@
     /** 中文原文 → 英文译文。key 里可能带 `{nN}` 占位符。 */
 /* i18n-ignore-start */
     const EN: Record<string, string> = {
+      "点击标题右侧的 + 创建项目。": "Click + beside the heading to create a project.",
+      "请选择或创建一个项目": "Select or create a project",
+      "保存文件夹": "Save folder",
+      "创建项目": "Create project",
+      "合并显示": "Combined view",
+      "在此电脑上选择文件夹": "Choose a folder on this computer",
+      "手动排序": "Manual order",
+      "拖动调整顺序，或按 Alt + ↑ / ↓": "Drag to reorder, or press Alt + Up / Down",
+      "按目录分组": "Group by folder",
+      "整理侧边栏": "Organize sidebar",
+      "整理项目": "Organize projects",
+      "更改": "Change",
+      "添加": "Add",
+      "自动创建独立项目文件夹，保存参考图、生成图和历史记录；不选择时使用 DSH 默认位置。": "Creates a separate project folder for reference images, generated images and history. Uses the DSH default location when no folder is selected.",
+      "项目": "Projects",
+      "项目名称": "Project name",
+      "项目排序方式": "Project sort order",
+      "默认位置": "Default location",
+
+
+      "选择保存文件夹": "Choose save folder",
+      "文件夹路径": "Folder path",
+      "上一级": "Up one level",
+      "前往": "Go",
+      "主文件夹": "Home folder",
+      "没有子文件夹，可以选择当前文件夹。": "No subfolders. You can choose the current folder.",
+
+
+      "使用默认位置": "Use default location",
+
+      "正在读取文件夹…": "Reading folders\u2026",
+
+
+
+
+      "最近更新": "Recently updated",
+
+
+      "选择此文件夹": "Choose this folder",
+
+      "点击标题右侧的 + 新建任务。": "Click + beside the heading to create a task.",
       "优化提示词": "Optimize prompt",
       "基础提示词": "Base prompt",
       "主提示词": "Main prompt",
@@ -455,15 +496,15 @@
       "方向按屏幕方位映射：按 ↑ 向北走（背对镜头）、↓ 向南走（正对镜头）、← 向西、→ 向东；斜向同时按两个键。": "Directions map to screen positions: ↑ walks north (back to camera), ↓ walks south (facing camera), ← walks west, → walks east; hold two keys at once for diagonals.",
       "「播放速度」只改步频快慢，不影响角色移动速度；「移动速度」只改走得多快，不影响动画帧率。切图用的是整图自己记录的行序，所以改完行序即使还没重新合成，预览也不会取错方向。": "\"Playback speed\" only changes how fast the steps cycle and does not affect how fast the character moves; \"Movement speed\" only changes how fast it walks and does not affect the animation frame rate. Frame switching uses the row order recorded in the sheet itself, so even if you change the row order before recomposing, the preview still picks the right direction.",
       "{n0}（{n1}）": "{n0} ({n1})",
-      "还没有内容，点右上角新建一个。": "Nothing here yet. Click New in the top right to create one.",
+
       "新建": "New",
-      "图片 {n0}": "Image {n0}",
-      "已新建图片任务": "Image task created",
+
+
       "正在新建任务…": "Creating task…",
       "删除任务「{n0}」？目录会被整个移除。": "Delete task \"{n0}\"? Its whole folder will be removed.",
       "已删除": "Deleted",
       "正在上传 {n0} 个文件…": "Uploading {n0} files…",
-      "图片任务": "Image tasks",
+
       "{n0} 张 · 抠像 {n1}": "{n0} images · {n1} keyed",
       "正在新建…": "Creating…",
       "新建任务": "New task",
@@ -473,7 +514,7 @@
       "重命名任务": "Rename task",
       "任务及其素材文件将被永久删除，此操作无法撤销。": "The task and its asset files will be permanently deleted. This cannot be undone.",
       "正在调用接口…": "Calling the API…",
-      "请选择或新建一个图片任务": "Select or create an image task",
+
       "主提示词用于描述主体。基础提示词在「优化提示词」弹窗中选择和查看，编辑模板可点击「管理模板」。": "Describe the subject in the main prompt. Select and view base prompts in the Optimize prompt dialog; use Manage templates to edit them.",
       "描述你要生成的图片…": "Describe the image you want to generate…",
       "统一附加提示词（可留空）": "Shared suffix prompt (optional)",
@@ -959,7 +1000,7 @@
       "已新建骨骼动画任务": "Skeletal animation job created",
       "删除任务「{n0}」？产物文件会一并删除。": "Delete job \"{n0}\"? Its output files will be deleted as well.",
       "新的任务名": "New job name",
-      "新图片任务的名字": "Name for the new image job",
+
       "新序列帧任务的名字": "Name for the new sequence job",
       "新骨骼动画任务的名字": "Name for the new skeletal animation job",
 
@@ -3255,6 +3296,7 @@
       // 模块②（图片生成）—— 这一段只是远程方法清单，和下面的组件区无关
       ["listImageJobs", false],
       ["createImageJob", true],
+      ["browseImageFolders", true],
       ["getImageJob", true],
       ["deleteImageJob", true],
       ["saveImageJob", true],
@@ -4936,6 +4978,82 @@
 .SPR_sidebarToggle svg{display:block}
 .SPR_sidebarBackdrop{display:none}
 .SPR_modulePanel{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0}
+
+.SPR_taskSideHead{display:flex;align-items:center;gap:2px;min-height:34px;margin:0 0 8px;padding:0 2px;color:var(--dsw-alias-label-secondary)}
+.SPR_taskSideTitle{display:flex;align-items:center;gap:2px;flex:1;min-width:0;padding:5px 4px;border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;font-size:12px;cursor:pointer;text-align:left}
+.SPR_taskSideTitle span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_taskSideTitle svg{flex:none;transition:transform .15s}
+.SPR_taskIconButton{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;padding:0;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.SPR_taskSideTitle:hover,.SPR_taskIconButton:hover,.SPR_taskFolderNav:hover,.SPR_taskFolderRoots button:hover,.SPR_taskFolderList button:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
+.SPR_taskIconButton:disabled{opacity:.45;cursor:default}
+.SPR_taskSideTitle:focus-visible,.SPR_taskIconButton:focus-visible,.SPR_taskFolderNav:focus-visible,.SPR_taskFolderRoots button:focus-visible,.SPR_taskFolderList button:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:1px}
+.SPR_taskList[hidden]{display:none}
+.SPR_taskDialog{box-sizing:border-box;width:min(520px,calc(100vw - 32px));max-height:calc(100dvh - 40px);margin:auto;padding:20px;border:1px solid var(--dsw-alias-border-l2);border-radius:22px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:0 14px 45px rgba(0,0,0,.13);font:inherit;overflow:auto;}
+.SPR_taskDialog::backdrop{background:rgba(0,0,0,.23)}
+.SPR_taskDialogHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.SPR_taskDialogHead h3{margin:0;font-size:19px;font-weight:650;letter-spacing:-.3px;}
+.SPR_taskName{display:flex;align-items:center;gap:16px;min-width:0;padding:0 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:11px;}
+.SPR_taskName:focus-within{border-color:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px var(--dsw-alias-state-business-primary)}
+.SPR_taskName input{box-sizing:border-box;width:100%;min-width:0;min-height:38px;padding:9px 0;border:0;background:transparent;color:inherit;outline:0;font:inherit;font-size:13px;}
+.SPR_taskName svg{flex:none;color:var(--dsw-alias-label-secondary)}
+.SPR_taskFieldLabel{display:flex;margin:13px 0 8px;font-size:13px;font-weight:500;align-items:center;gap:6px;}
+.SPR_taskDirectoryCard{padding:19px 16px 15px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:transparent;box-sizing:border-box;min-height:103px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;}
+.SPR_taskDirectoryPath{margin:5px 0 0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}
+.SPR_taskDialogActions{display:flex;justify-content:flex-end;gap:12px;margin-top:32px;}
+.SPR_taskDialogActions .SPR_btn{min-width:64px;border-radius:10px;padding:7px 13px;border:0;background:transparent;box-shadow:none;color:var(--dsw-alias-label-secondary);}
+.SPR_taskDialogError{color:var(--dsw-alias-state-error-primary,#d84949);font-size:13px;line-height:20px;overflow-wrap:anywhere}
+.SPR_taskFolderTools{display:flex;align-items:center;gap:8px}
+.SPR_taskFolderTools input{box-sizing:border-box;flex:1;width:0;min-width:0;padding:9px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:transparent;color:inherit;font:inherit;font-size:12px}
+.SPR_taskFolderNav,.SPR_taskFolderRoots button{padding:6px 8px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.SPR_taskFolderRoots{display:flex;gap:5px;flex-wrap:wrap;margin:12px 0}
+.SPR_taskFolderList{height:min(280px,36dvh);min-height:100px;overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:5px}
+.SPR_taskFolderList button{display:flex;align-items:center;gap:10px;width:100%;padding:9px;border:0;border-radius:7px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer;text-align:left}
+.SPR_taskFolderList button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_taskFolderList button svg{flex:none;color:var(--dsw-alias-label-secondary)}
+@media(max-width:480px){.SPR_taskDialog{padding:18px;border-radius:16px}.SPR_taskFolderTools{gap:3px}.SPR_taskFolderNav{padding:6px}.SPR_taskDialogHead h3{font-size:16px}}
+
+
+.SPR_side[data-kind=image] .SPR_taskSideHead{padding:0 0 0 2px;margin-bottom:6px;gap:0}
+.SPR_side[data-kind=image] .SPR_taskSideTitle{font-size:13px;gap:1px}
+.SPR_side[data-kind=image] .SPR_taskSideTitle svg{width:14px;height:14px}
+.SPR_side[data-kind=image] .SPR_projItem{border:0;border-radius:8px;padding:9px 10px;background:transparent;box-shadow:none}
+.SPR_side[data-kind=image] .SPR_projItem:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_side[data-kind=image] .SPR_projItem[data-active=true]{background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_side[data-kind=image] .SPR_projName{font-weight:400;font-size:13px}
+.SPR_side[data-kind=image] .SPR_projMeta{font-size:11px;margin-top:2px}
+.SPR_taskGroup{display:flex;flex-direction:column;gap:3px;min-width:0}
+.SPR_taskGroup+.SPR_taskGroup{margin-top:16px}
+.SPR_taskGroupTitle{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;color:var(--dsw-alias-label-tertiary);min-width:0}
+.SPR_taskGroupTitle span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.SPR_taskGroupTitle svg{flex:none;width:13px;height:13px}
+.SPR_projectRow[draggable=true]{cursor:grab}
+.SPR_projectRow[data-drop]:after{content:"";position:absolute;left:6px;right:6px;height:2px;pointer-events:none;background:var(--dsw-alias-state-business-primary);border-radius:2px}
+.SPR_projectRow[data-drop=before]:after{top:-2px}.SPR_projectRow[data-drop=after]:after{bottom:-2px}
+.SPR_projectSidebarMenuRoot{display:inline-flex;flex:none}
+.SPR_projectSidebarMenu{position:fixed;inset:auto;margin:0;padding:0;overflow:visible;border:0;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;max-width:calc(100vw - 16px)}
+.SPR_projectSidebarMenu:popover-open{display:flex;align-items:flex-start;gap:6px}
+.SPR_projectSidebarMainMenu,.SPR_projectSidebarSubmenu{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);padding:4px;border-radius:16px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 5px 16px rgba(0,0,0,.09);flex:none}
+.SPR_projectSidebarMainMenu{width:216px}.SPR_projectSidebarSubmenu{width:180px}
+.SPR_projectSidebarMenu button{box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;min-height:29px;padding:4px 9px;border:0;border-radius:11px;background:transparent;color:inherit;font:inherit;font-size:13px;text-align:left;cursor:pointer;white-space:nowrap}
+.SPR_projectSidebarMenu button:hover,.SPR_projectSidebarMenu button[data-selected=true],.SPR_projectSidebarMenu button:focus-visible{background:var(--dsw-alias-interactive-bg-hover-solid);outline:0}
+.SPR_projectSidebarMenu button span:not(.SPR_projectSubmenuArrow){flex:1}
+.SPR_projectSidebarMenu button svg{flex:none;width:15px;height:15px}
+.SPR_projectSubmenuArrow{font-size:20px;line-height:20px;color:var(--dsw-alias-label-tertiary)}
+.SPR_projectSidebarSubmenu[data-section=sort]{margin-top:30px}
+.SPR_projectSidebarMenu[data-stacked=true]:popover-open{flex-direction:column;gap:5px}
+.SPR_projectSidebarMenu[data-stacked=true] .SPR_projectSidebarSubmenu{margin:0 0 0 18px;width:198px}
+.SPR_taskDirectoryChoose{display:flex;align-items:center;justify-content:center;gap:6px;max-width:100%;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:13px;cursor:pointer}
+.SPR_taskDirectoryChoose span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.SPR_taskDirectoryChoose svg{flex:none;width:14px;height:14px}
+.SPR_taskAddFolder{display:flex;align-items:center;justify-content:center;gap:3px;padding:3px 8px;border:0;border-radius:8px;background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;cursor:pointer}
+.SPR_taskAddFolder:hover{filter:brightness(.97)}.SPR_taskAddFolder svg{width:14px;height:14px}
+.SPR_taskUseDefault{padding:0;border:0;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;cursor:pointer}
+.SPR_taskDirectoryChoose:focus-visible,.SPR_taskAddFolder:focus-visible,.SPR_taskUseDefault:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:4px}
+.SPR_taskDialogActions .SPR_btn[data-primary=true]{background:#202224;color:#fff;min-width:90px}
+.SPR_taskDialogActions .SPR_btn[data-primary=true]:hover:not(:disabled){background:#303234;color:#fff}
+.SPR_taskDialogActions .SPR_btn[data-primary=true]:disabled{opacity:.42}
+@media(max-width:480px){.SPR_taskDialog{padding:20px}.SPR_taskDialogHead h3{font-size:18px}}
+
 .SPR_projectMore{display:inline-flex;flex:none;align-items:center}
 .SPR_projectMoreButton{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
 .SPR_projectMoreButton:hover,.SPR_projectMoreButton[aria-expanded=true]{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
@@ -6384,12 +6502,13 @@
     }
 
     /** 顶部工作台侧栏开关：圆角面板与左侧分栏组成一个图标。 */
-    function SidebarToggleIcon() {
+    function SidebarToggleIcon({ collapsed = false } = {}) {
       return h(
         "svg",
         { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
         h("rect", { x: 3.5, y: 4, width: 17, height: 16, rx: 3 }),
-        h("path", { d: "M9 4v16" })
+        h("path", { d: "M9 4v16" }),
+        collapsed ? h("rect", { x: 5.5, y: 6, width: 1.5, height: 12, rx: 0.7, fill: "currentColor", stroke: "none", opacity: 0.4 }) : null
       );
     }
 
@@ -6427,7 +6546,6 @@
        */
       const loadedPrompts = React.useRef({ projectId: null, images: {}, video: "" });
       const moduleOrder = useModuleOrder();
-      const [imageHeaderActions, setImageHeaderActions] = React.useState(null);
       const [settingsInitialTab, setSettingsInitialTab] = React.useState("video");
       const settingsReturnModule = React.useRef(null);
       const [sidebarCollapsed, setSidebarCollapsed] = React.useState(readLastSidebarCollapsed);
@@ -6438,6 +6556,7 @@
         if (typeof document === "undefined" || typeof document.addEventListener !== "function") return undefined;
         const onKeyDown = (event) => {
           if (event.key !== "Escape" || sidebarCollapsed) return;
+          if (event.defaultPrevented || (typeof document.querySelector === "function" && document.querySelector("dialog[open], .SPR_projectSidebarMenu:popover-open"))) return;
           setSidebarCollapsed(true);
           rememberSidebarCollapsed(true);
         };
@@ -6736,7 +6855,7 @@
             title: sidebarCollapsed ? T("展开侧栏") : T("收起侧栏"),
             "data-testid": "studio-sidebar-toggle",
             onClick: toggleSidebar
-          }, h(SidebarToggleIcon, null)),
+          }, h(SidebarToggleIcon, { collapsed: sidebarCollapsed })),
           h("div", { className: "SPR_headInfo" },
             h("div", { className: "SPR_headTitleLine" },
               h("h2", null, T("游戏素材大师")),
@@ -6752,9 +6871,6 @@
                 h(Btn, { onClick: () => void refreshProjects(), disabled: loading }, T("刷新列表")),
                 h(Btn, { onClick: createProject, primary: true }, T("新建项目"))
               )
-            : null,
-          activeModule === "image"
-            ? h(BusyBtn, { onClick: () => imageHeaderActions?.create(), primary: true, disabled: imageHeaderActions === null, busy: imageHeaderActions?.busy === true, busyText: T("正在新建…") }, T("新建任务"))
             : null,
           h(Btn, { title: activeModule === "settings" ? T("返回") : T("模型、接口与费用保护"), onClick: () => {
             if (activeModule === "settings") {
@@ -7021,7 +7137,7 @@
           )
         )
           : activeModule === "image"
-            ? h(ImageModule, { api, onHeaderActions: setImageHeaderActions, onManageTemplates: () => { setSettingsInitialTab("prompts"); setModule("settings"); } })
+            ? h(ImageModule, { api, onManageTemplates: () => { setSettingsInitialTab("prompts"); setModule("settings"); } })
             : activeModule === "sequence"
               ? h(SequenceModule, { api })
               : activeModule === "iso"
@@ -9569,13 +9685,203 @@
       );
     }
 
-    function JobSidebar({ title, items, activeId, onSelect, onCreate, renderMeta, renderActions, createInSidebar = true }) {
+    const IMAGE_TASK_PREFERENCES_KEY = "dsh-game-material-master:image-task-preferences";
+    function readImageTaskPreferences() {
+      try {
+        const value = JSON.parse(window.localStorage.getItem(IMAGE_TASK_PREFERENCES_KEY) || "{}");
+        return { directory: typeof value?.directory === "string" ? value.directory : "", sort: value?.sort === "manual" ? "manual" : "updated", layout: value?.layout === "grouped" ? "grouped" : "merged", order: Array.isArray(value?.order) ? [...new Set(value.order.filter(id => typeof id === "string"))] : [] };
+      } catch { return { directory: "", sort: "updated", layout: "merged", order: [] }; }
+    }
+
+    function TaskHeaderIcon({ name, collapsed = false }) {
+      const attrs = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" };
+      if (name === "chevron") return h("svg", { ...attrs, style: { transform: collapsed ? "rotate(-90deg)" : undefined } }, h("path", { d: "m8 10 4 4 4-4" }));
+      if (name === "add") return h("svg", attrs, h("path", { d: "M12 5v14M5 12h14" }));
+      if (name === "manage") return h("svg", attrs, h("path", { d: "M3 7h9m5 0h4M3 17h4m5 0h9" }), h("circle", { cx: 14.5, cy: 7, r: 2.5 }), h("circle", { cx: 9.5, cy: 17, r: 2.5 }));
+      if (name === "sort") return h("svg", attrs, h("path", { d: "M7 4v16m-3-3 3 3 3-3M17 20V4m-3 3 3-3 3 3" }));
+      if (name === "panel") return h(SidebarToggleIcon, null);
+      if (name === "list") return h("svg", attrs, h("path", { d: "M9 6h12M9 12h12M9 18h12M3 6h.01M3 12h.01M3 18h.01" }));
+      if (name === "check") return h("svg", attrs, h("path", { d: "m5 12 4 4L19 6" }));
+      if (name === "close") return h("svg", attrs, h("path", { d: "m6 6 12 12M6 18 18 6" }));
+      return h("svg", attrs, h("path", { d: "M3 8V6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Zm0 2h18" }));
+    }
+
+    /** Local task creation and directory selection never invoke a model. */
+    function ImageTaskDialog({ api, preferences, defaultDirectory, onSubmit, onClose }) {
+      const title = T("创建项目");
+      const [name, setName] = React.useState("");
+      const [directory, setDirectory] = React.useState(preferences.directory);
+      const [saving, setSaving] = React.useState(false);
+      const [error, setError] = React.useState("");
+      const [browser, setBrowser] = React.useState(null);
+      const [browsing, setBrowsing] = React.useState(false);
+      const [browserPath, setBrowserPath] = React.useState("");
+      const dialogRef = React.useRef(null);
+      const lock = React.useRef(false);
+      const browseVersion = React.useRef(0);
+      React.useEffect(() => {
+        const dialog = dialogRef.current;
+        const previous = document.activeElement as HTMLElement | null;
+        dialog?.showModal();
+        dialog?.querySelector("input")?.focus();
+        return () => { browseVersion.current++; dialog?.close(); previous?.focus?.(); };
+      }, []);
+      const close = () => { if (!lock.current) onClose(); };
+      const browse = async (path) => {
+        const version = ++browseVersion.current;
+        setBrowsing(true); setError("");
+        try {
+          const result = await api.browseImageFolders(path?.trim() ? { path: path.trim() } : {});
+          if (version !== browseVersion.current) return;
+          setBrowser(result); setBrowserPath(result.directory);
+        } catch (failure) { if (version === browseVersion.current) setError(msg(failure)); }
+        finally { if (version === browseVersion.current) setBrowsing(false); }
+      };
+      const leaveBrowser = () => { browseVersion.current++; setBrowser(null); setBrowsing(false); setError(""); };
+      const submit = async event => {
+        event.preventDefault();
+        if (lock.current || browsing) return;
+        if (browser) { setDirectory(browser.directory); leaveBrowser(); return; }
+        if (!name.trim()) return;
+        lock.current = true; setSaving(true); setError("");
+        try { await onSubmit({ name: name.trim(), directory: directory.trim() }); }
+        catch (failure) { setError(msg(failure)); }
+        finally { lock.current = false; setSaving(false); }
+      };
+      return h("dialog", { ref: dialogRef, className: "SPR_taskDialog", "data-testid": "image-task-dialog", "aria-label": browser ? T("选择保存文件夹") : title,
+        onCancel: event => { event.preventDefault(); if (browser) leaveBrowser(); else close(); },
+        onKeyDown: event => { if (event.key === "Escape") event.stopPropagation(); },
+        onClick: event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) close(); } } },
+        h("form", { onSubmit: submit },
+          h("div", { className: "SPR_taskDialogHead" }, h("h3", null, browser ? T("选择保存文件夹") : title),
+            h("button", { type: "button", className: "SPR_taskIconButton", disabled: saving, "aria-label": T("关闭"), onClick: close }, h(TaskHeaderIcon, { name: "close" }))),
+          browser ? h(React.Fragment, null,
+            h("div", { className: "SPR_taskFolderTools" },
+              h("button", { type: "button", className: "SPR_taskFolderNav", disabled: browsing || browser.parent === browser.directory, onClick: () => void browse(browser.parent) }, T("上一级")),
+              h("input", { value: browserPath, "aria-label": T("文件夹路径"), disabled: browsing, maxLength: 4096, onChange: event => setBrowserPath(event.target.value), onKeyDown: event => { if (event.key === "Enter") { event.preventDefault(); void browse(browserPath); } } }),
+              h("button", { type: "button", className: "SPR_taskFolderNav", disabled: browsing, onClick: () => void browse(browserPath) }, T("前往"))),
+            h("div", { className: "SPR_taskFolderRoots" },
+              h("button", { type: "button", disabled: browsing, onClick: () => void browse(browser.home) }, T("主文件夹")),
+              (browser.roots ?? []).map(root => h("button", { key: root, type: "button", disabled: browsing, onClick: () => void browse(root) }, root))),
+            h("div", { className: "SPR_taskFolderList", "aria-busy": browsing },
+              browser.folders.length === 0 ? h("p", { className: "SPR_hint" }, T("没有子文件夹，可以选择当前文件夹。")) : null,
+              browser.folders.map(folder => h("button", { key: folder, type: "button", disabled: browsing, onClick: () => void browse(browser.directory.replace(/[\\/]+$/, "") + "/" + folder) }, h(TaskHeaderIcon, { name: "folder" }), h("span", null, folder)))),
+            h("p", { className: "SPR_taskDirectoryPath", title: browser.directory }, browser.directory)) : h(React.Fragment, null,
+            h("label", { className: "SPR_taskName" }, h(TaskHeaderIcon, { name: "folder" }), h("input", { value: name, maxLength: 80, required: true, disabled: saving, placeholder: T("项目名称"), "aria-label": T("项目名称"), onChange: event => setName(event.target.value) })),
+            h("div", { className: "SPR_taskFieldLabel" }, h("span", null, T("保存文件夹")),
+              h(DescriptionTip, { id: "task-save-location", label: T("保存文件夹"), text: T("自动创建独立项目文件夹，保存参考图、生成图和历史记录；不选择时使用 DSH 默认位置。") })),
+            h("div", { className: "SPR_taskDirectoryCard", "data-selected": !!directory },
+              h("button", { type: "button", className: "SPR_taskDirectoryChoose", disabled: saving || browsing, onClick: () => void browse(directory), title: directory || defaultDirectory,
+                "aria-label": T("选择保存文件夹") },
+                directory ? h(TaskHeaderIcon, { name: "folder" }) : null,
+                h("span", null, directory || T("在此电脑上选择文件夹")),
+                h(TaskHeaderIcon, { name: "chevron" })),
+              h(BusyBtn, { className: "SPR_taskAddFolder", busy: browsing, disabled: saving, busyText: T("正在读取文件夹…"), onClick: () => void browse(directory) }, h(TaskHeaderIcon, { name: "add" }), directory ? T("更改") : T("添加")),
+              directory ? h("button", { type: "button", className: "SPR_taskUseDefault", disabled: saving || browsing, onClick: () => setDirectory("") }, T("使用默认位置")) : null)),
+          error ? h("p", { className: "SPR_taskDialogError", role: "alert" }, error) : null,
+          h("div", { className: "SPR_taskDialogActions" },
+            h(Btn, { disabled: saving, onClick: browser ? leaveBrowser : close }, browser ? T("返回") : T("取消")),
+            h(BusyBtn, { type: "submit", primary: true, busy: saving, busyText: T("正在保存…"), disabled: browsing || (!browser && !name.trim()) }, browser ? T("选择此文件夹") : T("创建项目")))));
+    }
+
+    function ProjectSidebarMenu({ preferences, onChange }) {
+      const [open, setOpen] = React.useState(false);
+      const [section, setSection] = React.useState(null);
+      const triggerRef = React.useRef(null), menuRef = React.useRef(null);
+      const close = () => { setOpen(false); setSection(null); triggerRef.current?.focus({ preventScroll: true }); };
+      React.useEffect(() => {
+        const menu = menuRef.current;
+        const toggled = () => { if (!menu.matches(":popover-open")) { setOpen(false); setSection(null); } };
+        menu.addEventListener("toggle", toggled);
+        return () => menu.removeEventListener("toggle", toggled);
+      }, []);
+      React.useLayoutEffect(() => {
+        if (!open) return;
+        const menu = menuRef.current, trigger = triggerRef.current;
+        menu.showPopover();
+        const position = () => {
+          const r = trigger.getBoundingClientRect();
+          menu.dataset.stacked = window.innerWidth < 440 ? "true" : "false";
+          const m = menu.getBoundingClientRect();
+          menu.style.left = Math.max(8, Math.min(r.left - 8, window.innerWidth - m.width - 8)) + "px";
+          menu.style.top = Math.max(8, Math.min(r.bottom + 6, window.innerHeight - m.height - 8)) + "px";
+        };
+        position();
+        window.addEventListener("resize", position);
+        return () => { window.removeEventListener("resize", position); if (menu.matches(":popover-open")) menu.hidePopover(); };
+      }, [open]);
+      React.useLayoutEffect(() => {
+        if (!open || !menuRef.current?.matches(":popover-open")) return;
+        const menu = menuRef.current, r = triggerRef.current.getBoundingClientRect(), m = menu.getBoundingClientRect();
+        menu.style.left = Math.max(8, Math.min(r.left - 8, window.innerWidth - m.width - 8)) + "px";
+        menu.style.top = Math.max(8, Math.min(r.bottom + 6, window.innerHeight - m.height - 8)) + "px";
+      }, [open, section]);
+      const select = patch => { onChange(patch); close(); };
+      const keys = event => {
+        event.stopPropagation();
+        if (event.key === "Escape") { event.preventDefault(); close(); return; }
+        const submenu = event.target.closest(".SPR_projectSidebarSubmenu");
+        const buttons = [...(submenu || menuRef.current.querySelector(".SPR_projectSidebarMainMenu")).querySelectorAll("button")];
+        const index = buttons.indexOf(document.activeElement);
+        if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+          event.preventDefault();
+          const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : (index + (event.key === "ArrowUp" ? -1 : 1) + buttons.length) % buttons.length;
+          buttons[next]?.focus({ preventScroll: true });
+        }
+        if (event.key === "ArrowRight" && !submenu) {
+          event.preventDefault(); setSection(index === 1 ? "sort" : "layout");
+          requestAnimationFrame(() => menuRef.current?.querySelector(".SPR_projectSidebarSubmenu button")?.focus({ preventScroll: true }));
+        }
+        if (event.key === "ArrowLeft" && submenu) {
+          event.preventDefault(); menuRef.current.querySelectorAll(".SPR_projectSidebarMainMenu button")[section === "sort" ? 1 : 0]?.focus({ preventScroll: true }); setSection(null);
+        }
+        if (event.key === "Tab") close();
+      };
+      const choice = (label, value, field, icon) => h("button", { key: value, type: "button", role: "menuitemradio", "aria-checked": preferences[field] === value, onClick: () => select({ [field]: value }) },
+        icon ? h(TaskHeaderIcon, { name: icon }) : null, h("span", null, label), preferences[field] === value ? h(TaskHeaderIcon, { name: "check" }) : null);
+      return h("div", { className: "SPR_projectSidebarMenuRoot", onKeyDown: event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); } } },
+        h("button", { ref: triggerRef, type: "button", className: "SPR_taskIconButton", title: T("整理项目"), "aria-label": T("整理项目"), "aria-haspopup": "menu", "aria-expanded": open,
+          onClick: () => { if (open) close(); else { setSection(null); setOpen(true); } }, onKeyDown: event => { if (event.key === "ArrowDown") { event.preventDefault(); setOpen(true); requestAnimationFrame(() => menuRef.current?.querySelector("button")?.focus()); } } }, h(TaskHeaderIcon, { name: "manage" })),
+        h("div", { ref: menuRef, className: "SPR_projectSidebarMenu", popover: "auto", onKeyDown: keys },
+          h("div", { className: "SPR_projectSidebarMainMenu", role: "menu", "aria-label": T("整理项目") },
+            [["layout", T("整理侧边栏"), "panel"], ["sort", T("项目排序方式"), "sort"]].map(([id, label, icon]) => h("button", {
+              key: id, type: "button", role: "menuitem", "aria-haspopup": "menu", "aria-expanded": section === id, "data-selected": section === id,
+              onPointerEnter: event => { if (event.pointerType !== "touch") setSection(id); }, onFocus: () => setSection(id), onClick: () => setSection(id) },
+              h(TaskHeaderIcon, { name: icon }), h("span", null, label), h("span", { className: "SPR_projectSubmenuArrow", "aria-hidden": "true" }, "›")))),
+          section ? h("div", { className: "SPR_projectSidebarSubmenu", role: "menu", "aria-label": section === "layout" ? T("整理侧边栏") : T("项目排序方式"), "data-section": section },
+            section === "layout" ? [choice(T("按目录分组"), "grouped", "layout", "folder"), choice(T("合并显示"), "merged", "layout", "list")]
+              : [choice(T("最近更新"), "updated", "sort", null), choice(T("手动排序"), "manual", "sort", null)]) : null));
+    }
+
+    function JobSidebar({ title, items, activeId, onSelect, onCreate, renderMeta, renderActions, createInSidebar = true, storageKey = "sequence", preferences, onPreferences, onReorder }) {
+      const key = "dsh-game-material-master:task-list-collapsed:" + storageKey;
+      const [collapsed, setCollapsed] = React.useState(() => { try { return window.localStorage.getItem(key) === "true"; } catch { return false; } });
+      const dragged = React.useRef(null);
+      const [dropTarget, setDropTarget] = React.useState(null);
+      const toggle = () => setCollapsed(current => { const next = !current; try { window.localStorage.setItem(key, String(next)); } catch { /* Optional persistence. */ } return next; });
+      const manual = preferences?.sort === "manual";
+      const groupOf = item => preferences?.layout === "grouped" ? item.saveDirectory || "" : "";
+      const move = (id, target, after) => {
+        if (!manual || id === target || !id || groupOf(items.find(item => item.id === id) || {}) !== groupOf(items.find(item => item.id === target) || {})) return;
+        const order = items.map(item => item.id).filter(value => value !== id);
+        order.splice(order.indexOf(target) + (after ? 1 : 0), 0, id);
+        onReorder?.(order);
+      };
+      const groups = new Map();
+      for (const item of items) { const directory = groupOf(item); if (!groups.has(directory)) groups.set(directory, []); groups.get(directory).push(item); }
       return h(
         "div",
-        { className: "SPR_side" },
-        h("div", { className: "SPR_sideTitle" }, T("{n0}（{n1}）", { n0: title, n1: items.length })),
-        items.length === 0 ? h("p", { className: "SPR_hint" }, T("还没有内容，点右上角新建一个。")) : null,
-        items.map((item) => {
+        { className: "SPR_side", "data-kind": storageKey },
+        h("div", { className: "SPR_taskSideHead" },
+          h("button", { type: "button", className: "SPR_taskSideTitle", onClick: toggle, "aria-expanded": !collapsed, "aria-controls": "task-list-" + storageKey },
+            h("span", null, preferences ? title : T("{n0}（{n1}）", { n0: title, n1: items.length })), h(TaskHeaderIcon, { name: "chevron", collapsed })),
+          preferences ? h(ProjectSidebarMenu, { preferences, onChange: onPreferences }) : null,
+          h("button", { type: "button", className: "SPR_taskIconButton", title: preferences ? T("创建项目") : T("新建任务"), "aria-label": preferences ? T("创建项目") : T("新建任务"), onClick: onCreate }, h(TaskHeaderIcon, { name: "add" }))),
+        h("div", { className: "SPR_taskList", id: "task-list-" + storageKey, hidden: collapsed },
+        items.length === 0 ? h("p", { className: "SPR_hint" }, preferences ? T("点击标题右侧的 + 创建项目。") : T("点击标题右侧的 + 新建任务。")) : null,
+        [...groups].map(([directory, entries]) => h("div", { key: directory, className: "SPR_taskGroup" },
+          preferences?.layout === "grouped" ? h("div", { className: "SPR_taskGroupTitle", title: directory }, h(TaskHeaderIcon, { name: "folder" }), h("span", null, directory.split(/[\\/]/).filter(Boolean).pop() || T("默认位置"))) : null,
+          entries.map((item) => {
           const select = h(
             "button",
             {
@@ -9591,9 +9897,16 @@
             ),
             h("span", { className: "SPR_projMeta" }, renderMeta(item))
           );
-          return renderActions ? h("div", { key: item.id, className: "SPR_projectRow", "data-active": item.id === activeId ? "true" : "false" }, select, renderActions(item)) : select;
-        }),
-        items.length === 0 && createInSidebar ? h(Btn, { onClick: onCreate, primary: true }, T("新建")) : null
+          return renderActions ? h("div", { key: item.id, className: "SPR_projectRow", "data-active": item.id === activeId ? "true" : "false", "data-drop": dropTarget?.id === item.id ? (dropTarget.after ? "after" : "before") : undefined, draggable: manual,
+            title: manual ? T("拖动调整顺序，或按 Alt + ↑ / ↓") : undefined,
+            onDragStart: event => { dragged.current = item.id; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", item.id); },
+            onDragOver: event => { if (!dragged.current || groupOf(items.find(row => row.id === dragged.current) || {}) !== groupOf(item)) return; event.preventDefault(); event.dataTransfer.dropEffect = "move"; const rect = event.currentTarget.getBoundingClientRect(); setDropTarget({ id: item.id, after: event.clientY > rect.top + rect.height / 2 }); },
+            onDrop: event => { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); move(dragged.current, item.id, event.clientY > rect.top + rect.height / 2); dragged.current = null; setDropTarget(null); },
+            onDragEnd: () => { dragged.current = null; setDropTarget(null); },
+            onKeyDown: event => { if (manual && event.altKey && ["ArrowUp", "ArrowDown"].includes(event.key)) { event.preventDefault(); const index = entries.findIndex(row => row.id === item.id); const other = entries[index + (event.key === "ArrowUp" ? -1 : 1)]; if (other) move(item.id, other.id, event.key === "ArrowDown"); } }
+          }, select, renderActions(item)) : select;
+        }))),
+        items.length === 0 && createInSidebar ? h(Btn, { onClick: onCreate, primary: true }, T("新建")) : null)
       );
     }
 
@@ -18036,7 +18349,7 @@
        */
       const loadedDrafts = React.useRef({ id: null, prompt: "", suffix: "", settings: {}, keying: {} });
       const imageSaveQueue = React.useRef(Promise.resolve());
-      const createRef = React.useRef(null);
+      const createLock = React.useRef(false);
       const imageWorkspaceRef = React.useRef(null);
       const [resultView, setResultView] = React.useState({ jobId: null, tab: "current", index: 0, version: "" });
       const selectedJobId = React.useRef(jobId);
@@ -18044,6 +18357,18 @@
       const view = resultView.jobId === jobId ? resultView : { tab: "current", index: 0, version: "" };
       const templateDrafts = imageTemplateDraftCache.get(api) ?? new Map();
       imageTemplateDraftCache.set(api, templateDrafts);
+      const [taskDialog, setTaskDialog] = React.useState(null);
+      const [taskPreferences, setTaskPreferences] = React.useState(readImageTaskPreferences);
+      const manualOrder = new Map<string, number>(taskPreferences.order.map((id, index) => [id, index]));
+      const sortedJobs = [...jobs].sort((a, b) => taskPreferences.sort === "manual"
+        ? (manualOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (manualOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER) || b.updatedAt - a.updatedAt
+        : b.updatedAt - a.updatedAt);
+      const saveTaskPreferences = patch => {
+        const next = { ...taskPreferences, ...patch };
+        if (patch.sort === "manual" && taskPreferences.sort !== "manual") next.order = sortedJobs.map(item => item.id);
+        try { window.localStorage.setItem(IMAGE_TASK_PREFERENCES_KEY, JSON.stringify(next)); } catch { /* Optional persistence. */ }
+        setTaskPreferences(next);
+      };
 
       React.useLayoutEffect(() => {
         const workspace = imageWorkspaceRef.current;
@@ -18147,24 +18472,21 @@
         return tasks.run(feedback.key, feedback.label, invoke);
       };
 
-      const create = async () => {
-        const name = askNewName(T("新图片任务的名字"), T("图片 {n0}", { n0: new Date().toLocaleString("zh-CN", { hour12: false }) }));
-        if (name === null) return;
-        await run(async () => {
-          const initialTemplate = globalConfig?.imagePromptTemplates?.find(item => item.id === "character") ?? globalConfig?.imagePromptTemplates?.[0];
-          const created = await api.createImageJob({ name, ...(initialTemplate ? { promptTemplate: initialTemplate.id, lang: activeLang() } : {}) });
-          await refresh();
-          setJobId(created.jobId);
-        }, T("已新建图片任务"), { key: K_IMG_CREATE, label: T("正在新建任务…") });
+      const create = () => setTaskDialog("create");
+      const submitTaskDialog = async ({ name, directory }) => {
+        if (createLock.current) return;
+        createLock.current = true;
+        try {
+          await tasks.run(K_IMG_CREATE, T("正在新建任务…"), async () => {
+            const initialTemplate = globalConfig?.imagePromptTemplates?.find(item => item.id === "character") ?? globalConfig?.imagePromptTemplates?.[0];
+            const created = await api.createImageJob({ name, ...(directory.trim() ? { saveDirectory: directory.trim() } : {}), ...(initialTemplate ? { promptTemplate: initialTemplate.id, lang: activeLang() } : {}) });
+            saveTaskPreferences({ directory: directory.trim(), ...(taskPreferences.sort === "manual" ? { order: [...sortedJobs.map(item => item.id), created.jobId] } : {}) });
+            await refresh();
+            setJobId(created.jobId);
+          });
+          setTaskDialog(null);
+        } finally { createLock.current = false; }
       };
-      // 顶栏只保存稳定的调用入口；实际操作始终读取本次渲染的任务状态。
-      createRef.current = create;
-      const creating = tasks.has(K_IMG_CREATE);
-      React.useEffect(() => {
-        if (!props.onHeaderActions) return;
-        props.onHeaderActions({ create: () => void createRef.current(), busy: creating });
-        return () => props.onHeaderActions(null);
-      }, [props.onHeaderActions, creating]);
 
       const enqueueImageSave = (patch) => {
         const id = job.id;
@@ -18254,17 +18576,23 @@
       return h(
         React.Fragment,
         null,
+        taskDialog ? h(ImageTaskDialog, { api, preferences: taskPreferences, defaultDirectory: globalConfig?.imageJobsRoot,
+          onSubmit: submitTaskDialog, onClose: () => setTaskDialog(null) }) : null,
         h(
           "div",
           { className: "SPR_body" },
           h(JobSidebar, {
-            title: T("图片任务"),
-            items: jobs,
+            title: T("项目"),
+            items: sortedJobs,
             activeId: jobId,
             onSelect: setJobId,
             onCreate: create,
             createInSidebar: false,
-            renderActions: item => h(ProjectActionsMenu, { project: item, task: true, inline: true, onRename: renameJobEntry, onDelete: deleteJobEntry, onNotice: setNotice }),
+            storageKey: "image",
+            preferences: taskPreferences,
+            onPreferences: saveTaskPreferences,
+            onReorder: order => saveTaskPreferences({ order }),
+            renderActions: item => h(ProjectActionsMenu, { project: item, inline: true, onRename: renameJobEntry, onDelete: deleteJobEntry, onNotice: setNotice }),
             renderMeta: (item) => T("{n0} 张 · 抠像 {n1}", { n0: item.ready, n1: item.keyed })
           }),
           h(
@@ -18277,7 +18605,7 @@
               h(BusyBadge, { show: tasks.active, text: tasks.label(K_IMG_JOB) ?? tasks.label(K_IMG_KEY) ?? tasks.label(K_IMG_UPLOAD) ?? tasks.firstLabel ?? T("正在调用接口…") })
             ) : null,
             job === null
-              ? h("p", { className: "SPR_empty" }, T("请选择或新建一个图片任务"))
+              ? h("p", { className: "SPR_empty" }, T("请选择或创建一个项目"))
               : h(
                   "div",
                   { className: "SPR_imageWorkspace", ref: imageWorkspaceRef, key: job.id, "data-result-tab": view.tab },
@@ -24644,6 +24972,7 @@
 
         listImageJobs: () => call("listImageJobs"),
         createImageJob: (payload) => call("createImageJob", payload),
+        browseImageFolders: (payload) => call("browseImageFolders", payload),
         getImageJob: (jobId) => call("getImageJob", { jobId }),
         deleteImageJob: (payload) => call("deleteImageJob", payload),
         saveImageJob: (payload) => call("saveImageJob", payload),
@@ -24896,7 +25225,7 @@
      * `mapgeom` / `mapdoc` 的真实现做黄金对照逐点比对 —— 界面复刻的那部分几何
      * 必须有守门的，否则「预览与导出错位」会以静默的方式回来。
      */
-    bundleModule.exports.__test = { createVideoSubmitter, StudioPanel, MotionModule, MotionAnimationPreview, IsoModule, ImageModule, SequenceModule, mergeDrafts, RigSemanticsPanel, MapModule, MusicModule, SfxModule, ISO_pointToCell, ISO_cellCenter, ISO_cellTopLeft, ISO_lineCells, MAP_pointToCell, MAP_cellAnchor, MAP_cellTopLeft, MAP_lineCells, usePendingTasks, LoadingOverlay, MediaBox, BusyBtn, BusyBadge, NumField, ZoomableImage, CSS, subscribeIntent, parseIntents, openStudioIntent, OPEN_QUERY_KEY, StudioGlyph, StudioGlyphIcon, SidebarToggleIcon, publishHiddenModules, publishModuleOrder, readLastStudioModule, rememberStudioModule, readLastSidebarCollapsed, rememberSidebarCollapsed, useHiddenModules, visibleModulesOf, normalizeHiddenKeys, ConfigSection, attachSessionBridge, openAssetChat, openMusicChat, buildAssetRequestPrompt, buildIsoAssetRequestPrompt, buildMusicRequestPrompt, buildComposeRequestPrompt, openIsoAssetChat, deriveAssetName, deriveMusicName, ASSET_FRAMES_MIN, ASSET_FRAMES_MAX };
+    bundleModule.exports.__test = { createVideoSubmitter, StudioPanel, JobSidebar, ImageTaskDialog, readImageTaskPreferences, MotionModule, MotionAnimationPreview, IsoModule, ImageModule, SequenceModule, mergeDrafts, RigSemanticsPanel, MapModule, MusicModule, SfxModule, ISO_pointToCell, ISO_cellCenter, ISO_cellTopLeft, ISO_lineCells, MAP_pointToCell, MAP_cellAnchor, MAP_cellTopLeft, MAP_lineCells, usePendingTasks, LoadingOverlay, MediaBox, BusyBtn, BusyBadge, NumField, ZoomableImage, CSS, subscribeIntent, parseIntents, openStudioIntent, OPEN_QUERY_KEY, StudioGlyph, StudioGlyphIcon, SidebarToggleIcon, publishHiddenModules, publishModuleOrder, readLastStudioModule, rememberStudioModule, readLastSidebarCollapsed, rememberSidebarCollapsed, useHiddenModules, visibleModulesOf, normalizeHiddenKeys, ConfigSection, attachSessionBridge, openAssetChat, openMusicChat, buildAssetRequestPrompt, buildIsoAssetRequestPrompt, buildMusicRequestPrompt, buildComposeRequestPrompt, openIsoAssetChat, deriveAssetName, deriveMusicName, ASSET_FRAMES_MIN, ASSET_FRAMES_MAX };
     bundleModule.exports.__test.NoticePopup = NoticePopup;
     return bundleModule.exports;
   }
