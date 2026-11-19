@@ -131,7 +131,9 @@ export async function revealLocalFolder(directory: string, launch = spawn, platf
   if (!(await stat(target)).isDirectory()) throw new Error("文件夹已不存在。");
   const command = platform === "win32" ? "explorer.exe" : platform === "darwin" ? "open" : "xdg-open";
   await new Promise<void>((resolve, reject) => {
-    const child = launch(command, [target], { detached: true, stdio: "ignore", windowsHide: true });
+    // Explorer is the requested visible result, rather than a background helper.
+    // SW_HIDE can suppress the new folder window even though the process spawns.
+    const child = launch(command, [target], { detached: true, stdio: "ignore", windowsHide: platform !== "win32" });
     child.once("error", reject);
     child.once("spawn", () => { child.unref(); resolve(); });
   });

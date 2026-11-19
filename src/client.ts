@@ -5069,6 +5069,7 @@
 .SPR_taskGroupTitle[draggable=true]{cursor:grab}
 .SPR_side[data-kind=image] .SPR_taskList{display:flex;flex-direction:column;gap:2px}
 .SPR_side[data-kind=image] .SPR_taskList[hidden]{display:none}
+.SPR_side[data-kind=image][data-archive-empty=true]>.SPR_taskList:not([hidden]){flex:1;justify-content:center;min-height:140px}
 .SPR_taskPinned{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
 .SPR_taskArchiveLink{display:flex;align-items:center;gap:8px;flex:none;width:100%;margin-top:auto;padding:8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;text-align:left;cursor:pointer}
 .SPR_taskArchiveLink svg{width:16px;height:16px;flex:none}
@@ -5112,6 +5113,7 @@
 .SPR_sidebarInfoRoot{min-width:0}
 .SPR_sidebarInfoRoot>.SPR_projItem{width:100%}
 .SPR_side[data-kind=image] .SPR_projectRow .SPR_projItem{padding-right:62px}
+.SPR_side[data-kind=image] .SPR_projectRow:has(.SPR_imageProjectActions[data-archived=true]) .SPR_projItem{padding-right:36px}
 .SPR_imageProjectActions{position:absolute;right:4px;top:calc(50% - 12px);display:flex;align-items:center;gap:2px;opacity:0;pointer-events:none;transition:opacity .12s}
 .SPR_projectRow:hover .SPR_imageProjectActions,.SPR_projectRow:has(:focus-visible) .SPR_imageProjectActions{opacity:1;pointer-events:auto}
 .SPR_imageProjectActions .SPR_taskIconButton{width:24px;height:24px;border-radius:6px}
@@ -5813,8 +5815,8 @@
         onPointerEnter: event => show(event, action), onPointerLeave: dismiss, onFocus: event => show(event, action), onBlur: dismiss,
         onKeyDown: event => { if (event.key === "Escape" && (tip || timerRef.current !== null)) { event.preventDefault(); event.stopPropagation(); dismiss(); } },
         onClick: event => { event.stopPropagation(); dismiss(); onClick(); } }, h(ProjectActionIcon, { name: icon }));
-      return h("div", { className: "SPR_imageProjectActions" },
-        actionButton("pin", pinLabel, "pin", onPin), actionButton("archive", archiveLabel, archived ? "unarchive" : "archive", onArchive),
+      return h("div", { className: "SPR_imageProjectActions", "data-archived": archived === true },
+        archived ? null : actionButton("pin", pinLabel, "pin", onPin), actionButton("archive", archiveLabel, archived ? "unarchive" : "archive", onArchive),
         tip ? h("div", { ref: tipRef, id: tipId, className: "SPR_imageProjectTip", popover: "manual", role: "tooltip" }, tip === "pin" ? pinLabel : archiveLabel) : null);
     }
 
@@ -10257,7 +10259,7 @@
       const archivedCount = folderGroups.reduce((count, group) => count + group.allEntries.filter(item => preferences.archivedProjects?.includes(item.id)).length, 0);
       return h(
         "div",
-        { className: "SPR_side", "data-kind": storageKey },
+        { className: "SPR_side", "data-kind": storageKey, "data-archive-empty": archiveView && !visibleItems.length ? "true" : undefined },
         pinned.length || pinnedItems.length ? h("section", { className: "SPR_taskPinned", "aria-label": activeLang() === "en" ? T("置顶项目") : T("置顶") },
           h("div", { className: "SPR_taskPinnedHead" }, h("button", { type: "button", className: "SPR_taskSideTitle", "aria-expanded": !preferences.pinnedCollapsed, "aria-controls": "pinned-task-list-" + storageKey, onClick: () => onPreferences({ pinnedCollapsed: !preferences.pinnedCollapsed }) },
             h("span", null, activeLang() === "en" ? T("置顶项目") : T("置顶")), h(TaskHeaderIcon, { name: "chevron", collapsed: preferences.pinnedCollapsed }))),

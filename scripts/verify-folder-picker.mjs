@@ -28,7 +28,7 @@ try{
  const revealCalls=[];let unreferenced=false;
  const launch=(command,args,options)=>{revealCalls.push({command,args,options});const child=new EventEmitter();child.unref=()=>{unreferenced=true;};queueMicrotask(()=>child.emit('spawn'));return child;};
  const revealed=await revealLocalFolder(directory,launch,'win32');
- check('revealing a folder uses canonical path as one Explorer argument',revealed.dir===canonical&&revealCalls[0].command==='explorer.exe'&&revealCalls[0].args.length===1&&revealCalls[0].args[0]===canonical&&revealCalls[0].options.windowsHide&&unreferenced);
+ check('revealing a folder uses canonical path as one visible Explorer argument',revealed.dir===canonical&&revealCalls[0].command==='explorer.exe'&&revealCalls[0].args.length===1&&revealCalls[0].args[0]===canonical&&revealCalls[0].options.windowsHide===false&&unreferenced);
  await assert.rejects(revealLocalFolder('relative',launch,'win32'),/完整/);
  await assert.rejects(revealLocalFolder(join(testRoot,'missing'),launch,'win32'));
  await assert.rejects(revealLocalFolder(directory,()=>{const child=new EventEmitter();queueMicrotask(()=>child.emit('error',Error('synthetic spawn failure')));return child;},'win32'),/synthetic/);

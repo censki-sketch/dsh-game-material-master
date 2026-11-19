@@ -976,10 +976,13 @@ section("图片项目侧栏与创建弹窗");
 {
   HOOK.slots = []; HOOK.cursor = 0;
   const projectEvents = [];
-  const projectActions = bundle.__test.ImageProjectActions({ pinned: true, archived: true, onPin: () => projectEvents.push("pin"), onArchive: () => projectEvents.push("archive") });
+  const projectActions = bundle.__test.ImageProjectActions({ pinned: true, archived: false, onPin: () => projectEvents.push("pin"), onArchive: () => projectEvents.push("archive") });
   const projectButtons = byTag(projectActions, "button");
   projectButtons[1]?.props.onClick({ stopPropagation: () => projectEvents.push("stop") });
-  check("单个项目使用置顶和归档快捷图标，不再展开更多菜单", projectButtons.length === 2 && projectButtons[0].props["aria-label"] === "取消置顶" && projectButtons[0].props["aria-pressed"] === true && projectButtons[1].props["aria-label"] === "取消归档" && !byClass(projectActions, "SPR_projectMoreButton").length && projectEvents.join() === "stop,archive");
+  check("单个项目使用置顶和归档快捷图标，不再展开更多菜单", projectButtons.length === 2 && projectButtons[0].props["aria-label"] === "取消置顶" && projectButtons[0].props["aria-pressed"] === true && projectButtons[1].props["aria-label"] === "归档聊天" && !byClass(projectActions, "SPR_projectMoreButton").length && projectEvents.join() === "stop,archive");
+  HOOK.slots = []; HOOK.cursor = 0;
+  const archivedActions = bundle.__test.ImageProjectActions({ pinned: true, archived: true, onPin: () => {}, onArchive: () => {} });
+  check("归档项目仅保留取消归档操作，不显示置顶", byTag(archivedActions, "button").length === 1 && byTag(archivedActions, "button")[0].props["aria-label"] === "取消归档");
   HOOK.slots = []; HOOK.cursor = 0;
   const preferences = { directory: "", sort: "updated", layout: "merged", order: [] };
   const tree = bundle.__test.JobSidebar({ title: "项目", items: [makeImageJob()], activeId: "i1", storageKey: "image", preferences, onPreferences: () => {}, onCreate: () => {}, renderMeta: () => "" });
