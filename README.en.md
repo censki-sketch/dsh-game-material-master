@@ -244,7 +244,7 @@ images are sharper, which suits cases where you only need a few directions or wa
 Generate images from a prompt, with optional reference images. Enable **Transparent background** inside the prompt
 box to add solid-background instructions and automatically key the same color locally into a transparent PNG,
 without configuring keying parameters. You can also upload an existing image and run only the keying,
-without spending anything on generation.
+without spending anything on generation. Still images recover foreground color and coverage in mixed edges around fine hair and background gaps locally, without installing extra models or dependencies. Re-key existing images manually to apply the improvement without generating again.
 
 ### How to use it
 
@@ -271,7 +271,7 @@ Optimization and generation use the same reference selection: explicit `@图片N
 
 Transparent areas use the same checkerboard background in result images, enlarged previews and reference-image previews.
 
-In both prompt fields the reference menu opens only immediately after `@` and closes when more text is typed; Mention an image also opens it manually. Optimization describes the changed subject first and does not turn visible clothing or accessories into an invented preservation checklist. Still-image keying recovers foreground color and coverage along mixed screen-colored edges and suppresses residual spill, retaining interior colors and existing video behavior. Existing images can be re-keyed locally without generating again; broad colored outlines already drawn into the source may remain.
+In both prompt fields the reference menu opens only immediately after `@` and closes when more text is typed; Mention an image also opens it manually. Optimization describes the changed subject first and does not turn visible clothing or accessories into an invented preservation checklist. Still-image keying follows screen-connected tinted edges to recover foreground color and coverage, including fine strands and background gaps extending into the silhouette. Stable foreground color blocks and purple details separated by clean foreground are protected; video behavior is unchanged. A single image cannot fully distinguish intended details of the same hue from screen contamination, so broad colored outlines already drawn into the source still need inspection. Quit DSH completely, including its tray icon, reopen it, then manually re-key existing images after updating.
 
 ![Image generation · prompt and reference images](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-06-image.png)
 

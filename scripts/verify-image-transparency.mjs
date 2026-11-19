@@ -77,6 +77,50 @@ try {
   const transparentLegacy = keyGreen(edgeSource, edgeWidth, edgeHeight, edgeOptions).rgba;
   const transparentRefined = keyGreen(edgeSource, edgeWidth, edgeHeight, { ...edgeOptions, refineEdges: true }).rgba;
   check('already-transparent source edge is not refined a second time', transparentLegacy.subarray(mixed, mixed + 4).equals(transparentRefined.subarray(mixed, mixed + 4)));
+  const detailWidth = 80, detailHeight = 64;
+  const detailSource = Buffer.alloc(detailWidth * detailHeight * 4);
+  const detailPut = (x, y, color) => { const p = (y * detailWidth + x) * 4; color.forEach((v, c) => detailSource[p + c] = v); detailSource[p + 3] = 255; };
+  for (let y = 0; y < detailHeight; y++) for (let x = 0; x < detailWidth; x++) detailPut(x, y, screen);
+  for (let y = 16; y < 55; y++) for (let x = 28; x < 72; x++) detailPut(x, y, hair);
+  const hairMix = hair.map((v, c) => Math.round((v + screen[c]) / 2));
+  for (let x = 12; x < 30; x++) detailPut(x, 5, hairMix);
+  const detailResult = keyGreen(detailSource, detailWidth, detailHeight, { ...edgeOptions, refineEdges: true }).rgba;
+  const tip = (5 * detailWidth + 12) * 4;
+  check('thin hair with no clean reference within six pixels still recovers its color and coverage', Math.abs(detailResult[tip + 3] - 128) <= 2 && hair.every((v, c) => Math.abs(detailResult[tip + c] - v) <= 2));
+  check('fine strand remains present rather than being removed by whole-image erosion', Array.from({ length: 18 }, (_, x) => detailResult[(5 * detailWidth + 12 + x) * 4 + 3]).every(alpha => alpha > 100));
+  const isolatedSize = 96, isolatedSource = Buffer.alloc(isolatedSize * isolatedSize * 4);
+  for (let p = 0; p < isolatedSource.length; p += 4) { screen.forEach((v, c) => isolatedSource[p + c] = v); isolatedSource[p + 3] = 255; }
+  const isolatedTip = (48 * isolatedSize + 48) * 4;
+  hairMix.forEach((v, c) => isolatedSource[isolatedTip + c] = v);
+  const isolatedResult = keyGreen(isolatedSource, isolatedSize, isolatedSize, { ...edgeOptions, refineEdges: true }).rgba;
+  check('isolated tinted strand with no opaque reference loses screen hue without becoming an opaque gray rim', isolatedResult[isolatedTip + 3] > 64 && isolatedResult[isolatedTip + 3] < 200 && Math.min(isolatedResult[isolatedTip], isolatedResult[isolatedTip + 2]) - isolatedResult[isolatedTip + 1] <= 2);
+  for (let y = 6; y < 59; y++) for (let x = 6; x < 75; x++) detailPut(x, y, hair);
+  for (let y = 6; y < 43; y++) detailPut(40, y, hairMix);
+  for (let y = 39; y < 42; y++) for (let x = 39; x < 42; x++) detailPut(x, y, hairMix);
+  const intentionalPurple = [170, 35, 170];
+  detailPut(20, 40, intentionalPurple);
+  const gap = (40 * detailWidth + 40) * 4, decoration = (40 * detailWidth + 20) * 4;
+  const gapResult = keyGreen(detailSource, detailWidth, detailHeight, { ...edgeOptions, refineEdges: true }).rgba;
+  check('screen-connected tinted gap deep inside the silhouette is cleaned without a four-pixel limit', Math.abs(gapResult[gap + 3] - 128) <= 2 && hair.every((v, c) => Math.abs(gapResult[gap + c] - v) <= 2));
+  check('disconnected intentional purple decoration remains intact', gapResult.subarray(decoration, decoration + 4).equals(detailSource.subarray(decoration, decoration + 4)));
+  for (let y = 0; y < detailHeight; y++) for (let x = 0; x < detailWidth; x++) detailPut(x, y, screen);
+  for (let y = 10; y < 55; y++) for (let x = 20; x < 66; x++) detailPut(x, y, intentionalPurple);
+  for (let y = 12; y < 53; y++) detailPut(19, y, intentionalPurple.map((v, c) => Math.round((v + screen[c]) / 2)));
+  const purpleResult = keyGreen(detailSource, detailWidth, detailHeight, { ...edgeOptions, refineEdges: true }).rgba;
+  const garment = (30 * detailWidth + 20) * 4, purpleEdge = (30 * detailWidth + 19) * 4;
+  check('opaque purple garment sharing the screen hue remains opaque and keeps its original RGB', purpleResult.subarray(garment, garment + 4).equals(detailSource.subarray(garment, garment + 4)));
+  check('purple garment antialiasing is recovered against its own foreground color', Math.abs(purpleResult[purpleEdge + 3] - 128) <= 3 && intentionalPurple.every((v, c) => Math.abs(purpleResult[purpleEdge + c] - v) <= 3));
+  for (const [keyColor, color] of [['#00FF00', [0,255,0]], ['#0000FF', [0,0,255]], ['#FF0000', [255,0,0]], ['#FFFF00', [255,255,0]], ['#00FFFF', [0,255,255]]]) {
+    for (let y = 0; y < detailHeight; y++) for (let x = 0; x < detailWidth; x++) detailPut(x, y, color);
+    for (let y = 16; y < 55; y++) for (let x = 28; x < 72; x++) detailPut(x, y, hair);
+    // Green's legacy high threshold removes a 50% screen mixture before refinement.
+    // Use a surviving soft edge so this exercises recovery rather than that separate threshold.
+    const fraction = keyColor === '#00FF00' ? 0.8 : 0.5;
+    detailPut(26, 30, hair.map((v, c) => Math.round(v * fraction + color[c] * (1 - fraction))));
+    const keyed = keyGreen(detailSource, detailWidth, detailHeight, { ...edgeOptions, keyColor, refineEdges: true }).rgba;
+    const edge = (30 * detailWidth + 26) * 4, core = (30 * detailWidth + 50) * 4;
+    check(keyColor + ' edge recovery supports its own channel combination and preserves the opaque core', Math.abs(keyed[edge + 3] - fraction * 255) <= 3 && hair.every((v, c) => Math.abs(keyed[edge + c] - v) <= 3 && keyed[core + c] === v) && keyed[core + 3] === 255);
+  }
   await saveConfig({ imageProvider: "custom", customProtocol: "openai", customBaseUrl: origin, customApiKey: "fake-local-key", customModel: "fake-image", keyColor: "#0000FF" });
   put(6, 12, hair.map((v, c) => Math.round((v + screen[c]) / 2)));
   const edgeJob = await imagegen.createImageJob('uploaded edge fixture');
