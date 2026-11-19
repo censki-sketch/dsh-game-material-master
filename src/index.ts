@@ -1739,6 +1739,11 @@ export class GameStudioGateway extends TypertRemoteService {
     const input = asRecord(payload);
     const template = (await loadConfig()).imagePromptTemplates.find(item => item.id === input.promptTemplate);
     if (input.promptTemplate && !template) throw new Error("提示词模板已不存在，请刷新后重新选择。");
+    if (input.draft === true && input.reuseDraft === true) {
+      const lang = input.lang === "en" ? "en" : "zh";
+      const job = await imagegen.openImageDraft(asString(input.name, ""), asString(input.saveDirectory, ""), template ? { id: template.id, lang, prompt: template.prompt[lang] } : undefined);
+      return { jobId: job.id };
+    }
     const job = await imagegen.createImageJob(asString(input.name, ""), template?.prompt[input.lang === "en" ? "en" : "zh"] ?? "", asString(input.saveDirectory, ""), input.draft === true);
     if (template) { job.promptTemplateId = template.id; job.promptTemplateLang = input.lang === "en" ? "en" : "zh"; await imagegen.writeImageJob(job); }
     return { jobId: job.id };

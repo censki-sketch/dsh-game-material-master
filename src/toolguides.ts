@@ -275,6 +275,7 @@ const MODULE_TEXTS: Record<StudioModule, string> = {
     "",
     "## 方法",
     "- `listImageJobs()` / `createImageJob({name})` / `getImageJob({jobId})` / `deleteImageJob({jobId})`",
+    "- 编辑草稿可用`createImageJob({draft:true,reuseDraft:true,saveDirectory?})`：按真实保存文件夹复用未生成草稿，保留原提示词、参考图和模板；不传reuseDraft仍独立新建。草稿在生成或明确导入结果前不进入项目列表。",
     "- `saveImageJob({jobId,name?,prompt?,suffix?,settings?,keying?,approved?,index?})` / `uploadImageRef({jobId,name,data})` / `removeImageRef({jobId,file})`",
     "- `addImageItem({jobId,name,data})` / `removeImageItem({jobId,index})` / `runImageJob({jobId,count?})` / `keyImageJob({jobId})`",
     "- 每批生成保留在`getImageJob.history`，原图/透明图使用独立文件，不覆盖旧版；`runImageJob({jobId,index})`只重生指定一张（★计费），不能同时传count。",

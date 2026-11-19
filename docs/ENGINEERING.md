@@ -2734,7 +2734,13 @@ X-Api-Request-Id: <uuid>
 
 图片模块的 UI 统一称「项目」，wire 和任务 ID 仍沿用 `imageJob` / `i…`，旧数据兼容。`JobSidebar` 标题箭头使用 `task-list-collapsed:image` 本地缓存，独立于全局 `sidebar-collapsed`。标题不显示项目数量，管理入口为原生 manual-popover 两级菜单：目录分组／合并、最近更新／手动排序。文件夹更多与整理菜单的开关由 React 状态控制，显式监听外部 pointerdown 和 Escape；不依赖 React synthetic toggle.newState，避免原生 light-dismiss 与 onClick 状态冲突导致下次点两次。菜单内滚动不关闭文件夹菜单。`image-task-preferences` 缓存目录、布局、排序和 ID 顺序；手动顺序显式落盘，后台刷新不重排。支持 HTML 拖放和 Alt + ↑／↓；分组时只在同目录内调整顺序。菜单支持方向键、Escape、点击外部关闭，并按视口切换左右或上下布局。Escape 优先交给活动 dialog / 项目菜单。
 
-图片侧栏分两层：外层是打开的真实文件夹，内层是图片项目。顶部打开入口仅 `pickImageFolder` → clientOnly `attachImageFolder`，扫描一层有效 `i…/job.json` 并登记外部路径指针，不导入任意图片、不移动文件、不生成项目。目录 realpath，忽略符号链接、无效 ID 和草稿；已损坏或冲突的指针拒绝覆盖。打开空目录也有文件夹行。文件夹旁 compose 使用 `createImageJob({draft:true,saveDirectory})` 准备落盘编辑草稿；`listImageJobs` 隐藏草稿，输入/参考图不发布项目。`runImageJob` 验证请求与后端后将草稿转正式，再发起原有生成流程；新并发闸门覆盖草稿落盘 await。明确 `addImageItem` 也转正式，便于本地抠图项目。`draft` 字段沿 wire 与 normalize 保留。原工具端 `createImageJob` 不传 draft 仍兼容。
+图片侧栏分两层：外层是打开的真实文件夹，内层是图片项目。顶部打开入口仅 `pickImageFolder` → clientOnly `attachImageFolder`，扫描一层有效 `i…/job.json` 并登记外部路径指针，不导入任意图片、不移动文件、不生成项目。目录 realpath，忽略符号链接、无效 ID 和草稿；已损坏或冲突的指针拒绝覆盖。打开空目录也有文件夹行。文件夹旁 compose 使用 `createImageJob({draft:true,reuseDraft:true,saveDirectory})` 准备落盘编辑草稿；`listImageJobs` 隐藏草稿，输入/参考图不发布项目。`runImageJob` 验证请求与后端后将草稿转正式，再发起原有生成流程；新并发闸门覆盖草稿落盘 await。明确 `addImageItem` 也转正式，便于本地抠图项目。`draft` 字段沿 wire 与 normalize 保留。原工具端 `createImageJob` 不传 draft 仍兼容。
+
+compose现带 `draft:true,reuseDraft:true`，由 `openImageDraft` 按realpath目录串行处理，防止连击或多窗口并发创建多个草稿。扫描该目录的有效独立草稿，保留名称、提示词、参考图、模板与设置；旧版留下多个草稿时优先恢复有文字或参考图的最近编辑项，其他草稿保留。不同目录分别复用，已发布项目不复用；缺省reuseDraft的原调用仍独立新建。初始化模板仅作用于新草稿，不覆盖恢复内容。
+
+未生成草稿的编辑缓冲以 `image-editor-draft:<id>` 存于localStorage，并以模块Map兜底，保存主提示词、模板快照、尺寸及抠像设置。输入事件同步缓存文字；其他参数变化跟随React effect缓存，不新增保存或模型请求。切换项目、卸载面板及刷新后，load首次载入同一草稿时恢复缓存；后台刷新继续使用mergeDrafts保留当前输入。新建先等待已有保存队列，保存失败仍可用本地缓冲返回原草稿。明确复用历史参数、发布或彻底删除项目时清除相应缓冲，避免旧内容复活。
+
+`scripts/verify-image-drafts.mjs` 用真实wire/网关与临时目录验证并发复用、跨目录隔离、编辑内容不覆盖、新进程恢复、旧空草稿兼容及发布后新建，禁止任何网络请求。浏览器另验证切换聊天、未失焦直接卸载、保存失败、完整页面重载、文字/模板/参考图恢复与本地导入后的新建，不运行真实生成。此项修改了宿主半区，更新后需完全退出DSH（包括托盘）再启动。
 
 `image-task-preferences.folders` 保存目录折叠、移除状态与可选的本机显示名 `name`、关联源目录 `directories`；缺省源目录为该项 key，旧缓存兼容。`hiddenProjects` 保存本机移除的图片项目 ID。文件夹按钮始终显示 open/closed folder 图标，hover 不替换为 chevron；compose 与 more 统一线条。操作在 hover/键盘 focus-visible 时出现，触屏保持可用。文件夹卡片和菜单的「编辑项目」复用 `ImageTaskDialog(editableSources:true)`，名称、关联源目录先留在弹窗草稿，保存前逐个 attach 校验并发现已有项目；同目录去重、多个源合并为同一个本机分组，compose 使用首个源目录。取消、选择器取消及保存失败保留原列表；文件不搬迁，已隐藏的单个图片项目不会因分组改名而恢复。目录移除及文件夹编辑器左下角移除共用 modal alertdialog 二次确认，默认焦点取消，Escape 只关闭确认框。单个图片项目行已改用置顶／归档快捷操作，文件夹的编辑器与更多菜单保留。原对话工具 `deleteImageJob` 仍是显式永久删除接口，界面的本地移除不调用它。重新打开目录恢复其入口，已归组的源复用现有分组。
 

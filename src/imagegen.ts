@@ -239,6 +239,47 @@ export async function createImageJob(name: string, suffix = "", saveDirectory?: 
   return job;
 }
 
+const imageDraftOpens = new Map<string, Promise<ImageJob>>();
+
+/** The sidebar composer resumes one unfinished editor per real save folder. */
+export async function openImageDraft(name: string, saveDirectory?: string, template?: { id: string; lang: "zh" | "en"; prompt: string }): Promise<ImageJob> {
+  const custom = saveDirectory?.trim();
+  if (custom && !isAbsolute(custom)) throw new Error("请输入完整的保存文件夹路径。");
+  if (!custom) await mkdir(imageJobsRoot(), { recursive: true });
+  const parent = await realpath(custom || imageJobsRoot());
+  if (!(await stat(parent)).isDirectory()) throw new Error("保存位置必须是文件夹。");
+  const key = process.platform === "win32" ? parent.toLowerCase() : parent;
+  const previous = imageDraftOpens.get(key) ?? Promise.resolve();
+  const pending = previous.catch(() => undefined).then(async () => {
+    const drafts: ImageJob[] = [];
+    for (const entry of await readdir(parent, { withFileTypes: true })) {
+      if (!entry.isDirectory() || !isValidImageJobId(entry.name)) continue;
+      const target = join(parent, entry.name);
+      const raw = await readJson<ImageJob>(join(target, "job.json")).catch(() => undefined);
+      if (raw?.id !== entry.name || raw.draft !== true || raw.items?.length || raw.history?.length) continue;
+      const linked = await readImageJob(entry.name).catch(() => undefined);
+      const hasPointer = await stat(locationFile(entry.name)).then(() => true, () => false);
+      if (hasPointer && !linked) throw new Error(`项目索引已损坏，请先检查保存位置：${entry.name}`);
+      if (linked && await realpath(imageJobDir(entry.name)) !== await realpath(target)) continue;
+      const candidate = linked ?? normalizeImageJob(raw);
+      if (candidate.draft && !candidate.items.length && !candidate.history.length) drafts.push(candidate);
+    }
+    // Older releases could leave many blank drafts. Prefer authored work, then the latest edit.
+    drafts.sort((a, b) => Number(Boolean(b.prompt.trim() || b.refs.length)) - Number(Boolean(a.prompt.trim() || a.refs.length)) || b.updatedAt - a.updatedAt);
+    if (drafts.length) {
+      const job = drafts[0], target = join(parent, job.id);
+      if (resolve(target) !== resolve(join(imageJobsRoot(), job.id))) await writeJsonAtomic(locationFile(job.id), { id: job.id, directory: target });
+      return job;
+    }
+    const job = await createImageJob(name, template?.prompt ?? "", parent, true);
+    if (template) { job.promptTemplateId = template.id; job.promptTemplateLang = template.lang; await writeImageJob(job); }
+    return job;
+  });
+  imageDraftOpens.set(key, pending);
+  try { return await pending; }
+  finally { if (imageDraftOpens.get(key) === pending) imageDraftOpens.delete(key); }
+}
+
 export async function readImageJob(id: string): Promise<ImageJob | undefined> {
   if (!isValidImageJobId(id)) return undefined;
   const raw = await readJson<ImageJob>(jobFile(id));
