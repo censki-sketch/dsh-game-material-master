@@ -5632,8 +5632,11 @@
 .SPR_chatMaterialsEmpty h4{font-size:14px;font-weight:500;color:var(--dsw-alias-label-primary)}
 .SPR_modelGroupLabel{display:flex;align-items:center;gap:6px;margin:8px 6px 4px;font-size:11px;color:var(--dsw-alias-label-tertiary)}
 .SPR_modelProvider{margin-left:auto;flex:none;font-size:11px;color:var(--dsw-alias-label-tertiary);font-weight:400}
-.SPR_chatModelTrigger{display:flex;align-items:center;gap:4px;max-width:180px;font-size:12px}
+.SPR_chatModelTrigger{display:flex;align-items:center;gap:5px;max-width:350px;font-size:12px}
 .SPR_chatModelTrigger>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_chatModelTrigger>[data-model-kind]{max-width:160px;min-width:0}
+.SPR_chatModelTrigger>svg,.SPR_chatModelTrigger>.SPR_spinSm{flex:none}
+.SPR_chatModelSeparator{flex:none;color:var(--dsw-alias-label-tertiary)}
 .SPR_chatComposerBottom .SPR_chatModels .SPR_imageResultMore{width:auto;padding:4px 6px}
 .SPR_chatModels .SPR_imageResultMenu>.SPR_btn[aria-checked=true]{background:var(--dsw-alias-interactive-bg-hover-solid);font-weight:500}
 .SPR_chatModels .SPR_imageResultMenu{width:320px}
@@ -18674,6 +18677,8 @@
           for (const result of results) if (result.status === "rejected") setNotice({ kind: "error", text: msg(result.reason) });
         } finally { lock.current = false; if (alive.current) setLoading(false); }
       };
+      // Read metadata on entry so both names are visible before the menu is opened.
+      React.useEffect(() => { void load(); }, [api, jobId]);
       const switchImage = async model => {
         if (lock.current) return;
         lock.current = true; setLoading(true);
@@ -18695,7 +18700,11 @@
       const legacyCatalog = !loading && ((imageConfig && images && !Array.isArray(images.imageModels)) || (catalog && !Array.isArray(catalog.models)));
       return h("div", { className: "SPR_chatModels" }, h(ImageResultMenu, { label: imageConfig ? T("切换模型") : T("提示词优化模型"), disabled: disabled || loading, onOpen: () => void load(),
         icon: h("span", { className: "SPR_chatModelTrigger" }, loading ? h("span", { className: "SPR_spinSm", "aria-hidden": "true" }) : null,
-          h("span", null, imageConfig ? images?.imageModel || T("选择模型") : promptName), h("svg", { width: 12, height: 12, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", "aria-hidden": "true" }, h("path", { d: "m4 6 4 4 4-4" }))) },
+          imageConfig ? h(React.Fragment, null,
+            h("span", { "data-model-kind": "image", title: T("生图模型") + ": " + (images?.imageModel || T("选择模型")) }, images?.imageModel || T("选择模型")),
+            h("span", { className: "SPR_chatModelSeparator", "aria-hidden": "true" }, "/")) : null,
+          h("span", { "data-model-kind": "prompt", title: T("提示词优化模型") + ": " + promptName }, promptName),
+          h("svg", { width: 12, height: 12, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", "aria-hidden": "true" }, h("path", { d: "m4 6 4 4 4-4" }))) },
         imageConfig ? h(React.Fragment, null, h("p", { className: "SPR_modelGroupLabel" }, T("生图"), legacyCatalog ? h(DescriptionTip, { id: jobId + "-model-catalog", label: T("模型列表"), text: T("完全退出DSH（包括托盘）后重开，可显示完整模型列表。") }) : null),
           imageModelChoices(images).map(model => h(Btn, { key: model.provider, role: "menuitemradio", disabled: !!model.blocker, title: model.blocker || undefined, "aria-checked": images.imageProvider === model.provider, onClick: () => void switchImage(model) },
             h("span", null, model.model || "—"), h("span", { className: "SPR_modelProvider" }, model.provider === "ark" ? T("火山方舟") : model.provider === "toapis" ? "ToAPIs" : T("自定义")))),
