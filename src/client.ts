@@ -6383,14 +6383,12 @@
         }, text) : null);
     }
 
-    /** 顶部工作台侧栏开关：用一个窄栏 + 箭头图标表达收起 / 展开状态。 */
+    /** 顶部工作台侧栏开关：用单个方向箭头表达收起 / 展开状态。 */
     function SidebarToggleIcon({ collapsed }) {
-      const direction = collapsed ? "M8 12h8M12 8l4 4-4 4" : "M16 12H8M12 8l-4 4 4 4";
+      const direction = collapsed ? "M5 12h14M13 6l6 6-6 6" : "M19 12H5M11 6l-6 6 6 6";
       return h(
         "svg",
         { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
-        h("rect", { x: 3.5, y: 4, width: 17, height: 16, rx: 2.5 }),
-        h("path", { d: "M9 4v16" }),
         h("path", { d: direction })
       );
     }
