@@ -87,6 +87,8 @@ export interface ImageJob {
   keying: KeyingSettings;
   items: ImageItem[];
   history: ImageHistoryEntry[];
+  /** Submitted generation rounds, including failures without an image. Never contains credentials. */
+  rounds?: ImageRound[];
   /** 固定流程里问过用户的审核模式；没问过就是 undefined。 */
   reviewMode?: "auto" | "manual";
   log: JobLogEntry[];
@@ -115,6 +117,7 @@ export interface ImageHistoryEntry {
   request?: ImageRequestSnapshot;
   /** Local re-key settings, separate from the original generation request. */
   keying?: KeyingSettings;
+  sourceVersionId?: string;
   /** Explicit local cleanup; original generation snapshot and older PNGs stay intact. */
   cleanup?: { sourceVersionId: string; points: ImageCleanupPoint[] };
 }
@@ -124,6 +127,15 @@ export interface ImageBatch {
   request: ImageRequestSnapshot;
   /** In-memory only, never serialized into job/history or returned to clients. */
   config: Config;
+}
+
+export interface ImageRound {
+  id: string;
+  createdAt: number;
+  completedAt?: number;
+  request: ImageRequestSnapshot;
+  logs?: JobLogEntry[];
+  results: Array<{ index: number; status: "running" | "ready" | "error"; versionId?: string; error?: string }>;
 }
 
 export interface ImageJobSummary {
@@ -438,6 +450,7 @@ function normalizeImageJob(raw: any): ImageJob {
       id: item.versionId!, batchId: "legacy", createdAt: item.updatedAt ?? raw.updatedAt ?? raw.createdAt ?? Date.now(),
       kind: "legacy" as const, item: { ...item, status: "ready" as const }
     })),
+    rounds: Array.isArray(raw?.rounds) ? raw.rounds : [],
     reviewMode: raw?.reviewMode === "manual" ? "manual" : raw?.reviewMode === "auto" ? "auto" : undefined,
     log: Array.isArray(raw?.log) ? raw.log.slice(-200) : []
   };
@@ -531,7 +544,7 @@ export function buildPrompt(job: ImageJob, fallbackKeyColor = DEFAULT_KEY_COLOR)
 }
 
 /** Freeze one batch before submitting any paid requests. */
-export async function prepareImageBatch(jobId: string, count?: number): Promise<ImageBatch> {
+export async function prepareImageBatch(jobId: string, count?: number, index?: number): Promise<ImageBatch> {
   const config = await loadConfig();
   assertImageProviderReady(config);
   return editImageJob(jobId, job => {
@@ -542,22 +555,26 @@ export async function prepareImageBatch(jobId: string, count?: number): Promise<
     const finalPrompt = buildPrompt({ ...job, keying });
     if (!finalPrompt) throw new Error("提示词为空，请先填写");
     const referenceFiles = resolveImageReferences(`${job.prompt}\n${job.suffix}`, job.refs).map(ref => ref.file);
-    return { id: randomUUID(), config, request: {
+    const batch: ImageBatch = { id: randomUUID(), config, request: {
       prompt: job.prompt, suffix: job.suffix, promptTemplateId: job.promptTemplateId, promptTemplateLang: job.promptTemplateLang,
       refs: job.refs.map(ref => ({ ...ref })), referenceFiles, settings: { ...job.settings, watermark: imageWatermarkOf(config) || job.settings.watermark },
       keying, finalPrompt, provider: config.imageProvider
     } };
+    (job.rounds ??= []).push({ id: batch.id, createdAt: Date.now(), request: batch.request, logs: [],
+      results: (index === undefined ? Array.from({ length: job.settings.count }, (_, i) => i) : [index]).map(i => ({ index: i, status: "running" })) });
+    return batch;
   });
 }
 
 /** One image, one paid call. New bytes never overwrite a previous version. */
 export async function generateImageItem(jobId: string, index: number, batch?: ImageBatch): Promise<void> {
-  const prepared = batch ?? await prepareImageBatch(jobId);
+  const prepared = batch ?? await prepareImageBatch(jobId, undefined, index);
   const request = prepared.request;
   await editImageJob(jobId, job => {
     const item = job.items[index] ?? { index, status: "empty", source: "generated" };
     job.items[index] = { ...item, status: "running", error: undefined };
     appendJobLog(job.log, "info", `开始生成第 ${index + 1} 张（尺寸 ${request.settings.size}）`);
+    appendImageRoundLog(job, prepared.id, "info", `开始生成第 ${index + 1} 张（尺寸 ${request.settings.size}）`);
   });
   try {
     const refs = await Promise.all(request.referenceFiles.map(file => toDataUri(imageAssetPath(jobId, file), mimeOf(file))));
@@ -575,20 +592,50 @@ export async function generateImageItem(jobId: string, index: number, batch?: Im
       const item: ImageItem = { versionId: id, index, status: "ready", source: "generated", file: relative, updatedAt: Date.now() };
       job.items[index] = item;
       appendJobLog(job.log, "info", `第 ${index + 1} 张生成完成（${(result.bytes.length / 1024).toFixed(0)} KB）`);
+      appendImageRoundLog(job, prepared.id, "info", `第 ${index + 1} 张生成完成（${(result.bytes.length / 1024).toFixed(0)} KB）`);
       if (request.keying.enabled) {
-        try { await keyItem(job, index, request.keying); }
-        catch (error) { item.error = messageOf(error); appendJobLog(job.log, "error", `原图已保存，自动抠像失败：${item.error}`); }
+        try { await keyItem(job, index, request.keying); appendImageRoundLog(job, prepared.id, "info", `第 ${index + 1} 张本地抠像完成`); }
+        catch (error) { item.error = messageOf(error); appendJobLog(job.log, "error", `原图已保存，自动抠像失败：${item.error}`); appendImageRoundLog(job, prepared.id, "error", `原图已保存，自动抠像失败：${item.error}`); }
       }
       job.history.push({ id, batchId: prepared.id, createdAt: Date.now(), kind: "generated", item: { ...item }, request });
+      completeImageRoundItem(job, prepared.id, index, { status: "ready", versionId: id, error: item.error });
     });
   } catch (error) {
     await editImageJob(jobId, job => {
       const target = job.items[index] ?? { index, source: "generated" as const };
       job.items[index] = { ...target, status: "error", error: messageOf(error), updatedAt: Date.now() };
       appendJobLog(job.log, "error", `第 ${index + 1} 张生成失败：${messageOf(error)}`);
+      appendImageRoundLog(job, prepared.id, "error", `第 ${index + 1} 张生成失败：${messageOf(error)}`);
+      completeImageRoundItem(job, prepared.id, index, { status: "error", error: messageOf(error) });
     });
     throw error;
   }
+}
+
+function appendImageRoundLog(job: ImageJob, batchId: string, level: "info" | "error", message: string) {
+  const round = job.rounds?.find(value => value.id === batchId);
+  if (round) appendJobLog(round.logs ??= [], level, message);
+}
+
+function completeImageRoundItem(job: ImageJob, batchId: string, index: number, patch: Partial<ImageRound["results"][number]>) {
+  const round = job.rounds?.find(value => value.id === batchId), result = round?.results.find(value => value.index === index);
+  if (!round || !result) return;
+  Object.assign(result, patch);
+  if (round.results.every(value => value.status !== "running")) round.completedAt = Date.now();
+}
+
+/** A restarted host must not silently resubmit a possibly billed request. */
+export async function interruptImageRounds(jobId: string, isActive: () => boolean = () => false) {
+  return editImageJob(jobId, job => {
+    if (isActive()) return job;
+    for (const round of job.rounds ?? []) for (const result of round.results) if (result.status === "running") {
+      const error = "宿主已重启，本轮结果未知，可能已计费；未自动重试。";
+      completeImageRoundItem(job, round.id, result.index, { status: "error", error });
+      appendImageRoundLog(job, round.id, "error", `第 ${result.index + 1} 张：${error}`);
+      if (job.items[result.index]?.status === "running") Object.assign(job.items[result.index], { status: "error", error });
+    }
+    return job;
+  });
 }
 
 /** 对某一张跑绿幕抠像并写出透明 PNG。就地修改传入的 job（不落盘）。 */
@@ -630,7 +677,7 @@ export async function rekeyImageJob(jobId: string): Promise<ImageJob> {
         job.items[i].status = "ready";
         job.items[i].error = undefined;
         job.history.push({ id, batchId, createdAt: Date.now(), kind: "keyed", item: { ...job.items[i] },
-          request: previous?.request, keying: { ...keying } });
+          request: previous?.request, sourceVersionId: previous?.id, keying: { ...keying } });
         count++;
       } catch (error) {
         job.items[i].error = messageOf(error);
@@ -662,7 +709,7 @@ export async function cleanImageJobRegions(jobId: string, index: number, version
     job.items[index] = { ...item, versionId: id, keyedFile: relative, status: "ready", error: undefined, approved: false,
       backgroundFraction: transparent / (decoded.width * decoded.height), updatedAt: Date.now() };
     job.history.push({ id, batchId: id, createdAt: Date.now(), kind: "keyed", item: { ...job.items[index] },
-      request: previous?.request, keying: previous?.keying, cleanup: { sourceVersionId: versionId, points: points.map(point => ({ ...point })) } });
+      request: previous?.request, keying: previous?.keying, sourceVersionId: versionId, cleanup: { sourceVersionId: versionId, points: points.map(point => ({ ...point })) } });
     appendJobLog(job.log, "info", `局部补抠已保存：第 ${index + 1} 张，清除 ${cleaned.changedPixels} 像素，旧版本保留在历史中。`);
     return { ok: true, versionId: id, changedPixels: cleaned.changedPixels };
   };
@@ -741,41 +788,51 @@ export async function removeImageItem(jobId: string, index: number): Promise<voi
 
 async function removeUnusedImageFiles(job: ImageJob, files: Array<string | undefined>): Promise<void> {
   const retained = new Set([...job.items, ...job.history.map(entry => entry.item)].flatMap(item => [item.file, item.keyedFile]));
+  for (const request of [...(job.rounds ?? []).map(round => round.request), ...job.history.map(entry => entry.request)]) {
+    for (const ref of request?.refs ?? []) retained.add(ref.file);
+  }
   for (const file of new Set(files)) {
     if (file && !retained.has(file)) await rm(imageAssetPath(job.id, file), { force: true });
   }
 }
 
 /** Local history operations; never submit a generation request or change global credentials. */
-export async function manageImageHistory(jobId: string, historyId: string, action: "restore" | "reuse" | "delete") {
+export async function manageImageHistory(jobId: string, historyId: string, action: "restore" | "reuse" | "delete", mode: "all" | "prompt" | "parameters" = "all") {
   let removedFiles: Array<string | undefined> = [];
   return editImageJob(jobId, async job => {
     if (job.items.some(item => item.status === "running")) throw new Error("图片任务正在处理，请完成后再操作历史记录。");
     const entry = job.history.find(value => value.id === historyId);
-    if (!entry) throw new Error("历史记录已不存在，请刷新后重试。");
+    const round = job.rounds?.find(value => value.id === historyId);
+    if (!entry && !(round && action === "reuse")) throw new Error("历史记录已不存在，请刷新后重试。");
     if (action === "restore") {
-      await stat(imageAssetPath(jobId, entry.item.file!));
-      if (entry.item.keyedFile) await stat(imageAssetPath(jobId, entry.item.keyedFile));
-      const index = Math.min(entry.item.index, job.items.length);
-      job.items[index] = { ...entry.item, index, status: "ready", error: undefined, updatedAt: Date.now() };
+      await stat(imageAssetPath(jobId, entry!.item.file!));
+      if (entry!.item.keyedFile) await stat(imageAssetPath(jobId, entry!.item.keyedFile));
+      const index = Math.min(entry!.item.index, job.items.length);
+      job.items[index] = { ...entry!.item, index, status: "ready", error: undefined, updatedAt: Date.now() };
       return { index };
     }
     if (action === "reuse") {
-      const request = entry.request;
+      const request = entry?.request ?? round?.request;
       if (!request) throw new Error("这条旧记录没有保存生成参数，无法复用。");
-      for (const ref of request.refs) await stat(imageAssetPath(jobId, ref.file));
-      job.prompt = request.prompt; job.suffix = request.suffix;
-      job.promptTemplateId = request.promptTemplateId; job.promptTemplateLang = request.promptTemplateLang;
-      job.refs = request.refs.map(ref => ({ ...ref }));
+      if (mode !== "parameters") {
+        for (const ref of request.refs) await stat(imageAssetPath(jobId, ref.file));
+        job.prompt = request.prompt;
+        // Preserve @ labels by restoring the matching reference order with the text.
+        job.refs = request.refs.map(ref => ({ ...ref }));
+      }
       // Pin the historical pixel dimensions, while the model/provider still
       // follow the user's global choice for the next explicitly paid request.
-      job.settings = { ...request.settings, sizeMode: "custom" };
-      job.keying = { ...(entry.keying ?? request.keying) };
+      if (mode !== "prompt") {
+        job.suffix = request.suffix;
+        job.promptTemplateId = request.promptTemplateId; job.promptTemplateLang = request.promptTemplateLang;
+        job.settings = { ...request.settings, sizeMode: "custom" };
+        job.keying = { ...(entry?.keying ?? request.keying) };
+      }
       return { reused: true };
     }
     if (action !== "delete") throw new Error("未知的历史记录操作。");
     job.history = job.history.filter(value => value.id !== historyId);
-    removedFiles = [entry.item.file, entry.item.keyedFile];
+    removedFiles = [entry!.item.file, entry!.item.keyedFile];
     return { deleted: true };
   }, job => removeUnusedImageFiles(job, removedFiles));
 }

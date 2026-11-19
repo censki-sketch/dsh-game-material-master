@@ -77,7 +77,9 @@ const ReactStub = {
 // ── 加载产物 ─────────────────────────────────────────────────────────────
 const source = readFileSync(target, "utf8");
 const LOADED = [];
+const CLIENT_EVENTS = [];
 const windowStub = {
+  dispatchEvent(event) { CLIENT_EVENTS.push(event); return true; },
   __ModuleLoader__: {
     load(registration) {
       LOADED.push(registration);
@@ -1142,6 +1144,28 @@ section("图片项目侧栏与创建弹窗");
 }
 
 if (typeof ImageModule === "function") {
+  section("图片聊天轮次与版本归组");
+  {
+    const build = bundle.__test.imageConversationRounds;
+    const snapshot = { prompt: "已提交的描述", settings: { size: "2K" }, refs: [], keying: {} };
+    const original = { id: "v1", batchId: "r1", createdAt: 2, kind: "generated", item: { versionId: "v1", index: 0, status: "ready", file: "out/a.png" }, request: snapshot };
+    const second = { ...original, id: "v2", item: { ...original.item, versionId: "v2", index: 1, file: "out/b.png" } };
+    const cutout = { ...original, id: "cut1", batchId: "keyed", createdAt: 4, kind: "keyed", sourceVersionId: "v1", item: { ...original.item, versionId: "cut1", keyedFile: "keyed/a.png" } };
+    const generated = { id: "r1", createdAt: 1, request: snapshot, results: [{ index: 0, status: "ready", versionId: "v1" }, { index: 1, status: "ready", versionId: "v2" }], logs: [{ at: 3, level: "info", message: "本轮日志" }] };
+    const failed = { id: "r2", createdAt: 5, request: { ...snapshot, prompt: "失败的请求" }, results: [{ index: 0, status: "error", error: "测试失败" }] };
+    const fixture = { ...makeImageJob(), prompt: "仍在编辑的描述", items: [cutout.item], history: [original, second, cutout], rounds: [generated, failed], log: [{ at: 3, level: "info", message: "其他日志" }] };
+    const rounds = build(fixture);
+    check("原始批次两张图片与本地抠图组成同一轮", rounds.length === 2 && rounds[0].slots.length === 2 && rounds[0].slots[0].versions.length === 2);
+    check("历史消息使用提交快照，不使用编辑草稿", rounds[0].request.prompt === "已提交的描述" && fixture.prompt === "仍在编辑的描述");
+    check("失败轮次保留独立描述、状态和错误", rounds[1].request.prompt === "失败的请求" && rounds[1].status === "error" && rounds[1].slots[0].versions[0].item.error === "测试失败");
+    check("执行日志优先使用对应轮次的持久化日志", rounds[0].logs.length === 1 && rounds[0].logs[0].message === "本轮日志");
+    const withoutOriginal = build({ ...fixture, history: [second, cutout] });
+    check("删除原始历史条目后，抠图仍通过来源版本归到原轮次", withoutOriginal.length === 2 && withoutOriginal[0].entries.some(entry => entry.id === "cut1"));
+    const currentRetained = build({ ...fixture, items: [original.item], history: [second] });
+    check("当前结果仍引用已删历史时，不额外创建虚假轮次", currentRetained.length === 2 && currentRetained[0].entries.some(entry => entry.id === "v1"));
+    const legacy = build({ ...makeImageJob(), history: [{ ...original, kind: "legacy", request: undefined }], items: [original.item], prompt: "新文字" });
+    check("旧记录不伪造请求快照", legacy.length === 1 && !legacy[0].request);
+  }
   section("模块② 图片生成");
   {
     const idle = renderModule(ImageModule, makeImageJob(), makeTasks());
@@ -1163,8 +1187,11 @@ if (typeof ImageModule === "function") {
     check("自定义尺寸时显示任务尺寸输入框", byTag(customSize.tree, "input").some((node) => node.props["data-testid"] === "image-task-size" && node.props.value === "1024x1536"));
 
     const gen = renderModule(ImageModule, makeImageJob(), makeTasks(["img:job"]));
-    check("整批生成时主图被盖住，所有缩略图都有忙碌反馈", overlays(gen.tree).length === 1 && byClass(gen.tree, "SPR_imageGalleryThumbBusy").length === 2);
-    check("遮罩文案是生成", overlayText(gen.tree).includes("img:job"), overlayText(gen.tree));
+    check("提交新一轮时保留旧图，工具栏反馈忙碌", overlays(gen.tree).length === 0 && byClass(gen.tree, "SPR_busyBadge").length >= 1);
+    const pendingBatch = makeImageJob({ rounds: [{ id: "batch-new", createdAt: 3, request: { prompt: "新一轮描述", settings: { size: "2K" }, refs: [], keying: {} }, results: [{ index: 0, status: "running" }, { index: 1, status: "running" }] }] });
+    pendingBatch.history = pendingBatch.items.map((item, index) => ({ id: "old-" + index, batchId: "batch-old", createdAt: 1, kind: "generated", item: { ...item, index, versionId: "old-" + index } }));
+    const pendingTree = renderModule(ImageModule, pendingBatch, makeTasks()).tree;
+    check("新一轮等待的全部图片均有反馈，旧轮次仍可查看", overlays(pendingTree).length === 1 && byClass(pendingTree, "SPR_imageGalleryThumbBusy").length === 2 && byClass(pendingTree, "SPR_chatRound").length === 2);
     check("按钮转圈", byClass(gen.tree, "SPR_btn").some((node) => node.props["data-busy"] === "true"));
 
     const one = renderModule(ImageModule, makeImageJob(), makeTasks(["img:item:0"]));
@@ -1231,8 +1258,8 @@ if (typeof ImageModule === "function") {
     check("图片任务有审核模式下拉", hasReviewModeSelect(acceptance.tree), modeOptions(acceptance.tree).join("、"));
     const approvedJob = makeImageJob();
     approvedJob.items = [
-      { status: "ready", source: "generated", file: "out/1.png", updatedAt: 2, approved: true },
-      { status: "empty", source: "generated" }
+      { index: 0, status: "ready", source: "generated", file: "out/1.png", updatedAt: 2, approved: true },
+      { index: 1, status: "empty", source: "generated" }
     ];
     const approvedTree = renderModule(ImageModule, approvedJob, makeTasks()).tree;
     check("已通过的显示「已通过」", approveLabels(approvedTree).includes("已通过"), approveLabels(approvedTree).join("、"));
@@ -1833,7 +1860,9 @@ section("图片提示词保存与生成时序");
   check("失焦保存未完成时不提交生成", calls.length === 1 && calls[0].type === "save", JSON.stringify(calls));
   releaseFirst();
   await generated;
+  await new Promise(resolve => setImmediate(resolve));
   check("所有保存完成后才使用最新提示词生成", calls.map(x=>x.type).join(",") === "save,save,generate" && calls.at(-1).prompt === "latest typed prompt", JSON.stringify(calls));
+  check("主动生成成功后才跟随最新轮次", CLIENT_EVENTS.some(event => event.type === "gmm-image-conversation" && event.detail.jobId === job.id && event.detail.latest === true));
 }
 
 section("手动抠像保存时序");

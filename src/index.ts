@@ -1751,9 +1751,10 @@ export class GameStudioGateway extends TypertRemoteService {
 
   async getImageJob(payload) {
     const jobId = asString(asRecord(payload).jobId);
-    const tasks = [...(imageTasks.get(jobId) ?? [])];
-    const job = await imagegen.readImageJob(jobId);
+    let job = await imagegen.readImageJob(jobId);
     if (job === undefined) throw new Error(`任务不存在：${jobId}`);
+    if (!imageTasks.get(jobId)?.size && job.rounds?.some(round => round.results.some(result => result.status === "running"))) job = await imagegen.interruptImageRounds(jobId, () => !!imageTasks.get(jobId)?.size);
+    const tasks = [...(imageTasks.get(jobId) ?? [])];
     /**
      * `dir` 是**本机绝对目录**：对话里的 agent 要把生成结果交给别的模块
      * （例如 `composeMapAsset` 整理地图素材），而 `assetBase` 是给浏览器用的 URL。
@@ -1876,7 +1877,7 @@ export class GameStudioGateway extends TypertRemoteService {
     const input = asRecord(payload);
     const jobId = asString(input.jobId);
     if (imageTasks.get(jobId)?.size) throw new Error("图片任务正在处理，请完成后再操作历史记录。");
-    return imagegen.manageImageHistory(jobId, asString(input.historyId), input.action as "restore" | "reuse" | "delete");
+    return imagegen.manageImageHistory(jobId, asString(input.historyId), input.action as "restore" | "reuse" | "delete", input.mode as "all" | "prompt" | "parameters" | undefined);
   }
 
   async cleanImageRegion(payload) {
@@ -1896,17 +1897,19 @@ export class GameStudioGateway extends TypertRemoteService {
     const index = input.index === undefined ? undefined : clampInt(input.index, -1, 0, 9999);
     if (index !== undefined && (index < 0 || !job.items[index])) throw new Error("要重新生成的图片不存在。");
     const count = index === undefined ? clampInt(input.count, job.settings.count, 1, 8) : undefined;
-    const batch = await imagegen.prepareImageBatch(jobId, count);
-    // Preparation awaits disk/config reads; another submission may have started.
-    if (imageTasks.get(jobId)?.size) throw new Error("图片任务正在处理，请完成后再生成。");
-    let started = 0;
-    if (job.draft) await imagegen.editImageJob(jobId, current => { current.draft = false; });
-    if (imageTasks.get(jobId)?.size) throw new Error("图片任务正在处理，请完成后再生成。");
-    for (const i of index === undefined ? Array.from({ length: count! }, (_, i) => i) : [index]) {
-      if (kickImageItem(jobId, i, batch)) started++;
+    imageTasks.set(jobId, new Set(["image:submit"]));
+    try {
+      const batch = await imagegen.prepareImageBatch(jobId, count, index);
+      let started = 0;
+      if (job.draft) await imagegen.editImageJob(jobId, current => { current.draft = false; });
+      for (const i of index === undefined ? Array.from({ length: count! }, (_, i) => i) : [index]) {
+        if (kickImageItem(jobId, i, batch)) started++;
+      }
+      if (started === 0) throw new Error("这些图片已经在生成中，请等它们跑完");
+      return { started: true, count: started };
+    } finally {
+      const tasks = imageTasks.get(jobId); tasks?.delete("image:submit"); if (!tasks?.size) imageTasks.delete(jobId);
     }
-    if (started === 0) throw new Error("这些图片已经在生成中，请等它们跑完");
-    return { started: true, count: started };
   }
 
   async keyImageJob(payload) {
