@@ -1158,6 +1158,7 @@ if (typeof ImageModule === "function") {
     check("原始批次两张图片与本地抠图组成同一轮", rounds.length === 2 && rounds[0].slots.length === 2 && rounds[0].slots[0].versions.length === 2);
     check("历史消息使用提交快照，不使用编辑草稿", rounds[0].request.prompt === "已提交的描述" && fixture.prompt === "仍在编辑的描述");
     check("失败轮次保留独立描述、状态和错误", rounds[1].request.prompt === "失败的请求" && rounds[1].status === "error" && rounds[1].slots[0].versions[0].item.error === "测试失败");
+    check("仅存于结果的旧错误补入执行详情，原轮次日志不变", rounds[1].logs.some(entry => entry.level === "error" && entry.message.includes("测试失败")) && !failed.logs);
     check("执行日志优先使用对应轮次的持久化日志", rounds[0].logs.length === 1 && rounds[0].logs[0].message === "本轮日志");
     const withoutOriginal = build({ ...fixture, history: [second, cutout] });
     check("删除原始历史条目后，抠图仍通过来源版本归到原轮次", withoutOriginal.length === 2 && withoutOriginal[0].entries.some(entry => entry.id === "cut1"));
@@ -1200,6 +1201,13 @@ if (typeof ImageModule === "function") {
     pendingBatch.history = pendingBatch.items.map((item, index) => ({ id: "old-" + index, batchId: "batch-old", createdAt: 1, kind: "generated", item: { ...item, index, versionId: "old-" + index } }));
     const pendingTree = renderModule(ImageModule, pendingBatch, makeTasks()).tree;
     check("新一轮等待的全部图片均有反馈，旧轮次仍可查看", overlays(pendingTree).length === 1 && byClass(pendingTree, "SPR_imageGalleryThumbBusy").length === 2 && byClass(pendingTree, "SPR_chatRound").length === 2);
+    const failedMessage = 'OpenAI API 生图失败（HTTP 502）：<!DOCTYPE html><html><head><title>502: Bad gateway</title></head></html>';
+    const failedJob = makeImageJob({ items: [{ index: 0, status: "error", error: failedMessage }], history: [], rounds: [], log: [] });
+    const failedTree = renderModule(ImageModule, failedJob, makeTasks()).tree;
+    check("失败结果仅保留顶部状态，不重复显示错误大框和空预览", byClass(failedTree, "SPR_imageGalleryMedia").length === 0 && byClass(failedTree, "SPR_error").length === 0 && byClass(failedTree, "SPR_chatProgress").some(node => node.props["data-status"] === "error"));
+    check("失败图片直接提供重新生成，不显示空的更多菜单", byTag(failedTree, "button").some(node => textOf(node) === "重新生成" && !node.props.disabled) && !byTag(failedTree, "button").some(node => node.props["aria-label"] === "第 1 张图片的更多操作"));
+    const failureLogs = byClass(failedTree, "SPR_chatLogs").map(textOf).join();
+    check("旧HTML报错在执行详情中保留502原因并隐藏源码", failureLogs.includes("HTTP 502") && failureLogs.includes("中转服务或上游") && !/DOCTYPE|<html|<title>/.test(failureLogs));
     check("图标生成按钮转圈并禁止重复提交", byTag(gen.tree, "button").some(node => node.props.className?.includes("SPR_chatGenerate") && node.props["data-busy"] === "true" && node.props.disabled && byClass(node, "SPR_spinSm").length === 1));
 
     const one = renderModule(ImageModule, makeImageJob(), makeTasks(["img:item:0"]));
@@ -1251,7 +1259,7 @@ if (typeof ImageModule === "function") {
         return gallery.type(gallery.props);
       } finally { Object.assign(HOOK, previous); }
     };
-    check("图片结果只显示当前图片的「通过」按钮", approveLabels(acceptance.tree).length === 1, approveLabels(acceptance.tree).join("、"));
+    check("图片结果菜单移除不再使用的「通过」", approveLabels(acceptance.tree).length === 0, approveLabels(acceptance.tree).join("、"));
     check("结果区只有一张主图卡片", byClass(acceptance.tree, "SPR_node").length === 1);
     check("底部保留所有结果的缩略图", byClass(acceptance.tree, "SPR_imageGalleryThumb").length === 2);
     const firstNav = byClass(acceptance.tree, "SPR_imageGalleryArrow");
@@ -1270,9 +1278,9 @@ if (typeof ImageModule === "function") {
       { index: 1, status: "empty", source: "generated" }
     ];
     const approvedTree = renderModule(ImageModule, approvedJob, makeTasks()).tree;
-    check("已通过的显示「已通过」", approveLabels(approvedTree).includes("已通过"), approveLabels(approvedTree).join("、"));
+    check("旧的通过标记不会恢复已移除的审核按钮", approveLabels(approvedTree).length === 0, approveLabels(approvedTree).join("、"));
     const pendingApproval = collect(renderSelection(approvedTree, 1), node => node.props?.className === "SPR_btn" && textOf(node) === "通过");
-    check("切到未就绪的那张时「通过」被禁用", pendingApproval.length === 1 && pendingApproval[0].props.disabled === true);
+    check("未就绪图片同样不显示「通过」", pendingApproval.length === 0);
   }
 }
 

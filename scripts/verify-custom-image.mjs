@@ -51,6 +51,7 @@ const REF_DATA_URI = `data:image/png;base64,${REF_PNG.toString("base64")}`;
 /** 记录假服务端收到的每一次请求。 */
 const received = [];
 let openaiEditsStatus = 200;
+let openaiFailure;
 let comfyHistoryCalls = 0;
 
 function readBody(req) {
@@ -73,6 +74,10 @@ const server = createServer(async (req, res) => {
     body
   };
   received.push(record);
+  if (openaiFailure && /\/images\/(generations|edits)$/.test(url.pathname)) {
+    res.writeHead(openaiFailure.status, { "Content-Type": openaiFailure.contentType });
+    return res.end(openaiFailure.body);
+  }
   const json = (payload, status = 200) => {
     res.writeHead(status, { "Content-Type": "application/json" });
     res.end(JSON.stringify(payload));
@@ -201,6 +206,26 @@ section("2) OpenAI 协议：文生图 / 图生图 / 端点不存在时退回");
   const fallback = jsonOf(lastRequest());
   check("退回时参考图进 `image` 字段（火山方舟 / DashScope 那一系的写法）", typeof fallback.image === "string" && fallback.image.startsWith("data:image/png;base64,"));
   check("退回后照样拿到图片", result.bytes.equals(PNG));
+}
+
+{
+  openaiFailure = { status: 502, contentType: "text/html", body: '<!DOCTYPE html><html><head><title>relay.test | 502: Bad gateway</title></head><body>proxy diagnostics</body></html>' };
+  try {
+    for (const images of [[], [REF_DATA_URI]]) {
+      received.length = 0;
+      let failure;
+      try { await generateCustomImage({ ...base, protocol: "openai", baseUrl: `${ORIGIN}/custom`, apiKey: "", model: "gpt-image-1", images }); }
+      catch (error) { failure = error; }
+      const mode = images.length ? "图生图" : "文生图";
+      check(`${mode}502保留状态码并解释网关错误，不返回网页源码`, failure?.status === 502 && /HTTP 502/.test(failure.message) && /中转或上游/.test(failure.message) && !/DOCTYPE|<html|proxy diagnostics/.test(failure.message));
+      check(`${mode}502不自动重试或退回另一个生图端点`, received.length === 1 && lastRequest().path === (images.length ? "/custom/images/edits" : "/custom/images/generations"));
+    }
+    openaiFailure = { status: 400, contentType: "application/json", body: JSON.stringify({ error: { message: "requested size is not supported" } }) };
+    let failure;
+    try { await generateCustomImage({ ...base, protocol: "openai", baseUrl: `${ORIGIN}/custom`, apiKey: "", model: "gpt-image-1", images: [] }); }
+    catch (error) { failure = error; }
+    check("结构化API错误仍保留服务返回的具体原因", failure?.status === 400 && failure.message.includes("requested size is not supported"));
+  } finally { openaiFailure = undefined; }
 }
 
 // ══ 3. Stable Diffusion WebUI 协议 ══════════════════════════════════════

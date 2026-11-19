@@ -128,6 +128,13 @@ async function fetchOrThrow(url: string, init: RequestInit, context: SignalConte
 async function errorMessageOf(response: Response): Promise<string> {
   const text = await response.text().catch(() => "");
   if (text.trim() === "") return `HTTP ${response.status} ${response.statusText}`;
+  // Reverse proxies can return an HTML page instead of an API error. Do not
+  // persist its markup as the generation error or expose it in the interface.
+  if (/<!doctype\s+html|<html\b|<head\b/i.test(text)) {
+    if (response.status === 502) return "服务网关异常（Bad gateway），中转或上游服务未返回正常响应。";
+    if (response.status === 504) return "服务网关等待上游响应超时（Gateway timeout）。";
+    return "服务返回了网页错误，未收到图片结果；请检查接口地址与服务状态。";
+  }
   try {
     const parsed = JSON.parse(text) as any;
     const candidate = parsed?.error ?? parsed;

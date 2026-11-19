@@ -281,9 +281,9 @@ Open settings from the top or composer parameter button. The model is read-only;
    Backspace / Delete removes a complete valid reference. Enable Transparent background for PNG cutouts; advanced keying and existing-image actions are in the settings panel.
    The base-prompt selector, read-only label, expandable content and management shortcut stay on one row at the bottom of the source prompt field in Optimize prompt. Switching templates only updates the draft, and the selection survives closing and reopening the dialog.
 3. Open generation settings from the composer to set size and count, then click the circular **up arrow** beside the compact review selector. The latest description and settings are saved before submission; a failed save prevents generation.
-4. Each generation appends one round to the timeline. Older results stay available. Switch images within a round with the side arrows or thumbnail strip, and click the main image to preview it. Background percentage and count appear above the image. Execution details and logs start collapsed. Image actions include download, approval and single-image regeneration.
+4. Each generation appends one round to the timeline. Older results stay available. Switch images within a round with the side arrows or thumbnail strip, and click the main image to preview it. Background percentage and count appear above the image. Execution details and logs start collapsed. Image actions include download and single-image regeneration; the old approval item is removed. Failed results offer a visible Regenerate button that submits one image using that round's saved request while preserving the composer draft. Legacy failures without snapshots use the current input. Error details stay in the execution log, with gateway HTML markup hidden.
 
-The transparent-background switch sits at the bottom right of the prompt box, beside Optimize. Save, upload and
+References, add, generation settings, transparent background, Optimize, review mode and Generate share one row at the bottom of the prompt box, scrolling horizontally on narrow screens. Save, upload and
 operation feedback across modules uses floating notifications without shifting the page. Success messages dismiss
 automatically; errors stay until dismissed.
 

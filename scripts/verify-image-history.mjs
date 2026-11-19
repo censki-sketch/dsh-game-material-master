@@ -153,6 +153,17 @@ try{
  const pinned=await imagegen.readImageJob(fixed.id);
  check('later requests within the same batch keep the prepared provider configuration',calls.length===fixedStart+2&&calls.slice(fixedStart).every(c=>c.model==='fake-new-model'&&c.prompt==='fixed batch prompt')&&pinned.history.every(e=>e.batchId===prepared.id&&e.request.prompt==='fixed batch prompt'));
  const stopped=await imagegen.createImageJob('interrupted fixture');await imagegen.editImageJob(stopped.id,j=>{j.prompt='do not resubmit';});
+ const retry=await imagegen.createImageJob('explicit retry fixture');
+ const retrySnapshot={...pinned.rounds[0].request,refs:[],referenceFiles:[],settings:{...pinned.rounds[0].request.settings,count:4,size:'1024x1536'},prompt:'saved failure prompt',finalPrompt:'saved failure final prompt'};
+ await imagegen.editImageJob(retry.id,j=>{j.prompt='unsent draft stays here';j.settings.count=7;j.settings.size='2048x2048';j.rounds=[{id:'failed-request',createdAt:Date.now(),request:retrySnapshot,results:[{index:0,status:'error',error:'HTTP 502'}]}];});
+ const retryStart=calls.length;
+ await assert.rejects(invoke('runImageJob',{jobId:retry.id,historyId:'missing'}),/没有生成参数快照/);
+ await assert.rejects(invoke('runImageJob',{jobId:retry.id,historyId:'failed-request',count:2}),/固定生成一张/);
+ check('invalid historical retries submit no requests',calls.length===retryStart);
+ await invoke('runImageJob',{jobId:retry.id,historyId:'failed-request'});const retried=await settled(retry.id);
+ check('explicit failure retry uses its frozen request and makes exactly one new call',calls.length===retryStart+1&&calls.at(-1).prompt==='saved failure final prompt'&&calls.at(-1).size==='1024x1536'&&retried.rounds.at(-1).results.length===1);
+ check('historical retry preserves the composer draft and its settings',retried.prompt==='unsent draft stays here'&&retried.settings.count===7&&retried.settings.size==='2048x2048');
+ check('historical retry preserves the failed message and uses the current configured provider model',retried.rounds.length===2&&retried.rounds[0].results[0].status==='error'&&calls.at(-1).model==='later-global-model');
  await imagegen.prepareImageBatch(stopped.id,2);
  const stoppedStart=calls.length;
  await imagegen.interruptImageRounds(stopped.id,()=>true);
