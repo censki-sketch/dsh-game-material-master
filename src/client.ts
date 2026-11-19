@@ -4968,7 +4968,7 @@
 .SPR_imageResultTab{font:inherit;font-size:12px;line-height:20px;padding:8px 0;color:var(--dsw-alias-label-secondary);border:0;border-bottom:2px solid transparent;background:transparent;cursor:pointer}
 .SPR_imageResultTab[aria-selected=true]{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-state-business-primary);font-weight:500}
 .SPR_imageResultTab:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px;border-radius:3px}
-.SPR_imageHistory{display:flex;flex-direction:column;gap:16px;min-width:0;max-height:clamp(200px,calc(100dvh - 350px),720px);overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;padding:2px}
+.SPR_imageHistory{display:flex;flex-direction:column;gap:16px;min-width:0;max-height:clamp(160px,calc(100dvh - 420px),560px);overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;padding:2px}
 .SPR_imageHistoryBatch{min-width:0}
 .SPR_imageHistoryBatchHead{display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;align-items:center;margin:0 0 8px;font-size:11px;line-height:18px;color:var(--dsw-alias-label-secondary)}
 .SPR_imageHistoryBatchHead time{font-variant-numeric:tabular-nums}
