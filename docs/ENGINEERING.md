@@ -243,7 +243,7 @@ Key 只写入本机 `<DSH_HOME>/game-material-master/config.json`，常规配置
 
 动态操作反馈统一由 `NoticePopup` 渲染，覆盖各模块的 `notice`、设置、模板、排序及弹窗内操作错误；静态阻塞原因与任务结果保持在原位。使用 `popover="manual"` 进入浏览器顶层，避免滚动容器或已有dialog裁切；不调用focus、不使用遮罩。工厂级活动引用保证同一时刻一条消息，组件卸载时清理计时器、事件监听和顶层节点。成功4秒、一般6秒自动关闭，悬停/聚焦暂停，错误手动关闭；Escape只关闭消息，不阻止原有dialog事件。提示词右侧操作组为 `.SPR_promptRightActions`，包含透明背景开关与优化按钮。
 
-图片工作台使用 `.SPR_imageWorkspace` 双列布局：左侧编辑、右侧结果；容器宽度≤900px时上下排列。左侧独立容器控制提示词/参考图区的折叠布局。模型、尺寸和数量与高级抠像共用 `.SPR_imageAdvanced` 卡片，两个details独立展开；生成按钮与紧凑审核下拉位于右侧结果卡片顶部同排，窄屏可换行。审核和基础提示词下拉用CSS `appearance:base-select` / `::picker(select)`适配主题，旧浏览器使用标准select。`setReviewMode.reviewMode`接受auto/manual/null，null从落盘数据清除模式，省略或非法值仍拒绝；客户端不再拦截空选项并显示保存失败弹窗。修改后需重启宿主。`ImageResultPreview` 用原生dialog单击预览，优先keyedFile；关闭恢复触发按钮焦点，按任务ID重建避免串任务。预览和展开设置不调用生成。
+图片工作台使用 `.SPR_imageWorkspace` 网格区域布局：左侧编辑及运行日志、右侧结果；日志是工作台直接子项，不嵌套在编辑区。容器宽度≤900px时按编辑区、结果、日志顺序上下排列，DOM顺序也保持一致，避免日志挡在结果之前。左侧独立容器控制提示词/参考图区的折叠布局。模型、尺寸和数量与高级抠像共用 `.SPR_imageAdvanced` 卡片，两个details独立展开；生成按钮与紧凑审核下拉位于右侧结果卡片顶部同排，窄屏可换行。审核和基础提示词下拉用CSS `appearance:base-select` / `::picker(select)`适配主题，旧浏览器使用标准select。`setReviewMode.reviewMode`接受auto/manual/null，null从落盘数据清除模式，省略或非法值仍拒绝；客户端不再拦截空选项并显示保存失败弹窗。修改后需重启宿主。`ImageResultPreview` 用原生dialog单击预览，优先keyedFile；关闭恢复触发按钮焦点，按任务ID重建避免串任务。预览和展开设置不调用生成。
 
 `ImageResultMenu` 位于每张结果卡片状态徽章右侧，以紧凑三点图标将全部操作收进逐卡菜单，使用原有保存/生成/删除调用与下载链接，菜单本身不提交操作。原生auto-popover负责点击外部收起与多个菜单互斥，展开后按触发按钮定位并夹在视口内；滚动或改窗口尺寸时重新定位，触发按钮移出视口才收起，避免打开时浏览器延迟滚动让菜单立即关闭；键盘焦点切换使用preventScroll。参考图移除按钮仅在行悬停或focus-within时显示，保留布局位置，触屏始终可见。
 

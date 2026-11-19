@@ -4878,9 +4878,11 @@
 .SPR_moduleTipText{color:var(--dsw-alias-label-secondary)}
 .SPR_modulesHiddenNote{display:block;margin:3px 0 0;font-size:11px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
 .SPR_imageMain{container-type:inline-size}
-.SPR_imageWorkspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);gap:16px;align-items:start}
-.SPR_imageEditor{container-type:inline-size;min-width:0}
-.SPR_imageResults{min-width:0}
+.SPR_imageWorkspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);grid-template-rows:auto 1fr;grid-template-areas:"editor results" "log results";column-gap:16px;align-items:start}
+.SPR_imageEditor{grid-area:editor;container-type:inline-size;min-width:0}
+.SPR_imageResults{grid-area:results;min-width:0}
+.SPR_imageWorkspace>.SPR_log{grid-area:log;min-width:0}
+.SPR_imageWorkspace>.SPR_log .SPR_logFilters{max-width:100%;flex-wrap:wrap}
 .SPR_imageGallery{display:flex;flex-direction:column;gap:12px;min-width:0}
 .SPR_imageGalleryStage{min-width:0}
 .SPR_imageGalleryMedia{position:relative;min-width:0}
@@ -4926,7 +4928,7 @@
   .SPR_promptTemplateSelect option:disabled{opacity:.5;cursor:default}
 }
 @container(max-width:900px){
-  .SPR_imageWorkspace{grid-template-columns:minmax(0,1fr)}
+  .SPR_imageWorkspace{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"editor" "results" "log"}
   .SPR_imageGalleryStage .SPR_imageResultPreview>.SPR_thumb{max-height:480px}
 }
 .SPR_imageComposer{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,220px);gap:12px 16px;align-items:start}
@@ -17903,8 +17905,7 @@
                     h(KeyingFields, { draft: keyingDraft, fallbackColor: globalConfig?.keyColor, onChange: (patch) => { const next = { ...keyingDraft, ...patch }; setKeyingDraft(next); void saveJob({ keying: patch }); } }),
                     h(UploadBox, { label: T("上传一张已有图片，直接抠成透明 PNG"), accept: "image/*", multiple: false, busy: uploading || tasks.has(K_IMG_UPLOAD), onFiles: (files) => void upload(files, "item") }),
                     tasks.has(K_IMG_UPLOAD) ? h(BusyBadge, { show: true, text: tasks.label(K_IMG_UPLOAD) }) : null
-                  )),
-                  h(JobLogPanel, { job })),
+                  ))),
                   h(
                     "div",
                     { className: "SPR_card SPR_imageResults" },
@@ -18016,7 +18017,8 @@
                             );
                           }
                         })
-                  )
+                  ),
+                  h(JobLogPanel, { job })
                 )
           )
         ),
