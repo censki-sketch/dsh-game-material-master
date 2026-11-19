@@ -58,6 +58,8 @@ export interface KeyingSettings {
 
 export interface ImageJob {
   id: string;
+  /** An editor draft is omitted from the project list until explicit generation/import. */
+  draft?: boolean;
   name: string;
   createdAt: number;
   updatedAt: number;
@@ -133,6 +135,11 @@ export interface ImageJobSummary {
   total: number;
   ready: number;
   keyed: number;
+  /** Saved result versions, including history; current/history references are deduplicated. */
+  imageCount: number;
+  keyedCount: number;
+  historyCount: number;
+  dir: string;
 }
 
 const JOB_ID_PATTERN = /^i[a-z0-9]{4,40}$/;
@@ -176,12 +183,13 @@ export async function ensureImageJobLayout(id: string): Promise<void> {
   for (const sub of ["refs", "out", "keyed"]) await mkdir(join(imageJobDir(id), sub), { recursive: true });
 }
 
-export async function createImageJob(name: string, suffix = "", saveDirectory?: string): Promise<ImageJob> {
+export async function createImageJob(name: string, suffix = "", saveDirectory?: string, draft = false): Promise<ImageJob> {
   const config = await loadConfig();
   const id = `i${Date.now().toString(36)}${randomUUID().slice(0, 6)}`;
   const now = Date.now();
   const job: ImageJob = {
     id,
+    ...(draft ? { draft: true } : {}),
     name: name.trim() === "" ? "未命名图片任务" : name.trim().slice(0, 80),
     createdAt: now,
     updatedAt: now,
@@ -275,14 +283,41 @@ export async function listImageJobs(): Promise<ImageJobSummary[]> {
   const out: ImageJobSummary[] = [];
   for (const id of entries) {
     const job = await readImageJob(id).catch(() => undefined);
-    if (job === undefined) continue;
+    if (job === undefined || job.draft) continue;
     out.push(summarizeImageJob(job));
   }
   out.sort((a, b) => b.updatedAt - a.updatedAt);
   return out;
 }
 
+/** Register existing image projects from this folder only; never move or delete source files. */
+export async function attachImageFolder(path: string) {
+  if (!isAbsolute(path)) throw new Error("请输入完整的文件夹路径。");
+  const directory = await realpath(path);
+  const entries = await readdir(directory, { withFileTypes: true });
+  const ids: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !isValidImageJobId(entry.name)) continue;
+    const target = join(directory, entry.name);
+    const raw = await readJson<ImageJob>(join(target, "job.json")).catch(() => undefined);
+    if (raw?.id !== entry.name || raw.draft) continue;
+    const previous = await readImageJob(entry.name).catch(() => undefined);
+    const hasPointer = await stat(locationFile(entry.name)).then(() => true, () => false);
+    if (hasPointer && !previous) throw new Error(`项目索引已损坏，请先检查保存位置：${entry.name}`);
+    if (previous && resolve(imageJobDir(entry.name)) !== resolve(target)) throw new Error(`同名项目 ID 已在其他位置打开：${entry.name}`);
+    if (resolve(target) !== resolve(join(imageJobsRoot(), entry.name))) await writeJsonAtomic(locationFile(entry.name), { id: entry.name, directory: target });
+    ids.push(entry.name);
+  }
+  return { directory, ids };
+}
+
 export function summarizeImageJob(job: ImageJob): ImageJobSummary {
+  const versions = new Map<string, ImageItem>();
+  for (const item of [...(job.history ?? []).map(entry => entry.item), ...job.items]) {
+    if (!item?.file && !item?.keyedFile) continue;
+    // A restored version is still the same saved result. A new keyed PNG is a new version.
+    versions.set(JSON.stringify([item.file || "", item.keyedFile || ""]), item);
+  }
   return {
     id: job.id,
     name: job.name,
@@ -291,7 +326,11 @@ export function summarizeImageJob(job: ImageJob): ImageJobSummary {
     saveDirectory: dirname(imageJobDir(job.id)),
     total: job.items.length,
     ready: job.items.filter((item) => item.status === "ready").length,
-    keyed: job.items.filter((item) => item.keyedFile !== undefined).length
+    keyed: job.items.filter((item) => item.keyedFile !== undefined).length,
+    imageCount: versions.size,
+    keyedCount: [...versions.values()].filter(item => item.keyedFile).length,
+    historyCount: (job.history ?? []).filter(entry => entry.item?.file || entry.item?.keyedFile).length,
+    dir: imageJobDir(job.id)
   };
 }
 
@@ -323,6 +362,7 @@ function normalizeImageJob(raw: any): ImageJob {
     : [];
   return {
     id: String(raw?.id ?? ""),
+    ...(raw?.draft === true ? { draft: true } : {}),
     name: typeof raw?.name === "string" && raw.name.trim() !== "" ? raw.name : "未命名图片任务",
     createdAt: Number(raw?.createdAt) || Date.now(),
     updatedAt: Number(raw?.updatedAt) || Date.now(),
@@ -608,6 +648,7 @@ export async function addImageToJob(jobId: string, name: string, base64: string)
 
     const item: ImageItem = { versionId: id, index, status: "ready", file: relative, source: "uploaded", updatedAt: Date.now() };
     job.items.push(item);
+    job.draft = false;
     appendJobLog(job.log, "info", `已上传图片：${safeName(name)}`);
     if (job.keying.enabled) {
       try {

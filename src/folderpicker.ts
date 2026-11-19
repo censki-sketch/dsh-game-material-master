@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { homedir } from "node:os";
 import { isAbsolute } from "node:path";
@@ -122,4 +122,18 @@ export async function pickImageFolder(initialDirectory = "") {
   picking = true;
   try { return await chooseLocalFolder(initialDirectory); }
   finally { picking = false; }
+}
+
+/** Reveal only a validated local directory; callers resolve it from an existing project. */
+export async function revealLocalFolder(directory: string, launch = spawn, platform: NodeJS.Platform = process.platform) {
+  if (!isAbsolute(directory)) throw new Error("请输入完整的文件夹路径。");
+  const target = await realpath(directory);
+  if (!(await stat(target)).isDirectory()) throw new Error("文件夹已不存在。");
+  const command = platform === "win32" ? "explorer.exe" : platform === "darwin" ? "open" : "xdg-open";
+  await new Promise<void>((resolve, reject) => {
+    const child = launch(command, [target], { detached: true, stdio: "ignore", windowsHide: true });
+    child.once("error", reject);
+    child.once("spawn", () => { child.unref(); resolve(); });
+  });
+  return { ok: true, dir: target };
 }

@@ -49,6 +49,9 @@ const ReactStub = {
   createElement(type, props, ...children) {
     return { type, props: props ?? {}, children };
   },
+  cloneElement(element, props) {
+    return { ...element, props: { ...element.props, ...props } };
+  },
   useState(initial) {
     const index = HOOK.cursor++;
     const value = HOOK.slots[index];
@@ -965,7 +968,14 @@ section("图片项目侧栏与创建弹窗");
   const preferences = { directory: "", sort: "updated", layout: "merged", order: [] };
   const tree = bundle.__test.JobSidebar({ title: "项目", items: [makeImageJob()], activeId: "i1", storageKey: "image", preferences, onPreferences: () => {}, onCreate: () => {}, renderMeta: () => "" });
   check("图片侧栏标题为项目，不显示数量", byClass(tree, "SPR_taskSideTitle").some(node => textOf(node) === "项目"));
-  check("侧栏有创建项目与整理项目图标", byTag(tree, "button").some(node => node.props["aria-label"] === "创建项目") && byTag(tree, "button").some(node => node.props["aria-label"] === "整理项目"));
+  check("侧栏顶栏打开文件夹与整理项目分开", byTag(tree, "button").some(node => node.props["aria-label"] === "打开文件夹") && byTag(tree, "button").some(node => node.props["aria-label"] === "整理项目") && !byTag(tree,"button").some(node=>node.props["aria-label"]==="创建项目"));
+  check("顶栏操作收进悬停操作容器", byClass(tree, "SPR_taskHeadActions").length === 1);
+  HOOK.slots = []; HOOK.cursor = 0;
+  let selectedDirectory;
+  const grouped = bundle.__test.JobSidebar({ title: "项目", items: [{...makeImageJob(),saveDirectory:"C:/素材"}], activeId:"i1",storageKey:"image",preferences:{...preferences,layout:"grouped"},onPreferences:()=>{},onCreate:directory=>{selectedDirectory=directory;},renderMeta:()=>"" });
+  const folderCreate=byTag(grouped,"button").find(node=>node.props["aria-label"]==="在此文件夹新建项目");
+  folderCreate?.props.onClick();
+  check("目录行有更多和在当前文件夹新建入口", !!folderCreate&&selectedDirectory==="C:/素材"&&byTag(grouped,"button").some(node=>node.props["aria-label"]==="文件夹「素材」的更多操作"));
   check("列表折叠与全局侧栏使用独立控件", byClass(tree, "SPR_taskSideTitle").some(node => node.props["aria-controls"] === "task-list-image"));
   HOOK.slots = []; HOOK.cursor = 0;
   const dialog = bundle.__test.ImageTaskDialog({ api, preferences, defaultDirectory: "/tmp/image-jobs", onSubmit: () => {}, onClose: () => {} });

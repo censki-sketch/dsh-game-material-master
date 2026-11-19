@@ -74,11 +74,12 @@ more room. On narrow screens it becomes a drawer; click the backdrop or press Es
 is remembered.
 
 The image sidebar now uses a **Projects** heading. Its arrow collapses only the list; the header panel icon collapses the entire sidebar. Both choices are remembered separately.
-Click **+** to create a project and choose a local save folder. A separate project subfolder holds reference images, generated images, keyed PNGs and history. Leaving the folder unset uses the DSH default location.
+The top **Open folder** button uses the native system picker and discovers existing image projects in that directory. It does not create a project or generate an image. The compose icon beside a folder opens an editor draft; **Generate** adds the project to that folder's list. Later generations stay in its history. Explicitly importing an existing result also publishes the project; editing and uploading references do not add list entries.
+Folder icons indicate expanded and collapsed states, which are remembered. Header, folder and project actions appear on hover or keyboard interaction. Hover cards show paths, dates and counts. Sidebar counts include current and historical versions, deduplicating the same version while keeping new keyed versions separate.
+The project menu opens an editor with **Remove local project** at the lower left. **Remove folder** requires confirmation. Both operations hide only local sidebar entries and preserve images and history; reopening the original folder restores project entries. Existing project locations are read-only and files are not moved.
 The organize icon opens a two-level menu for grouping by save folder or combining the list, and for recently updated or manual order. In manual mode, drag projects or press Alt + Up / Down; the order persists after refresh.
-The source-folder area has separate empty and selected states. **Add** opens the native system folder picker directly; canceling keeps the prior folder. Windows uses the Explorer-style picker.
 
-Empty current results and history share a centered placeholder. On wide screens, their card aligns with the collapsed advanced-settings card; populated history keeps its existing height rules. Project creation progress appears as a floating message instead of a workbench row.
+Empty current results and history share a centered placeholder. On wide screens, their card aligns with the collapsed advanced-settings card; populated history keeps its existing height rules.
 
 These local operations never call a generation API. Existing projects require no migration. This update includes host code: fully quit DSH, including its tray process, then reopen it.
 

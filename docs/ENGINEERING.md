@@ -2732,13 +2732,19 @@ X-Api-Request-Id: <uuid>
 
 图片模块的 UI 统一称「项目」，wire 和任务 ID 仍沿用 `imageJob` / `i…`，旧数据兼容。`JobSidebar` 标题箭头使用 `task-list-collapsed:image` 本地缓存，独立于全局 `sidebar-collapsed`。标题不显示项目数量，管理入口为原生 auto-popover 两级菜单：目录分组／合并、最近更新／手动排序。`image-task-preferences` 缓存目录、布局、排序和 ID 顺序；手动顺序显式落盘，后台刷新不重排。支持 HTML 拖放和 Alt + ↑／↓；分组时只在同目录内调整顺序。菜单支持方向键、Escape、点击外部关闭，并按视口切换左右或上下布局。Escape 优先交给活动 dialog / 项目菜单。
 
-`ImageTaskDialog` 是原生 modal dialog，打开不请求 API。「源文件夹」未选中显示居中的文字、下拉图标和添加胶囊，选中后显示目录行、移除和底部添加行，只有选中后标题右侧显示此电脑。单个目录用作保存父目录，点击添加可重新选择；选择/移除不移动已有项目。点击添加调用 clientOnly 的 `pickImageFolder`，直接打开宿主系统文件夹选择窗口，不再渲染 Web 目录浏览器。Windows 用隐藏 STA PowerShell helper 调用 IFileDialog / FOS_PICKFOLDERS，macOS 用 osascript，Linux 用 zenity。helper 参数数组启动，路径经环境变量传递，凭据不继承；仅交互选择窗口可见。并发闸门避免重复窗口，取消返回 canceled，已失效的上次路径回退主目录，返回值 realpath / stat 校验。Windows cancellation显式输出 JSON null。窗口完成前禁用表单提交与关闭。创建同步提交锁防重复，失败保留输入。源文件夹未选时沿用 DSH 默认位置。
+图片侧栏分两层：外层是打开的真实文件夹，内层是图片项目。顶部打开入口仅 `pickImageFolder` → clientOnly `attachImageFolder`，扫描一层有效 `i…/job.json` 并登记外部路径指针，不导入任意图片、不移动文件、不生成项目。目录 realpath，忽略符号链接、无效 ID 和草稿；已损坏或冲突的指针拒绝覆盖。打开空目录也有文件夹行。文件夹旁 compose 使用 `createImageJob({draft:true,saveDirectory})` 准备落盘编辑草稿；`listImageJobs` 隐藏草稿，输入/参考图不发布项目。`runImageJob` 验证请求与后端后将草稿转正式，再发起原有生成流程；新并发闸门覆盖草稿落盘 await。明确 `addImageItem` 也转正式，便于本地抠图项目。`draft` 字段沿 wire 与 normalize 保留。原工具端 `createImageJob` 不传 draft 仍兼容。
 
-创建项目使用弹窗进度与成功提示，按钮也保留 pending，移除 `img:create` 的工作台任务标签，避免创建后700ms记账延迟让提示占用内容行。`ImageResultsEmpty` 统一当前与历史的图标、标题和说明。空数据的右侧卡使用 `data-result-empty` / `--SPR_imageEmptyHeight`，宽屏通过左侧advanced惯性副本收起测高对齐底部；有历史时继续以全部展开高度测量。只修改副本，保留真实details展开状态；窄屏自然高度，两个空状态都以flex填充至少200px面板。副本离屏、inert且测完立即删除。
+`image-task-preferences.folders` 只保存目录折叠和移除状态，`hiddenProjects` 保存本机移除的项目 ID；列表显示不删除磁盘数据。重新打开目录会恢复其项目入口。每个文件夹按钮切换 open/closed folder 图标，悬停显示 chevron；compose 与 more 统一线条。操作在 hover/键盘 focus-visible 时出现，触屏保持可用。目录移除用原生 modal alertdialog 二次确认，默认焦点取消，Escape 只关闭确认框；项目编辑用 `ImageTaskDialog`，可改名和移除本地项目，源路径只读。原对话工具的 `deleteImageJob` 仍是显式永久删除接口，界面的本地移除不调用它。
+
+`ImageSidebarInfo` 读取已有列表摘要，延迟悬停在 top-layer popover 展示目录/项目路径、更新时间和数量，不请求 API。`summarizeImageJob.imageCount/keyedCount` 对当前与历史的 `[file,keyedFile]` 成对去重，同一版本恢复到当前不加数，新 keyed PNG 是新版本；保留旧 total/ready/keyed 为当前结果口径，新增 historyCount 和 dir。`getImageJob.summary` 与列表同源，客户端轮询同步摘要且不覆盖编辑草稿。窗口/菜单/悬停卡的 Escape 优先于全局收起侧栏。
+
+系统选择器 `pickImageFolder` 为 clientOnly：Windows 用隐藏 STA PowerShell helper 调用 IFileDialog / FOS_PICKFOLDERS，macOS 用 osascript，Linux 用 zenity。参数数组启动，路径经环境变量传递，凭据不继承；取消返回 canceled，已失效的上次路径回退主目录，返回值 realpath / stat 校验。`revealImageFolder` 也仅供界面，校验路径后数组参数启动 Explorer/open/xdg-open，捕获 spawn 失败，不执行 shell 字符串。
+
+`ImageResultsEmpty` 统一当前与历史的图标、标题和说明。空数据的右侧卡使用 `data-result-empty` / `--SPR_imageEmptyHeight`，宽屏通过左侧advanced惯性副本收起测高对齐底部；有历史时继续以全部展开高度测量。只修改副本，保留真实details展开状态；窄屏自然高度，两个空状态都以flex填充至少200px面板。副本离屏、inert且测完立即删除。
 
 `createImageJob.saveDirectory` 同步进入 wire；宿主要求绝对、已存在的目录并用 realpath 归一。自选目录的 `job.json`、refs/out/keyed/history 均位于该独立目录；默认 `image-jobs/<id>.location.json` 保存 `{id,directory}` 指针。`imageJobDir` 是路径解析真源，所有读写和静态资源通过它，原有资源 URL 无需更改。列表发现默认目录和指针，损坏／离线项目单条跳过；指针无效不回退到另一个目录。删除前校验目录 basename、任务 ID 和非符号链接，仅删除该项目子目录及指针，不删除选中的父目录或旁边文件。备份时需同时保留 DSH 的指针文件和外部项目目录，手动移动外部目录暂不支持。
 
 `verify-image-locations.mjs` 用隔离临时目录、真实 wire/gateway、新进程读取及本地静态资源服务器验证自定义目录、参考图、上传、抠图、历史、默认兼容、损坏指针和删除边界；禁止外部网络，无真实生成请求。更新涉及宿主，需完全退出 DSH（包括托盘）再重开。
 
 
-`verify-folder-picker.mjs` 用注入的进程执行器验证选择/取消/异常、Unicode目录、参数边界、无凭据helper环境和clientOnly协议，不打开任何窗口。Windows开发机额外编译COM互操作并模拟Show前取消，检查系统接口可实例化；浏览器验证空/选中两态、原生选择返回/取消、提交锁和空结果高度，无外部请求。
+`verify-folder-picker.mjs` 用注入的进程执行器验证选择/取消/异常、Unicode目录、参数边界、无凭据helper环境、Explorer 启动/错误和clientOnly协议，不打开任何窗口。`verify-image-locations` 覆盖打开目录发现已有项目、隐藏草稿、导入结果发布与损坏指针拒绝；`verify-image-history` 使用回环假服务验证生成才发布项目及历史统计去重。浏览器用真实宿主摘要和假操作检查悬停/折叠持久化、顶部打开/新建草稿/生成入列三个入口、编辑和本地移除/恢复、移除文件夹取消/Escape/确认、窄屏菜单，无外部付费请求。

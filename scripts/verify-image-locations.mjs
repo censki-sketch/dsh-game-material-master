@@ -40,15 +40,28 @@ try{
  const response=await fetch(origin+view.assetBase+view.items[0].keyedFile);check('unchanged static asset URL serves external-folder results',response.status===200&&Buffer.from(await response.arrayBuffer()).equals(await readFile(join(directory,view.items[0].keyedFile))));
  const canonicalParent=await realpath(parent);
  check('default and custom projects appear together', (await invoke('listImageJobs')).jobs.some(j=>j.id===jobId&&j.saveDirectory===canonicalParent));
+ const attached=await invoke('attachImageFolder',{path:parent});
+ check('opening a folder discovers existing projects without creating one',attached.directory===canonicalParent&&attached.ids.length===1&&attached.ids[0]===jobId&&(await invoke('listImageJobs')).jobs.length===2);
+ check('folder attach and reveal are client-only',wire.METHODS.find(m=>m.method==='attachImageFolder').clientOnly&&wire.METHODS.find(m=>m.method==='revealImageFolder').clientOnly);
+ const draft=await invoke('createImageJob',{name:'未生成草稿',saveDirectory:parent,draft:true});
+ check('new-project editor drafts do not create sidebar rows',(await invoke('getImageJob',{jobId:draft.jobId})).draft===true&&!(await invoke('listImageJobs')).jobs.some(j=>j.id===draft.jobId));
+ await invoke('saveImageJob',{jobId:draft.jobId,prompt:'用户编辑中的内容'});await invoke('uploadImageRef',{jobId:draft.jobId,name:'reference.png',data});
+ check('editing and uploading reference images keep a draft hidden',!(await invoke('listImageJobs')).jobs.some(j=>j.id===draft.jobId)&&!(await invoke('attachImageFolder',{path:parent})).ids.includes(draft.jobId));
+ await invoke('addImageItem',{jobId:draft.jobId,name:'local result.png',data});
+ check('explicitly importing a result publishes the local project without generation',(await invoke('listImageJobs')).jobs.some(j=>j.id===draft.jobId)&&!(await invoke('getImageJob',{jobId:draft.jobId})).draft);
+ const imported=await imagegen.createImageJob('外部已存在项目','',parent);const importedDir=imagegen.imageJobDir(imported.id);await rm(join(imageJobsRoot(),imported.id+'.location.json'));
+ check('an unregistered external project is discovered when opening its folder',(await invoke('attachImageFolder',{path:parent})).ids.includes(imported.id)&&imagegen.imageJobDir(imported.id)===importedDir);
  const fresh=await promisify(execFile)(process.execPath,['--input-type=module','-e',`import * as g from ${JSON.stringify(new URL('../lib/imagegen.js',import.meta.url).href)};console.log(JSON.stringify({dir:g.imageJobDir(${JSON.stringify(jobId)}),job:await g.readImageJob(${JSON.stringify(jobId)}),jobs:await g.listImageJobs()}));`],{env:{...process.env,DSH_HOME:process.env.DSH_HOME}});
  const restarted=JSON.parse(fresh.stdout);check('new process rediscovers custom location and history',restarted.dir===directory&&restarted.job.history.length===2&&restarted.jobs.some(j=>j.id===jobId));
  for(const path of ['relative',join(parent,'missing'),join(parent,'keep-user-file.txt')])await assert.rejects(invoke('createImageJob',{name:'invalid',saveDirectory:path}));
  const savedPointer=await readFile(pointer);await writeFile(pointer,JSON.stringify({id:jobId,directory:parent}));
  check('one damaged pointer does not hide other projects', (await invoke('listImageJobs')).jobs.some(j=>j.id===legacy.jobId));
+ await assert.rejects(invoke('attachImageFolder',{path:parent}),/索引已损坏/);
  assert.throws(()=>imagegen.imageJobDir(jobId));await assert.rejects(invoke('deleteImageJob',{jobId}));check('damaged location never falls back or deletes the parent',await exists(directory)&&await exists(join(parent,'keep-user-file.txt')));
  await writeFile(pointer,savedPointer);await invoke('deleteImageJob',{jobId});
  check('delete removes only the independent project directory and its pointer',!await exists(directory)&&!await exists(pointer)&&await exists(child)&&(await readFile(join(parent,'keep-user-file.txt'),'utf8'))==='keep');
  await invoke('deleteImageJob',{jobId:legacy.jobId});
+ await invoke('deleteImageJob',{jobId:draft.jobId});await invoke('deleteImageJob',{jobId:imported.id});
  console.log(`Passed ${checks} storage checks. No external requests or real billing.`);
 }finally{
  globalThis.fetch=originalFetch;await new Promise(r=>server.close(r));

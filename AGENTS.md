@@ -119,6 +119,7 @@ node scripts/verify-image-transparency.mjs # 图片透明背景：回环假API�
 node scripts/verify-image-cleanup.mjs # 封闭区域混色修复与局部补抠：真实wire/网关、版本锁、原图保留，禁止网络
 node scripts/verify-image-locations.mjs # 图片项目自选目录：真实wire/网关、历史/资源路由、新进程恢复与安全删除，零计费
 node scripts/verify-folder-picker.mjs # 原生目录选择协议：模拟系统返回/取消/异常，零UI、零网络
+node scripts/verify-image-history.mjs # 草稿生成后入列、历史版本保留与侧栏去重统计，回环假服务、零真实计费
 node scripts/verify-comfy.mjs      # 本地 ComfyUI 后端（124 项，自起 mock ComfyUI，纯本地、不用装 ComfyUI）
 node scripts/verify-custom-image.mjs  # 自定义生图后端三协议（68 项：起本地假服务端，离线、零计费）
 node scripts/verify-toapis.mjs       # ToAPIs 可选异步图片 / 视频后端（43 项，mock HTTP、零付费调用）

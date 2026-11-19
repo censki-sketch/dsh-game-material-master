@@ -10,7 +10,7 @@ import {assertVideoBackendReady,assertVideoSubmissionConfirmed,videoBackendOf} f
 * 直接发给浏览器——否则界面每帧都要靠 RPC 传 base64，又慢又费内存。
 */
 import { createReadStream, readdirSync, statSync } from "node:fs";
-import { pickImageFolder } from "./folderpicker.js";
+import { pickImageFolder, revealLocalFolder } from "./folderpicker.js";
 import * as motiongen from "./motiongen.js";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
@@ -1723,11 +1723,23 @@ export class GameStudioGateway extends TypertRemoteService {
     return pickImageFolder(asString(asRecord(payload).path, ""));
   }
 
+  async revealImageFolder(payload) {
+    const path = asString(asRecord(payload).path, "");
+    if (path) return revealLocalFolder(path);
+    const id = asString(asRecord(payload).jobId);
+    if (!await imagegen.readImageJob(id)) throw new Error(`任务不存在：${id}`);
+    return revealLocalFolder(dirname(imagegen.imageJobDir(id)));
+  }
+
+  async attachImageFolder(payload) {
+    return imagegen.attachImageFolder(asString(asRecord(payload).path));
+  }
+
   async createImageJob(payload) {
     const input = asRecord(payload);
     const template = (await loadConfig()).imagePromptTemplates.find(item => item.id === input.promptTemplate);
     if (input.promptTemplate && !template) throw new Error("提示词模板已不存在，请刷新后重新选择。");
-    const job = await imagegen.createImageJob(asString(input.name, ""), template?.prompt[input.lang === "en" ? "en" : "zh"] ?? "", asString(input.saveDirectory, ""));
+    const job = await imagegen.createImageJob(asString(input.name, ""), template?.prompt[input.lang === "en" ? "en" : "zh"] ?? "", asString(input.saveDirectory, ""), input.draft === true);
     if (template) { job.promptTemplateId = template.id; job.promptTemplateLang = input.lang === "en" ? "en" : "zh"; await imagegen.writeImageJob(job); }
     return { jobId: job.id };
   }
@@ -1742,7 +1754,7 @@ export class GameStudioGateway extends TypertRemoteService {
      * （例如 `composeMapAsset` 整理地图素材），而 `assetBase` 是给浏览器用的 URL。
      * 产物绝对路径 = `dir + "/" + item.file`（`out/img-00.png`）。
      */
-    return { ...job, tasks, promptTemplates: (await loadConfig()).imagePromptTemplates, dir: imagegen.imageJobDir(jobId), assetBase: assetBasePath(`${ROUTE_PREFIX}/image-assets/${jobId}/`) };
+    return { ...job, tasks, summary: imagegen.summarizeImageJob(job), promptTemplates: (await loadConfig()).imagePromptTemplates, dir: imagegen.imageJobDir(jobId), assetBase: assetBasePath(`${ROUTE_PREFIX}/image-assets/${jobId}/`) };
   }
 
   async deleteImageJob(payload) {
@@ -1883,6 +1895,8 @@ export class GameStudioGateway extends TypertRemoteService {
     // Preparation awaits disk/config reads; another submission may have started.
     if (imageTasks.get(jobId)?.size) throw new Error("图片任务正在处理，请完成后再生成。");
     let started = 0;
+    if (job.draft) await imagegen.editImageJob(jobId, current => { current.draft = false; });
+    if (imageTasks.get(jobId)?.size) throw new Error("图片任务正在处理，请完成后再生成。");
     for (const i of index === undefined ? Array.from({ length: count! }, (_, i) => i) : [index]) {
       if (kickImageItem(jobId, i, batch)) started++;
     }

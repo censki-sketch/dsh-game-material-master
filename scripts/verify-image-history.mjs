@@ -42,13 +42,15 @@ const settled=async id=>{await waitFor(async()=>!(await invoke('getImageJob',{jo
 const exists=async path=>stat(path).then(()=>true,()=>false);
 try{
  await saveConfig({imageProvider:'custom',customProtocol:'openai',customBaseUrl:origin,customApiKey:'fake-local-key-never-in-history',customModel:'fake-original',customSize:'1024x1024',keyColor:'#0000FF'});
- const {jobId}=await invoke('createImageJob',{name:'history fixture',promptTemplate:'character',lang:'zh'});
+ const {jobId}=await invoke('createImageJob',{name:'history fixture',promptTemplate:'character',lang:'zh',draft:true});
+ check('new editor project stays hidden until explicit generation',!(await gateway.listImageJobs()).jobs.some(job=>job.id===jobId));
  const ref=encodePng(Buffer.from([220,40,30,255]),1,1).toString('base64');
  await invoke('uploadImageRef',{jobId,name:'synthetic.png',data:ref});
  await invoke('saveImageJob',{jobId,prompt:'蓝色法师，参考@图片1',settings:{count:2,sizeMode:'custom',size:'1024x1536'},keying:{enabled:true,keyColor:'#0000FF'}});
  const authored=await imagegen.readImageJob(jobId);hold=true;
  const start=await invoke('runImageJob',{jobId});await waitFor(()=>calls.length===2);
  check('two images start as one batch',start.started&&releases.length===2);
+ check('clicking generate publishes exactly one project before batch completion',(await gateway.listImageJobs()).jobs.filter(job=>job.id===jobId).length===1&&!(await imagegen.readImageJob(jobId)).draft);
  await assert.rejects(invoke('runImageJob',{jobId}),/正在处理/);
  await assert.rejects(invoke('deleteImageJob',{jobId}),/正在处理/);
  await assert.rejects(invoke('removeImageItem',{jobId,index:0}),/正在处理/);
@@ -59,6 +61,10 @@ try{
  await saveConfig({customModel:'fake-new-model',customSize:'2048x2048'});
  hold=false;releases.splice(0).forEach(release=>release());const first=await settled(jobId);
  check('concurrent completions retain both independent versions',first.history.length===2&&new Set(first.history.map(e=>e.item.file)).size===2&&first.items.every(i=>i.status==='ready'));
+ const firstSummary=imagegen.summarizeImageJob(first);
+ check('sidebar counts current/history copies once',firstSummary.imageCount===2&&firstSummary.keyedCount===2&&firstSummary.historyCount===2&&firstSummary.ready===2);
+ const listed=(await gateway.listImageJobs()).jobs.find(job=>job.id===jobId),loaded=await invoke('getImageJob',{jobId});
+ check('list and live project snapshots share host statistics and actual directory',JSON.stringify(listed)===JSON.stringify(loaded.summary)&&listed.dir===imagegen.imageJobDir(jobId));
  check('batch ids match and snapshots retain submitted prompt/model/size/key color',new Set(first.history.map(e=>e.batchId)).size===1&&first.history.every(e=>e.request.prompt===authored.prompt&&e.request.settings.model==='fake-original'&&e.request.settings.size==='1024x1536'&&e.request.keying.keyColor==='#0000FF'));
  check('actual requests match immutable snapshots',calls.every(c=>c.prompt===first.history[0].request.finalPrompt&&c.model==='fake-original'&&c.size==='1024x1536'&&c.images[0]===ref));
  check('draft and review-mode edits survive generation completion',first.prompt==='用户正在改的新草稿'&&first.settings.size==='1536x1024'&&first.keying.keyColor==='#00FF00'&&first.reviewMode==='manual');
@@ -68,14 +74,17 @@ try{
  check('regenerating index 1 makes exactly one request, leaving index 0 intact',calls.length===beforeSingle+1&&second.items[0].versionId===first.items[0].versionId&&second.items[1].versionId!==old.id);
  check('a later explicit generation uses the current global model',calls.at(-1).model==='fake-new-model'&&second.history.at(-1).request.settings.model==='fake-new-model');
  check('new generation preserves previous bytes and uses a new batch',second.history.length===3&&second.history.at(-1).batchId!==old.batchId&&(await readFile(imagegen.imageAssetPath(jobId,old.item.file))).equals(oldBytes)&&(await readFile(imagegen.imageAssetPath(jobId,old.item.keyedFile))).equals(oldKeyed));
+ check('sidebar includes superseded history versions',imagegen.summarizeImageJob(second).imageCount===3&&imagegen.summarizeImageJob(second).keyedCount===3&&imagegen.summarizeImageJob(second).ready===2);
  await assert.rejects(invoke('runImageJob',{jobId,index:1,count:2}),/不能同时/);
  await assert.rejects(invoke('runImageJob',{jobId,index:50}),/不存在/);
  check('invalid regeneration payloads submit zero requests',calls.length===beforeSingle+1);
  fail=true;await invoke('runImageJob',{jobId,index:1});const failed=await settled(jobId);fail=false;
  check('generation failure keeps previous version and never retries',calls.length===beforeSingle+2&&failed.history.length===3&&failed.items[1].status==='error'&&failed.items[1].file===second.items[1].file);
+ check('failed regeneration does not hide saved files from statistics',imagegen.summarizeImageJob(failed).imageCount===3);
  const localStart=calls.length;
  await invoke('manageImageHistory',{jobId,historyId:old.id,action:'restore'});
  const restored=await imagegen.readImageJob(jobId);check('restore selects historical original and keyed version',restored.items[1].versionId===old.id&&restored.items[1].keyedFile===old.item.keyedFile);
+ check('restoring history never double-counts its current copy',imagegen.summarizeImageJob(restored).imageCount===3);
  await invoke('removeImageRef',{jobId,file:authored.refs[0].file});check('removing a draft reference retains historical reference bytes',await exists(imagegen.imageAssetPath(jobId,authored.refs[0].file)));
  await invoke('manageImageHistory',{jobId,historyId:old.id,action:'reuse'});const reused=await imagegen.readImageJob(jobId);
  check('reuse restores text, template, refs, keying and custom size without changing global provider',reused.prompt===authored.prompt&&reused.suffix===authored.suffix&&reused.promptTemplateId===authored.promptTemplateId&&reused.refs[0].file===authored.refs[0].file&&reused.settings.sizeMode==='custom'&&reused.settings.size==='1024x1536'&&reused.keying.keyColor==='#0000FF');
@@ -83,9 +92,11 @@ try{
  await invoke('saveImageJob',{jobId,keying:{despill:0.2}});
  await invoke('keyImageJob',{jobId});const keyed=await settled(jobId);
  check('local re-key creates new history versions without overwriting prior transparency',keyed.history.length===5&&keyed.history.slice(-2).every(e=>e.kind==='keyed')&&keyed.items[1].keyedFile!==old.item.keyedFile&&(await readFile(imagegen.imageAssetPath(jobId,old.item.keyedFile))).equals(oldKeyed));
+ check('new transparent PNG versions are included in saved/keyed totals',imagegen.summarizeImageJob(keyed).imageCount===5&&imagegen.summarizeImageJob(keyed).keyedCount===5);
  check('local keying settings stay separate from the unmodified generation snapshot',keyed.history.at(-1).keying.despill===0.2&&keyed.history.at(-1).request.keying.despill===old.request.keying.despill&&keyed.history.at(-1).request.finalPrompt===old.request.finalPrompt);
  const current=keyed.history.at(-1);await invoke('manageImageHistory',{jobId,historyId:current.id,action:'delete'});
  check('deleting history retains files used by current results',await exists(imagegen.imageAssetPath(jobId,current.item.keyedFile)));
+ check('a current version stays counted after its history record is deleted',imagegen.summarizeImageJob(await imagegen.readImageJob(jobId)).imageCount===5);
  await invoke('removeImageItem',{jobId,index:1});check('removing a current result deletes only unreferenced bytes',!await exists(imagegen.imageAssetPath(jobId,current.item.keyedFile))&&await exists(imagegen.imageAssetPath(jobId,old.item.file)));
  await invoke('manageImageHistory',{jobId,historyId:old.id,action:'restore'});await invoke('removeImageItem',{jobId,index:1});
  check('removing a restored current result retains its archived bytes',await exists(imagegen.imageAssetPath(jobId,old.item.keyedFile)));
@@ -101,6 +112,7 @@ try{
  legacy.items=[{index:0,status:'ready',source:'generated',file:legacyPath,updatedAt:123}];delete legacy.history;
  await imagegen.writeImageJob(legacy);const migrated=await imagegen.readImageJob(legacy.id);
  check('legacy files are visible without inventing historical prompts',migrated.history.length===1&&migrated.history[0].kind==='legacy'&&migrated.history[0].createdAt===123&&!migrated.history[0].request&&migrated.items[0].versionId===migrated.history[0].id);
+ check('legacy current/history copies also count once',imagegen.summarizeImageJob(migrated).imageCount===1);
  await assert.rejects(invoke('manageImageHistory',{jobId:legacy.id,historyId:migrated.history[0].id,action:'reuse'}),/没有保存生成参数/);
  await invoke('manageImageHistory',{jobId:legacy.id,historyId:migrated.history[0].id,action:'restore'});
  check('legacy retention is persisted on next write',JSON.parse(await readFile(join(imagegen.imageJobDir(legacy.id),'job.json'),'utf8')).history[0].kind==='legacy');

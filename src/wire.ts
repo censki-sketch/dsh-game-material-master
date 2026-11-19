@@ -178,7 +178,7 @@ const runVideosSchema = z.object({
 
 // ── 图片生成模块 ────────────────────────────────────────────────────────
 const imageJobIdSchema = z.object({ jobId: z.string() });
-const createImageJobSchema = z.object({ name: z.string().optional(), saveDirectory: z.string().max(4096).optional(), promptTemplate: z.string().max(64).optional(), lang: z.enum(["zh", "en"]).optional() });
+const createImageJobSchema = z.object({ name: z.string().optional(), draft: z.boolean().optional(), saveDirectory: z.string().max(4096).optional(), promptTemplate: z.string().max(64).optional(), lang: z.enum(["zh", "en"]).optional() });
 const saveImageJobSchema = z.object({
   jobId: z.string(),
   name: z.string().optional(),
@@ -1266,6 +1266,8 @@ export const METHODS: MethodSpec[] = [  { method: "getConfig", result: configVie
 
   // 图片生成
   { method: "pickImageFolder", payload: z.object({ path: z.string().max(4096).optional() }), result: jsonObject, clientOnly: true },
+  { method: "revealImageFolder", payload: z.object({ jobId: z.string().optional(), path: z.string().max(4096).optional() }), result: jsonObject, clientOnly: true },
+  { method: "attachImageFolder", payload: z.object({ path: z.string().min(1).max(4096) }), result: jsonObject, clientOnly: true },
   { method: "listImageJobs", result: z.object({ jobs: z.array(jsonObject) }) },
   { method: "createImageJob", payload: createImageJobSchema, result: jsonObject },
   { method: "getImageJob", payload: imageJobIdSchema, result: projectViewSchema },
