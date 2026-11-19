@@ -67,8 +67,6 @@
   "服务返回了网页错误，未收到图片结果；请检查中转服务或上游状态。": "The service returned an error page instead of an image. Check the relay or upstream service status.",
   "第 {n0} 轮": "Round {n0}",
   "旧版图片记录": "Legacy image record",
-  "取消收藏本轮": "Unbookmark this round",
-  "收藏本轮": "Bookmark this round",
   "收藏 {n0}": "Bookmark {n0}",
   "取消收藏 {n0}": "Unbookmark {n0}",
   "已收藏": "Bookmarked",
@@ -5657,7 +5655,7 @@
 .SPR_chatAttachments .SPR_thumb{width:64px;height:64px;aspect-ratio:auto}
 .SPR_chatResponse{margin-top:18px;min-width:0}
 .SPR_chatRoundHead{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--dsw-alias-label-tertiary);margin:0 0 8px}
-.SPR_chatRoundHead>time{margin-left:auto}
+.SPR_chatRoundTime{margin-left:auto;font-size:11px;line-height:28px;color:var(--dsw-alias-label-tertiary)}
 .SPR_imageBookmark[data-bookmarked=true]{color:var(--dsw-alias-state-business-primary,#4977ff);background:color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 32%,transparent)}
 .SPR_imageBookmark[data-bookmarked=true]:hover{background:color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 23%,transparent)}
 .SPR_imageBookmark[data-bookmarked=true] svg{fill:currentColor}
@@ -5676,9 +5674,18 @@
 .SPR_chatResponse .SPR_imageGalleryThumbs{margin-top:9px}
 .SPR_chatResponse .SPR_thumbEmpty{height:180px;aspect-ratio:auto;background:var(--dsw-alias-bg-layer-3)}
 .SPR_chatVersionBar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px}
-.SPR_chatVersionSelect{display:inline-flex;align-items:center;position:relative;max-width:100%;min-width:0}
-.SPR_chatVersionSelect select{appearance:none;padding:5px 28px 5px 9px;font-size:11px;border-radius:7px;cursor:pointer;max-width:100%;min-width:0}
-.SPR_chatVersionSelect>svg{position:absolute;right:8px;pointer-events:none;color:var(--dsw-alias-label-secondary)}
+.SPR_chatVersionSelect{display:inline-flex;max-width:100%;min-width:0}
+.SPR_chatVersionSelect .SPR_imageResultMore{width:auto;height:30px;padding:4px 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1)}
+.SPR_chatVersionSelect .SPR_imageResultMore:hover,.SPR_chatVersionSelect .SPR_imageResultMore[aria-expanded=true]{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
+.SPR_chatVersionSelect .SPR_imageResultMore:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary,#4977ff);outline-offset:2px}
+.SPR_chatVersionTrigger{display:inline-flex;align-items:center;gap:12px;font-size:11px;white-space:nowrap}
+.SPR_chatVersionChevron{flex:none;transform-origin:center;transition:transform .15s}
+.SPR_imageResultMore[aria-expanded=true] .SPR_chatVersionChevron{transform:rotate(180deg)}
+.SPR_chatVersionSelect .SPR_imageResultMenu{width:216px;max-height:min(320px,50dvh);padding:5px}
+.SPR_chatVersionSelect .SPR_imageResultMenu>.SPR_btn[aria-checked=true]{background:var(--dsw-alias-interactive-bg-hover-solid);font-weight:500}
+.SPR_chatVersionCheck{display:inline-flex;align-items:center;width:16px;flex:none;color:var(--dsw-alias-label-primary)}
+.SPR_chatVersionFavorite{display:inline-flex;align-items:center;margin-left:auto;color:var(--dsw-alias-state-business-primary,#4977ff)}
+.SPR_chatVersionFavorite svg{width:13px;height:13px;fill:currentColor}
 .SPR_chatVersionLabel{font-size:11px;color:var(--dsw-alias-label-secondary)}
 .SPR_chatVersionBar>.SPR_chatImageActions{margin:0}
 .SPR_chatRoundActions,.SPR_chatImageActions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:8px}
@@ -5786,7 +5793,7 @@
   .SPR_chatComposer{padding:6px 10px 10px}
   .SPR_chatUser{max-width:90%}
   .SPR_chatRoundHead{gap:6px;font-size:10px}
-  .SPR_chatRoundHead>time{font-size:10px}
+  .SPR_chatRoundTime{font-size:10px}
   .SPR_chatLocator{top:58px;bottom:auto;right:8px;pointer-events:auto}
   .SPR_chatLocatorTicks{display:none}
   .SPR_chatLocatorMobile{display:block}
@@ -18845,7 +18852,7 @@
               h(BusyBtn, { primary: true, busy: operation === "apply", disabled: busy || props.disabled || result === null || !result.optimized.trim() || stale || needsClarification, onClick: () => void apply() }, T("采用优化结果"))))) : null));
     }
 
-    function ImageResultMenu({ label, children, icon, onOpen, disabled = false }) {
+    function ImageResultMenu({ label, children, icon, onOpen, disabled = false, align = "end" }) {
       const [open, setOpen] = React.useState(false);
       const triggerRef = React.useRef(null);
       const menuRef = React.useRef(null);
@@ -18861,21 +18868,25 @@
         const position = () => {
           const rect = triggerRef.current.getBoundingClientRect(), size = menu.getBoundingClientRect();
           if (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) { close(); return; }
-          menu.style.left = Math.max(8, Math.min(rect.right - size.width, window.innerWidth - size.width - 8)) + "px";
+          menu.style.left = Math.max(8, Math.min(align === "start" ? rect.left : rect.right - size.width, window.innerWidth - size.width - 8)) + "px";
           menu.style.top = (rect.bottom + size.height + 6 <= window.innerHeight - 8 ? rect.bottom + 6 : Math.max(8, rect.top - size.height - 6)) + "px";
         };
         position();
         const observer = typeof ResizeObserver === "function" ? new ResizeObserver(position) : null;
         observer?.observe(menu);
-        const controls = items(); (focusLast.current ? controls.at(-1) : controls[0])?.focus({ preventScroll: true });
+        const controls = items(); (focusLast.current ? controls.at(-1) : menu.querySelector('[aria-checked="true"]') || controls[0])?.focus({ preventScroll: true });
         const onScroll = event => { if (!menu.contains(event.target)) position(); };
+        // Keep dismissal in the same state flow as the trigger. Native auto
+        // light-dismiss can race with React and consume the next opening click.
+        const outside = event => { if (!menu.contains(event.target) && !triggerRef.current?.contains(event.target)) close(); };
         window.addEventListener("resize", position); document.addEventListener("scroll", onScroll, true);
-        return () => { observer?.disconnect(); window.removeEventListener("resize", position); document.removeEventListener("scroll", onScroll, true); if (menu.matches(":popover-open")) menu.hidePopover(); };
-      }, [open]);
+        document.addEventListener("pointerdown", outside, true);
+        return () => { observer?.disconnect(); window.removeEventListener("resize", position); document.removeEventListener("scroll", onScroll, true); document.removeEventListener("pointerdown", outside, true); if (menu.matches(":popover-open")) menu.hidePopover(); };
+      }, [open, align]);
       return h("div", { className: "SPR_imageResultActions" },
         h("button", { type: "button", className: "SPR_btn SPR_imageResultMore", disabled, title: icon ? label : T("更多"), ref: triggerRef, "aria-label": label, "aria-haspopup": "menu", "aria-expanded": open,
           onClick: () => { focusLast.current = false; setOpen(value => !value); }, onKeyDown: event => { if (["ArrowDown", "ArrowUp"].includes(event.key)) { event.preventDefault(); focusLast.current = event.key === "ArrowUp"; if (open) { const controls = items(); (focusLast.current ? controls.at(-1) : controls[0])?.focus({ preventScroll: true }); } else setOpen(true); } } }, icon || h(ProjectActionIcon, { name: "more" })),
-        h("div", { ref: menuRef, className: "SPR_imageResultMenu", popover: "auto", role: "menu", "aria-label": label,
+        h("div", { ref: menuRef, className: "SPR_imageResultMenu", popover: "manual", role: "menu", "aria-label": label,
           onToggle: event => { if (!event.currentTarget.matches(":popover-open")) setOpen(false); },
           onClick: event => { const item = event.target.closest("[role^=menuitem]"); if (item && !item.disabled) close(true); },
           onKeyDown: event => {
@@ -19270,6 +19281,21 @@
         "aria-pressed": bookmarked, "aria-label": action, title: action, onClick: () => onToggle(file) }, h(ImageChatIcon, { name: "bookmark" }));
     }
 
+    function ImageVersionPicker({ slot, entry, favoriteFiles, onChange }) {
+      const selectedId = entry.displayId || entry.id;
+      return h("div", { className: "SPR_chatVersionSelect", "data-value": selectedId },
+        h(ImageResultMenu, { label: T("图片版本"), align: "start", icon: h("span", { className: "SPR_chatVersionTrigger" },
+          h("span", null, imageConversationVersionLabel(entry, slot)),
+          h("svg", { className: "SPR_chatVersionChevron", width: 12, height: 12, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.5, "aria-hidden": "true" }, h("path", { d: "m4 6 4 4 4-4" }))) },
+          slot.versions.map(version => {
+            const id = version.displayId || version.id, selected = id === selectedId;
+            return h(Btn, { key: id, role: "menuitemradio", "aria-checked": selected, "data-version-id": id, onClick: () => onChange(id) },
+              h("span", { className: "SPR_chatVersionCheck", "aria-hidden": "true" }, selected ? h("svg", { width: 14, height: 14, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.7 }, h("path", { d: "m3 8 3 3 7-7" })) : null),
+              h("span", null, imageConversationVersionLabel(version, slot)),
+              (favoriteFiles ?? []).includes(version.item.keyedFile || version.item.file) ? h("span", { className: "SPR_chatVersionFavorite", role: "img", "aria-label": T("已收藏"), title: T("已收藏") }, h(ImageChatIcon, { name: "bookmark" })) : null);
+          })));
+    }
+
     function ImageChatIcon({ name }) {
       const attrs = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" };
       if (name === "plus") return h("svg", attrs, h("path", { d: "M12 5v14M5 12h14" }));
@@ -19293,7 +19319,7 @@
           h(Btn, { role: "menuitem", disabled, onClick: () => imageInput.current?.click() }, T("导入已有图片"))));
     }
 
-    function ImageChatRound({ round, job, busy, keyingBusy, renderResult, onReuse, onReference, onHistory, onKeying, bookmarked, onBookmark, favoriteFiles, onFavorite }) {
+    function ImageChatRound({ round, job, busy, keyingBusy, renderResult, onReuse, onReference, onHistory, onKeying, favoriteFiles, onFavorite }) {
       const [versions, setVersions] = React.useState({});
       const slots = round.slots.map(slot => ({ ...slot, versions: imageConversationDisplayVersions(slot) }));
       const entries = slots.map(slot => slot.versions.find(entry => (entry.displayId || entry.id) === versions[slot.id]) ?? slot.versions.at(-1));
@@ -19306,8 +19332,7 @@
           h("p", { className: "SPR_chatPrompt" }, request?.prompt || (round.kind === "uploaded" ? T("导入已有图片") : T("旧版图片记录"))),
           h("div", { className: "SPR_chatRequestMeta" }, request ? [request.settings?.size, T("{n0} 张图片", { n0: round.results.length || round.slots.length }), request.keying?.enabled ? T("透明背景") : null].filter(Boolean).join(" · ") : T("这条记录没有生成参数快照。"))),
         h("div", { className: "SPR_chatResponse" },
-          h("div", { className: "SPR_chatRoundHead" }, h("span", null, T("第 {n0} 轮", { n0: round.number })), h("time", { dateTime: new Date(round.createdAt).toISOString() }, date),
-            h("button", { type: "button", className: "SPR_taskIconButton SPR_imageBookmark", "data-bookmarked": bookmarked, "aria-pressed": bookmarked, "aria-label": bookmarked ? T("取消收藏本轮") : T("收藏本轮"), title: bookmarked ? T("取消收藏本轮") : T("收藏本轮"), onClick: onBookmark }, h(ImageChatIcon, { name: "bookmark" }))),
+          h("div", { className: "SPR_chatRoundHead" }, h("span", null, T("第 {n0} 轮", { n0: round.number }))),
           h("details", { className: "SPR_chatProgress", "data-status": round.status },
             h("summary", null, round.status === "running" ? h("span", { className: "SPR_spinSm" }) : h("span", { className: "SPR_chatStatusDot" }), status, h("span", null, T("查看执行详情"))),
             request ? h("ol", { className: "SPR_chatSteps" }, h("li", null, T("请求已提交")), h("li", null, round.status === "running" ? T("等待生成结果") : status),
@@ -19323,10 +19348,7 @@
               const file = item.keyedFile || item.file, label = imageConversationVersionLabel(entry, slot);
               return h("div", { className: "SPR_chatImageResult", "data-file": file }, renderResult(item, currentIndex, controls, entry, round),
                 file ? h("div", { className: "SPR_chatVersionBar" },
-                  slot.versions.length > 1 ? h("span", { className: "SPR_chatVersionSelect" },
-                    h("select", { "aria-label": T("图片版本"), value: entry.displayId || entry.id, onChange: event => { const id = event.target.value; setVersions(current => ({ ...current, [slot.id]: id })); } },
-                      slot.versions.map(version => h("option", { key: version.displayId || version.id, value: version.displayId || version.id }, imageConversationVersionLabel(version, slot), (favoriteFiles ?? []).includes(version.item.keyedFile || version.item.file) ? " · " + T("已收藏") : ""))),
-                    h("svg", { width: 12, height: 12, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.5, "aria-hidden": "true" }, h("path", { d: "m4 6 4 4 4-4" }))) : h("span", { className: "SPR_chatVersionLabel" }, label),
+                  slot.versions.length > 1 ? h(ImageVersionPicker, { slot, entry, favoriteFiles, onChange: id => setVersions(current => ({ ...current, [slot.id]: id })) }) : h("span", { className: "SPR_chatVersionLabel" }, label),
                   h(ImageFileBookmark, { file, label, bookmarked: (favoriteFiles ?? []).includes(file), onToggle: onFavorite }),
                   h("div", { className: "SPR_chatImageActions" },
                   h(Btn, { disabled: busy, onClick: () => onReference({ file: item.keyedFile || item.file, name: T("第 {n0} 轮", { n0: round.number }) + ".png" }) }, T("作为参考")),
@@ -19339,7 +19361,8 @@
             h(ImageResultMenu, { label: T("本轮更多操作") },
               request ? h(Btn, { role: "menuitem", disabled: busy, onClick: () => onReuse(request, "all", round) }, T("复用本轮")) : null,
               h(Btn, { role: "menuitem", onClick: () => onReuse(request, "details") }, T("查看最终生图请求")),
-              round.entries.length ? h(Btn, { role: "menuitem", danger: true, disabled: busy, onClick: () => onHistory(round.entries.at(-1), "delete") }, T("删除历史记录")) : null))));
+              round.entries.length ? h(Btn, { role: "menuitem", danger: true, disabled: busy, onClick: () => onHistory(round.entries.at(-1), "delete") }, T("删除历史记录")) : null),
+            h("time", { className: "SPR_chatRoundTime", dateTime: new Date(round.createdAt).toISOString() }, date))));
     }
 
     const imageConversationViews = new Map();
@@ -19428,6 +19451,8 @@
         finally { dialogLock.current = false; setWorking(false); }
       };
       const media = imageConversationMaterials(job, rounds);
+      const bookmarkedRounds = new Set(rounds.filter(round => round.slots.some(slot => slot.versions.some(entry =>
+        [entry.item.file, entry.item.keyedFile].some(file => file && (view.favoriteFiles ?? []).includes(file))))).map(round => round.id));
       const preview = rounds.find(round => round.id === hovered?.id);
       return h("div", { className: "SPR_imageChat", "data-testid": "image-conversation" },
         h("header", { className: "SPR_chatTop" }, h("span", { className: "SPR_chatTitle" }, job.name),
@@ -19436,12 +19461,11 @@
         h("div", { className: "SPR_chatScroll", "data-empty": rounds.length === 0, ref: scroller, onScroll: scroll, onPointerLeave: () => setHovered(null), "data-testid": "image-message-scroll" },
           h("div", { className: "SPR_chatMessages", "data-empty": rounds.length === 0 }, rounds.length ? rounds.map(round => h(ImageChatRound, { key: round.id, round, job, busy, keyingBusy, renderResult, onReference, onReuse: act,
             favoriteFiles: view.favoriteFiles ?? [], onFavorite: toggleFavorite,
-            onHistory: (entry, action) => setConfirmation({ entry, action }), onKeying: async (entry, index) => { try { if (index < 0 && !await onHistory(entry, "restore")) return; setPanel("keying"); } catch (error) { setNotice(msg(error)); } },
-            bookmarked: (view.bookmarks ?? []).includes(round.id), onBookmark: () => persist({ bookmarks: (stateRef.current.bookmarks ?? []).includes(round.id) ? stateRef.current.bookmarks.filter(id => id !== round.id) : [...(stateRef.current.bookmarks ?? []), round.id] }) }))
+            onHistory: (entry, action) => setConfirmation({ entry, action }), onKeying: async (entry, index) => { try { if (index < 0 && !await onHistory(entry, "restore")) return; setPanel("keying"); } catch (error) { setNotice(msg(error)); } } }))
             : h("div", { className: "SPR_chatWelcome" }, h(ImageChatIcon, { name: "image" }), h("h2", null, T("想创作什么游戏素材？")), h("p", null, T("描述你的想法，或添加参考图片开始。"))))),
         h("nav", { className: "SPR_chatLocator", "aria-label": T("生成轮次定位") },
           h("details", { className: "SPR_chatLocatorMobile" }, h("summary", { "aria-label": T("定位历史记录") }, h(TaskHeaderIcon, { name: "list" })), h("div", null, rounds.map(round => h("button", { key: round.id, type: "button", onClick: event => { locate(round.id); event.currentTarget.closest("details").open = false; } }, T("第 {n0} 轮", { n0: round.number }), " · ", round.request?.prompt?.slice(0, 24) || T("旧版图片记录"))))),
-          h("div", { className: "SPR_chatLocatorTicks" }, rounds.map(round => h("button", { key: round.id, type: "button", "data-active": active === round.id, "data-status": round.status, "data-bookmarked": (view.bookmarks ?? []).includes(round.id),
+          h("div", { className: "SPR_chatLocatorTicks" }, rounds.map(round => h("button", { key: round.id, type: "button", "data-active": active === round.id, "data-status": round.status, "data-bookmarked": bookmarkedRounds.has(round.id),
             "aria-label": T("定位第 {n0} 轮", { n0: round.number }), "aria-current": active === round.id ? "step" : undefined, onClick: () => locate(round.id),
             onPointerEnter: event => setHovered({ id: round.id, x: event.currentTarget.getBoundingClientRect().left, y: event.currentTarget.getBoundingClientRect().top }), onPointerLeave: () => setHovered(null), onFocus: event => setHovered({ id: round.id, x: event.currentTarget.getBoundingClientRect().left, y: event.currentTarget.getBoundingClientRect().top }), onBlur: () => setHovered(null) }, h("span", null))))),
         preview ? h("div", { className: "SPR_chatLocatorPreview", ref: previewRef, popover: "manual", role: "tooltip" },

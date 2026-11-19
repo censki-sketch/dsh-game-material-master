@@ -46,6 +46,7 @@ DSH 插件「游戏素材大师」：从一张角色设定图出发批量产出�
 | 改完 `lib/client.js` 只需刷新浏览器 | 客户端束由宿主按请求从磁盘读，带 `rev` 指纹 |
 | **没有任何运行时依赖** | `zod` / `cordis` / dsh-typert-protocol 等一律从 DSH 自身安装树解析；`node_modules` 与 lock 文件不入库 |
 | `lib/` **入库**（不是构建产物目录） | 包直接以 `main: lib/index.js` 发布，`npm publish` 不触发构建 |
+| **新增或修改的界面控件必须美化并跟随主题，禁止浏览器默认弹层样式** | 下拉选择不能直接用 `<select>/<option>` 的系统菜单；复用自定义菜单，统一圆角、间距、悬停、选中、焦点和浅深色。提示/确认不能直接用 `alert/confirm/prompt`。允许 `dialog/popover` 提供语义与顶层显示，但必须用插件 CSS 定义外观；系统文件/文件夹选择器保留原生。已有旧控件在修改时一并替换，不能只给闭合按钮加 CSS、展开仍使用系统样式。版本选择由 `ImageVersionPicker` 复用 `ImageResultMenu`；必须验证展开态、键盘、点外部/Esc关闭、窄屏边界，`verify-client` 拦版本选择退回原生菜单。 |
 | **对话工具面常驻只有一个 `game_material`**；详细流程 / 方法表放 `src/toolguides.ts`，由 `action:"guide"` 按需读取 | 工具定义与系统提示词每次请求都进上下文；旧版 8 个工具 + 49,393 B 描述在无关任务里白烧 token。新增方法必须进对应模块主题与自动生成的 `methods` 目录，**不许**把方法表塞回工具描述 / 系统提示词；`verify-tools.mjs` 有 ≤6,000 B 预算断言 |
 | 生成类调用必须带 loading 反馈，批量任务要按 `job.targets` 盖住**还没轮到**的方向 | 不盖遮罩时界面看着完全正常，只是「点了没反应」，用户会反复点——每次点击都真实计费。`verify-client.mjs` / `verify-feedback.mjs` 会拦 |
 | **后台轮询刷新项目 / 任务时，不许用宿主的值整份覆盖编辑草稿** | 有任务在跑时每 2.5~5 秒拉一次 `getProject` / `getImageJob` / `getSequenceJob` / `getRigJob`；无条件覆盖草稿会让用户正在长文本框里替换的提示词一两秒后被打回原形（真机：「我替换的时候它一秒钟又换回来」）。所有 load 走 `mergeDrafts()`：只有「草稿 === 上一次宿主值」的字段才跟着宿主更新；换项目 / 换任务 / 点「重置为默认」才 `force`。`verify-feedback.mjs` 有合并用例，`verify-client.mjs` 逐模块钉住调用点 |

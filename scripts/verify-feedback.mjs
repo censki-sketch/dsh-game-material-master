@@ -1285,6 +1285,8 @@ if (typeof ImageModule === "function") {
     const single = renderModule(ImageModule, makeImageJob({ items: [makeImageJob().items[0]] }), makeTasks());
     check("单张结果隐藏整个缩略图条", byClass(single.tree, "SPR_imageGalleryThumbs").length === 0);
     check("复用描述使用图标并保留可访问名称和悬停说明", byTag(acceptance.tree, "button").some(node => node.props["aria-label"] === "复用描述" && node.props.title === "复用描述" && byTag(node, "svg").length === 1 && textOf(node) === ""));
+    check("轮次顶部不再显示重复收藏或时间", byClass(acceptance.tree, "SPR_chatRoundHead").every(head => byTag(head, "button").length === 0 && byTag(head, "time").length === 0));
+    check("每轮时间移动到底部操作栏", byClass(acceptance.tree, "SPR_chatRoundActions").every(footer => byTag(footer, "time").some(node => node.props.className === "SPR_chatRoundTime" && node.props.dateTime)));
     const firstNav = byClass(acceptance.tree, "SPR_imageGalleryArrow");
     check("首张禁用上一张，下一张可切换", firstNav.length === 2 && firstNav[0].props.disabled && !firstNav[1].props.disabled);
     const secondTree = renderSelection(acceptance.tree, 1);

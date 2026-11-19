@@ -311,6 +311,11 @@ for (const file of files) {
   checkFramePickContracts(text, label);
   checkInputAndZoomContracts(text, label);
   checkDraftContracts(text, label);
+  const versionPicker = text.slice(text.indexOf("function ImageVersionPicker("), text.indexOf("function ImageChatIcon("));
+  const imageRound = text.slice(text.indexOf("function ImageChatRound("), text.indexOf("const imageConversationViews"));
+  check(`${label}：图片版本复用主题菜单，禁止退回原生select/option弹层`,
+    versionPicker.includes("h(ImageResultMenu") && imageRound.includes("h(ImageVersionPicker") &&
+    !/\bh\(\s*"(?:select|option)"/.test(versionPicker + imageRound));
 
   const renderers = renderersIn(text);
   check(`${label}：找到阶段渲染函数`, renderers.size > 0, [...renderers.keys()].join("、"));
