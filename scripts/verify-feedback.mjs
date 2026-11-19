@@ -1192,6 +1192,8 @@ if (typeof ImageModule === "function") {
     check("图片模块有全局输出尺寸输入框", byTag(idle.tree, "input").some((node) => node.props["data-testid"] === "image-global-size"));
     check("图片模块有「尺寸来源」选择器（默认跟随全局）", byTag(idle.tree, "select").some((node) => node.props["data-testid"] === "image-size-mode" && node.props.value === "global"));
     check("跟随全局时不显示任务尺寸输入框", !byTag(idle.tree, "input").some((node) => node.props["data-testid"] === "image-task-size"));
+    const composerBottom = byClass(idle.tree, "SPR_chatComposerBottom")[0];
+    check("输入栏不再显示重复的尺寸设置按钮", !!composerBottom && !byTag(composerBottom, "button").some(node => node.props["aria-label"] === "生成参数"));
     const customSize = renderModule(ImageModule, makeImageJob({ settings: { count: 2, size: "1024x1536", sizeMode: "custom" } }), makeTasks());
     check("自定义尺寸时显示任务尺寸输入框", byTag(customSize.tree, "input").some((node) => node.props["data-testid"] === "image-task-size" && node.props.value === "1024x1536"));
 
@@ -1664,19 +1666,21 @@ section("功能管理（隐藏模块）");
     HOOK.slots = []; HOOK.cursor = 0;
 
     /**
-     * 生图后端：配置表单常驻，左侧页签决定显示哪一组，实际后端由下拉决定。
+     * 生图连接配置常驻；实际后端与模型由输入栏选择，不在设置重复选择。
      *
      * 这两组**必须同时渲染**：用户经常要先配好自定义服务、点一次「测试连接」，
      * 确认能出图之后再把它切成当前后端。只渲染「当前那一组」的话，
      * 没配火山方舟 Key 的用户连自己的本地服务都配不上。
      */
     const providerSelect = collect(settings, (node) => node.props?.["data-testid"] === "cfg-image-provider")[0];
-    check("设置页有「生图后端」选择器", providerSelect !== undefined);
-    check("后端选择器包含 ark / custom / toapis", JSON.stringify(collect(providerSelect, (node) => node.type === "option").map(node=>node.props.value).sort()) === JSON.stringify(["ark","custom","toapis"]));
+    check("设置页不再重复提供生图后端选择器", providerSelect === undefined);
+    const imagePanel = collect(settings, node => node.props?.["data-testid"] === "cfg-panel-image")[0];
+    const imageSections = collect(imagePanel, node => node.props?.className === "SPR_settingsSectionTab");
+    check("生图设置只保留三个连接页签", imageSections.length === 3 && imageSections.every(node => textOf(node) !== "生图后端"));
     check("ToAPIs 独立设置组存在", collect(settings,node=>node.props?.["data-testid"] === "cfg-toapis").length === 1);
     check("ToAPIs API Key 使用密码框", collect(collect(settings,node=>node.props?.["data-testid"] === "cfg-toapis")[0],node=>node.props?.type === "password").length === 1);
-    check("缺 Key 时给出「还不能开跑」的提示，而不是静默", textOf(settings).includes("还不能开跑"));
-    check("火山方舟那一组标注了当前使用", textOf(settings).includes("当前使用"));
+    check("缺 Key 时在当前连接页给出阻塞原因", collect(imagePanel, node => node.props?.className === "SPR_note").some(node => textOf(node).includes("还不能开跑")));
+    check("当前连接在设置页签中有标记", collect(imagePanel, node => node.props?.className === "SPR_settingsSectionCurrent" && node.props?.["aria-label"] === "当前使用").length === 1);
 
     // 默认协议是 openai：协议下拉、地址、模型名、尺寸、测试按钮都要在。
     check("自定义那一组有协议下拉（三种协议由宿主给）", collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-protocol").length === 1);
@@ -1740,10 +1744,11 @@ section("功能管理（隐藏模块）");
     const workflowBox = collect(comfySettings, (node) => node.props?.["data-testid"] === "cfg-custom-workflow")[0];
     check("切到 ComfyUI 后出现工作流文本框", workflowBox !== undefined);
     check("工作流文本框里是已经存过的那份", workflowBox?.props?.value === '{"1":{}}', String(workflowBox?.props?.value).slice(0, 40));
-    check("后端切换器选中自定义", collect(comfySettings, (node) => node.props?.["data-testid"] === "cfg-image-provider")[0]?.props?.value === "custom");
+    const comfyImagePanel = collect(comfySettings, node => node.props?.["data-testid"] === "cfg-panel-image")[0];
+    check("生图设置默认打开当前自定义连接", collect(comfyImagePanel, node => node.props?.className === "SPR_settingsSectionTab" && node.props?.["aria-selected"] === true).some(node => textOf(node).includes("自定义生图模型")));
     check("切到自定义后该卡展开", collect(comfySettings, (node) => node.props?.["data-testid"] === "cfg-custom-group")[0]?.props?.["data-open"] === "true");
     check("非当前 Ark 表单仍可完整配置", collect(comfySettings, (node) => node.props?.["data-testid"] === "cfg-ark-group")[0]?.props?.["data-open"] === "true");
-    check("后端就绪时给出「后端已就绪」而不是阻塞提示", textOf(comfySettings).includes("后端已就绪") && !textOf(comfySettings).includes("还不能开跑"));
+    check("已就绪的连接不重复显示就绪横幅或阻塞信息", collect(comfyImagePanel, node => node.props?.className === "SPR_note").length === 0);
     // NumField 是函数组件，`textOf` 展不开它，只能按 props.label 找。
     check(
       "ComfyUI 下显示采样步数 / CFG 等高级参数",

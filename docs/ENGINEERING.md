@@ -255,7 +255,7 @@ Key 只写入本机 `<DSH_HOME>/game-material-master/config.json`，常规配置
 
 有效引用的 Backspace / Delete 会扩展选区到完整引用边界，输入法组词时不拦截。透明背景开关复用 `keying.enabled`，生成前与提示词一同排队保存；`imagegen.buildPrompt` 只修改本次请求的背景要求，移除内置模板默认白背景并追加精确底色约束。`generateImageItem` 固定本次 `keying` 快照传给 `keyItem`，防止请求期间任务或全局颜色变化导致背景不匹配。高级表单默认折叠。`verify-image-transparency.mjs` 使用独立临时配置、回环假生图API和合成像素，核对发送提示词、实际背景alpha、主体配色和中途配置变更，零真实计费。
 
-> **模型是插件级设置，三个模块共用。** 设置页配置「生图模型」「视频模型」，图片输入栏也可切换已测试的全局生图后端。
+> **生图模型是插件级设置，各生图模块共用。** 设置页管理连接，图片输入栏直接切换已配置的全局生图后端；不要求先测试。视频模型仍在视频设置中选择。
 > 图片任务 / 序列帧任务不单独选择模型——高级参数中的模型字段仍是
 > 只读展示。原因：网关地址与 API Key 都是全局的，任务里若使用旧模型快照，
 > 切换模型后就会把请求打到错误网关（实测：任务存官方 H3 + 全局切优云智算 →
@@ -678,7 +678,7 @@ dsh --profile gmmweb --port 19388     # 打印 http://127.0.0.1:19388/?token=…
 
 选中项目 ID 以 `last-image-job` 存在 localStorage 并有模块内存兜底。ImageModule 只消费一次同一深链接意图；重挂载恢复用户最近选择，新的显式回链仍可跳转。load 同时检查选中 ID 与递增请求序号，卸载作废未完成请求，避免 A→B→A 时旧响应覆盖新数据。底部审核下拉无边框，生成使用带动态张数 aria-label 的圆形上箭头；提交期间显示禁用的停止方块，后台生成期间可以点击停止。
 
-主输入栏 `ImageModelPicker` 将生图与提示词模型分组，直接列出配置中的模型，不按测试证据过滤。`configView.imageModels` 由宿主对三个后端调用统一 `imageModelOf` / `imageProviderBlocker`，返回 provider/model/blocker；客户端展示全部三项、禁用缺必要配置的项，切换前复核配置，不发测试请求。生图切换更新插件全局后端，提示词选择按项目保存于 `prompt-model:<jobId>`，不修改 agentDefaultModel。`getPromptOptimizerModel` 通过 llm.listProviders/listModels 返回完整 `models`，`configuredModels` 与 `defaultTested` 保留兼容，测试状态不影响选择与优化；不返回凭据，单个目录失败不影响其他提供商。模型测试管理组件及其菜单、设置入口已移除，模型菜单支持长名称换行。审核模式位于添加按钮右侧，模型菜单移到生成按钮左侧，底部仍保持一排。打开菜单或优化弹窗只读目录/配置，不请求模型。重复的弹窗模型选择器和参考图提示行已移除，说明统一放标题感叹号，原文与结果仍可编辑并支持 @ 引用。`optimizeImagePrompt.modelSelection?` 只包含 provider/model，必须通过 wire，并在提交前复核仍是已配置模型；缺省继续跟随 DSH 默认。只有同一默认路由才沿用其 reasoningEffort，不向另一模型传递不兼容的强度。图片仍走所选路由的 prepareCall 和模态校验；未知选择不自动回退。JSON快照中的空模板语言可能为null，客户端优化和预览均归一化为缺省值，避免不使用模板时被语言枚举拒绝。
+主输入栏 `ImageModelPicker` 将生图与提示词模型分组，直接列出配置中的模型，不按测试证据过滤。`configView.imageModels` 由宿主对三个后端调用统一 `imageModelOf` / `imageProviderBlocker`，返回 provider/model/blocker；客户端展示全部三项、禁用缺必要配置的项，切换前复核配置，不发测试请求。生图切换更新插件全局后端，提示词选择按项目保存于 `prompt-model:<jobId>`，不修改 agentDefaultModel。`getPromptOptimizerModel` 通过 llm.listProviders/listModels 返回完整 `models`，`configuredModels` 与 `defaultTested` 保留兼容，测试状态不影响选择与优化；不返回凭据，单个目录失败不影响其他提供商。模型测试管理组件及其菜单、设置入口已移除，模型菜单支持长名称换行。菜单只显示简短分组、模型名称和来源，当前项高亮；默认DSH项显示实际模型名并去重，点击直接切换，不打开额外模型弹窗、不提供重新读取按钮。每次展开自动读取目录。旧宿主缺完整目录时仍显示其实际当前生图模型，重启说明收在感叹号中，不把已配置路由误报为空。设置移除重复的「生图后端→当前使用」页，保留三类连接表单；首次打开定位当前连接，切换页签仍保留未保存草稿。输入栏移除尺寸设置快捷按钮，顶部生成参数入口继续可用。审核模式位于添加按钮右侧，模型菜单移到生成按钮左侧，底部仍保持一排。打开菜单或优化弹窗只读目录/配置，不请求模型。重复的弹窗模型选择器和参考图提示行已移除，说明统一放标题感叹号，原文与结果仍可编辑并支持 @ 引用。`optimizeImagePrompt.modelSelection?` 只包含 provider/model，必须通过 wire，并在提交前复核仍是已配置模型；缺省继续跟随 DSH 默认。只有同一默认路由才沿用其 reasoningEffort，不向另一模型传递不兼容的强度。图片仍走所选路由的 prepareCall 和模态校验；未知选择不自动回退。JSON快照中的空模板语言可能为null，客户端优化和预览均归一化为缺省值，避免不使用模板时被语言枚举拒绝。
 
 `src/modeltests.ts` 保留既有显式测试接口的状态记录，写入 `<DSH_HOME>/game-material-master/model-tests/<sha256>.json`，文件只含 running/passed/failed 与时间，不含凭据或请求内容。图片指纹覆盖后端、地址、模型、Key，自定义后端另含协议与工作流；DSH 指纹在内存中读取所属 profile 和解析后的凭据，配置变化使旧通过记录失效。旧宿主无法公开路由配置时，使用 llm 实例会话指纹。测试按指纹防并发，先写 running，失败清除旧通过证据；不自动重试。界面不再提供新增的测试管理入口，已有接口保留兼容；ToAPIs 仍走统一 Provider 与提交回执保护，DSH 测试最多128 tokens、60秒、一次无工具调用，正常结束且有文本才通过。wire 方法总数仍为207，`testToapisImage`、`testPromptOptimizerModel`、`cancelImageJob` 均为 clientOnly。
 

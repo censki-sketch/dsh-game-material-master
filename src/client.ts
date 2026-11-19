@@ -48,10 +48,13 @@
   "停止生成": "Stop generation",
   "停止等待生成，已提交的请求仍可能计费。": "Stop waiting for generation. Submitted requests may still be billed.",
   "正在停止…": "Stopping…",
-  "所选生图模型已不可用，请重新读取模型。": "The selected image model is no longer available. Reload models.",
+  "所选生图模型已变更，请重新打开菜单选择。": "The selected image model has changed. Reopen the menu to choose again.",
+  "模型未保存成功，请重试。": "The model was not saved. Please retry.",
+  "模型列表": "Models",
+  "火山方舟": "Ark",
+  "完全退出DSH（包括托盘）后重开，可显示完整模型列表。": "Fully quit DSH, including the tray, and reopen it to load the full model list.",
   "选择模型": "Choose model",
   "切换模型": "Switch model",
-  "生图模型（全局）": "Image model (global)",
   "暂无生图模型，请先配置生图后端。": "No image models. Configure an image backend first.",
   "暂无提示词模型，请先在DSH中配置。": "No prompt models. Configure a model in DSH first.",
   "请先在输入栏选择已配置的提示词模型。": "Choose a configured prompt model in the composer first.",
@@ -150,32 +153,20 @@
       "生成或上传图片后，会在这里显示。": "Generated or uploaded images will appear here.",
       "生成或上传的图片会自动保存在这里。": "Generated and uploaded images are saved here automatically.",
       "还没有生成结果": "No results yet",
-
       "创建项目": "Create project",
       "合并显示": "Combined view",
-
       "手动排序": "Manual order",
       "拖动调整顺序，或按 Alt + ↑ / ↓": "Drag to reorder, or press Alt + Up / Down",
       "按目录分组": "Group by folder",
       "整理侧边栏": "Organize sidebar",
       "整理项目": "Organize projects",
-
       "添加": "Add",
       "自动创建独立项目文件夹，保存参考图、生成图和历史记录；不选择时使用 DSH 默认位置。": "Creates a separate project folder for reference images, generated images and history. Uses the DSH default location when no folder is selected.",
       "项目": "Projects",
       "项目名称": "Project name",
       "项目排序方式": "Project sort order",
       "默认位置": "Default location",
-
-
-
-
-
-
-
       "最近更新": "Recently updated",
-
-
       "点击标题右侧的 + 新建任务。": "Click + beside the heading to create a task.",
       "优化提示词": "Optimize prompt",
       "基础提示词": "Base prompt",
@@ -227,9 +218,6 @@
       "正在读取DSH模型…": "Loading the DSH model…",
       "文字模型未返回提示词": "The text model did not return a prompt",
       "提示词优化模型": "Prompt optimization model",
-      "DSH默认模型": "DSH default model",
-      "支持图片": "Image input",
-      "重新读取模型": "Reload models",
       "只优化文字，使用DSH现有模型；图片仍需单独点击生成。": "Optimizes text using your existing DSH model. Generate images separately.",
       "DSH模型：{n0}": "DSH model: {n0}",
       "原提示词": "Original prompt",
@@ -286,7 +274,6 @@
       "ToAPIs Key 未配置": "ToAPIs Key not configured",
       "ToAPIs Key 已保存": "ToAPIs Key saved",
       "已清除 ToAPIs Key": "ToAPIs Key cleared",
-
       "南 · 正对镜头": "South · facing the camera",
       "源图": "Source image",
       "北 · 背对镜头": "North · back to the camera",
@@ -597,15 +584,11 @@
       "方向按屏幕方位映射：按 ↑ 向北走（背对镜头）、↓ 向南走（正对镜头）、← 向西、→ 向东；斜向同时按两个键。": "Directions map to screen positions: ↑ walks north (back to camera), ↓ walks south (facing camera), ← walks west, → walks east; hold two keys at once for diagonals.",
       "「播放速度」只改步频快慢，不影响角色移动速度；「移动速度」只改走得多快，不影响动画帧率。切图用的是整图自己记录的行序，所以改完行序即使还没重新合成，预览也不会取错方向。": "\"Playback speed\" only changes how fast the steps cycle and does not affect how fast the character moves; \"Movement speed\" only changes how fast it walks and does not affect the animation frame rate. Frame switching uses the row order recorded in the sheet itself, so even if you change the row order before recomposing, the preview still picks the right direction.",
       "{n0}（{n1}）": "{n0} ({n1})",
-
       "新建": "New",
-
-
       "正在新建任务…": "Creating task…",
       "删除任务「{n0}」？目录会被整个移除。": "Delete task \"{n0}\"? Its whole folder will be removed.",
       "已删除": "Deleted",
       "正在上传 {n0} 个文件…": "Uploading {n0} files…",
-
       "{n0} 张 · 抠像 {n1}": "{n0} images · {n1} keyed",
       "正在新建…": "Creating…",
       "新建任务": "New task",
@@ -615,7 +598,6 @@
       "重命名任务": "Rename task",
       "任务及其素材文件将被永久删除，此操作无法撤销。": "The task and its asset files will be permanently deleted. This cannot be undone.",
       "正在调用接口…": "Calling the API…",
-
       "主提示词用于描述主体。基础提示词在「优化提示词」弹窗中选择和查看，编辑模板可点击「管理模板」。": "Describe the subject in the main prompt. Select and view base prompts in the Optimize prompt dialog; use Manage templates to edit them.",
       "描述你要生成的图片…": "Describe the image you want to generate…",
       "统一附加提示词（可留空）": "Shared suffix prompt (optional)",
@@ -698,7 +680,6 @@
       "正在处理历史记录…": "Updating history…",
       "历史记录操作失败，请重试。": "History operation failed. Please try again.",
       "显示更多历史": "Show more history",
-
       "第 {n0} 张": "Image {n0}",
       "上传": "Upload",
       "抠像结果": "Keying result",
@@ -1090,10 +1071,8 @@
       "已新建骨骼动画任务": "Skeletal animation job created",
       "删除任务「{n0}」？产物文件会一并删除。": "Delete job \"{n0}\"? Its output files will be deleted as well.",
       "新的任务名": "New job name",
-
       "新序列帧任务的名字": "Name for the new sequence job",
       "新骨骼动画任务的名字": "Name for the new skeletal animation job",
-
       "已重命名": "Renamed",
       "已上传参考图：{n0}": "Reference image uploaded: {n0}",
       "已上传 {n0} 个部件（文件名即部件名）": "Uploaded {n0} parts (the file name is used as the part name)",
@@ -1207,13 +1186,8 @@
       "ToAPIs（视频）": "ToAPIs (video)",
       "图生视频三选一：MiniMax（云端，默认）、ToAPIs（云端异步）、本机 ComfyUI；勾选后两者之一会替换 MiniMax，取消勾选即回到 MiniMax。ToAPIs 的 Base URL / Key / 超时在「生图」里配置，图片与视频共用。": "Pick one video backend: MiniMax (cloud, default), ToAPIs (cloud, async) or local ComfyUI. Enabling either of the latter two replaces MiniMax; clear both to return to MiniMax. ToAPIs' Base URL, key and timeout are configured on the \"Images\" tab and shared by image and video.",
       "生图后端": "Image backend",
-      "八方向图、图片生成、骨骼动画的生图都走这里选的后端；图生视频在「生视频」页签里单独选择。": "Sprite sheets, image generation and rigged animation generate images through the backend selected here; choose the video backend on the \"Video\" tab.",
       "当前使用": "In use",
-      "火山方舟 Seedream（云端，开箱即用）": "Volcengine Ark Seedream (cloud, works out of the box)",
-      "自定义生图模型（OpenAI / ComfyUI / SD WebUI）": "Custom image model (OpenAI / ComfyUI / SD WebUI)",
-      "当前生效：{n0}": "Currently active: {n0}",
       "还不能开跑：{n0}": "Not ready yet: {n0}",
-      "后端已就绪，可以开跑。": "The backend is ready to use.",
       "自定义生图模型": "Custom image model",
       "填「主机根地址」即可，具体端点由插件按协议拼；本地服务通常不需要 API Key。": "Just the host root URL — the plugin appends the protocol-specific endpoint. Local servers usually need no API key.",
       "协议": "Protocol",
@@ -1301,20 +1275,17 @@
       "{n0} 调用失败": "{n0} call failed",
       "{n0}: 深链接拦截": "{n0}: deep link interception",
       "{n0}: 深链接引导": "{n0}: deep link guidance",
-
       // ── 45° 地图地块生成（模块五）──
       "排队中": "Queued",
       "行": "Rows",
       "列": "Cols",
       "种子": "Seed",
       "导出": "Export",
-
       // ── 地图地块：地块清单编辑 ──
       "保存": "Save",
       "撤销": "Undo",
       "地面": "Ground",
       // ── 地图地块：手动编辑布局 ──      "布局已保存。点「铺成地图」重新出图。": "Layout saved. Click 'Assemble map' to render it again.",
-
       // ── 功能管理 / 侧栏快捷菜单 ──
       "功能菜单": "Feature menu",
       "快捷进入功能": "Jump to a feature",
@@ -1340,7 +1311,6 @@
         "Every feature is hidden. Turn at least one back on in \"Settings → Game Material Master → Feature management\".",
       "所有功能都已被隐藏。请到「设置 → 游戏素材大师 → 功能管理」里打开至少一个。":
         "Every feature is hidden. Turn at least one back on in \"Settings → Game Material Master → Feature management\".",
-
       // ── 45° 地图编辑器（模块五 · iso）────────────────────────────────────
       "45°地图编辑器": "45° map editor",
       "导入菱形地块 → 自动连接 → 画 45° 等距地图 → 导出 PNG": "Import diamond tiles → auto-connect → paint a 45° isometric map → export PNG",
@@ -1402,13 +1372,11 @@
       "位序：N=1 / E=2 / S=4 / W=8。屏幕上 N 是右上、E 是右下、S 是左下、W 是左上。第 0 块四周都不连，第 15 块四周都连。": "Bits: N=1 / E=2 / S=4 / W=8. On screen N is up-right, E is down-right, S is down-left and W is up-left. Tile 0 connects on no side; tile 15 connects on all four.",
       "物件：一张完整图，不要切成格子。": "Object: one complete image, never cut into cells.",
       "图片底边中点是落地点；可以高出一格（树冠 / 屋顶）。占几格只影响占地与遮挡，不改图片本身。多帧时竖排，同一张图按帧播放。": "The bottom-centre of the image is the anchor point; it may rise above the cell (tree canopy / roof). The footprint only affects occupied cells and occlusion, not the image itself. Multiple frames are stacked vertically and played in order.",
-
       // ── 俯视地图编辑器（模块六）────────────────────────────────────────────
       "俯视地图编辑器":
         "Top-down map editor",
       "导入自己的素材图 → 自动连接 → 俯视画布上直接画 → 导出 PNG":
         "Import your own tile image → auto-connect → paint directly on the top-down canvas → export PNG",
-
       "【游戏素材大师 · 45° 地图编辑器 AI 生成素材】": "[Game Material Master · 45° map editor AI asset]",
       "这是「45°地图编辑器 → 素材 → AI 生成素材」自动发起的一次任务：参数已经全部确定，不要调用 game_material({action:'intake'}) 追问、不要停下来问用户，直接做完。": "This task was started automatically by \"45° map editor → Assets → Generate with AI\". Every parameter is already decided: do not call game_material({action:'intake'}) to ask follow-up questions and do not stop to ask the user - just finish it.",
       "目标 45° 地图项目：{n0}（projectId={n1}，格子 {n2} 像素）": "Target 45° project: {n0} (projectId={n1}, cell {n2} px)",
@@ -1445,36 +1413,28 @@
       "物件：模型只画一个完整物件，纯绿幕背景；宿主会抠绿、按占格缩放。": "Object: the model draws one complete object on pure green; the host keys the green and scales it to the footprint.",
       "自动判断：成片铺开、会跟邻居接 → 地面；单独一个、不跟邻居接 → 物件。自动连接（4×4）首版不做，请手工导入。": "Auto: spreads across cells and connects to neighbours -> ground; standalone and does not connect -> object. Autotiling (4×4) is not done in v1; import it by hand.",
       "物件占几格（自动 / 物件时用）": "Object footprint (used for auto / object)",
-
       "画笔":
         "Brush",
       "橡皮":
         "Eraser",
-
       "吸管":
         "Picker",
-
       "我的地图":
         "My map",
       "读文件失败":
         "Failed to read the file",
       "已导入 {n0}":
         "Imported {n0}",
-
       "还没有地图项目。":
         "No map project yet.",
-
       "还没有导出过。":
         "Nothing exported yet.",
       "任务进行中…":
         "A job is running…",
-
       // 模块⑥「俯视地图编辑器」已经是正式功能：这里不再需要它的实验性说明词条。
-
       "已删除项目": "Project deleted",
       "已改地图尺寸": "Map resized",
       "换一组": "Roll again",
-
       // ── 俯视地图编辑器（模块六）：一屏零术语，AsLib RPG Map Maker 同款 ────────
       "先在左边点一块图当笔刷。":
         "Pick a tile on the left first.",
@@ -1538,7 +1498,6 @@
         "Flip-book",
       "会动的图：同一列的几行从上往下依次显示，看起来就像手翻书。适合水面波光、火苗、瀑布。画的时候点哪一行都行，整片会一起动。":
         "An animated image: the rows in one column play from top to bottom like a flip-book. Best for shimmering water, flames and waterfalls. It does not matter which row you click -- the whole patch animates together.",
-
       // ── 「素材说明」窗口：三页图文，讲清三种素材图怎么排 ──────────────────
       "素材说明":
         "How to lay out an image",
@@ -1822,7 +1781,6 @@
         "Zoomed out too far - zoom in a bit.",
       "第 {n0} 层 / 共 {n1} 层":
         "Layer {n0} of {n1}",
-
       // ── 本地 ComfyUI 视频后端（设置页区块 + 连接自检结果）──
       "本地 ComfyUI（图生视频）": "Local ComfyUI (image-to-video)",
       "勾选后，视频阶段改由本机 ComfyUI 生成，不再调用 MiniMax。工作流贴「导出（API 格式）」的那份 JSON；插件只负责把提示词、首帧图、尺寸、时长、种子注入进去，其余节点原样提交。": "When enabled, the video stage is generated by your local ComfyUI instead of MiniMax. Paste the JSON from ComfyUI's Export (API format); the plugin only injects the prompt, first frame, size, duration and seed, and submits every other node as-is.",
@@ -1852,7 +1810,6 @@
       "ComfyUI Cookie 已保存": "ComfyUI cookie saved",
       "已清除 ComfyUI Cookie": "ComfyUI cookie cleared",
       "ComfyUI 本身不做鉴权；只有当它藏在需要登录的反向代理后面（Cloudflare Access、Basic Auth 之类）时才用得上——从浏览器开发者工具里把 Cookie 整段复制过来即可，所有请求（包括取回成品视频）都会带上它。": "ComfyUI does not authenticate on its own; a Cookie is only needed when it sits behind a login-protected reverse proxy (Cloudflare Access, Basic Auth, and the like). Copy the whole Cookie from your browser developer tools - every request, including fetching the finished video, carries it.",
-
       // AI 生成素材（地图编辑器素材窗口 → 新对话）
       "AI 生成素材": "Generate with AI",
       "当前环境不支持自动开新对话，请在对话里直接说明你要的素材。": "This environment cannot open a new chat automatically. Please describe the asset you want in the chat instead.",
@@ -1887,7 +1844,6 @@
       "   然后 getSequenceJob({jobId}) 取 dir 与 frames.files，按顺序取前 {n0} 帧的绝对路径 = dir + '/' + file。": "   then getSequenceJob({jobId}) and read dir and frames.files; take the absolute paths of the first {n0} frames in order as dir + '/' + file.",
       "然后 getImageJob({jobId}) 取 dir 与 items[]，按顺序取前 {n0} 张的绝对路径 = dir + '/' + file。": "then getImageJob({jobId}) and read dir and items[]; take the absolute paths of the first {n0} images in order as dir + '/' + file.",
       "审核模式按自动：你自己核对结果，有问题自己重跑，不要停下来等我确认。全程不要问任何问题。": "Review mode is auto: check the result yourself and re-run anything that looks wrong; do not stop for my confirmation. Do not ask any questions at all.",
-
       // 「AI 生成素材」· 素材形态（普通 / 整格 / 拼块）的规划与规整
       "动画帧数：{n0}": "Animation frames: {n0}",
       "这块素材怎么用：{n0}（用户已经指定，不要改）": "How this asset is used: {n0} (already chosen by the user - do not change it)",
@@ -2032,8 +1988,6 @@
       "成片铺开、边缘自动接上：草地 / 水面 / 沙地 / 岩浆。每张图 = 一列 5 行（自上而下 5 种接法），帧数 = 变体数（拼块的动画就是换变体）。": "Spreads out with connecting edges: grass / water / sand / lava. Each image = one column of 5 rows (the 5 connection cases), and frames = variants (quadrant-tile animation works by swapping variants).",
       "已在新对话里开始生成：素材「{n0}」（用哪种由对话判断）": "Generation started in a new chat: asset \"{n0}\" (the chat decides which type)",
       "已在新对话里开始生成：素材「{n0}」（{n1}）": "Generation started in a new chat: asset \"{n0}\" ({n1})",
-
-
       // ── 音乐生成编辑（模块七）──
       "风格": "Style",
       "【游戏素材大师 · 音乐生成编辑】": "[Game Material Master - Music Generation & Editing]",
@@ -5676,12 +5630,12 @@
 .SPR_chatMaterialsEmpty>svg{width:36px;height:36px;color:var(--dsw-alias-label-tertiary)}
 .SPR_chatMaterialsEmpty h4,.SPR_chatMaterialsEmpty p{margin:0;line-height:1.7}
 .SPR_chatMaterialsEmpty h4{font-size:14px;font-weight:500;color:var(--dsw-alias-label-primary)}
-.SPR_modelGroupLabel{margin:8px 6px 4px;font-size:11px;color:var(--dsw-alias-label-tertiary)}
+.SPR_modelGroupLabel{display:flex;align-items:center;gap:6px;margin:8px 6px 4px;font-size:11px;color:var(--dsw-alias-label-tertiary)}
+.SPR_modelProvider{margin-left:auto;flex:none;font-size:11px;color:var(--dsw-alias-label-tertiary);font-weight:400}
 .SPR_chatModelTrigger{display:flex;align-items:center;gap:4px;max-width:180px;font-size:12px}
 .SPR_chatModelTrigger>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .SPR_chatComposerBottom .SPR_chatModels .SPR_imageResultMore{width:auto;padding:4px 6px}
-.SPR_chatModels .SPR_imageResultMenu{width:320px}
-.SPR_chatModels .SPR_imageResultMenu>.SPR_btn{white-space:normal;overflow-wrap:anywhere;text-align:left}
+.SPR_chatModels .SPR_imageResultMenu>.SPR_btn[aria-checked=true]{background:var(--dsw-alias-interactive-bg-hover-solid);font-weight:500}
 .SPR_chatModels .SPR_imageResultMenu{width:320px}
 .SPR_chatModels .SPR_imageResultMenu>.SPR_btn{white-space:normal;overflow-wrap:anywhere;text-align:left}
 .SPR_chatWelcome>svg{width:34px;height:34px;opacity:.6}
@@ -18696,6 +18650,13 @@
       return [selected, choose];
     }
 
+    /** Old host processes expose the current route even before they expose the full catalog. */
+    function imageModelChoices(config) {
+      if (Array.isArray(config?.imageModels) && config.imageModels.length) return config.imageModels;
+      if (!config?.imageModel) return [];
+      return [{ provider: config.imageProvider || "ark", model: config.imageModel, blocker: config.imageProviderBlocker }];
+    }
+
     function ImageModelPicker({ api, jobId, disabled, imageConfig = null }) {
       const [selected, choose] = usePromptModel(jobId), [catalog, setCatalog] = React.useState(null), [images, setImages] = React.useState(imageConfig);
       const [loading, setLoading] = React.useState(false), [notice, setNotice] = React.useState(null);
@@ -18718,30 +18679,33 @@
         lock.current = true; setLoading(true);
         try {
           const current = await api.getConfig();
-          const route = current.imageModels?.find(value => value.provider === model.provider && value.model === model.model);
-          if (!route) throw new Error(T("所选生图模型已不可用，请重新读取模型。"));
+          const route = imageModelChoices(current).find(value => value.provider === model.provider && value.model === model.model);
+          if (!route) throw new Error(T("所选生图模型已变更，请重新打开菜单选择。"));
           if (route.blocker) throw new Error(route.blocker);
           const next = await api.saveConfig({ imageProvider: model.provider });
+          if (next.imageProvider !== model.provider) throw new Error(T("模型未保存成功，请重试。"));
           if (alive.current) setImages(next);
           window.dispatchEvent(new Event("gmm-model-config"));
         } catch (error) { if (alive.current) setNotice({ kind: "error", text: msg(error) }); }
         finally { lock.current = false; if (alive.current) setLoading(false); }
       };
-      const promptName = selected ? (catalog?.models?.find(model => model.provider === selected.provider && model.model === selected.model)?.name || selected.model) : catalog?.available ? catalog.model : T("选择模型");
+      const promptModels = catalog?.models ?? catalog?.configuredModels ?? [];
+      const defaultName = promptModels.find(model => model.provider === catalog?.provider && model.model === catalog?.model)?.name || catalog?.model;
+      const promptName = selected ? (promptModels.find(model => model.provider === selected.provider && model.model === selected.model)?.name || selected.model) : catalog?.available ? defaultName : T("选择模型");
+      const legacyCatalog = !loading && ((imageConfig && images && !Array.isArray(images.imageModels)) || (catalog && !Array.isArray(catalog.models)));
       return h("div", { className: "SPR_chatModels" }, h(ImageResultMenu, { label: imageConfig ? T("切换模型") : T("提示词优化模型"), disabled: disabled || loading, onOpen: () => void load(),
         icon: h("span", { className: "SPR_chatModelTrigger" }, loading ? h("span", { className: "SPR_spinSm", "aria-hidden": "true" }) : null,
           h("span", null, imageConfig ? images?.imageModel || T("选择模型") : promptName), h("svg", { width: 12, height: 12, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", "aria-hidden": "true" }, h("path", { d: "m4 6 4 4 4-4" }))) },
-        imageConfig ? h(React.Fragment, null, h("p", { className: "SPR_modelGroupLabel" }, T("生图模型（全局）")),
-          (images?.imageModels ?? []).map(model => h(Btn, { key: model.provider, role: "menuitemradio", disabled: !!model.blocker, title: model.blocker || undefined, "aria-checked": images.imageProvider === model.provider, onClick: () => void switchImage(model) },
-            (model.provider === "ark" ? T("火山方舟（生图）") : model.provider === "toapis" ? "ToAPIs" : T("自定义生图模型")) + " · " + (model.model || "—"))),
-          !loading && !images?.imageModels?.length ? h("p", { className: "SPR_hint" }, T("暂无生图模型，请先配置生图后端。")) : null) : null,
-        h("p", { className: "SPR_modelGroupLabel" }, T("提示词优化模型")),
-        catalog?.available ? h(Btn, { role: "menuitemradio", "aria-checked": !selected, onClick: () => choose(null) }, T("DSH默认模型")) : null,
-        (catalog?.models ?? []).map(model => h(Btn, { key: JSON.stringify([model.provider, model.model]), role: "menuitemradio", "aria-checked": selected?.provider === model.provider && selected?.model === model.model,
-          onClick: () => choose({ provider: model.provider, model: model.model }) }, model.providerName + " · " + model.name, model.inputModalities?.includes("image") ? " · " + T("支持图片") : "")),
-        !loading && !catalog?.models?.length && !catalog?.available ? h("p", { className: "SPR_hint" }, T("暂无提示词模型，请先在DSH中配置。")) : null,
-        catalog?.modelsMessage ? h("p", { className: "SPR_hint" }, catalog.modelsMessage) : null,
-        h(Btn, { role: "menuitem", disabled: loading, onClick: () => void load() }, T("重新读取模型"))),
+        imageConfig ? h(React.Fragment, null, h("p", { className: "SPR_modelGroupLabel" }, T("生图"), legacyCatalog ? h(DescriptionTip, { id: jobId + "-model-catalog", label: T("模型列表"), text: T("完全退出DSH（包括托盘）后重开，可显示完整模型列表。") }) : null),
+          imageModelChoices(images).map(model => h(Btn, { key: model.provider, role: "menuitemradio", disabled: !!model.blocker, title: model.blocker || undefined, "aria-checked": images.imageProvider === model.provider, onClick: () => void switchImage(model) },
+            h("span", null, model.model || "—"), h("span", { className: "SPR_modelProvider" }, model.provider === "ark" ? T("火山方舟") : model.provider === "toapis" ? "ToAPIs" : T("自定义")))),
+          !loading && !imageModelChoices(images).length ? h("p", { className: "SPR_hint" }, T("暂无生图模型，请先配置生图后端。")) : null) : null,
+        h("p", { className: "SPR_modelGroupLabel" }, T("提示词")),
+        catalog?.available ? h(Btn, { role: "menuitemradio", "aria-checked": !selected || (selected.provider === catalog.provider && selected.model === catalog.model), onClick: () => choose(null) }, h("span", null, defaultName), h("span", { className: "SPR_modelProvider" }, "DSH")) : null,
+        promptModels.filter(model => !catalog?.available || model.provider !== catalog.provider || model.model !== catalog.model).map(model => h(Btn, { key: JSON.stringify([model.provider, model.model]), role: "menuitemradio", "aria-checked": selected?.provider === model.provider && selected?.model === model.model,
+          onClick: () => choose({ provider: model.provider, model: model.model }) }, h("span", null, model.name), h("span", { className: "SPR_modelProvider" }, model.providerName))),
+        !loading && !promptModels.length && !catalog?.available ? h("p", { className: "SPR_hint" }, T("暂无提示词模型，请先在DSH中配置。")) : null,
+        catalog?.modelsMessage ? h(DescriptionTip, { id: jobId + "-model-list-error", label: T("模型列表"), text: catalog.modelsMessage }) : null),
         h(NoticePopup, { notice, onClose: () => setNotice(null) }));
     }
 
@@ -20096,7 +20060,6 @@
                     }, h("div", { className: "SPR_chatComposerBottom" },
                       h(ImageChatAddMenu, { disabled: busy || uploading, onUpload: upload }),
                       h(ReviewModeBar, { api, module: "image", id: job.id, mode: job.reviewMode, compact: true, onChanged: () => load(job.id) }),
-                      h(Btn, { "aria-label": T("生成参数"), onClick: () => window.dispatchEvent(new CustomEvent("gmm-image-conversation", { detail: { jobId: job.id, panel: "parameters" } })) }, h(ImageChatIcon, { name: "parameters" }), settingsDraft.sizeMode === "custom" ? settingsDraft.size : globalConfig?.imageProviderSize || settingsDraft.size),
                       h("div", { className: "SPR_promptRightActions" },
                       h("label", { className: "SPR_transparentToggle", title: T("开启后自动补充纯色背景要求，生成完成后在本地抠成透明 PNG；不会修改输入内容。") + " " + T("抠像背景色：{n0}", { n0: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }) },
                         h("input", { type: "checkbox", role: "switch", "aria-label": T("透明背景"), checked: keyingDraft.enabled === true, disabled: busy || uploading,
@@ -24267,8 +24230,8 @@
     }
 
     /** Keep each settings form mounted so switching sections preserves input drafts. */
-    function SettingsSections({ children, ...panelProps }) {
-      const [selected, setSelected] = React.useState(0);
+    function SettingsSections({ children, initialSection = 0, ...panelProps }) {
+      const [selected, setSelected] = React.useState(initialSection);
       const items = [children].flat(Infinity).filter(Boolean);
       const groups = items.filter(item => item.type === SettingsGroup || item.type === SettingsSubGroup);
       const active = selected < groups.length ? selected : 0;
@@ -24689,10 +24652,12 @@
       const usingCompshare = compshareModelId !== undefined && config.minimaxModel === compshareModelId;
 
       /**
-       * 生图后端。`ark` 与 `custom` 互斥，两组配置同时保留、只由这个开关决定用哪一组
-       * —— 来回切不会丢任何一边的 Key 和参数。
+       * 设置只管理连接；输入栏切换实际使用的生图后端与模型，各组配置分别保留。
        */
       const imageProvider = config.imageProvider === "toapis" ? "toapis" : config.imageProvider === "custom" ? "custom" : "ark";
+      const imageStatus = config.imageProviderBlocker
+        ? h("div", { className: "SPR_note", "data-kind": "error" }, T("还不能开跑：{n0}", { n0: config.imageProviderBlocker }))
+        : null;
       const protocols = config.customProtocols ?? [];
       const protocolInfo = protocols.find((entry) => entry.id === config.customProtocol);
       const customProtocol = config.customProtocol ?? "openai";
@@ -24793,48 +24758,17 @@
             className: "SPR_settingsPanel",
             role: "tabpanel",
             id: "cfg-panel-image",
+            initialSection: imageProvider === "custom" ? 2 : imageProvider === "toapis" ? 1 : 0,
             "data-testid": "cfg-panel-image",
             "aria-labelledby": "cfg-tab-image",
             hidden: activeTab !== "image"
           },
-          h(
-            SettingsGroup,
-            {
-              title: T("生图后端"),
-              hint: T("八方向图、图片生成、骨骼动画的生图都走这里选的后端；图生视频在「生视频」页签里单独选择。")
-            },
-            h(
-              "div",
-              { className: "SPR_fields" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("当前使用")),
-              h(
-                "select",
-                {
-                  className: "SPR_input",
-                  "data-testid": "cfg-image-provider",
-                  value: imageProvider,
-                  onChange: (event) => void patch({ imageProvider: event.target.value })
-                },
-                h("option", { value: "ark" }, T("火山方舟 Seedream（云端，开箱即用）")),
-                h("option", { value: "toapis" }, "ToAPIs"),
-                h("option", { value: "custom" }, T("自定义生图模型（OpenAI / ComfyUI / SD WebUI）"))
-              )
-            )
-          ),
-          h("p", { className: "SPR_hint" }, T("当前生效：{n0}", { n0: config.imageProviderSummary ?? "" })),
-          config.imageProviderBlocker
-            ? h("div", { className: "SPR_note", "data-kind": "error" }, T("还不能开跑：{n0}", { n0: config.imageProviderBlocker }))
-            : h("div", { className: "SPR_note", "data-kind": "ok" }, T("后端已就绪，可以开跑。"))
-        ),
-
         h(
           SettingsGroup,
           {
             title: T("火山方舟（生图）"),
             badge: imageProvider === "ark" ? T("当前使用") : null,
+            lead: imageProvider === "ark" ? imageStatus : null,
             testId: "cfg-ark-group"
           },
           h(
@@ -24951,6 +24885,7 @@
             title: T("ToAPIs（图片）"),
             hint: T("ToAPIs：图片和视频使用独立的异步协议；每次生成会计费。"),
             badge: imageProvider === "toapis" ? T("当前使用") : null,
+            lead: imageProvider === "toapis" ? imageStatus : null,
             testId: "cfg-toapis"
           },
           h(
@@ -25057,6 +24992,7 @@
             title: T("自定义生图模型"),
             hint: T("填「主机根地址」即可，具体端点由插件按协议拼；本地服务通常不需要 API Key。"),
             badge: imageProvider === "custom" ? T("当前使用") : null,
+            lead: imageProvider === "custom" ? imageStatus : null,
             testId: "cfg-custom-group"
           },
           h(
