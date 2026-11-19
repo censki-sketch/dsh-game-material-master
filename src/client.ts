@@ -17608,6 +17608,7 @@
 
     function ImagePreviewDialog({ src, alt, label, imageLabel, onClose, result = false }) {
       const dialogRef = React.useRef(null);
+      const closeButtonRef = React.useRef(null);
       const viewportRef = React.useRef(null);
       const imageRef = React.useRef(null);
       const viewRef = React.useRef({ scale: 1, x: 0, y: 0 });
@@ -17635,7 +17636,12 @@
         const ratio = next / current.scale;
         applyView({ scale: next, x: point.x - (point.x - current.x) * ratio, y: point.y - (point.y - current.y) * ratio });
       }, [applyView]);
-      React.useLayoutEffect(() => { dialogRef.current?.showModal(); }, []);
+      React.useLayoutEffect(() => {
+        // Native dialog focusing runs during showModal; React's autoFocus runs
+        // earlier, while the dialog is hidden, so it cannot select this button.
+        closeButtonRef.current?.setAttribute("autofocus", "");
+        dialogRef.current?.showModal();
+      }, []);
       React.useEffect(() => {
         const viewport = viewportRef.current;
         const wheel = event => {
@@ -17663,7 +17669,7 @@
             h("span", null, T("预览")),
             h(DescriptionTip, { id: "image-preview-help", label: T("图片预览"), text: T("滚轮缩放，按住鼠标拖动查看，双击恢复适应窗口。") }),
             h("span", null, imageLabel)),
-          h(Btn, { autoFocus: true, onClick: close }, T("关闭"))),
+          h("button", { ref: closeButtonRef, type: "button", className: "SPR_btn", onClick: close }, T("关闭"))),
         h("div", { ref: viewportRef, className: "SPR_imagePreviewViewport", "data-pannable": pannable, "data-dragging": dragging,
           onDoubleClick: fit,
           onPointerDown: event => {
