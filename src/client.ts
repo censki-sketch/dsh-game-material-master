@@ -5654,8 +5654,9 @@
 .SPR_chatResponse{margin-top:18px;min-width:0}
 .SPR_chatRoundHead{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--dsw-alias-label-tertiary);margin:0 0 8px}
 .SPR_chatRoundHead>time{margin-left:auto}
-.SPR_chatRoundHead>.SPR_taskIconButton[data-bookmarked=true]{color:var(--dsw-alias-state-business-primary)}
-.SPR_chatRoundHead>.SPR_taskIconButton[data-bookmarked=true] svg{fill:color-mix(in srgb,currentColor 15%,transparent)}
+.SPR_chatRoundHead>.SPR_taskIconButton[data-bookmarked=true]{color:var(--dsw-alias-state-business-primary,#4977ff);background:color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 32%,transparent)}
+.SPR_chatRoundHead>.SPR_taskIconButton[data-bookmarked=true]:hover{background:color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 23%,transparent)}
+.SPR_chatRoundHead>.SPR_taskIconButton[data-bookmarked=true] svg{fill:currentColor}
 .SPR_chatProgress{margin:0 0 12px;color:var(--dsw-alias-label-secondary);font-size:12px}
 .SPR_chatProgress>summary{display:flex;align-items:center;gap:7px;cursor:pointer;list-style:none;width:fit-content;border-radius:6px;padding:3px 0}
 .SPR_chatProgress>summary::-webkit-details-marker{display:none}
@@ -19911,9 +19912,9 @@
                                 h("div", { className: "SPR_imageGalleryMeta" },
                                   item.backgroundFraction !== undefined ? h("span", null, T("背景占比 {n0}%", { n0: (item.backgroundFraction * 100).toFixed(0) })) : null,
                                   counter),
-                                h("span", { className: "SPR_imageResultState" },
-                                  overlay ? h(Chip, { kind: "running", text: T("生成中") }) : h(StatusChip, { node: item }),
-                                  item.source === "uploaded" ? h(Chip, { kind: "empty", text: T("上传") }) : null),
+                                overlay || item.status !== "ready" || item.source === "uploaded" ? h("span", { className: "SPR_imageResultState" },
+                                  overlay ? h(Chip, { kind: "running", text: T("生成中") }) : item.status !== "ready" ? h(StatusChip, { node: item }) : null,
+                                  item.source === "uploaded" ? h(Chip, { kind: "empty", text: T("上传") }) : null) : null,
                                 (item.file || item.keyedFile) ? h(
                                   ImageResultMenu,
                                   { label: T("第 {n0} 张图片的更多操作", { n0: position + 1 }) },
