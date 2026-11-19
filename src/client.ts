@@ -523,6 +523,7 @@
       "原始大小": "Actual size",
       "适应窗口": "Fit to window",
       "图片预览": "Image preview",
+      "预览": "Preview",
       "滚轮缩放，按住鼠标拖动查看，双击恢复适应窗口。": "Scroll to zoom, drag to pan, and double-click to fit to the window.",
       "历史记录（{n0}）": "History ({n0})",
       "暂无历史记录，生成或上传后会自动保留。": "No history yet. Generated and uploaded images will be kept automatically.",
@@ -5175,6 +5176,9 @@
 .SPR_imageRefFull{display:block;width:100%;height:auto;max-height:calc(100vh - 132px);object-fit:contain;border-radius:8px}
 .SPR_imagePreviewDialog[open]{display:flex;flex-direction:column;height:min(86vh,860px);height:min(86dvh,860px);overflow:hidden}
 .SPR_imagePreviewDialog>.SPR_imageRefDialogHead{flex:none}
+.SPR_imagePreviewHeading{display:flex;align-items:center;gap:6px;min-width:0}
+.SPR_imagePreviewHeading>span{min-width:0;overflow-wrap:anywhere}
+.SPR_imagePreviewHeading>.SPR_descriptionButton{flex:none}
 .SPR_imagePreviewControls{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;flex:none;margin:12px 0 0}
 .SPR_imagePreviewControls>.SPR_btn{min-height:34px;padding:6px 10px;font-size:12px;box-shadow:none}
 .SPR_imagePreviewZoom{display:inline-flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-3)}
@@ -17602,7 +17606,7 @@
           } }, children));
     }
 
-    function ImagePreviewDialog({ src, alt, label, onClose, result = false }) {
+    function ImagePreviewDialog({ src, alt, label, imageLabel, onClose, result = false }) {
       const dialogRef = React.useRef(null);
       const viewportRef = React.useRef(null);
       const imageRef = React.useRef(null);
@@ -17654,7 +17658,12 @@
         onCancel: event => { event.preventDefault(); close(); },
         onClose: onClose,
         onClick: event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(); } } },
-        h("div", { className: "SPR_imageRefDialogHead" }, h("h3", null, label), h(Btn, { autoFocus: true, onClick: close }, T("关闭"))),
+        h("div", { className: "SPR_imageRefDialogHead" },
+          h("h3", { className: "SPR_imagePreviewHeading" },
+            h("span", null, T("预览")),
+            h(DescriptionTip, { id: "image-preview-help", label: T("图片预览"), text: T("滚轮缩放，按住鼠标拖动查看，双击恢复适应窗口。") }),
+            h("span", null, imageLabel)),
+          h(Btn, { autoFocus: true, onClick: close }, T("关闭"))),
         h("div", { ref: viewportRef, className: "SPR_imagePreviewViewport", "data-pannable": pannable, "data-dragging": dragging,
           onDoubleClick: fit,
           onPointerDown: event => {
@@ -17672,13 +17681,12 @@
             style: { width: natural.width || undefined, height: natural.height || undefined, marginLeft: -natural.width / 2, marginTop: -natural.height / 2, transform: `translate(${view.x}px,${view.y}px) scale(${view.scale})` },
             onLoad: event => { setNatural({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight }); fit(); } })),
         h("div", { className: "SPR_imagePreviewControls", role: "group", "aria-label": T("图片预览") },
+          h(Btn, { disabled: !natural.width, onClick: () => applyView({ scale: 1, x: 0, y: 0 }) }, T("原始大小")),
           h("div", { className: "SPR_imagePreviewZoom" },
             h(Btn, { "aria-label": T("缩小图片"), disabled: !natural.width || view.scale <= 0.01, onClick: () => zoomAt(viewRef.current.scale / 1.25) }, "−"),
             h("output", { className: "SPR_imagePreviewPercent", "aria-label": T("图片缩放比例") }, Math.round(view.scale * 100) + "%"),
             h(Btn, { "aria-label": T("放大图片"), disabled: !natural.width || view.scale >= 32, onClick: () => zoomAt(viewRef.current.scale * 1.25) }, "+")),
-          h(Btn, { disabled: !natural.width, onClick: () => applyView({ scale: 1, x: 0, y: 0 }) }, T("原始大小")),
-          h(Btn, { disabled: !natural.width, onClick: fit }, T("适应窗口")),
-          h(DescriptionTip, { id: "image-preview-help", label: T("图片预览"), text: T("滚轮缩放，按住鼠标拖动查看，双击恢复适应窗口。") })));
+          h(Btn, { disabled: !natural.width, onClick: fit }, T("适应窗口"))));
     }
 
     function ImageResultPreview({ src, alt, label, disabled }) {
@@ -17692,7 +17700,7 @@
       return h(React.Fragment, null,
         h("button", { ref: triggerRef, type: "button", className: "SPR_imageResultPreview", "aria-label": title, "aria-haspopup": "dialog", disabled,
           onClick: () => setOpen(true) }, h("img", { className: "SPR_thumb", src, alt })),
-        open ? h(ImagePreviewDialog, { key: src, src, alt, label: title, result: true, onClose: close }) : null);
+        open ? h(ImagePreviewDialog, { key: src, src, alt, label: title, imageLabel: label, result: true, onClose: close }) : null);
     }
 
     function ImageResultGallery({ items, assetBase, tasks, keying, renderItem, initialIndex }) {
@@ -17744,7 +17752,7 @@
             h("img", { src: url(ref), alt: "" }),
             h("span", { className: "SPR_imageRefDetails" }, h("span", { className: "SPR_imageRefLabel" }, label(ref)), h("span", { className: "SPR_imageRefName" }, ref.name))),
           h(Btn, { danger: true, "aria-label": T("移除 {n0}", { n0: ref.name }), disabled: props.disabled, onClick: () => props.onRemove(ref) }, T("移除"))))) : null,
-        preview ? h(ImagePreviewDialog, { key: preview.file, src: url(preview), alt: preview.name, label: T("预览参考图") + " · " + label(preview) + " · " + preview.name, onClose: close }) : null);
+        preview ? h(ImagePreviewDialog, { key: preview.file, src: url(preview), alt: preview.name, label: T("预览参考图") + " · " + label(preview) + " · " + preview.name, imageLabel: label(preview) + " · " + preview.name, onClose: close }) : null);
     }
 
     function ImageHistoryPanel({ job, busy, onAction }) {
