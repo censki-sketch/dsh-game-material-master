@@ -64,6 +64,7 @@ try{
  hold=false;releases.splice(0).forEach(release=>release());const first=await settled(jobId);
  check('concurrent completions retain both independent versions',first.history.length===2&&new Set(first.history.map(e=>e.item.file)).size===2&&first.items.every(i=>i.status==='ready'));
  check('completed round binds both versions and completion time',first.rounds.length===1&&first.rounds[0].completedAt>=first.rounds[0].createdAt&&first.rounds[0].results.every(result=>result.status==='ready'&&first.history.some(entry=>entry.id===result.versionId)));
+ check('generation items and history persist the same originating conversation ID',first.items.every(item=>item.roundId===first.rounds[0].id)&&first.history.every(entry=>entry.roundId===first.rounds[0].id&&entry.item.roundId===entry.roundId));
  check('round retains its own generation and local keying logs',first.rounds[0].logs.length===6&&first.rounds[0].logs.every(entry=>entry.level==='info')&&first.rounds[0].logs.filter(entry=>entry.message.includes('本地抠像完成')).length===2);
  const firstSummary=imagegen.summarizeImageJob(first);
  check('sidebar counts current/history copies once',firstSummary.imageCount===2&&firstSummary.keyedCount===2&&firstSummary.historyCount===2&&firstSummary.ready===2);
@@ -112,6 +113,7 @@ try{
  check('new transparent PNG versions are included in saved/keyed totals',imagegen.summarizeImageJob(keyed).imageCount===5&&imagegen.summarizeImageJob(keyed).keyedCount===5);
  check('local keying settings stay separate from the unmodified generation snapshot',keyed.history.at(-1).keying.despill===0.2&&keyed.history.at(-1).request.keying.despill===old.request.keying.despill&&keyed.history.at(-1).request.finalPrompt===old.request.finalPrompt);
  check('local cutout versions link to their source versions',keyed.history.slice(-2).every(entry=>entry.sourceVersionId&&keyed.history.some(source=>source.id===entry.sourceVersionId)));
+ check('re-keying inherits the source conversation rather than its local processing batch',keyed.history.slice(-2).every(entry=>entry.roundId===keyed.history.find(source=>source.id===entry.sourceVersionId).roundId&&entry.item.roundId===entry.roundId&&entry.batchId!==entry.roundId)&&keyed.rounds.length===restored.rounds.length);
  const current=keyed.history.at(-1);await invoke('manageImageHistory',{jobId,historyId:current.id,action:'delete'});
  check('deleting history retains files used by current results',await exists(imagegen.imageAssetPath(jobId,current.item.keyedFile)));
  check('a current version stays counted after its history record is deleted',imagegen.summarizeImageJob(await imagegen.readImageJob(jobId)).imageCount===5);
@@ -134,6 +136,16 @@ try{
  await assert.rejects(invoke('manageImageHistory',{jobId:legacy.id,historyId:migrated.history[0].id,action:'reuse'}),/没有保存生成参数/);
  await invoke('manageImageHistory',{jobId:legacy.id,historyId:migrated.history[0].id,action:'restore'});
  check('legacy retention is persisted on next write',JSON.parse(await readFile(join(imagegen.imageJobDir(legacy.id),'job.json'),'utf8')).history[0].kind==='legacy');
+ const chain=await imagegen.createImageJob('legacy keying ancestry');
+ const originalEntry={id:'ancestor',batchId:'origin-chat',createdAt:9,kind:'generated',item:{index:0,versionId:'ancestor',file:legacyPath,source:'generated',status:'ready'}};
+ const cutEntry={...originalEntry,id:'cut',batchId:'local-process',createdAt:1,kind:'keyed',sourceVersionId:'ancestor',item:{...originalEntry.item,versionId:'cut',keyedFile:'keyed/old.png'}};
+ const finalEntry={...cutEntry,id:'final-cut',batchId:'another-local-process',sourceVersionId:'cut',item:{...cutEntry.item,versionId:'final-cut'}};
+ chain.history=[finalEntry,cutEntry,originalEntry];chain.items=[{...finalEntry.item}];await imagegen.writeImageJob(chain);
+ const migratedChain=await imagegen.readImageJob(chain.id);
+ check('old out-of-order processing chains resolve to one originating round',migratedChain.history.every(entry=>entry.roundId==='origin-chat'&&entry.item.roundId==='origin-chat')&&migratedChain.items[0].roundId==='origin-chat');
+ await imagegen.editImageJob(chain.id,job=>{job.history=job.history.filter(entry=>entry.id==='final-cut');});
+ const orphan=await imagegen.readImageJob(chain.id);
+ check('persisted chat identity survives deletion of every parent history entry',orphan.history[0].roundId==='origin-chat'&&orphan.history[0].batchId==='another-local-process'&&orphan.items[0].roundId==='origin-chat');
  const fixed=await imagegen.createImageJob('sequential batch fixture');await imagegen.editImageJob(fixed.id,job=>{job.prompt='fixed batch prompt';});
  const prepared=await imagegen.prepareImageBatch(fixed.id,2),fixedStart=calls.length;
  await imagegen.generateImageItem(fixed.id,0,prepared);await saveConfig({customModel:'later-global-model'});

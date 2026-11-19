@@ -212,7 +212,12 @@
       "撤销优化": "Undo optimization",
       "正在读取DSH模型…": "Loading the DSH model…",
       "文字模型未返回提示词": "The text model did not return a prompt",
-      "使用DSH默认模型（与新会话一致），沿用已有登录和用量规则，无需单独填写Key。": "Uses the DSH default model, as new chats do, with your existing sign-in and usage rules. No separate key is needed.",
+      "可选择DSH已配置的模型，沿用已有登录和用量规则，无需单独填写Key。只影响本项目的提示词优化，不修改DSH默认模型；带参考图时需要支持图片输入。": "Choose a model configured in DSH, using your existing sign-in and usage rules without another key. This only affects prompt optimization in this project, not DSH's default model. References require image input support.",
+      "DSH模型列表读取失败，请重试；未提交优化请求。": "Could not read the DSH model list. Try again; no optimization request was submitted.",
+      "提示词优化模型": "Prompt optimization model",
+      "DSH默认模型": "DSH default model",
+      "支持图片": "Image input",
+      "重新读取模型": "Reload models",
       "只优化文字，使用DSH现有模型；图片仍需单独点击生成。": "Optimizes text using your existing DSH model. Generate images separately.",
       "DSH模型：{n0}": "DSH model: {n0}",
       "无法读取DSH模型；更新插件后请完全退出DSH（包括托盘）再打开。": "Could not read the DSH model. After updating the plugin, quit DSH completely, including the tray, then reopen it.",
@@ -5703,10 +5708,22 @@
 .SPR_chatAdd{flex:none}
 .SPR_chatAdd .SPR_imageResultMore{width:30px;height:30px;padding:5px;border:0;box-shadow:none;background:transparent}
 .SPR_chatComposerBottom .SPR_imageGenerateActions{display:flex;flex-direction:row-reverse;flex-wrap:nowrap;gap:8px;margin:0 0 0 auto;min-width:0}
-.SPR_chatComposerBottom .SPR_imageGenerateActions{flex:1}
-.SPR_chatComposerBottom .SPR_imageReview{min-width:0;max-width:180px;flex:1}
-.SPR_chatComposerBottom .SPR_imageReview select{width:100%!important;min-width:0;text-overflow:ellipsis;white-space:nowrap;height:32px;padding:4px 8px;overflow:hidden}
+.SPR_chatComposerBottom .SPR_imageGenerateActions{flex:none}
+.SPR_chatComposerBottom .SPR_imageReview{min-width:0;max-width:180px;flex:none;margin:0}
+.SPR_chatComposerBottom .SPR_imageReview select{width:auto!important;min-width:0;text-overflow:ellipsis;white-space:nowrap;height:32px;padding:4px 5px;overflow:hidden;border:0;border-radius:6px;background:transparent;box-shadow:none;color:var(--dsw-alias-label-secondary)}
+.SPR_chatComposerBottom .SPR_imageReview select:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
 .SPR_chatComposerBottom .SPR_imageGenerateActions>.SPR_btn{border-radius:16px;padding:6px 14px;font-size:12px;white-space:nowrap;flex:none}
+.SPR_chatComposerBottom .SPR_imageGenerateActions>.SPR_chatGenerate{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;padding:0;border:0;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-1);box-shadow:none}
+.SPR_chatComposerBottom .SPR_imageGenerateActions>.SPR_chatGenerate:hover:not(:disabled){opacity:.82;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-1)}
+.SPR_chatGenerateLabel{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.SPR_promptModelPicker{margin-right:auto;min-width:0;max-width:100%}
+.SPR_promptModelPicker .SPR_imageResultMore.SPR_btn{width:auto;max-width:100%;height:32px;padding:4px 8px;gap:6px;border-radius:7px;font-size:12px}
+.SPR_promptModelPicker .SPR_imageResultMenu{max-height:min(340px,50vh);max-width:min(420px,calc(100vw - 24px));overflow:auto}
+.SPR_promptModelLabel{display:flex;align-items:center;gap:6px;min-width:0}
+.SPR_promptModelLabel>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
+.SPR_promptModelLabel svg{flex:none}
+.SPR_promptModelPicker [role=menuitemradio][aria-checked=true]{background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 10%,transparent);color:var(--dsw-alias-state-business-primary)}
+.SPR_promptModelPicker .SPR_hint{padding:4px 10px;margin:0;font-size:11px}
 .SPR_chatComposerBottom .SPR_reviewModeBar{margin:0}
 .SPR_chatComposerRefs:empty{display:none}
 .SPR_chatComposerRefs .SPR_imageRefList{display:flex;gap:7px;overflow-x:auto;max-height:88px;margin:0 0 5px}
@@ -5765,7 +5782,7 @@
   .SPR_chatInputCard{padding:7px 8px;border-radius:16px}
   .SPR_chatComposerBottom .SPR_imageGenerateActions{gap:4px}
   .SPR_chatComposerBottom>.SPR_btn{max-width:26%;padding:4px;font-size:10px}
-  .SPR_chatComposerBottom .SPR_imageGenerateActions>.SPR_btn{padding:5px 9px}
+  .SPR_chatComposerBottom .SPR_imageGenerateActions>.SPR_btn:not(.SPR_chatGenerate){padding:5px 9px}
   .SPR_chatComposerBottom .SPR_reviewModeBar{font-size:10px}
   .SPR_chatResponse .SPR_imageResultPreview>.SPR_thumb{height:clamp(180px,38vh,340px)}
 }
@@ -18589,7 +18606,7 @@
       const [open, setOpen] = React.useState(false);
       const [preview, setPreview] = React.useState(null);
       const [error, setError] = React.useState("");
-      const requestKey = JSON.stringify({ jobId: props.jobId, prompt: props.prompt, suffix: props.suffix, keying: props.keying, lang: props.lang });
+      const requestKey = JSON.stringify({ jobId: props.jobId, prompt: props.prompt, suffix: props.suffix, keying: props.keying, lang: props.lang ?? undefined });
       const refsKey = JSON.stringify((props.references ?? []).map(ref => ref.file));
       React.useEffect(() => {
         if (!open || !props.prompt?.trim()) return;
@@ -18621,6 +18638,14 @@
       const [result, setResult] = React.useState(null);
       const [undo, setUndo] = React.useState(null);
       const [sourceDraft, setSourceDraft] = React.useState(props.prompt ?? "");
+      const [modelSelection, setModelSelection] = React.useState(() => {
+        try {
+          const saved = JSON.parse(window.localStorage.getItem("dsh-game-material-master:prompt-model:" + props.jobId) || "null");
+          return saved && typeof saved.provider === "string" && typeof saved.model === "string" ? saved : null;
+        } catch { return null; }
+      });
+      const [modelsLoading, setModelsLoading] = React.useState(false);
+      const modelsLock = React.useRef(false);
       const dialogRef = React.useRef(null);
       const triggerRef = React.useRef(null);
       const lockRef = React.useRef(false);
@@ -18637,6 +18662,22 @@
       }, [open]);
       const close = (force = false) => { if (applyingRef.current && !force) return; setOpen(false); triggerRef.current?.focus(); };
       const referenceSignature = JSON.stringify((props.references ?? []).map(ref => ref.file));
+      const loadModels = async () => {
+        if (modelsLock.current) return;
+        modelsLock.current = true; setModelsLoading(true);
+        try {
+          const cfg = await latestRef.current.api.getPromptOptimizerModel();
+          if (aliveRef.current) setConfig(cfg);
+        } catch { if (aliveRef.current) setError(T("DSH模型列表读取失败，请重试；未提交优化请求。")); }
+        finally { modelsLock.current = false; if (aliveRef.current) setModelsLoading(false); }
+      };
+      const chooseModel = value => {
+        setModelSelection(value);
+        try {
+          const key = "dsh-game-material-master:prompt-model:" + props.jobId;
+          if (value) window.localStorage.setItem(key, JSON.stringify(value)); else window.localStorage.removeItem(key);
+        } catch { /* Current dialog choice remains available. */ }
+      };
       const optimize = async () => {
         if (lockRef.current) return;
         const current = latestRef.current;
@@ -18645,7 +18686,7 @@
         if (mentioned.some(ref => !ref)) { setError(T("引用的图片不存在，请重新选择参考图。")); return; }
         const referenceFiles = (current.references ?? []).filter(ref => mentioned.length === 0 || mentioned.some(item => item.file === ref.file)).map(ref => ref.file);
         lockRef.current = true; setOperation("load"); setError("");
-        const source = { prompt: sourceDraft, suffix: current.suffix, keying: current.keying, lang: current.lang };
+        const source = { prompt: sourceDraft, suffix: current.suffix, keying: current.keying, lang: current.lang ?? undefined };
         const basePrompt = current.prompt;
         const refs = JSON.stringify((current.references ?? []).map(ref => ref.file));
         sourceBaseRef.current = basePrompt;
@@ -18653,10 +18694,10 @@
           const cfg = await current.api.getPromptOptimizerModel();
           if (!aliveRef.current) return;
           setConfig(cfg);
-          if (!cfg?.available) throw new Error(cfg?.message ?? T("无法读取DSH模型；更新插件后请完全退出DSH（包括托盘）再打开。"));
+          if (!cfg?.available && !cfg?.models?.some(model => model.provider === modelSelection?.provider && model.model === modelSelection?.model)) throw new Error(cfg?.message ?? T("无法读取DSH模型；更新插件后请完全退出DSH（包括托盘）再打开。"));
           if (referenceFiles.length && cfg.imageReferencesSupported !== true) throw new Error(T("当前DSH未提供图片引用功能，请完全退出DSH（包括托盘）再打开；仍不可用时请更新DSH。"));
           setOperation("optimize");
-          const response = await current.api.optimizeImagePrompt({ jobId: current.jobId, ...source, referenceFiles, confirmed: true });
+          const response = await current.api.optimizeImagePrompt({ jobId: current.jobId, ...source, referenceFiles, ...(modelSelection ? { modelSelection } : {}), confirmed: true });
           if (response?.ok === false || typeof response?.prompt !== "string" || !response.summary) throw new Error(response?.error ?? T("文字模型未返回提示词"));
           if (aliveRef.current) setResult({ ...source, basePrompt, refs, optimized: response.prompt.trim(), originalOptimized: response.prompt.trim(), summary: response.summary, model: response.model, provider: response.provider });
         } catch (failure) { if (aliveRef.current) setError(msg(failure)); }
@@ -18667,7 +18708,7 @@
         if (sourceBaseRef.current !== props.prompt) { sourceBaseRef.current = props.prompt; setSourceDraft(props.prompt ?? ""); setResult(null); setError(""); }
         setOpen(true);
       };
-      const stale = result !== null && (result.prompt !== sourceDraft || result.basePrompt !== props.prompt || result.suffix !== props.suffix || result.refs !== referenceSignature || JSON.stringify(result.keying) !== JSON.stringify(props.keying) || result.lang !== props.lang);
+      const stale = result !== null && (result.prompt !== sourceDraft || result.basePrompt !== props.prompt || result.suffix !== props.suffix || result.refs !== referenceSignature || JSON.stringify(result.keying) !== JSON.stringify(props.keying) || result.lang !== (props.lang ?? undefined));
       const needsClarification = (result?.summary.clarifications.length ?? 0) > 0;
       const apply = async (revert = false) => {
         if (lockRef.current || props.disabled || (!revert && (!result?.optimized.trim() || stale || needsClarification)) || (revert && (!undo || props.prompt !== undo.after))) return;
@@ -18698,7 +18739,7 @@
           open ? h(React.Fragment, null,
           h("div", { className: "SPR_promptDialogHead" },
             h("div", { className: "SPR_promptDialogTitle" }, h("h3", null, T("优化提示词")),
-              h(DescriptionTip, { id: props.jobId + "-prompt-optimizer-description", label: T("优化提示词"), text: T("使用DSH默认模型（与新会话一致），沿用已有登录和用量规则，无需单独填写Key。") })),
+              h(DescriptionTip, { id: props.jobId + "-prompt-optimizer-description", label: T("优化提示词"), text: T("可选择DSH已配置的模型，沿用已有登录和用量规则，无需单独填写Key。只影响本项目的提示词优化，不修改DSH默认模型；带参考图时需要支持图片输入。") })),
             h(Btn, { "data-prompt-close": true, disabled: operation === "apply", onClick: () => close() }, T("关闭"))),
           h(NoticePopup, { notice: error, onClose: () => setError("") }),
           status ? h("p", { role: "status" }, h("span", { className: "SPR_spinSm", "aria-hidden": "true" }), " ", status) : null,
@@ -18708,7 +18749,7 @@
                 footer: h(ImagePromptTemplates, { jobId: props.jobId, templates: props.templates, templateId: props.templateId, templateLang: props.lang,
                   suffix: props.suffix, disabled: busy || props.disabled, onApply: props.onTemplateApply, onManage: () => { close(); props.onManageTemplates(); } }) }),
               h(PromptReferenceInput, { id: props.jobId + "-prompt-result", label: T("优化结果（可编辑）"), value: result?.optimized ?? "", placeholder: T("点击优化后，结果会显示在这里。"), disabled: busy || result === null || needsClarification, references: props.references, assetBase: props.assetBase, referenceActions: false, onChange: value => setResult({ ...result, optimized: value }) },
-                config?.available ? h("span", { className: "SPR_hint SPR_promptModelInfo" }, T("DSH模型：{n0}", { n0: `${result?.provider ?? config.provider} / ${result?.model ?? config.model}` })) : null)),
+                config?.available || modelSelection ? h("span", { className: "SPR_hint SPR_promptModelInfo" }, T("DSH模型：{n0}", { n0: `${result?.provider ?? modelSelection?.provider ?? config.provider} / ${result?.model ?? modelSelection?.model ?? config.model}` })) : null)),
             result ? h("section", { className: "SPR_promptIntent", "aria-label": T("需求核对") },
               h("h4", null, T("需求核对")),
               h("dl", null, h("dt", null, T("目标")), h("dd", null, result.summary.goal),
@@ -18721,12 +18762,23 @@
             h(ImagePromptPreview, { api: props.api, jobId: props.jobId, prompt: result && !stale && !needsClarification ? result.optimized : sourceDraft, suffix: props.suffix, keying: props.keying, lang: props.lang, references: props.references }),
             h("p", { className: "SPR_hint" }, T("不使用模板时不追加美术模板。指定@图片时只使用指定图片，否则使用全部已上传参考图；优化和生图使用相同范围。")),
             stale ? h("p", { className: "SPR_error", role: "alert" }, T("提示词、模板、参考图或背景设置已修改，请重新优化后再采用。")) : null,
-            h("div", { className: "SPR_btnRow" },
+            h("div", { className: "SPR_btnRow SPR_promptModelActions" },
+              h("div", { className: "SPR_promptModelPicker" },
+                h(ImageResultMenu, { label: T("提示词优化模型"), disabled: busy, onOpen: () => void loadModels(), icon: h("span", { className: "SPR_promptModelLabel" },
+                  modelsLoading ? h("span", { className: "SPR_spinSm", "aria-hidden": "true" }) : null,
+                  h("span", null, modelSelection ? (config?.models?.find(model => model.provider === modelSelection.provider && model.model === modelSelection.model)?.name || modelSelection.model) : T("DSH默认模型")),
+                  h("svg", { width: 12, height: 12, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", "aria-hidden": "true" }, h("path", { d: "m4 6 4 4 4-4" }))) },
+                  h(Btn, { role: "menuitemradio", "aria-checked": !modelSelection, onClick: () => chooseModel(null) }, T("DSH默认模型")),
+                  (config?.models ?? []).map(model => h(Btn, { key: JSON.stringify([model.provider, model.model]), role: "menuitemradio", "aria-checked": modelSelection?.provider === model.provider && modelSelection?.model === model.model,
+                    onClick: () => chooseModel({ provider: model.provider, model: model.model }) }, model.providerName + " · " + model.name,
+                    model.inputModalities?.includes("image") ? " · " + T("支持图片") : "")),
+                  config?.modelsMessage ? h("p", { className: "SPR_hint" }, config.modelsMessage) : null,
+                  h(Btn, { role: "menuitem", disabled: modelsLoading, onClick: () => void loadModels() }, modelsLoading ? T("正在读取DSH模型…") : T("重新读取模型")))),
               h(BusyBtn, { busy: operation === "optimize", busyText: T("优化提示词"), disabled: busy || props.disabled || !sourceDraft.trim(), onClick: () => void optimize() }, T("优化提示词")),
               h(BusyBtn, { primary: true, busy: operation === "apply", disabled: busy || props.disabled || result === null || !result.optimized.trim() || stale || needsClarification, onClick: () => void apply() }, T("采用优化结果"))))) : null));
     }
 
-    function ImageResultMenu({ label, children, icon }) {
+    function ImageResultMenu({ label, children, icon, onOpen, disabled = false }) {
       const [open, setOpen] = React.useState(false);
       const triggerRef = React.useRef(null);
       const menuRef = React.useRef(null);
@@ -18737,6 +18789,7 @@
         const menu = menuRef.current;
         if (!menu) return;
         if (!open) { if (menu.matches(":popover-open")) menu.hidePopover(); return; }
+        onOpen?.();
         menu.showPopover();
         const position = () => {
           const rect = triggerRef.current.getBoundingClientRect(), size = menu.getBoundingClientRect();
@@ -18745,13 +18798,15 @@
           menu.style.top = (rect.bottom + size.height + 6 <= window.innerHeight - 8 ? rect.bottom + 6 : Math.max(8, rect.top - size.height - 6)) + "px";
         };
         position();
+        const observer = typeof ResizeObserver === "function" ? new ResizeObserver(position) : null;
+        observer?.observe(menu);
         const controls = items(); (focusLast.current ? controls.at(-1) : controls[0])?.focus({ preventScroll: true });
         const onScroll = event => { if (!menu.contains(event.target)) position(); };
         window.addEventListener("resize", position); document.addEventListener("scroll", onScroll, true);
-        return () => { window.removeEventListener("resize", position); document.removeEventListener("scroll", onScroll, true); if (menu.matches(":popover-open")) menu.hidePopover(); };
+        return () => { observer?.disconnect(); window.removeEventListener("resize", position); document.removeEventListener("scroll", onScroll, true); if (menu.matches(":popover-open")) menu.hidePopover(); };
       }, [open]);
       return h("div", { className: "SPR_imageResultActions" },
-        h("button", { type: "button", className: "SPR_btn SPR_imageResultMore", title: icon ? label : T("更多"), ref: triggerRef, "aria-label": label, "aria-haspopup": "menu", "aria-expanded": open,
+        h("button", { type: "button", className: "SPR_btn SPR_imageResultMore", disabled, title: icon ? label : T("更多"), ref: triggerRef, "aria-label": label, "aria-haspopup": "menu", "aria-expanded": open,
           onClick: () => { focusLast.current = false; setOpen(value => !value); }, onKeyDown: event => { if (["ArrowDown", "ArrowUp"].includes(event.key)) { event.preventDefault(); focusLast.current = event.key === "ArrowUp"; if (open) { const controls = items(); (focusLast.current ? controls.at(-1) : controls[0])?.focus({ preventScroll: true }); } else setOpen(true); } } }, icon || h(ProjectActionIcon, { name: "more" })),
         h("div", { ref: menuRef, className: "SPR_imageResultMenu", popover: "auto", role: "menu", "aria-label": label,
           onToggle: event => { if (!event.currentTarget.matches(":popover-open")) setOpen(false); },
@@ -19057,20 +19112,31 @@
     function imageConversationRounds(job) {
       const groups = new Map(), versionGroups = new Map(), sourceGroups = new Map();
       for (const round of job.rounds ?? []) {
-        groups.set(round.id, { ...round, entries: [] });
+        groups.set(round.id, { ...round, results: round.results.map(result => ({ ...result })), entries: [] });
         for (const result of round.results) if (result.versionId) versionGroups.set(result.versionId, round.id);
       }
       const history = [...(job.history ?? [])].sort((a, b) => a.createdAt - b.createdAt);
+      const historyById = new Map(history.map(entry => [entry.id, entry]));
+      for (const entry of history) if (entry.kind !== "keyed" && entry.item.file) sourceGroups.set(entry.item.file, entry.roundId || entry.item.roundId || versionGroups.get(entry.id) || entry.batchId);
+      const resolveRound = (entry, seen = new Set()) => {
+        if (seen.has(entry.id)) return entry.batchId;
+        seen.add(entry.id);
+        const parentId = entry.sourceVersionId || entry.cleanup?.sourceVersionId;
+        const parent = historyById.get(parentId);
+        return entry.roundId || entry.item.roundId || versionGroups.get(entry.id)
+          || (entry.kind === "keyed" ? versionGroups.get(parentId) || (parent && resolveRound(parent, seen)) || sourceGroups.get(entry.item.file) : null)
+          || entry.batchId;
+      };
       for (const entry of history) {
-        const parent = entry.sourceVersionId || entry.cleanup?.sourceVersionId;
-        const key = entry.kind === "keyed" ? versionGroups.get(parent) || sourceGroups.get(entry.item.file) || entry.batchId : entry.batchId;
+        const key = resolveRound(entry);
         if (!groups.has(key)) groups.set(key, { id: key, createdAt: entry.createdAt, request: entry.request, results: [], entries: [], kind: entry.kind });
         const group = groups.get(key); group.entries.push(entry);
+        group.createdAt = Math.min(group.createdAt, entry.createdAt);
         if (!group.request && entry.request) group.request = entry.request;
         versionGroups.set(entry.id, key); if (entry.item.file) sourceGroups.set(entry.item.file, key);
       }
       for (const [index, item] of (job.items ?? []).entries()) if (!history.some(entry => entry.id === item.versionId) && ![...groups.values()].some(group => group.results.some(result => result.index === index && (result.status === "running" || result.error && result.error === item.error)))) {
-        const key = versionGroups.get(item.versionId) || "legacy-current";
+        const key = item.roundId || versionGroups.get(item.versionId) || sourceGroups.get(item.file) || "legacy-current";
         if (!groups.has(key)) groups.set(key, { id: key, createdAt: item.updatedAt || job.createdAt, results: [], entries: [] });
         const group = groups.get(key);
         group.results.push({ index, status: item.status, error: item.error });
@@ -19096,6 +19162,7 @@
       if (name === "plus") return h("svg", attrs, h("path", { d: "M12 5v14M5 12h14" }));
       if (name === "bookmark") return h("svg", attrs, h("path", { d: "M6 4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17l-6-4-6 4V4Z" }));
       if (name === "down") return h("svg", attrs, h("path", { d: "M12 4v16m-6-6 6 6 6-6" }));
+      if (name === "send") return h("svg", attrs, h("path", { d: "M12 19V5m-6 6 6-6 6 6" }));
       if (name === "image") return h("svg", attrs, h("rect", { x: 3, y: 3, width: 18, height: 18, rx: 4 }), h("circle", { cx: 8, cy: 8, r: 1.5 }), h("path", { d: "m3 16 5-5 4 4 4-6 5 7" }));
       return h(ProjectActionIcon, { name: name === "parameters" ? "settings" : name });
     }
@@ -19272,11 +19339,21 @@
         h(NoticePopup, { notice: notice && notice !== T("有新结果") ? { kind: "error", text: notice } : null, onClose: () => setNotice(null) }));
     }
 
+    const LAST_IMAGE_JOB_KEY = "dsh-game-material-master:last-image-job";
+    let lastImageJobId = null;
+    let handledImageIntent = null;
+    function readLastImageJob() {
+      try { return window.localStorage.getItem(LAST_IMAGE_JOB_KEY) || lastImageJobId; } catch { return lastImageJobId; }
+    }
+    function rememberImageJob(id) {
+      lastImageJobId = id;
+      try { if (id) window.localStorage.setItem(LAST_IMAGE_JOB_KEY, id); else window.localStorage.removeItem(LAST_IMAGE_JOB_KEY); } catch { /* In-memory selection survives panel remounts. */ }
+    }
     function ImageModule(props) {
       const localeTick = useLocaleTick();
       const api = props.api;
       const [jobs, setJobs] = React.useState([]);
-      const [jobId, setJobId] = React.useState(null);
+      const [jobId, setJobId] = React.useState(readLastImageJob);
       const [job, setJob] = React.useState(null);
       const [notice, setNotice] = React.useState(null);
       const [uploading, setUploading] = React.useState(false);
@@ -19301,6 +19378,7 @@
       const imageWorkspaceRef = React.useRef(null);
       const [resultView, setResultView] = React.useState({ jobId: null, tab: "current", index: 0, version: "" });
       const selectedJobId = React.useRef(jobId);
+      const loadSequence = React.useRef(0);
       selectedJobId.current = jobId;
       const view = resultView.jobId === jobId ? resultView : { tab: "current", index: 0, version: "" };
       const resultEmpty = ((view.tab === "history" ? job?.history : job?.items) ?? []).length === 0;
@@ -19345,9 +19423,12 @@
 
 
       React.useEffect(() => {
-        if (intent === null) return;
-        if (intent.module === "image" && typeof intent.jobId === "string") setJobId(intent.jobId);
+        if (intent === null || intent === handledImageIntent) return;
+        if (intent.module === "image" && typeof intent.jobId === "string") { handledImageIntent = intent; setJobId(intent.jobId); }
       }, [intent]);
+
+      React.useEffect(() => { rememberImageJob(jobId); }, [jobId]);
+      React.useEffect(() => () => { loadSequence.current++; }, []);
 
       const keyingBusy = tasks.has(K_IMG_KEY) || job?.tasks?.includes("image:key") === true;
       const busy = (job !== null && ((job.items ?? []).some((item) => item.status === "running") || (job.tasks ?? []).length > 0)) || tasks.active;
@@ -19365,9 +19446,10 @@
 
       const load = React.useCallback(async (id, replaceDraft = false) => {
         if (id === null) return;
+        const sequence = ++loadSequence.current;
         try {
           const next = await api.getImageJob(id);
-          if (selectedJobId.current !== id) return;
+          if (selectedJobId.current !== id || sequence !== loadSequence.current) return;
           if (next.summary) setJobs(current => current.map(item => item.id === id ? { ...item, ...next.summary } : item));
           const previous = loadedDrafts.current;
           const force = previous.id !== id || replaceDraft;
@@ -19385,7 +19467,7 @@
           setSettingsDraft((current) => mergeDrafts(current, previous.settings, cached?.settings ?? settings, force));
           setKeyingDraft((current) => mergeDrafts(current, previous.keying, cached?.keying ?? keying, force));
         } catch (error) {
-          if (selectedJobId.current === id) setNotice({ kind: "error", text: msg(error) });
+          if (selectedJobId.current === id && sequence === loadSequence.current) setNotice({ kind: "error", text: msg(error) });
         }
       }, [api]);
 
@@ -19896,8 +19978,11 @@
                         BusyBtn,
                         {
                           primary: true,
+                          className: "SPR_btn SPR_chatGenerate",
+                          "aria-label": T("生成 {n0} 张", { n0: settingsDraft.count ?? 1 }),
+                          title: T("生成 {n0} 张", { n0: settingsDraft.count ?? 1 }),
                           busy: tasks.has(K_IMG_JOB),
-                          busyText: T("正在生成 {n0} 张…", { n0: settingsDraft.count ?? 1 }),
+                          busyText: h("span", { className: "SPR_chatGenerateLabel" }, T("正在生成 {n0} 张…", { n0: settingsDraft.count ?? 1 })),
                           disabled: promptDraft.trim() === "" || busy,
                           onClick: () =>
                             void run(
@@ -19911,7 +19996,7 @@
                               { key: K_IMG_JOB, label: T("正在生成 {n0} 张图片…", { n0: settingsDraft.count ?? 1 }) }
                             )
                         },
-                        T("生成 {n0} 张", { n0: settingsDraft.count ?? 1 })
+                        h(ImageChatIcon, { name: "send" })
                       ),
                       h(ReviewModeBar, { api, module: "image", id: job.id, mode: job.reviewMode, compact: true, onChanged: () => load(job.id) })
                     )))

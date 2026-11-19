@@ -189,6 +189,25 @@ try {
  assert.throws(()=>validateImagePromptTemplates(recoveredFull),/最多24/);
  check('restoring built-ins never discards a full legacy custom catalog on later reads',recoveredFull.length===27&&JSON.stringify(normalizeImagePromptTemplates(recoveredFull))===JSON.stringify(recoveredFull));
  await invoke('saveConfig',{imagePromptTemplates:originalCatalog});check('built-ins can be restored without generating assets',JSON.stringify((await invoke('getConfig')).imagePromptTemplates)===JSON.stringify(originalCatalog));
+ const native=ctx.get('llm');
+ native.listProviders=()=>[{id:'deepseek',name:'DeepSeek',apiKey:'private-test-key'},{id:'vision-route',name:'Local vision'},{id:'broken-route',name:'Unavailable'}];
+ native.listModels=async provider=>{
+  if(provider==='broken-route')throw Error('private-test-key');
+  return provider==='deepseek'?[{id:'deepseek-chat',name:'DeepSeek Chat',provider,inputModalities:['text'],apiKey:'private-test-key'}]:[{id:'vision-choice',name:'Vision Choice',provider,inputModalities:['text','image']}];
+ };
+ const selectionBefore=structuredClone(selection),catalogCount=calls.length,catalog=await invoke('getPromptOptimizerModel');
+ check('lists DSH routes and model modalities without dispatch or credentials',calls.length===catalogCount&&catalog.models.some(model=>model.provider==='deepseek'&&model.model==='deepseek-chat')&&catalog.models.some(model=>model.model==='vision-choice'&&model.inputModalities.includes('image'))&&!JSON.stringify(catalog).includes('private-test-key'));
+ check('one failed catalog leaves other model choices usable and hides provider errors',catalog.modelsMessage&&!catalog.modelsMessage.includes('private-test-key'));
+ const picked=await invoke('optimizeImagePrompt',{...input,modelSelection:{provider:'deepseek',model:'deepseek-chat'}});
+ check('explicit choice survives wire and dispatches exactly once on the chosen route',calls.length===catalogCount+1&&picked.provider==='deepseek'&&picked.model==='deepseek-chat'&&calls.at(-1).model==='deepseek-chat'&&calls.at(-1).reasoningEffort===undefined);
+ check('per-request model selection never changes the DSH default',JSON.stringify(selection)===JSON.stringify(selectionBefore));
+ const invalidCount=calls.length;await assert.rejects(invoke('optimizeImagePrompt',{...input,modelSelection:{provider:'not-configured',model:'invented'}}),/已不可用/);
+ check('removed or unregistered selections never silently fall back or dispatch',calls.length===invalidCount);
+ const visionChoice=await invoke('optimizeImagePrompt',{...imageInput,modelSelection:{provider:'vision-route',model:'vision-choice'}});
+ check('explicit vision route prepares and sends the exact referenced attachment',visionChoice.model==='vision-choice'&&calls.at(-1).provider==='vision-route'&&calls.at(-1).messages[0].content.some(part=>part.type==='image'));
+ selection={provider:'',model:''};
+ const withoutDefault=await invoke('optimizeImagePrompt',{...input,modelSelection:{provider:'deepseek',model:'deepseek-chat'}});
+ check('configured explicit models also work when no host default is selected',withoutDefault.model==='deepseek-chat'&&!selection.model);
  console.log(`Passed ${checks} DSH prompt optimizer checks. No network or real model calls.`);
 } finally {
  const target=resolve(home);assert.ok(target.startsWith(resolve(tmpdir())+sep)&&basename(target).startsWith('gmm-prompt-optimizer-'));

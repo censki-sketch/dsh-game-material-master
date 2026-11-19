@@ -83,7 +83,7 @@ import {
 } from "./pipeline.js";
 import { assetPath, createProject, deleteProject, listProjects, log, patchProject, projectDir, projectExists, readProject, resetDerivedFromSource, } from "./store.js";
 import * as imagegen from "./imagegen.js";
-import { optimizeImagePrompt, promptOptimizerModel } from "./promptoptimizer.js";
+import { optimizeImagePrompt, promptOptimizerModels } from "./promptoptimizer.js";
 import { IMAGE_PROMPT_TEMPLATES, validateImagePromptTemplates } from "./imageprompts.js";
 import * as seqgen from "./seqgen.js";
 import * as riggen from "./riggen.js";
@@ -1770,7 +1770,7 @@ export class GameStudioGateway extends TypertRemoteService {
     return { ok: true };
   }
 
-  async getPromptOptimizerModel() { return promptOptimizerModel(this.ctx); }
+  async getPromptOptimizerModel() { return promptOptimizerModels(this.ctx); }
   async previewImagePrompt(payload) {
     const input = asRecord(payload);
     const context = await imagegen.imagePromptContext(asString(input.jobId), { prompt: asString(input.prompt), suffix: input.suffix, keying: input.keying, lang: input.lang });
@@ -1787,7 +1787,7 @@ export class GameStudioGateway extends TypertRemoteService {
       if (!Array.isArray(files) || files.length > 10 || new Set(files).size !== files.length) throw new Error("引用的参考图无效，请重新选择。");
       if (files.length !== references.length || files.some(file => !references.some(ref => ref.file === file))) throw new Error("参考图引用与当前图片列表不一致，请重新选择。");
     }
-    return optimizeImagePrompt(this.ctx, { jobId, prompt, suffix: draft.suffix, background, references, confirmed: input.confirmed === true });
+    return optimizeImagePrompt(this.ctx, { jobId, prompt, suffix: draft.suffix, background, references, modelSelection: input.modelSelection, confirmed: input.confirmed === true });
   }
 
   async saveImageJob(payload) {

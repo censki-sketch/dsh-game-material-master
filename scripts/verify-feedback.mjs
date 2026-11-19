@@ -348,7 +348,7 @@ const api = new Proxy(
  */
 const EXPECTED_HOOKS = {
   StudioPanel: 26,
-  ImageModule: 24,
+  ImageModule: 25,
   SequenceModule: 17
 };
 
@@ -1165,6 +1165,14 @@ if (typeof ImageModule === "function") {
     check("当前结果仍引用已删历史时，不额外创建虚假轮次", currentRetained.length === 2 && currentRetained[0].entries.some(entry => entry.id === "v1"));
     const legacy = build({ ...makeImageJob(), history: [{ ...original, kind: "legacy", request: undefined }], items: [original.item], prompt: "新文字" });
     check("旧记录不伪造请求快照", legacy.length === 1 && !legacy[0].request);
+    const detached = { ...cutout, sourceVersionId: "removed-parent", roundId: "r1", item: { ...cutout.item, file: "out/missing-original.png", roundId: "r1" } };
+    const stable = build({ ...fixture, history: [detached], items: [detached.item] });
+    check("原始版本移除后，持久化轮次ID仍把抠图留在原消息", stable.length === 2 && stable[0].slots.length === 1 && stable[0].entries[0].id === "cut1");
+    const unordered = build({ ...fixture, rounds: [], history: [{ ...cutout, createdAt: 1 }, { ...original, createdAt: 9 }], items: [] });
+    check("旧抠图记录先于原图或时间不准也只显示一条消息", unordered.length === 1 && unordered[0].slots.length === 1 && unordered[0].slots[0].versions.length === 2);
+    check("整理消息不改写宿主轮次的结果数组", generated.results.length === 2 && failed.results.length === 1);
+    const repeated = build({ ...fixture, rounds: [], items: [], history: [original, { ...original, id: "repeat", batchId: "separate-generation", item: { ...original.item, versionId: "repeat", file: "out/repeat.png" } }] });
+    check("相同描述的两次真实生成仍保留为两轮", repeated.length === 2);
   }
   section("模块② 图片生成");
   {
@@ -1192,7 +1200,7 @@ if (typeof ImageModule === "function") {
     pendingBatch.history = pendingBatch.items.map((item, index) => ({ id: "old-" + index, batchId: "batch-old", createdAt: 1, kind: "generated", item: { ...item, index, versionId: "old-" + index } }));
     const pendingTree = renderModule(ImageModule, pendingBatch, makeTasks()).tree;
     check("新一轮等待的全部图片均有反馈，旧轮次仍可查看", overlays(pendingTree).length === 1 && byClass(pendingTree, "SPR_imageGalleryThumbBusy").length === 2 && byClass(pendingTree, "SPR_chatRound").length === 2);
-    check("按钮转圈", byClass(gen.tree, "SPR_btn").some((node) => node.props["data-busy"] === "true"));
+    check("图标生成按钮转圈并禁止重复提交", byTag(gen.tree, "button").some(node => node.props.className?.includes("SPR_chatGenerate") && node.props["data-busy"] === "true" && node.props.disabled && byClass(node, "SPR_spinSm").length === 1));
 
     const one = renderModule(ImageModule, makeImageJob(), makeTasks(["img:item:0"]));
     check("单张重新生成时只有那张被盖住", overlays(one.tree).length === 1, `${overlays(one.tree).length} 个`);
@@ -1852,7 +1860,7 @@ section("图片提示词保存与生成时序");
   HOOK.cursor = 0;
   const tree = ImageModule({ api: apiQueued });
   const prompt = byTag(tree, "textarea").find(node => node.props.placeholder === "描述你要生成的图片…");
-  const generate = byTag(tree, "button").find(node => (/^生成 [0-9]+ 张$/).test(textOf(node)));
+  const generate = byTag(tree, "button").find(node => (/^生成 [0-9]+ 张$/).test(node.props["aria-label"] ?? ""));
   check("真渲染中存在提示词和生成入口", Boolean(prompt && generate));
   prompt.props.onBlur();
   generate.props.onClick();

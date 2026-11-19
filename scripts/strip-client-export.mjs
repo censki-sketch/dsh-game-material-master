@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const file = fileURLToPath(new URL("../lib/client.js", import.meta.url));
 const src = readFileSync(file, "utf8");
-const stripped = src.replace(/\nexport \{\};\s*$/, "\n");
+const stripped = src.replace(/\nexport \{\};\s*$/, "\n").replace(/[\t ]+$/gm, "");
 if (stripped === src) {
   console.error("strip-client-export: 未找到结尾的 'export {};' —— 束形态已变化，请检查");
   process.exit(1);

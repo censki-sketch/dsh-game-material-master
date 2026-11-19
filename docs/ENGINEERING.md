@@ -664,13 +664,19 @@ dsh --profile gmmweb --port 19388     # 打印 http://127.0.0.1:19388/?token=…
 
 当前结果、历史和参考图共用 `ImagePreviewDialog`。缩放比例相对原始像素，打开/尺寸变化时自适应；原始图片不重采样落盘。滚轮在视口以非 passive 原生监听处理，阻止页面滚动并按光标位置缩放；Pointer Capture 处理拖动，按图片缩放后边界限制平移。缩放与平移即时值保存在 ref，避免连续滚轮事件读取过期 state；卸载清理监听和 ResizeObserver。透明网格固定在视口，放大时不随图片一起变大；原生 dialog 保留 Tab 焦点范围与 Esc 关闭，关闭先退出模态再恢复触发按钮焦点。以合成图片、假 API 在真实浏览器验证缩放、锚点、拖动、上下界、重开复位、窄屏与三种预览入口，不触发计费调用。
 
-`ImageJob.history` 保存完成版本，`ImageItem.versionId` 标识当前结果对应的版本。原图 `out/img-<UUID>.*`、上传图 `out/upload-<UUID>.*` 和透明图 `keyed/img-<UUID>.png` 永不按槽位覆盖；重新抠像新增 `kind:"keyed"` 记录，沿用原始生成请求并单独记录本次抠像参数。上传与旧任务图片没有可推断的生成请求，保留文件但禁用参数复用；缺少 `history` 的旧任务在读取时建立 `legacy` 条目，下一次写入持久化，不补造提示词。
+`ImageJob.history` 保存完成版本，`ImageItem.versionId` 标识当前结果对应的版本。`ImageItem.roundId` 与 `ImageHistoryEntry.roundId` 保存消息所属的稳定轮次：生成时为 batch/round ID，上传时为原始版本 ID；重新抠像和局部补抠沿用源图的 roundId，本次处理的 batchId 只标识处理批次。旧数据读取时按显式 ID、原始轮次版本、递归来源版本与原图路径恢复，下一次写入持久化；不依赖历史数组顺序或时间，移除父记录后也保留已保存的 roundId。客户端优先按 roundId 归组，兼容旧来源关系，不按提示词相同与否合并真正独立的生成。整理消息不修改原始 rounds.results 数组。
+
+原图 `out/img-<UUID>.*`、上传图 `out/upload-<UUID>.*` 和透明图 `keyed/img-<UUID>.png` 永不按槽位覆盖；重新抠像新增 `kind:"keyed"` 记录，沿用原始生成请求并单独记录本次抠像参数。上传与旧任务图片没有可推断的生成请求，保留文件但禁用参数复用；缺少 `history` 的旧任务在读取时建立 `legacy` 条目，下一次写入持久化，不补造提示词。
 
 `prepareImageBatch` 在提交前固定提示词、模板、参考图、尺寸、模型、背景参数和最终提示词，并在同一锁内持久化 `ImageJob.rounds`（各目标 running、完成版本或错误、完成时间），所以无图失败也能还原成消息。后端配置只在内存中传给统一 Provider，凭据不进入历史、rounds 或客户端。`runImageJob` 在 await 准备前预留 image:submit，阻止并发建立重复轮次；网络请求在锁外，编辑和完成走 `editImageJob` 队列。`getImageJob` 对无活动任务的残留 running 调用 `interruptImageRounds`，锁内再验证活动状态，标记结果未知和可能计费，绝不重新发请求。删除先提交 JSON，再清理不被当前结果、其他历史和轮次参考图引用的文件。
 
 `runImageJob({jobId,index})` 仅重生一张，index 与 count 互斥；直接调用 generateImageItem 也只登记该目标。忙碌任务禁止重复提交、删除结果/任务或修改历史。`manageImageHistory({jobId,historyId,action,mode?})` 提供 restore/reuse/delete；reuse 允许 historyId 指向 round.id（含失败轮次），mode 为 prompt/parameters/all，默认 all。描述复用同步恢复匹配的 @ 附件，参数复用保持描述与附件；历史尺寸固定为 custom，模型/后端仍跟随当前全局配置。所有复用先在界面确认，只回填，不自动生图。阅读 anchor/offset、跟随最新和收藏保存在本机 `image-conversation:<jobId>`；当前输入缓存扩展到已发布项目的脏草稿。ResizeObserver 维持锚点或跟随底部，新结果仅在跟随模式自动滚动，主动阅读旧内容时显示返回最新入口。删除整个项目仍包含全部历史和轮次。
 
-`scripts/verify-image-history.mjs` 使用临时存储、真实网关/schema及回环假生图接口，覆盖50项：请求固定、并发完成、重复提交锁、失败轮次、三种复用、重启中断、单张目标、来源版本、旧任务迁移、文件引用和零真实计费。`verify-feedback` 同时验证新轮次等待反馈与旧图可读。浏览器用合成图片验证1360/920/360宽度、定位预览/跳转、收藏、版本/画廊切换、固定composer、确认后复用、未保存输入和阅读位置恢复、后台更新不打断阅读，禁止收费调用。宿主半区更新必须完全退出 DSH（包括托盘）后重开。
+选中项目 ID 以 `last-image-job` 存在 localStorage 并有模块内存兜底。ImageModule 只消费一次同一深链接意图；重挂载恢复用户最近选择，新的显式回链仍可跳转。load 同时检查选中 ID 与递增请求序号，卸载作废未完成请求，避免 A→B→A 时旧响应覆盖新数据。底部审核下拉无边框，生成使用带动态张数 aria-label 的圆形上箭头；忙碌时保留转圈并禁用。
+
+优化弹窗模型选择按项目保存于 `prompt-model:<jobId>`。`getPromptOptimizerModel` 返回既有默认状态和可选的公开 models 列表，来源为 llm.listProviders/listModels，不返回凭据、不修改 agentDefaultModel；单个目录失败不影响其他提供商。打开弹窗不读取目录或提交模型请求，展开选择器才读取目录。`optimizeImagePrompt.modelSelection?` 只包含 provider/model，必须通过 wire，并在提交前复核仍是已配置模型；缺省继续跟随 DSH 默认。只有同一默认路由才沿用其 reasoningEffort，不向另一模型传递不兼容的强度。图片仍走所选路由的 prepareCall 和模态校验；未知选择不自动回退。JSON快照中的空模板语言可能为null，客户端优化和预览均归一化为缺省值，避免不使用模板时被语言枚举拒绝。
+
+`scripts/verify-image-history.mjs` 使用临时存储、真实网关/schema及回环假生图接口，覆盖54项：请求固定、并发完成、重复提交锁、失败轮次、三种复用、重启中断、单张目标、稳定轮次 ID、旧来源链迁移、文件引用和零真实计费。`verify-feedback` 同时验证新轮次等待反馈与旧图可读。`verify-prompt-optimizer` 以真实 wire/网关、假LLM验证目录、显式选择、失效选择拒绝、图片路由与默认配置不变。浏览器以合成图片验证1360/920/360宽度、定位预览/跳转、收藏、版本/画廊切换、固定composer、确认后复用、未保存输入和阅读位置恢复、后台更新不打断阅读，以及窗口/面板切换、旧回链不重放、迟到响应、实际界面抠图不新增消息和模型选择，禁止收费调用。宿主半区更新必须完全退出 DSH（包括托盘）后重开。
 
 全项目回归中，`verify-map-client` 仅给客户端注入固定时钟并显式推进动画帧；宿主时间保持真实，避免夹具 IO 超过一秒导致「推进一帧」实际读到第2帧。帧号与宿主源矩形断言保留。
 

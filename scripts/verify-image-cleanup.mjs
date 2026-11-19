@@ -78,6 +78,7 @@ try {
   check('concurrent saves create one version and reject stale duplicate', saves.filter(r => r.status === 'fulfilled').length === 1 && saves.some(r => r.status === 'rejected' && /版本已变化/.test(r.reason.message)));
   const saved = await imagegen.readImageJob(jobId), next = saved.items[0];
   check('save appends a new history version and resets approval', saved.history.length === 2 && next.versionId !== item.versionId && next.keyedFile !== item.keyedFile && next.approved === false && saved.history.at(-1).cleanup.sourceVersionId === item.versionId);
+  check('local cleanup remains in the uploaded image conversation', next.roundId === item.roundId && saved.history.at(-1).roundId === item.roundId && next.roundId === saved.history[0].roundId);
   check('original and previous keyed bytes survive unchanged', (await readFile(file)).equals(input) && (await readFile(keyed)).equals(oldKeyed));
   const decoded = await decodeToRgba(imagegen.imageAssetPath(jobId, next.keyedFile));
   check('saved pixels exactly match host preview PNG', encodePng(decoded.rgba, decoded.width, decoded.height).toString('base64') === preview.preview.split(',')[1]);

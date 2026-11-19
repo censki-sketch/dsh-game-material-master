@@ -30,6 +30,8 @@ export type ItemStatus = "empty" | "running" | "ready" | "error";
 
 export interface ImageItem {
   versionId?: string;
+  /** Stable conversation round; local processing keeps the originating round. */
+  roundId?: string;
   index: number;
   status: ItemStatus;
   /** 原图（相对任务目录），可能是生成的，也可能是用户上传的。 */
@@ -111,6 +113,7 @@ export interface ImageRequestSnapshot {
 export interface ImageHistoryEntry {
   id: string;
   batchId: string;
+  roundId?: string;
   createdAt: number;
   kind: "generated" | "uploaded" | "legacy" | "keyed";
   item: ImageItem;
@@ -402,6 +405,7 @@ function normalizeImageJob(raw: any): ImageJob {
   const items: ImageItem[] = Array.isArray(raw?.items)
     ? raw.items.map((item: any, index: number) => ({
         versionId: typeof item?.versionId === "string" ? item.versionId : !Array.isArray(raw?.history) && typeof item?.file === "string" ? `legacy-${index}` : undefined,
+        roundId: typeof item?.roundId === "string" ? item.roundId : undefined,
         index: Number.isFinite(item?.index) ? item.index : index,
         status: (item?.status ?? "empty") as ItemStatus,
         file: typeof item?.file === "string" ? item.file : undefined,
@@ -413,7 +417,7 @@ function normalizeImageJob(raw: any): ImageJob {
         updatedAt: typeof item?.updatedAt === "number" ? item.updatedAt : undefined
       }))
     : [];
-  return {
+  const job: ImageJob = {
     id: String(raw?.id ?? ""),
     ...(raw?.draft === true ? { draft: true } : {}),
     name: typeof raw?.name === "string" && raw.name.trim() !== "" ? raw.name : "未命名图片任务",
@@ -454,6 +458,31 @@ function normalizeImageJob(raw: any): ImageJob {
     reviewMode: raw?.reviewMode === "manual" ? "manual" : raw?.reviewMode === "auto" ? "auto" : undefined,
     log: Array.isArray(raw?.log) ? raw.log.slice(-200) : []
   };
+  // Older versions only recorded processing batch IDs. Resolve ancestry before
+  // rendering, independent of timestamps/order, including deleted parent entries.
+  const versions = new Map(job.history.map(entry => [entry.id, entry]));
+  const origins = new Map<string, string>();
+  const roundByVersion = new Map<string, string>();
+  for (const round of job.rounds ?? []) for (const result of round.results) if (result.versionId) roundByVersion.set(result.versionId, round.id);
+  for (const entry of job.history) if (entry.kind !== "keyed" && entry.item.file) origins.set(entry.item.file, entry.roundId || entry.item.roundId || roundByVersion.get(entry.id) || entry.batchId || entry.id);
+  const resolving = new Set<string>();
+  const resolveRound = (entry: ImageHistoryEntry): string => {
+    if (entry.roundId) { entry.item.roundId = entry.roundId; return entry.roundId; }
+    if (resolving.has(entry.id)) return entry.batchId || entry.id;
+    resolving.add(entry.id);
+    const parentId = entry.sourceVersionId || entry.cleanup?.sourceVersionId;
+    const parent = parentId ? versions.get(parentId) : undefined;
+    const roundId = entry.item.roundId || roundByVersion.get(entry.id)
+      || (entry.kind === "keyed" ? (parent && resolveRound(parent)) || (parentId && roundByVersion.get(parentId)) || (entry.item.file && origins.get(entry.item.file)) : undefined)
+      || entry.batchId || entry.id;
+    resolving.delete(entry.id);
+    entry.roundId = roundId; entry.item.roundId = roundId;
+    if (entry.item.file) origins.set(entry.item.file, roundId);
+    return roundId;
+  };
+  for (const entry of job.history) resolveRound(entry);
+  for (const item of job.items) item.roundId ||= (item.versionId && versions.get(item.versionId)?.roundId) || (item.versionId && roundByVersion.get(item.versionId)) || (item.file && origins.get(item.file)) || undefined;
+  return job;
 }
 
 /** 归一化时没有配置可读；用默认绿，后续生成时仍会跟随配置。 */
@@ -589,7 +618,7 @@ export async function generateImageItem(jobId: string, index: number, batch?: Im
     const relative = `out/img-${id}.${result.ext}`;
     await writeFile(imageAssetPath(jobId, relative), result.bytes);
     await editImageJob(jobId, async job => {
-      const item: ImageItem = { versionId: id, index, status: "ready", source: "generated", file: relative, updatedAt: Date.now() };
+      const item: ImageItem = { versionId: id, roundId: prepared.id, index, status: "ready", source: "generated", file: relative, updatedAt: Date.now() };
       job.items[index] = item;
       appendJobLog(job.log, "info", `第 ${index + 1} 张生成完成（${(result.bytes.length / 1024).toFixed(0)} KB）`);
       appendImageRoundLog(job, prepared.id, "info", `第 ${index + 1} 张生成完成（${(result.bytes.length / 1024).toFixed(0)} KB）`);
@@ -597,7 +626,7 @@ export async function generateImageItem(jobId: string, index: number, batch?: Im
         try { await keyItem(job, index, request.keying); appendImageRoundLog(job, prepared.id, "info", `第 ${index + 1} 张本地抠像完成`); }
         catch (error) { item.error = messageOf(error); appendJobLog(job.log, "error", `原图已保存，自动抠像失败：${item.error}`); appendImageRoundLog(job, prepared.id, "error", `原图已保存，自动抠像失败：${item.error}`); }
       }
-      job.history.push({ id, batchId: prepared.id, createdAt: Date.now(), kind: "generated", item: { ...item }, request });
+      job.history.push({ id, batchId: prepared.id, roundId: prepared.id, createdAt: Date.now(), kind: "generated", item: { ...item }, request });
       completeImageRoundItem(job, prepared.id, index, { status: "ready", versionId: id, error: item.error });
     });
   } catch (error) {
@@ -676,8 +705,9 @@ export async function rekeyImageJob(jobId: string): Promise<ImageJob> {
         job.items[i].versionId = id;
         job.items[i].status = "ready";
         job.items[i].error = undefined;
-        job.history.push({ id, batchId, createdAt: Date.now(), kind: "keyed", item: { ...job.items[i] },
+        job.history.push({ id, batchId, roundId: job.items[i].roundId, createdAt: Date.now(), kind: "keyed", item: { ...job.items[i] },
           request: previous?.request, sourceVersionId: previous?.id, keying: { ...keying } });
+        if (job.items[i].roundId) appendImageRoundLog(job, job.items[i].roundId!, "info", `第 ${i + 1} 张已新增本地抠图版本`);
         count++;
       } catch (error) {
         job.items[i].error = messageOf(error);
@@ -708,9 +738,10 @@ export async function cleanImageJobRegions(jobId: string, index: number, version
     for (let p = 3; p < cleaned.rgba.length; p += 4) if (!cleaned.rgba[p]) transparent++;
     job.items[index] = { ...item, versionId: id, keyedFile: relative, status: "ready", error: undefined, approved: false,
       backgroundFraction: transparent / (decoded.width * decoded.height), updatedAt: Date.now() };
-    job.history.push({ id, batchId: id, createdAt: Date.now(), kind: "keyed", item: { ...job.items[index] },
+    job.history.push({ id, batchId: id, roundId: item.roundId, createdAt: Date.now(), kind: "keyed", item: { ...job.items[index] },
       request: previous?.request, keying: previous?.keying, sourceVersionId: versionId, cleanup: { sourceVersionId: versionId, points: points.map(point => ({ ...point })) } });
     appendJobLog(job.log, "info", `局部补抠已保存：第 ${index + 1} 张，清除 ${cleaned.changedPixels} 像素，旧版本保留在历史中。`);
+    if (item.roundId) appendImageRoundLog(job, item.roundId, "info", `第 ${index + 1} 张已保存局部补抠：清除 ${cleaned.changedPixels} 像素`);
     return { ok: true, versionId: id, changedPixels: cleaned.changedPixels };
   };
   if (action === "save") return editImageJob(jobId, apply);
@@ -734,7 +765,7 @@ export async function addImageToJob(jobId: string, name: string, base64: string)
     await mkdir(join(imageJobDir(jobId), "out"), { recursive: true });
     await writeFile(imageAssetPath(jobId, relative), bytes);
 
-    const item: ImageItem = { versionId: id, index, status: "ready", file: relative, source: "uploaded", updatedAt: Date.now() };
+    const item: ImageItem = { versionId: id, roundId: id, index, status: "ready", file: relative, source: "uploaded", updatedAt: Date.now() };
     job.items.push(item);
     job.draft = false;
     appendJobLog(job.log, "info", `已上传图片：${safeName(name)}`);
@@ -745,7 +776,7 @@ export async function addImageToJob(jobId: string, name: string, base64: string)
         appendJobLog(job.log, "error", `上传图片抠像失败：${messageOf(error)}`);
       }
     }
-    job.history.push({ id, batchId: id, createdAt: Date.now(), kind: "uploaded", item: { ...item } });
+    job.history.push({ id, batchId: id, roundId: id, createdAt: Date.now(), kind: "uploaded", item: { ...item } });
     return job.items[index];
   });
 }
