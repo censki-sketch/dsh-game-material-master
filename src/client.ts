@@ -5117,6 +5117,7 @@
 .SPR_imageProjectActions .SPR_taskIconButton{width:24px;height:24px;border-radius:6px}
 .SPR_imageProjectActions svg{width:15px;height:15px}
 .SPR_imageProjectActions [aria-pressed=true]{color:var(--dsw-alias-label-primary)}
+.SPR_imageProjectTip{position:fixed;inset:auto;box-sizing:border-box;width:max-content;max-width:calc(100vw - 16px);margin:0;padding:7px 12px;border:0;border-radius:13px;background:#1c1c1e;color:#fff;box-shadow:0 5px 16px rgba(0,0,0,.16);font:inherit;font-size:12px;font-weight:500;line-height:18px;text-align:center;overflow-wrap:anywhere;pointer-events:none}
 .SPR_archiveEmpty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:140px;padding:16px 8px;color:var(--dsw-alias-label-tertiary);text-align:center;font-size:12px;line-height:20px}
 .SPR_archiveEmpty>svg{width:26px;height:26px;margin-bottom:2px}
 .SPR_archiveEmpty p{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px}
@@ -5771,20 +5772,50 @@
       if (name === "rename") return h("svg", props, h("path", { d: "M13.5 5.5l5 5M4 20l4.5-1 12-12a2.1 2.1 0 0 0-5-5l-12 12L4 20Z" }));
       if (name === "copy") return h("svg", props, h("rect", { x: 8, y: 8, width: 12, height: 12, rx: 2 }), h("path", { d: "M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4" }));
       if (name === "settings") return h("svg", props, h("path", { d: "m9 3-.6 2.2-2 .9-2-.6L2 10l1.7 1.5v2L2 15l2.4 4.5 2-.6 2 .9L9 22h6l.6-2.2 2-.9 2 .6L22 15l-1.7-1.5v-2L22 10l-2.4-4.5-2 .6-2-.9L15 3Z" }), h("circle", { cx: 12, cy: 12.5, r: 3 }));
-      if (name === "pin") return h("svg", props, h("path", { d: "m16 3 5 5-4 3-2 5-3-1-7 7M4 12l5-2 3-7 4 0M4 12l8 8" }));
-      if (name === "archive") return h("svg", props, h("rect", { x: 4, y: 3, width: 16, height: 4, rx: 1 }), h("path", { d: "M5 7v13h14V7M10 11h4" }));
-      if (name === "unarchive") return h("svg", props, h("rect", { x: 4, y: 3, width: 16, height: 4, rx: 1 }), h("path", { d: "M5 7v13h14V7M12 17v-6m-3 3 3-3 3 3" }));
+      if (name === "pin") return h("svg", props, h("path", { d: "M8 3h8v6l3 4v2H5v-2l3-4V3ZM12 15v6", transform: "rotate(45 12 12)" }));
+      if (name === "archive") return h("svg", props, h("rect", { x: 3.5, y: 4, width: 17, height: 4, rx: 1.25 }), h("path", { d: "M5 8v10.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V8M10 11.5h4" }));
+      if (name === "unarchive") return h("svg", props, h("rect", { x: 3.5, y: 4, width: 17, height: 4, rx: 1.25 }), h("path", { d: "M5 8v10.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V8M12 17v-6m-3 3 3-3 3 3" }));
       if (name === "remove") return h("svg", props, h("path", { d: "m6 6 12 12M6 18 18 6" }));
       if (name === "openFolder") return h("svg", props, h("path", { d: "M3 17V6a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v2M3 19l3-8h16l-3 8H3Z" }));
       return h("svg", props, h("path", { d: "M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" }));
     }
 
     /** 列表操作绑定本行项目或任务，不依赖当前选中项。 */
-    function ImageProjectActions({ pinned, archived, onPin, onArchive }) {
+    function ImageProjectActions({ id, pinned, archived, onPin, onArchive }) {
       const pinLabel = pinned ? T("取消置顶") : T("置顶项目"), archiveLabel = archived ? T("取消归档") : T("归档聊天");
+      const [tip, setTip] = React.useState(null);
+      const anchorRef = React.useRef(null), tipRef = React.useRef(null), timerRef = React.useRef(null);
+      const tipId = "image-project-action-tip-" + id;
+      const clear = () => { clearTimeout(timerRef.current); timerRef.current = null; };
+      const dismiss = () => { clear(); setTip(null); };
+      const show = (event, action) => {
+        if (event.pointerType === "touch") return;
+        clear(); anchorRef.current = event.currentTarget;
+        timerRef.current = setTimeout(() => { timerRef.current = null; setTip(action); }, 280);
+      };
+      React.useEffect(() => () => clear(), []);
+      React.useLayoutEffect(() => {
+        const popup = tipRef.current, anchor = anchorRef.current;
+        if (!tip || !popup || !anchor) return;
+        popup.showPopover();
+        const r = anchor.getBoundingClientRect(), p = popup.getBoundingClientRect();
+        popup.style.left = Math.max(8, Math.min(r.left + r.width / 2 - p.width / 2, window.innerWidth - p.width - 8)) + "px";
+        popup.style.top = Math.max(8, Math.min(r.top - p.height - 8 >= 8 ? r.top - p.height - 8 : r.bottom + 8, window.innerHeight - p.height - 8)) + "px";
+      }, [tip, pinLabel, archiveLabel]);
+      React.useEffect(() => {
+        if (!tip) return;
+        document.addEventListener("scroll", dismiss, true);
+        window.addEventListener("resize", dismiss);
+        return () => { document.removeEventListener("scroll", dismiss, true); window.removeEventListener("resize", dismiss); };
+      }, [tip]);
+      const actionButton = (action, label, icon, onClick) => h("button", { type: "button", className: "SPR_taskIconButton", title: "", "aria-label": label, "aria-describedby": tip === action ? tipId : undefined,
+        "aria-pressed": action === "pin" ? pinned === true : undefined, "data-action": action,
+        onPointerEnter: event => show(event, action), onPointerLeave: dismiss, onFocus: event => show(event, action), onBlur: dismiss,
+        onKeyDown: event => { if (event.key === "Escape" && (tip || timerRef.current !== null)) { event.preventDefault(); event.stopPropagation(); dismiss(); } },
+        onClick: event => { event.stopPropagation(); dismiss(); onClick(); } }, h(ProjectActionIcon, { name: icon }));
       return h("div", { className: "SPR_imageProjectActions" },
-        h("button", { type: "button", className: "SPR_taskIconButton", title: pinLabel, "aria-label": pinLabel, "aria-pressed": pinned === true, "data-action": "pin", onClick: event => { event.stopPropagation(); onPin(); } }, h(ProjectActionIcon, { name: "pin" })),
-        h("button", { type: "button", className: "SPR_taskIconButton", title: archiveLabel, "aria-label": archiveLabel, "data-action": "archive", onClick: event => { event.stopPropagation(); onArchive(); } }, h(ProjectActionIcon, { name: archived ? "unarchive" : "archive" })));
+        actionButton("pin", pinLabel, "pin", onPin), actionButton("archive", archiveLabel, archived ? "unarchive" : "archive", onArchive),
+        tip ? h("div", { ref: tipRef, id: tipId, className: "SPR_imageProjectTip", popover: "manual", role: "tooltip" }, tip === "pin" ? pinLabel : archiveLabel) : null);
     }
 
     function ProjectActionsMenu({ project, inline = false, task = false, local = false, onEdit, onRename, onDelete, onNotice }) {
@@ -19025,7 +19056,7 @@
             onEditFolder: editFolder,
             onArchiveFolder: archiveFolder,
             api,
-            renderActions: item => h(ImageProjectActions, { pinned: taskPreferences.pinnedProjects?.includes(item.id), archived: taskPreferences.archivedProjects?.includes(item.id), onPin: () => toggleProjectPin(item), onArchive: () => archiveEntries([item]) }),
+            renderActions: item => h(ImageProjectActions, { id: item.id, pinned: taskPreferences.pinnedProjects?.includes(item.id), archived: taskPreferences.archivedProjects?.includes(item.id), onPin: () => toggleProjectPin(item), onArchive: () => archiveEntries([item]) }),
             renderMeta: null
           }),
           h(

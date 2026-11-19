@@ -2742,7 +2742,7 @@ X-Api-Request-Id: <uuid>
 
 两种布局均把 pinned 文件夹只渲染在独立 `.SPR_taskPinned`，普通列表不重复；无置顶文件夹时不渲染该分区。合并布局只合并未置顶的项目，保留输入的全局项目顺序，置顶文件夹仍保留名称、菜单和折叠状态。合并列表使用独立DOM ID，避免与默认目录置顶时的折叠目标冲突。其标题复用项目标题箭头，`pinnedCollapsed` 在同一本机偏好中保存，与普通项目列表折叠互不影响。标题仅内容宽度、hover 背景透明，右侧操作独立靠右；侧栏 gap 4px、标题下无额外 margin，置顶分区底部4px，避免空白点击色块及分区间距累加。
 
-单个图片项目使用 `ImageProjectActions`，右侧两个24px图标在hover／键盘focus-visible时显示，触屏保持可见；按钮阻止冒泡，不触发项目选择。此替换仅用于ImageModule，其他模块的 `ProjectActionsMenu` 和文件夹／分类菜单保持原逻辑。`pinnedProjects` 在本机偏好中保存图片项目ID，与文件夹pinned分别管理。单独置顶项目先在置顶区展示，再渲染置顶文件夹；文件夹子列表过滤已独立置顶ID，统计和文件夹批量归档仍使用原始entries/allEntries。分组／合并布局共用去重规则，置顶项目可独立取消置顶。
+单个图片项目使用 `ImageProjectActions`，右侧两个24px图标在hover／键盘focus-visible时显示，触屏保持可见；按钮阻止冒泡，不触发项目选择。统一细线图标；操作提示不使用原生title，延迟280ms在top-layer popover显示黑底白字圆角tooltip，优先在按钮上方并限制在视口内，离开／失焦／点击／Esc／滚动／改变窗口尺寸时关闭，保留aria-label及aria-describedby。此替换仅用于ImageModule，其他模块的 `ProjectActionsMenu` 和文件夹／分类菜单保持原逻辑。`pinnedProjects` 在本机偏好中保存图片项目ID，与文件夹pinned分别管理。单独置顶项目先在置顶区展示，再渲染置顶文件夹；文件夹子列表过滤已独立置顶ID，统计和文件夹批量归档仍使用原始entries/allEntries。分组／合并布局共用去重规则，置顶项目可独立取消置顶。
 
 归档视图始终渲染单一项目列表，不受目录折叠、布局或置顶分区影响；保留项目的置顶标记，取消归档后按原标记恢复。无归档内容时显示 `.SPR_archiveEmpty` 图标与居中文案，不渲染空文件夹。`archiveEntries` 复用于单个项目和文件夹批量归档，两者均保留查看／撤销提示、历史与文件；旧的单项目编辑／本机移除菜单及其死状态已从ImageModule移除。
 
