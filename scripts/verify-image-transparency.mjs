@@ -147,10 +147,13 @@ try {
   check("enabled mode includes the exact key color and background-only override", outgoing.includes("#0000FF") && outgoing.includes("覆盖主提示词") && outgoing.includes("仅作用于背景"));
   check("built-in white background is removed without changing white clothing", !outgoing.includes("未指定背景时使用均匀纯白背景") && outgoing.includes("白色衣服"));
   check("checkerboards and color spill are forbidden", outgoing.includes("透明棋盘格") && outgoing.includes("边缘染色"));
+  check("background is isolated from subject lighting and interior colors", outgoing.includes("独立纯色底层") && outgoing.includes("不参与主体照明或反射") && outgoing.includes("主体内部或边缘"));
+  check("neutral lighting is conditional and intentional matching colors are preserved", outgoing.includes("未指定光照时") && outgoing.includes("主体原本需要的与背景相近的颜色"));
   check("authored input and saved template are not rewritten", job.prompt === authored.prompt && job.suffix === authored.suffix);
   check("legacy jobs use the supplied fallback color", imagegen.buildPrompt({ ...job, keying: { ...job.keying, keyColor: "" } }, "#FF00FF").includes("#FF00FF"));
   const english = imagegen.buildPrompt({ ...job, prompt: "character in white clothes", suffix: IMAGE_PROMPT_TEMPLATES[0].prompt.en, promptTemplateLang: "en" });
   check("English templates get matching background instructions", english.includes("#0000FF") && english.includes("Transparent PNG output") && !english.includes("uniform solid white background"));
+  check("English background instructions prevent reflected screen color without overriding intended colors or lighting", english.includes("separate flat layer") && english.includes("subject interior") && english.includes("Unless the user specifies lighting") && english.includes("intentional colors matching the background"));
   check("an empty main prompt still fails before generation", imagegen.buildPrompt({ ...job, prompt: " " }) === "");
   await imagegen.writeImageJob(job);
   // Simulate an unrelated settings edit while the API request is in flight.
