@@ -6383,13 +6383,13 @@
         }, text) : null);
     }
 
-    /** 顶部工作台侧栏开关：用单个方向箭头表达收起 / 展开状态。 */
-    function SidebarToggleIcon({ collapsed }) {
-      const direction = collapsed ? "M5 12h14M13 6l6 6-6 6" : "M19 12H5M11 6l-6 6 6 6";
+    /** 顶部工作台侧栏开关：圆角面板与左侧分栏组成一个图标。 */
+    function SidebarToggleIcon() {
       return h(
         "svg",
         { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
-        h("path", { d: direction })
+        h("rect", { x: 3.5, y: 4, width: 17, height: 16, rx: 3 }),
+        h("path", { d: "M9 4v16" })
       );
     }
 
@@ -6736,7 +6736,7 @@
             title: sidebarCollapsed ? T("展开侧栏") : T("收起侧栏"),
             "data-testid": "studio-sidebar-toggle",
             onClick: toggleSidebar
-          }, h(SidebarToggleIcon, { collapsed: sidebarCollapsed })),
+          }, h(SidebarToggleIcon, null)),
           h("div", { className: "SPR_headInfo" },
             h("div", { className: "SPR_headTitleLine" },
               h("h2", null, T("游戏素材大师")),
