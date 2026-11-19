@@ -346,7 +346,7 @@ const api = new Proxy(
  */
 const EXPECTED_HOOKS = {
   StudioPanel: 26,
-  ImageModule: 23,
+  ImageModule: 24,
   SequenceModule: 17
 };
 
@@ -981,8 +981,23 @@ section("图片项目侧栏与创建弹窗");
   projectButtons[1]?.props.onClick({ stopPropagation: () => projectEvents.push("stop") });
   check("单个项目使用置顶和归档快捷图标，不再展开更多菜单", projectButtons.length === 2 && projectButtons[0].props["aria-label"] === "取消置顶" && projectButtons[0].props["aria-pressed"] === true && projectButtons[1].props["aria-label"] === "归档聊天" && !byClass(projectActions, "SPR_projectMoreButton").length && projectEvents.join() === "stop,archive");
   HOOK.slots = []; HOOK.cursor = 0;
-  const archivedActions = bundle.__test.ImageProjectActions({ pinned: true, archived: true, onPin: () => {}, onArchive: () => {} });
-  check("归档项目仅保留取消归档操作，不显示置顶", byTag(archivedActions, "button").length === 1 && byTag(archivedActions, "button")[0].props["aria-label"] === "取消归档");
+  const archivedActions = bundle.__test.ImageProjectActions({ pinned: true, archived: true, onPin: () => {}, onArchive: () => {}, onDelete: () => {} });
+  const archivedButtons = byTag(archivedActions, "button");
+  check("归档项目提供取消归档和彻底删除，不显示置顶", archivedButtons.length === 2 && archivedButtons[0].props["aria-label"] === "取消归档" && archivedButtons[1].props["aria-label"] === "彻底删除" && !archivedButtons.some(node => node.props["data-action"] === "pin"));
+  HOOK.slots = []; HOOK.cursor = 0;
+  let deleteCalls = 0, deleteClosed = 0, finishDelete;
+  const deleteProject = { id: "itest123", name: "归档项目", dir: "D:/素材/itest123" };
+  const deletion = bundle.__test.ImageProjectDeleteDialog({ project: deleteProject, onDelete: target => { check("彻底删除绑定确认的项目", target === deleteProject); deleteCalls++; return new Promise(resolve => { finishDelete = resolve; }); }, onClose: () => deleteClosed++ });
+  check("彻底删除弹窗展示目标目录和不可撤销说明", deletion.props.role === "alertdialog" && textOf(deletion).includes(deleteProject.dir) && textOf(deletion).includes("无法撤销"));
+  byTag(deletion, "button")[0].props.onClick();
+  check("取消删除不调用删除接口", deleteClosed === 1 && deleteCalls === 0);
+  deleteClosed = 0;
+  const pendingDelete = byTag(deletion, "form")[0].props.onSubmit({ preventDefault() {} });
+  await byTag(deletion, "form")[0].props.onSubmit({ preventDefault() {} });
+  byTag(deletion, "button")[0].props.onClick(); deletion.props.onCancel({ preventDefault() {} });
+  check("删除处理中阻止重复提交和关闭", deleteCalls === 1 && deleteClosed === 0);
+  finishDelete(); await pendingDelete;
+  check("删除完成后关闭确认弹窗", deleteCalls === 1 && deleteClosed === 1);
   HOOK.slots = []; HOOK.cursor = 0;
   const preferences = { directory: "", sort: "updated", layout: "merged", order: [] };
   const tree = bundle.__test.JobSidebar({ title: "项目", items: [makeImageJob()], activeId: "i1", storageKey: "image", preferences, onPreferences: () => {}, onCreate: () => {}, renderMeta: () => "" });

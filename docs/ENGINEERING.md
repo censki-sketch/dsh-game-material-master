@@ -396,6 +396,8 @@ comfy.ts 里**唯一**的 HTTP 出口（`/system_stats`、`/object_info`、`/upl
 
 ### 侧栏入口上的菜单按钮
 
+`StudioGlyphIcon` 使用内联SVG游戏手柄轮廓、十字方向键和两个按键，尺寸沿用调用方传入的size，颜色继承currentColor；仅替换图形，快捷菜单与入口行为不变。
+
 需求是「在入口按钮上加快捷菜单」。实现上有个硬约束：宿主把插件的 `sidebar.panellist`
 **渲染在它自己的 `<button class="…panelRow">` 内部**（`dsh-client-ui-sidebar` 的 `PanelRow`），
 所以：
@@ -2744,7 +2746,9 @@ X-Api-Request-Id: <uuid>
 
 单个图片项目使用 `ImageProjectActions`，右侧两个24px图标在hover／键盘focus-visible时显示，触屏保持可见；按钮阻止冒泡，不触发项目选择。统一细线图标；操作提示不使用原生title，延迟280ms在top-layer popover显示黑底白字圆角tooltip，优先在按钮上方并限制在视口内，离开／失焦／点击／Esc／滚动／改变窗口尺寸时关闭，保留aria-label及aria-describedby。此替换仅用于ImageModule，其他模块的 `ProjectActionsMenu` 和文件夹／分类菜单保持原逻辑。`pinnedProjects` 在本机偏好中保存图片项目ID，与文件夹pinned分别管理。单独置顶项目先在置顶区展示，再渲染置顶文件夹；文件夹子列表过滤已独立置顶ID，统计和文件夹批量归档仍使用原始entries/allEntries。分组／合并布局共用去重规则，置顶项目可独立取消置顶。
 
-归档视图始终渲染单一项目列表，不受目录折叠、布局或置顶分区影响；行内仅显示取消归档按钮，隐藏置顶按钮并缩减右侧预留宽度，保留项目的置顶标记，取消归档后按原标记恢复。无归档内容时用 `data-archive-empty` 令列表填满标题和底部返回按钮之间的剩余空间，`.SPR_archiveEmpty` 图标与文案整体水平／垂直居中，不渲染空文件夹。`archiveEntries` 复用于单个项目和文件夹批量归档，两者均保留查看／撤销提示、历史与文件；旧的单项目编辑／本机移除菜单及其死状态已从ImageModule移除。
+归档视图始终渲染单一项目列表，不受目录折叠、布局或置顶分区影响；行内提供取消归档和彻底删除，隐藏置顶按钮，保留项目的置顶标记，取消归档后按原标记恢复。无归档内容时用 `data-archive-empty` 令列表填满标题和底部返回按钮之间的剩余空间，`.SPR_archiveEmpty` 图标与文案整体水平／垂直居中，不渲染空文件夹。`archiveEntries` 复用于单个项目和文件夹批量归档，两者均保留查看／撤销提示、历史与文件；旧的单项目编辑／本机移除菜单及其死状态已从ImageModule移除。
+
+归档行的delete图标打开独立 `ImageProjectDeleteDialog`，使用原生modal alertdialog并默认聚焦取消，显示目标项目名、独立目录及不可撤销的文件删除范围。界面仅在提交确认后调用现有 `deleteImageJob`；等待当前保存队列，提交锁防止连击，处理期间禁止关闭／重复提交，失败保留弹窗与错误以便重试。成功后清理目标ID的归档／置顶／隐藏／手动顺序与模板草稿缓存，删除当前选中项则切换同视图下一个项目或清空结果；其他选中项不变，过期load错误不覆盖新项目通知。宿主原有目录ID、有效job.json、符号链接与运行中任务校验不变，仅删除独立项目目录和位置索引，不删除父目录。浏览器测试以临时DSH_HOME经真实网关验证文件删除、父目录／其他项目保留、取消／Esc零调用、失败重试、重复提交锁和刷新后缓存清理，不操作用户现有项目。
 
 「在资源管理器中打开」经 `revealImageFolder` → `revealLocalFolder` 校验绝对目录与realpath后，以参数数组启动系统文件管理器。Windows的Explorer是用户请求的可见结果，必须 `windowsHide:false`，避免进程启动成功却把文件夹窗口隐藏；文件夹选择器的PowerShell辅助进程仍隐藏。此项涉及宿主半区，更新后须重启DSH。
 
