@@ -81,7 +81,7 @@
   "作为参考": "Use as reference",
   "抠图设置": "Cutout settings",
   "本轮图片已移除": "Images from this round have been removed",
-  "复用描述": "Reuse description",
+  "复用提示词": "Reuse prompt",
   "本轮更多操作": "More round actions",
   "复用本轮": "Reuse this round",
   "有新结果": "New results",
@@ -613,7 +613,6 @@
       "操作提示": "Notification",
       "关闭提示": "Dismiss notification",
       "更多": "More",
-      "第 {n0} 张图片的更多操作": "More actions for image {n0}",
       "上一张": "Previous image",
       "下一张": "Next image",
       "结果缩略图": "Result thumbnails",
@@ -694,7 +693,6 @@
       "下载 PNG": "Download PNG",
       "下载原图": "Download original",
       "已重新生成": "Regenerated",
-      "正在重新生成第 {n0} 张…": "Regenerating image {n0}…",
       "删除": "Delete",
       "序列帧 {n0}": "Sequence frames {n0}",
       "已新建序列帧任务": "Sequence frames job created",
@@ -5786,6 +5784,9 @@
 .SPR_chatMaterial>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;margin:5px 0}
 .SPR_chatMaterial>.SPR_btn{width:100%;font-size:11px;padding:4px}
 .SPR_chatRequestDialog{width:min(620px,calc(100vw - 24px));max-height:86dvh;overflow:auto}
+.SPR_chatRequestHead{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.SPR_chatRequestHead>h3{margin:0;min-width:0}
+.SPR_chatRequestHead>.SPR_taskIconButton{margin:-4px -4px -4px 0}
 .SPR_chatRequestDialog pre{font:12px/1.8 system-ui;white-space:pre-wrap;overflow-wrap:anywhere;max-height:50dvh;overflow:auto}
 @container(max-width:600px){
   .SPR_chatTop{padding:6px 12px}
@@ -19058,7 +19059,7 @@
         open ? h(ImagePreviewDialog, { key: src, src, alt, label: title, imageLabel: label, result: true, onCleanup, onClose: close }) : null);
     }
 
-    function ImageResultGallery({ items, assetBase, tasks, keying, renderItem, initialIndex }) {
+    function ImageResultGallery({ items, assetBase, tasks, keying, renderItem, renderFooter, initialIndex }) {
       const [selectedIndex, setSelectedIndex] = React.useState(initialIndex ?? 0);
       const thumbsRef = React.useRef(null);
       const index = Math.min(selectedIndex, Math.max(0, items.length - 1));
@@ -19089,7 +19090,8 @@
             } },
             file ? h("img", { className: "SPR_thumb", src: `${assetBase}${file}?v=${item.updatedAt}`, alt: "" }) : h("span", { className: "SPR_imageGalleryThumbEmpty", "aria-hidden": "true" }, i + 1),
             loading ? h("span", { className: "SPR_imageGalleryThumbBusy", "aria-hidden": "true" }, h("span", { className: "SPR_spinSm" })) : null);
-        })) : null);
+        })) : null,
+        renderFooter?.(items[index], index));
     }
 
     function ImageReferenceList(props) {
@@ -19303,7 +19305,7 @@
       if (name === "down") return h("svg", attrs, h("path", { d: "M12 4v16m-6-6 6 6 6-6" }));
       if (name === "send") return h("svg", attrs, h("path", { d: "M12 19V5m-6 6 6-6 6 6" }));
       if (name === "stop") return h("svg", attrs, h("rect", { x: 7, y: 7, width: 10, height: 10, rx: 1, fill: "currentColor", stroke: "none" }));
-      if (name === "reuse") return h("svg", attrs, h("path", { d: "M9 10H4V5m0 5 4-4a7 7 0 1 1-1 11M9 10h6" }));
+      if (name === "regenerate") return h("svg", attrs, h("path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5" }));
       if (name === "image") return h("svg", attrs, h("rect", { x: 3, y: 3, width: 18, height: 18, rx: 4 }), h("circle", { cx: 8, cy: 8, r: 1.5 }), h("path", { d: "m3 16 5-5 4 4 4-6 5 7" }));
       return h(ProjectActionIcon, { name: name === "parameters" ? "settings" : name });
     }
@@ -19319,13 +19321,22 @@
           h(Btn, { role: "menuitem", disabled, onClick: () => imageInput.current?.click() }, T("导入已有图片"))));
     }
 
-    function ImageChatRound({ round, job, busy, keyingBusy, renderResult, onReuse, onReference, onHistory, onKeying, favoriteFiles, onFavorite }) {
+    function ImageChatRound({ round, job, busy, keyingBusy, renderResult, onReuse, onRegenerate, onReference, onHistory, onKeying, favoriteFiles, onFavorite }) {
       const [versions, setVersions] = React.useState({});
       const slots = round.slots.map(slot => ({ ...slot, versions: imageConversationDisplayVersions(slot) }));
       const entries = slots.map(slot => slot.versions.find(entry => (entry.displayId || entry.id) === versions[slot.id]) ?? slot.versions.at(-1));
       const date = new Date(round.createdAt).toLocaleString(activeLang() === "en" ? "en-US" : "zh-CN", { hour12: false });
       const request = round.request;
       const status = round.status === "running" ? T("生成中") : round.status === "error" ? T("生成失败") : T("已完成");
+      const renderActions = (item, index = 0) => h("div", { className: "SPR_chatRoundActions" },
+        h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("重新生成"), title: T("重新生成"), "data-index": item?.index ?? index,
+          disabled: busy || round.status === "running" || !request && item?.status !== "error", onClick: () => onRegenerate(round, item?.index ?? index) }, h(ImageChatIcon, { name: "regenerate" })),
+        h(Btn, { disabled: !request || busy, onClick: () => onReuse(request, "all", round) }, T("复用本轮")),
+        h(ImageResultMenu, { label: T("本轮更多操作") },
+          request ? h(Btn, { role: "menuitem", disabled: busy, onClick: () => onReuse(request, "prompt", round) }, T("复用提示词")) : null,
+          h(Btn, { role: "menuitem", onClick: () => onReuse(request, "details") }, T("查看最终生图请求")),
+          round.entries.length ? h(Btn, { role: "menuitem", danger: true, disabled: busy, onClick: () => onHistory(round.entries.at(-1), "delete") }, T("删除历史记录")) : null),
+        h("time", { className: "SPR_chatRoundTime", dateTime: new Date(round.createdAt).toISOString() }, date));
       return h("article", { className: "SPR_chatRound", id: "image-round-" + round.id, "data-round-id": round.id, "aria-label": T("第 {n0} 轮", { n0: round.number }) },
         h("div", { className: "SPR_chatUser" },
           request?.refs?.length ? h("div", { className: "SPR_chatAttachments" }, request.refs.map((ref, index) => h(ImageResultPreview, { key: ref.file, src: job.assetBase + ref.file, alt: ref.name, label: `@图片${index + 1} · ${ref.name}` }))) : null,
@@ -19343,6 +19354,7 @@
               return h("li", { key: index, "data-level": entry.level }, h("time", null, new Date(entry.at).toLocaleTimeString()), " · ", message);
             }))),
           entries.length ? h(ImageResultGallery, { items: entries.map(entry => entry.item), assetBase: job.assetBase, tasks: { has: () => false }, keying: keyingBusy && entries.some(entry => job.items.some(item => item === entry.item || item.versionId && item.versionId === entry.id)),
+            renderFooter: renderActions,
             renderItem: (item, index, controls) => {
               const entry = entries[index], slot = slots[index], currentIndex = (job.items ?? []).findIndex(value => value === item || value.versionId && value.versionId === item.versionId && value.keyedFile === item.keyedFile);
               const file = item.keyedFile || item.file, label = imageConversationVersionLabel(entry, slot);
@@ -19353,16 +19365,8 @@
                   h("div", { className: "SPR_chatImageActions" },
                   h(Btn, { disabled: busy, onClick: () => onReference({ file: item.keyedFile || item.file, name: T("第 {n0} 轮", { n0: round.number }) + ".png" }) }, T("作为参考")),
                   h(Btn, { disabled: busy, onClick: () => onKeying(entry, currentIndex) }, T("抠图设置")),
-                  item.keyedFile ? h("a", { className: "SPR_btn", href: job.assetBase + item.keyedFile, download: `image-${entry.id}.png` }, T("下载 PNG")) : h("a", { className: "SPR_btn", href: job.assetBase + item.file, download: `image-${entry.id}.${item.file.split(".").at(-1)}` }, T("下载原图")))) : null);
-            } }) : h("p", { className: "SPR_hint" }, T("本轮图片已移除")),
-          h("div", { className: "SPR_chatRoundActions" },
-            h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("复用描述"), title: T("复用描述"), disabled: !request || busy, onClick: () => onReuse(request, "prompt", round) }, h(ImageChatIcon, { name: "reuse" })),
-            h(Btn, { disabled: !request || busy, onClick: () => onReuse(request, "parameters", round) }, T("复用参数")),
-            h(ImageResultMenu, { label: T("本轮更多操作") },
-              request ? h(Btn, { role: "menuitem", disabled: busy, onClick: () => onReuse(request, "all", round) }, T("复用本轮")) : null,
-              h(Btn, { role: "menuitem", onClick: () => onReuse(request, "details") }, T("查看最终生图请求")),
-              round.entries.length ? h(Btn, { role: "menuitem", danger: true, disabled: busy, onClick: () => onHistory(round.entries.at(-1), "delete") }, T("删除历史记录")) : null),
-            h("time", { className: "SPR_chatRoundTime", dateTime: new Date(round.createdAt).toISOString() }, date))));
+                  item.keyedFile ? h("a", { className: "SPR_btn", href: job.assetBase + item.keyedFile + "?v=" + item.updatedAt, download: `image-${entry.id}.png` }, T("下载 PNG")) : h("a", { className: "SPR_btn", href: job.assetBase + item.file + "?v=" + item.updatedAt, download: `image-${entry.id}.${item.file.split(".").at(-1)}` }, T("下载原图")))) : null);
+            } }) : h(React.Fragment, null, h("p", { className: "SPR_hint" }, T("本轮图片已移除")), renderActions(null))));
     }
 
     const imageConversationViews = new Map();
@@ -19370,7 +19374,7 @@
       if (imageConversationViews.has(id)) return imageConversationViews.get(id);
       try { return JSON.parse(window.localStorage.getItem("dsh-game-material-master:image-conversation:" + id) || "null") || {}; } catch { return {}; }
     }
-    function ImageConversation({ job, composer, parameters, keying, busy, keyingBusy, renderResult, onReuse, onReference, onHistory, onUpload }) {
+    function ImageConversation({ job, composer, parameters, keying, busy, keyingBusy, renderResult, onReuse, onRegenerate, onReference, onHistory, onUpload }) {
       const rounds = imageConversationRounds(job);
       const [panel, setPanel] = React.useState(null), [hovered, setHovered] = React.useState(null), [active, setActive] = React.useState(null);
       const [view, setView] = React.useState(() => imageConversationView(job.id));
@@ -19440,6 +19444,7 @@
         if (action === "details") { setRequest(snapshot || { finalPrompt: T("这条记录没有生成参数快照。") }); return; }
         setConfirmation({ snapshot, action, round });
       };
+      const closeRequest = () => { requestRef.current?.close(); setRequest(null); };
       const confirm = async () => {
         if (dialogLock.current) return; dialogLock.current = true; setWorking(true);
         try {
@@ -19459,7 +19464,7 @@
           h("div", null, h(Btn, { on: panel === "materials", onClick: () => setPanel(panel === "materials" ? null : "materials"), "aria-label": T("项目素材") }, h(ImageChatIcon, { name: "image" })),
             h(Btn, { on: panel === "parameters", onClick: () => setPanel(panel === "parameters" ? null : "parameters"), "aria-label": T("生成参数") }, h(ImageChatIcon, { name: "parameters" })))),
         h("div", { className: "SPR_chatScroll", "data-empty": rounds.length === 0, ref: scroller, onScroll: scroll, onPointerLeave: () => setHovered(null), "data-testid": "image-message-scroll" },
-          h("div", { className: "SPR_chatMessages", "data-empty": rounds.length === 0 }, rounds.length ? rounds.map(round => h(ImageChatRound, { key: round.id, round, job, busy, keyingBusy, renderResult, onReference, onReuse: act,
+          h("div", { className: "SPR_chatMessages", "data-empty": rounds.length === 0 }, rounds.length ? rounds.map(round => h(ImageChatRound, { key: round.id, round, job, busy, keyingBusy, renderResult, onReference, onRegenerate, onReuse: act,
             favoriteFiles: view.favoriteFiles ?? [], onFavorite: toggleFavorite,
             onHistory: (entry, action) => setConfirmation({ entry, action }), onKeying: async (entry, index) => { try { if (index < 0 && !await onHistory(entry, "restore")) return; setPanel("keying"); } catch (error) { setNotice(msg(error)); } } }))
             : h("div", { className: "SPR_chatWelcome" }, h(ImageChatIcon, { name: "image" }), h("h2", null, T("想创作什么游戏素材？")), h("p", null, T("描述你的想法，或添加参考图片开始。"))))),
@@ -19486,11 +19491,13 @@
               h(ImageChatIcon, { name: "image" }), h("h4", null, T("暂无项目素材")), h("p", null, T("添加参考图或生成图片后，素材会显示在这里。")),
               h("label", { className: "SPR_btn" }, T("添加参考图"), h("input", { type: "file", accept: "image/*", multiple: true, hidden: true, disabled: busy,
                 onChange: event => { const files = Array.from(event.target.files || []); event.target.value = ""; if (files.length && !busy) void onUpload(files, "ref"); } })))) : panel === "keying" ? keying : parameters)) : null,
-        request ? h("dialog", { ref: requestRef, className: "SPR_chatRequestDialog SPR_projectRenameDialog", "aria-label": T("查看最终生图请求"), onCancel: () => setRequest(null) },
-          h("h3", null, T("查看最终生图请求")), request.settings ? h("div", { className: "SPR_hint" },
+        request ? h("dialog", { ref: requestRef, className: "SPR_chatRequestDialog SPR_projectRenameDialog", "aria-label": T("查看最终生图请求"), onCancel: event => { event.preventDefault(); closeRequest(); } },
+          h("div", { className: "SPR_chatRequestHead" }, h("h3", null, T("查看最终生图请求")),
+            h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("关闭"), title: T("关闭"), onClick: closeRequest }, h(TaskHeaderIcon, { name: "close" }))),
+          request.settings ? h("div", { className: "SPR_hint" },
             h("div", null, T("历史模型：{n0}", { n0: request.settings.model || "—" })), h("div", null, T("历史尺寸：{n0}", { n0: request.settings.size })),
             h("div", null, T("参考图：{n0}", { n0: request.referenceFiles?.length ?? request.refs?.length ?? 0 })), h("div", null, T("生图后端"), " · ", request.provider || "—")) : null,
-          h("pre", null, request.finalPrompt), h(Btn, { onClick: () => setRequest(null) }, T("关闭"))) : null,
+          h("pre", null, request.finalPrompt)) : null,
         confirmation ? h("dialog", { ref: confirmRef, className: "SPR_projectRenameDialog", "aria-label": T("确认操作"), onCancel: event => { event.preventDefault(); if (!dialogLock.current) setConfirmation(null); } },
           h("h3", null, confirmation.entry ? T("删除历史记录") : T("复用历史内容？")), h("p", null, confirmation.entry ? T("仅删除这条历史记录；仍在当前结果或其他历史中使用的图片文件会保留。") : T("将替换输入框中对应的描述、附件或参数，不会自动生成图片。")),
           h("div", { className: "SPR_projectRenameActions" }, h(Btn, { disabled: working, onClick: () => { if (!dialogLock.current) setConfirmation(null); } }, T("取消")), h(BusyBtn, { busy: working, onClick: () => void confirm(), primary: true }, T("确认")))) : null,
@@ -19888,7 +19895,7 @@
         document.getElementById(id + "-prompt-main")?.focus({ preventScroll: true });
       };
 
-      const regenerateFailedImage = (round, position) => run(async () => {
+      const regenerateImage = (round, position) => run(async () => {
         const id = job.id;
         await imageSaveQueue.current;
         const historyId = (job.rounds ?? []).some(value => value.id === round.id) ? round.id : round.entries.find(entry => entry.request)?.id;
@@ -19978,12 +19985,6 @@
                             const position = index < 0 ? item.index : index;
                             const itemKey = K_IMG_ITEM(index);
                             const itemBusy = item.status === "running" || index >= 0 && tasks.has(itemKey);
-                            // 生成的原图（未抠像时就是唯一产物）也要能存下来：
-                            // 之前只有「抠像结果」给了下载链接，抠像关掉后整张卡片
-                            // 只剩 通过 / 重新生成 / 删除，用户只能右键另存。
-                            const rawExt = typeof item.file === "string" && item.file.includes(".")
-                              ? item.file.slice(item.file.lastIndexOf(".") + 1).toLowerCase()
-                              : "png";
                             // 整批生成时，还没轮到的那些也要盖住（否则旧图看着像「没反应」）
                             const waiting = false;
                             const keyingNow = index >= 0 && item.status !== "running" && keyingBusy;
@@ -20003,34 +20004,7 @@
                                   counter),
                                 overlay || item.status !== "ready" || item.source === "uploaded" ? h("span", { className: "SPR_imageResultState" },
                                   overlay ? h(Chip, { kind: "running", text: T("生成中") }) : item.status !== "ready" ? h(StatusChip, { node: item }) : null,
-                                  item.source === "uploaded" ? h(Chip, { kind: "empty", text: T("上传") }) : null) : null,
-                                (item.file || item.keyedFile) ? h(
-                                  ImageResultMenu,
-                                  { label: T("第 {n0} 张图片的更多操作", { n0: position + 1 }) },
-                                  item.file !== undefined
-                                    ? h("a", { role: "menuitem", className: "SPR_btn", href: `${job.assetBase}${item.file}`, download: `image-${position + 1}.${rawExt}`, style: { textDecoration: "none" } }, T("下载原图"))
-                                    : null,
-                                  item.keyedFile !== undefined
-                                    ? h("a", { role: "menuitem", className: "SPR_btn", href: `${job.assetBase}${item.keyedFile}?v=${item.updatedAt}`, download: `keyed-${position + 1}.png`, style: { textDecoration: "none" } }, T("下载 PNG"))
-                                    : null,
-                                  index >= 0 && item.source === "generated" && item.status !== "error"
-                                    ? h(
-                                        BusyBtn,
-                                        {
-                                          role: "menuitem", disabled: overlay,
-                                          busy: tasks.has(itemKey),
-                                          busyText: T("正在提交…"),
-                                          onClick: () =>
-                                            void run(async () => { await saveImageDraft(); const response = await api.runImageJob({ jobId: job.id, index }); if (response?.started) window.dispatchEvent(new CustomEvent("gmm-image-conversation", { detail: { jobId: job.id, latest: true } })); return response; }, T("已重新生成"), {
-                                              key: itemKey,
-                                              label: T("正在重新生成第 {n0} 张…", { n0: position + 1 })
-                                            })
-                                        },
-                                        T("重新生成")
-                                      )
-                                    : null,
-                                  index < 0 && entry.kind !== "pending" ? h(Btn, { role: "menuitem", disabled: busy, onClick: () => void historyAction(entry, "restore") }, T("设为当前结果")) : null
-                                ) : null
+                                  item.source === "uploaded" ? h(Chip, { kind: "empty", text: T("上传") }) : null) : null
                               ),
                               (overlay || item.file !== undefined || item.keyedFile !== undefined || item.status !== "error") ? h("div", { className: "SPR_imageGalleryMedia" }, h(
                                 MediaBox,
@@ -20043,12 +20017,10 @@
                                         return response;
                                       } : undefined })
                                     : h("div", { className: "SPR_thumbEmpty" }, overlay ? T("生成中…") : T("等待生成"))
-                              ), navigation) : null,
-                              item.status === "error" ? h("div", { className: "SPR_chatImageActions" },
-                                h(BusyBtn, { busy: tasks.has(K_IMG_JOB), disabled: busy, onClick: () => void regenerateFailedImage(round, position) }, T("重新生成"))) : null
+                              ), navigation) : null
                             );
                           },
-                    onReuse: reuseConversation, onReference: addConversationReference, onHistory: historyAction, onUpload: upload,
+                    onReuse: reuseConversation, onRegenerate: regenerateImage, onReference: addConversationReference, onHistory: historyAction, onUpload: upload,
                     parameters: h("details", { className: "SPR_imageGenerationAdvanced", open: true },
                     h("summary", null, T("高级设置")),
                     h("div", { className: "SPR_imageModelMeta" },

@@ -1223,8 +1223,9 @@ if (typeof ImageModule === "function") {
     const failedMessage = 'OpenAI API 生图失败（HTTP 502）：<!DOCTYPE html><html><head><title>502: Bad gateway</title></head></html>';
     const failedJob = makeImageJob({ items: [{ index: 0, status: "error", error: failedMessage }], history: [], rounds: [], log: [] });
     const failedTree = renderModule(ImageModule, failedJob, makeTasks()).tree;
+    const imageHeads = tree => byTag(tree, "div").filter(node => node.props.className?.split(" ").includes("SPR_imageResultHead"));
     check("失败结果仅保留顶部状态，不重复显示错误大框和空预览", byClass(failedTree, "SPR_imageGalleryMedia").length === 0 && byClass(failedTree, "SPR_error").length === 0 && byClass(failedTree, "SPR_chatProgress").some(node => node.props["data-status"] === "error"));
-    check("失败图片直接提供重新生成，不显示空的更多菜单", byTag(failedTree, "button").some(node => textOf(node) === "重新生成" && !node.props.disabled) && !byTag(failedTree, "button").some(node => node.props["aria-label"] === "第 1 张图片的更多操作"));
+    check("失败图片直接提供重新生成图标，不显示空的图片菜单", byTag(failedTree, "button").some(node => node.props["aria-label"] === "重新生成" && !node.props.disabled && byTag(node, "svg").length === 1) && imageHeads(failedTree).length === 1 && imageHeads(failedTree).every(node => byTag(node, "button").length === 0));
     const failureLogs = byClass(failedTree, "SPR_chatLogs").map(textOf).join();
     check("旧HTML报错在执行详情中保留502原因并隐藏源码", failureLogs.includes("HTTP 502") && failureLogs.includes("中转服务或上游") && !/DOCTYPE|<html|<title>/.test(failureLogs));
     check("提交中图标变为停止方块并禁止重复提交", byTag(gen.tree, "button").some(node => node.props.className?.includes("SPR_chatGenerate") && node.props["aria-label"] === "停止生成" && node.props.disabled && byTag(node, "rect").length === 1));
@@ -1269,7 +1270,7 @@ if (typeof ImageModule === "function") {
     const running = renderModule(ImageModule, runningJob, makeTasks());
     check("宿主 running 时出现遮罩", overlays(running.tree).length >= 1, `${overlays(running.tree).length} 个`);
 
-    // 结果只展示当前主图，缩略图和菜单始终绑定当前结果。
+    // 结果只展示当前主图，底部下载与重新生成始终绑定当前结果。
     const acceptance = renderModule(ImageModule, makeImageJob(), makeTasks());
     const renderSelection = (tree, selectedIndex) => {
       const gallery = collect(tree, node => node.type?.name === "ImageResultGallery")[0];
@@ -1284,18 +1285,39 @@ if (typeof ImageModule === "function") {
     check("底部保留所有结果的缩略图", byClass(acceptance.tree, "SPR_imageGalleryThumb").length === 2);
     const single = renderModule(ImageModule, makeImageJob({ items: [makeImageJob().items[0]] }), makeTasks());
     check("单张结果隐藏整个缩略图条", byClass(single.tree, "SPR_imageGalleryThumbs").length === 0);
-    check("复用描述使用图标并保留可访问名称和悬停说明", byTag(acceptance.tree, "button").some(node => node.props["aria-label"] === "复用描述" && node.props.title === "复用描述" && byTag(node, "svg").length === 1 && textOf(node) === ""));
+    check("重新生成使用循环箭头图标并保留可访问名称和悬停说明", byTag(acceptance.tree, "button").some(node => node.props["aria-label"] === "重新生成" && node.props.title === "重新生成" && byTag(node, "path").some(path => path.props.d.startsWith("M3 12a9")) && textOf(node) === ""));
+    const snapshotJob = makeImageJob();
+    snapshotJob.history = snapshotJob.items.map((item, index) => ({ id: "actions-" + index, batchId: "round-actions", createdAt: 1, kind: "generated", item: { ...item, index }, request: { prompt: "历史描述", finalPrompt: "历史最终请求", settings: { count: 2 }, refs: [], keying: {} } }));
+    const actionsTree = renderModule(ImageModule, snapshotJob, makeTasks()).tree;
+    check("复用本轮直接可见，单独复用提示词保留在本轮更多菜单", byClass(actionsTree, "SPR_chatRoundActions").every(footer => byTag(footer, "button").some(node => textOf(node) === "复用本轮" && !node.props.role && !node.props.disabled) && byTag(footer, "button").some(node => textOf(node) === "复用提示词" && node.props.role === "menuitem") && !textOf(footer).includes("复用参数")));
+    check("成功历史提供重新生成，无快照旧成功记录禁用", byTag(actionsTree, "button").some(node => node.props["aria-label"] === "重新生成" && !node.props.disabled) && byTag(acceptance.tree, "button").some(node => node.props["aria-label"] === "重新生成" && node.props.disabled));
+    check("图片顶部移除重复更多菜单和设为当前结果", imageHeads(acceptance.tree).length === 1 && imageHeads(acceptance.tree).every(head => byTag(head, "button").length === 0) && !textOf(acceptance.tree).includes("设为当前结果"));
+    const conversation = collect(acceptance.tree, node => node.type?.name === "ImageConversation")[0];
+    const savedHooks = { slots: HOOK.slots, cursor: HOOK.cursor };
+    let requestTree;
+    try {
+      HOOK.slots = []; HOOK.slots[5] = { finalPrompt: "已保存的最终生图请求" }; HOOK.cursor = 0;
+      requestTree = conversation.type(conversation.props);
+    } finally { Object.assign(HOOK, savedHooks); }
+    const requestDialog = byTag(requestTree, "dialog").find(node => node.props["aria-label"] === "查看最终生图请求");
+    const closeRequest = byTag(requestDialog, "button")[0];
+    check("最终请求弹窗只有右上角关闭图标，不显示底部文字关闭", byTag(requestDialog, "button").length === 1 && closeRequest?.props["aria-label"] === "关闭" && textOf(closeRequest) === "" && byClass(requestDialog, "SPR_chatRequestHead").some(head => byTag(head, "button").includes(closeRequest)) && textOf(requestDialog).includes("已保存的最终生图请求"));
+    let prevented = false;
+    HOOK.capture = [];
+    requestDialog.props.onCancel({ preventDefault: () => { prevented = true; } });
+    check("最终请求弹窗保留Esc关闭", prevented && HOOK.capture.some(update => update.index === 5 && update.next === null));
+    HOOK.capture = undefined;
     check("轮次顶部不再显示重复收藏或时间", byClass(acceptance.tree, "SPR_chatRoundHead").every(head => byTag(head, "button").length === 0 && byTag(head, "time").length === 0));
     check("每轮时间移动到底部操作栏", byClass(acceptance.tree, "SPR_chatRoundActions").every(footer => byTag(footer, "time").some(node => node.props.className === "SPR_chatRoundTime" && node.props.dateTime)));
     const firstNav = byClass(acceptance.tree, "SPR_imageGalleryArrow");
     check("首张禁用上一张，下一张可切换", firstNav.length === 2 && firstNav[0].props.disabled && !firstNav[1].props.disabled);
     const secondTree = renderSelection(acceptance.tree, 1);
-    check("抠像PNG下载链接与预览共用图片版本，避免下载旧缓存", byTag(secondTree, "a").some(node => node.props.download === "keyed-2.png" && node.props.href.endsWith("keyed/2.png?v=2")));
+    check("抠像PNG下载链接与预览共用图片版本，避免下载旧缓存", byTag(secondTree, "a").some(node => textOf(node) === "下载 PNG" && node.props.download.endsWith(".png") && node.props.href.endsWith("keyed/2.png?v=2")));
     const secondNav = byClass(secondTree, "SPR_imageGalleryArrow");
-    check("切换后主图菜单指向第二张", byTag(secondTree, "button").some(node => node.props["aria-label"] === "第 2 张图片的更多操作"));
+    check("切换后底部重新生成指向第二张", byTag(secondTree, "button").some(node => node.props["aria-label"] === "重新生成" && node.props["data-index"] === 1));
     check("末张禁用下一张，上一张可切换", !secondNav[0].props.disabled && secondNav[1].props.disabled);
     check("当前缩略图高亮", byClass(secondTree, "SPR_imageGalleryThumb").map(node => node.props["aria-pressed"]).join(",") === "false,true");
-    check("删除末张后越界索引回到剩余结果", byTag(renderSelection(acceptance.tree, 7), "button").some(node => node.props["aria-label"] === "第 2 张图片的更多操作"));
+    check("删除末张后越界索引回到剩余结果", byTag(renderSelection(acceptance.tree, 7), "button").some(node => node.props["aria-label"] === "重新生成" && node.props["data-index"] === 1));
     check("图片任务有审核模式下拉", hasReviewModeSelect(acceptance.tree), modeOptions(acceptance.tree).join("、"));
     const approvedJob = makeImageJob();
     approvedJob.items = [
