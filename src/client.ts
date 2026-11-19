@@ -517,6 +517,13 @@
       "结果（{n0} 张）": "Results ({n0} images)",
       "当前结果": "Current results",
       "结果": "Results",
+      "放大图片": "Zoom in",
+      "缩小图片": "Zoom out",
+      "图片缩放比例": "Image zoom level",
+      "原始大小": "Actual size",
+      "适应窗口": "Fit to window",
+      "图片预览": "Image preview",
+      "滚轮缩放，按住鼠标拖动查看，双击恢复适应窗口。": "Scroll to zoom, drag to pan, and double-click to fit to the window.",
       "历史记录（{n0}）": "History ({n0})",
       "暂无历史记录，生成或上传后会自动保留。": "No history yet. Generated and uploaded images will be kept automatically.",
       "每次生成保留独立版本。预览、下载、设为当前和复用参数均不调用生成接口。": "Each generation keeps a separate version. Preview, download, restore and reuse do not generate images.",
@@ -4291,7 +4298,7 @@
 .SPR_nodeTop{display:flex;align-items:center;gap:7px}
 .SPR_nodeTitle{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .SPR_thumb{width:100%;aspect-ratio:1/1;object-fit:contain;border-radius:8px;display:block}
-.SPR_thumb,.SPR_imageRefFull{background-color:var(--dsw-alias-bg-layer-3);background-image:linear-gradient(45deg,rgba(128,128,128,.18) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.18) 75%),linear-gradient(45deg,rgba(128,128,128,.18) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.18) 75%);background-size:16px 16px;background-position:0 0,8px 8px}
+.SPR_thumb,.SPR_imageRefFull,.SPR_imagePreviewViewport{background-color:var(--dsw-alias-bg-layer-3);background-image:linear-gradient(45deg,rgba(128,128,128,.18) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.18) 75%),linear-gradient(45deg,rgba(128,128,128,.18) 25%,transparent 25%,transparent 75%,rgba(128,128,128,.18) 75%);background-size:16px 16px;background-position:0 0,8px 8px}
 .SPR_thumbEmpty{width:100%;aspect-ratio:1/1;border-radius:8px;border:1px dashed var(--dsw-alias-border-l2);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-label-tertiary);font-size:12px;text-align:center;padding:8px;box-sizing:border-box}
 .SPR_refRow{color:var(--dsw-alias-label-tertiary);font-size:11px}
 .SPR_error{color:var(--dsw-alias-state-error-primary);font-size:12px;white-space:pre-wrap;word-break:break-word;margin:0}
@@ -5166,6 +5173,18 @@
 .SPR_imageRefDialogHead h3{margin:0;font-size:14px;overflow-wrap:anywhere;min-width:0}
 .SPR_imageRefDialogHead>.SPR_btn{flex:none}
 .SPR_imageRefFull{display:block;width:100%;height:auto;max-height:calc(100vh - 132px);object-fit:contain;border-radius:8px}
+.SPR_imagePreviewDialog[open]{display:flex;flex-direction:column;height:min(86vh,860px);height:min(86dvh,860px);overflow:hidden}
+.SPR_imagePreviewDialog>.SPR_imageRefDialogHead{flex:none}
+.SPR_imagePreviewControls{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;flex:none;margin:12px 0 0}
+.SPR_imagePreviewControls>.SPR_btn{min-height:34px;padding:6px 10px;font-size:12px;box-shadow:none}
+.SPR_imagePreviewZoom{display:inline-flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-layer-3)}
+.SPR_imagePreviewZoom>.SPR_btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;font-size:18px;border:0;border-radius:6px;background:transparent;box-shadow:none}
+.SPR_imagePreviewZoom>.SPR_btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_imagePreviewPercent{min-width:48px;text-align:center;font-size:12px;font-variant-numeric:tabular-nums}
+.SPR_imagePreviewViewport{position:relative;flex:1;min-height:0;overflow:hidden;overscroll-behavior:contain;touch-action:none;border-radius:8px;user-select:none}
+.SPR_imagePreviewViewport[data-pannable=true]{cursor:grab}
+.SPR_imagePreviewViewport[data-dragging=true]{cursor:grabbing}
+.SPR_imagePreviewViewport>.SPR_imageRefFull{position:absolute;left:50%;top:50%;max-width:none;max-height:none;object-fit:fill;border-radius:0;background:none;pointer-events:none;user-select:none;transform-origin:center}
 .SPR_imageResultPreview{display:block;width:100%;padding:0;border:0;border-radius:8px;background:transparent;color:inherit;cursor:zoom-in}
 .SPR_imageResultPreview:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:3px}
 .SPR_imageResultPreview>.SPR_thumb{display:block}
@@ -17583,23 +17602,97 @@
           } }, children));
     }
 
-    function ImageResultPreview({ src, alt, label, disabled }) {
+    function ImagePreviewDialog({ src, alt, label, onClose, result = false }) {
       const dialogRef = React.useRef(null);
-      const triggerRef = React.useRef(null);
-      const close = () => { dialogRef.current?.close(); triggerRef.current?.focus({ preventScroll: true }); };
+      const viewportRef = React.useRef(null);
+      const imageRef = React.useRef(null);
+      const viewRef = React.useRef({ scale: 1, x: 0, y: 0 });
+      const dragRef = React.useRef(null);
+      const [view, setView] = React.useState(viewRef.current);
+      const [natural, setNatural] = React.useState({ width: 0, height: 0 });
+      const [dragging, setDragging] = React.useState(false);
+      const close = () => { dialogRef.current?.close(); onClose(); };
+      const applyView = React.useCallback(next => {
+        const viewport = viewportRef.current, image = imageRef.current;
+        if (!viewport || !image?.naturalWidth) return;
+        const scale = Math.max(0.01, Math.min(32, next.scale));
+        const maxX = Math.max(0, (image.naturalWidth * scale - viewport.clientWidth) / 2 + 16);
+        const maxY = Math.max(0, (image.naturalHeight * scale - viewport.clientHeight) / 2 + 16);
+        const value = { scale, x: Math.max(-maxX, Math.min(maxX, next.x)), y: Math.max(-maxY, Math.min(maxY, next.y)) };
+        viewRef.current = value; setView(value);
+      }, []);
+      const fit = React.useCallback(() => {
+        const viewport = viewportRef.current, image = imageRef.current;
+        if (!viewport || !image?.naturalWidth || !viewport.clientWidth || !viewport.clientHeight) return;
+        applyView({ scale: Math.min(1, (viewport.clientWidth - 32) / image.naturalWidth, (viewport.clientHeight - 32) / image.naturalHeight), x: 0, y: 0 });
+      }, [applyView]);
+      const zoomAt = React.useCallback((scale, point = { x: 0, y: 0 }) => {
+        const current = viewRef.current, next = Math.max(0.01, Math.min(32, scale));
+        const ratio = next / current.scale;
+        applyView({ scale: next, x: point.x - (point.x - current.x) * ratio, y: point.y - (point.y - current.y) * ratio });
+      }, [applyView]);
+      React.useLayoutEffect(() => { dialogRef.current?.showModal(); }, []);
       React.useEffect(() => {
-        if (disabled && dialogRef.current?.open) close();
+        const viewport = viewportRef.current;
+        const wheel = event => {
+          event.preventDefault(); event.stopPropagation();
+          const rect = viewport.getBoundingClientRect();
+          const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? viewport.clientHeight : 1);
+          zoomAt(viewRef.current.scale * Math.exp(-Math.max(-200, Math.min(200, delta)) * 0.002), { x: event.clientX - rect.left - rect.width / 2, y: event.clientY - rect.top - rect.height / 2 });
+        };
+        viewport.addEventListener("wheel", wheel, { passive: false });
+        const observer = new ResizeObserver(fit); observer.observe(viewport);
+        return () => { viewport.removeEventListener("wheel", wheel); observer.disconnect(); };
+      }, [fit, zoomAt]);
+      const pannable = natural.width * view.scale > (viewportRef.current?.clientWidth ?? 0) - 32 || natural.height * view.scale > (viewportRef.current?.clientHeight ?? 0) - 32;
+      const endDrag = event => {
+        if (dragRef.current?.id !== event.pointerId) return;
+        dragRef.current = null; setDragging(false);
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+      };
+      return h("dialog", { ref: dialogRef, className: "SPR_imageRefDialog SPR_imagePreviewDialog" + (result ? " SPR_imageResultDialog" : ""), "aria-label": label,
+        onCancel: event => { event.preventDefault(); close(); },
+        onClose: onClose,
+        onClick: event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(); } } },
+        h("div", { className: "SPR_imageRefDialogHead" }, h("h3", null, label), h(Btn, { autoFocus: true, onClick: close }, T("关闭"))),
+        h("div", { ref: viewportRef, className: "SPR_imagePreviewViewport", "data-pannable": pannable, "data-dragging": dragging,
+          onDoubleClick: fit,
+          onPointerDown: event => {
+            if (event.button !== 0 || !pannable || !natural.width) return;
+            event.preventDefault(); dragRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+            event.currentTarget.setPointerCapture(event.pointerId); setDragging(true);
+          },
+          onPointerMove: event => {
+            const drag = dragRef.current; if (!drag || drag.id !== event.pointerId) return;
+            const current = viewRef.current;
+            applyView({ ...current, x: current.x + event.clientX - drag.x, y: current.y + event.clientY - drag.y });
+            drag.x = event.clientX; drag.y = event.clientY;
+          }, onPointerUp: endDrag, onPointerCancel: endDrag, onLostPointerCapture: endDrag },
+          h("img", { ref: imageRef, className: "SPR_imageRefFull", src, alt, draggable: false,
+            style: { width: natural.width || undefined, height: natural.height || undefined, marginLeft: -natural.width / 2, marginTop: -natural.height / 2, transform: `translate(${view.x}px,${view.y}px) scale(${view.scale})` },
+            onLoad: event => { setNatural({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight }); fit(); } })),
+        h("div", { className: "SPR_imagePreviewControls", role: "group", "aria-label": T("图片预览") },
+          h("div", { className: "SPR_imagePreviewZoom" },
+            h(Btn, { "aria-label": T("缩小图片"), disabled: !natural.width || view.scale <= 0.01, onClick: () => zoomAt(viewRef.current.scale / 1.25) }, "−"),
+            h("output", { className: "SPR_imagePreviewPercent", "aria-label": T("图片缩放比例") }, Math.round(view.scale * 100) + "%"),
+            h(Btn, { "aria-label": T("放大图片"), disabled: !natural.width || view.scale >= 32, onClick: () => zoomAt(viewRef.current.scale * 1.25) }, "+")),
+          h(Btn, { disabled: !natural.width, onClick: () => applyView({ scale: 1, x: 0, y: 0 }) }, T("原始大小")),
+          h(Btn, { disabled: !natural.width, onClick: fit }, T("适应窗口")),
+          h(DescriptionTip, { id: "image-preview-help", label: T("图片预览"), text: T("滚轮缩放，按住鼠标拖动查看，双击恢复适应窗口。") })));
+    }
+
+    function ImageResultPreview({ src, alt, label, disabled }) {
+      const [open, setOpen] = React.useState(false);
+      const triggerRef = React.useRef(null);
+      const close = () => { setOpen(false); triggerRef.current?.focus({ preventScroll: true }); };
+      React.useEffect(() => {
+        if (disabled) setOpen(false);
       }, [disabled]);
       const title = T("预览 {n0}", { n0: label });
       return h(React.Fragment, null,
         h("button", { ref: triggerRef, type: "button", className: "SPR_imageResultPreview", "aria-label": title, "aria-haspopup": "dialog", disabled,
-          onClick: () => dialogRef.current?.showModal() }, h("img", { className: "SPR_thumb", src, alt })),
-        h("dialog", { ref: dialogRef, className: "SPR_imageRefDialog SPR_imageResultDialog", "aria-label": title,
-          onCancel: event => { event.preventDefault(); close(); }, onClose: event => { if (!event.currentTarget.open) triggerRef.current?.focus({ preventScroll: true }); },
-          onKeyDown: event => { if (event.key === "Tab") { event.preventDefault(); event.currentTarget.querySelector("button")?.focus(); } },
-          onClick: event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(); } } },
-          h("div", { className: "SPR_imageRefDialogHead" }, h("h3", null, label), h(Btn, { onClick: close }, T("关闭"))),
-          h("img", { className: "SPR_imageRefFull", src, alt })));
+          onClick: () => setOpen(true) }, h("img", { className: "SPR_thumb", src, alt })),
+        open ? h(ImagePreviewDialog, { key: src, src, alt, label: title, result: true, onClose: close }) : null);
     }
 
     function ImageResultGallery({ items, assetBase, tasks, keying, renderItem, initialIndex }) {
@@ -17638,17 +17731,11 @@
 
     function ImageReferenceList(props) {
       const [previewFile, setPreviewFile] = React.useState(null);
-      const dialogRef = React.useRef(null);
       const triggerRef = React.useRef(null);
       const images = props.references ?? [];
       const preview = images.find(ref => ref.file === previewFile);
       const label = ref => `@图片${images.indexOf(ref) + 1}`;
       const url = ref => `${props.assetBase ?? ""}${ref.file}?v=${encodeURIComponent(props.updatedAt ?? "")}`;
-      React.useEffect(() => {
-        const dialog = dialogRef.current;
-        if (preview && dialog && !dialog.open) dialog.showModal();
-        if (!preview && dialog?.open) dialog.close();
-      }, [preview?.file]);
       const close = () => { setPreviewFile(null); triggerRef.current?.focus(); };
       return h(React.Fragment, null,
         images.length ? h("div", { className: "SPR_imageRefList" }, images.map(ref => h("div", { key: ref.file, className: "SPR_imageRefItem" },
@@ -17657,13 +17744,7 @@
             h("img", { src: url(ref), alt: "" }),
             h("span", { className: "SPR_imageRefDetails" }, h("span", { className: "SPR_imageRefLabel" }, label(ref)), h("span", { className: "SPR_imageRefName" }, ref.name))),
           h(Btn, { danger: true, "aria-label": T("移除 {n0}", { n0: ref.name }), disabled: props.disabled, onClick: () => props.onRemove(ref) }, T("移除"))))) : null,
-        h("dialog", { ref: dialogRef, className: "SPR_imageRefDialog", "aria-label": T("预览参考图"),
-          onCancel: event => { event.preventDefault(); close(); }, onClose: close,
-          onKeyDown: event => { if (event.key === "Tab") { event.preventDefault(); event.currentTarget.querySelector("button")?.focus(); } },
-          onClick: event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close(); } } },
-          preview ? h(React.Fragment, null,
-            h("div", { className: "SPR_imageRefDialogHead" }, h("h3", null, label(preview), " · ", preview.name), h(Btn, { onClick: close }, T("关闭"))),
-            h("img", { className: "SPR_imageRefFull", src: url(preview), alt: preview.name })) : null));
+        preview ? h(ImagePreviewDialog, { key: preview.file, src: url(preview), alt: preview.name, label: T("预览参考图") + " · " + label(preview) + " · " + preview.name, onClose: close }) : null);
     }
 
     function ImageHistoryPanel({ job, busy, onAction }) {

@@ -279,6 +279,8 @@ Optimization and generation use the same reference selection: explicit `@图片N
 
 Transparent areas use the same checkerboard background in result images, enlarged previews and reference-image previews.
 
+Click a current result, historical image or reference image to open its preview. Scroll to zoom and drag a magnified image to inspect details. A centered toolbar below the image offers zoom out, zoom in, actual size and fit to window, with the scale shown relative to the original image. Close is at the top right. Double-click to fit again. Reopening resets the fit. Zooming is entirely local, does not modify the image and never calls a model.
+
 In both prompt fields the reference menu opens only immediately after `@` and closes when more text is typed; Mention an image also opens it manually. Optimization describes the changed subject first and does not turn visible clothing or accessories into an invented preservation checklist. Still-image keying follows screen-connected tinted edges to recover foreground color and coverage, including fine strands and background gaps extending into the silhouette. Stable foreground color blocks and purple details separated by clean foreground are protected; video behavior is unchanged. A single image cannot fully distinguish intended details of the same hue from screen contamination, so broad colored outlines already drawn into the source still need inspection. Quit DSH completely, including its tray icon, reopen it, then manually re-key existing images after updating.
 
 ![Image generation · prompt and reference images](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-06-image.png)
