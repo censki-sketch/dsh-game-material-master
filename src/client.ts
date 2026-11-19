@@ -10308,7 +10308,7 @@
             : visibleItems.length === 0 && !folderGroups.length ? h("p", { className: "SPR_hint" }, preferences ? T("新建项目将在点击生成后出现在这里。") : T("点击标题右侧的 + 新建任务。")) : null,
           archiveView && !visibleItems.length ? null : renderGroups(regular),
           items.length === 0 && createInSidebar ? h(Btn, { onClick: onCreate, primary: true }, T("新建")) : null),
-        preferences && (archivedCount > 0 || preferences.showArchived) ? h("button", { type: "button", className: "SPR_taskArchiveLink", "data-testid": "image-archive-link", onClick: () => onPreferences({ showArchived: !preferences.showArchived }) },
+        preferences ? h("button", { type: "button", className: "SPR_taskArchiveLink", "data-testid": "image-archive-link", onClick: () => onPreferences({ showArchived: !preferences.showArchived }) },
           h(ProjectActionIcon, { name: "archive" }), preferences.showArchived ? T("返回未归档聊天") : T("{n0}（{n1}）", { n0: T("已归档聊天"), n1: archivedCount })) : null
       );
     }

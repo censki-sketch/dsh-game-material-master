@@ -1071,7 +1071,7 @@ section("图片项目侧栏与创建弹窗");
   const archiveView = bundle.__test.JobSidebar({ title: "项目", items: linkedJobs, storageKey: "image", preferences: { ...archivePreferences, showArchived: true }, onPreferences: patch => { archivePatch = patch; }, onCreate: () => {} });
   byClass(archiveView, "SPR_taskArchiveLink")[0]?.props.onClick();
   check("归档视图提供返回入口", textOf(byClass(archiveView, "SPR_taskArchiveLink")[0]) === "返回未归档聊天" && archivePatch?.showArchived === false);
-  check("未归档时隐藏空归档入口", byClass(grouped, "SPR_taskArchiveLink").length === 0);
+  check("没有归档时仍保留底部快捷入口", textOf(byClass(grouped, "SPR_taskArchiveLink")[0]) === "已归档聊天（0）");
   HOOK.slots = [true]; HOOK.cursor = 0;
   let editedFolder = 0;
   const info = bundle.__test.ImageSidebarInfo({ id: "folder-info-test", name: "角色素材", directory: "C:/素材", directories: ["C:/素材", "D:/道具"], entries: linkedJobs, folder: true, onEdit: () => editedFolder++, children: ReactStub.createElement("button", {}, "角色素材") });

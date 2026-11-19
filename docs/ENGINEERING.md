@@ -2754,7 +2754,7 @@ X-Api-Request-Id: <uuid>
 
 手动模式新增文件夹整组拖放：`ImageFolderHeader` 仅在 manual 时 draggable，目标分组显示前／后插入线，drop 保存独立的 `folderOrder`；项目ID顺序仍使用 `order`，两种拖动引用互不干扰。`imageFolderGroups` 始终先按pinned分区，再按folderOrder排同区目录，缺少字段的旧缓存保持原顺序；切到手动模式首次初始化目录顺序。文件夹可按Alt+↑/↓调整，拖放不能跨越置顶／普通分区，合并显示下项目也不能拖出其置顶文件夹。真实浏览器验证整组拖动、键盘排序、刷新恢复、多个置顶目录排序和合并布局切换；只修改本机缓存，不搬动文件。
 
-归档后 `NoticePopup` 支持 `persistent`、archive 图标及 `actions`（查看／撤销）。行动按钮先关闭旧提示再执行回调，避免清除回调产生的新提示。撤销只反转本次目标 ID，从最新 sidebar ref 合并偏好，并恢复原视图及仍可见的原选中项，保留提示出现后用户修改的其他设置。侧栏底部 `.SPR_taskArchiveLink` 显示可访问的归档项目数（已移除入口不计），进入归档后替换为返回入口；无归档且不在归档视图时隐藏。浏览器回归覆盖反复开关菜单、外部关闭后单击重开、置顶独立折叠及刷新、归档查看／撤销和历史数据保留，全程假 API、禁止付费请求。
+归档后 `NoticePopup` 支持 `persistent`、archive 图标及 `actions`（查看／撤销）。行动按钮先关闭旧提示再执行回调，避免清除回调产生的新提示。撤销只反转本次目标 ID，从最新 sidebar ref 合并偏好，并恢复原视图及仍可见的原选中项，保留提示出现后用户修改的其他设置。侧栏底部 `.SPR_taskArchiveLink` 显示可访问的归档项目数（已移除入口不计），进入归档后替换为返回入口；普通视图中始终保留快捷入口，归档数为0时也显示「已归档聊天（0）」并允许进入空状态；清空、撤销归档或刷新不再隐藏入口。浏览器回归覆盖反复开关菜单、外部关闭后单击重开、置顶独立折叠及刷新、归档查看／撤销和历史数据保留，全程假 API、禁止付费请求。
 
 系统选择器 `pickImageFolder` 为 clientOnly：Windows 用隐藏 STA PowerShell helper 调用 IFileDialog / FOS_PICKFOLDERS，macOS 用 osascript，Linux 用 zenity。参数数组启动，路径经环境变量传递，凭据不继承；取消返回 canceled，已失效的上次路径回退主目录，返回值 realpath / stat 校验。`revealImageFolder` 也仅供界面，校验路径后数组参数启动 Explorer/open/xdg-open，捕获 spawn 失败，不执行 shell 字符串。
 
