@@ -1174,6 +1174,23 @@ if (typeof ImageModule === "function") {
     check("整理消息不改写宿主轮次的结果数组", generated.results.length === 2 && failed.results.length === 1);
     const repeated = build({ ...fixture, rounds: [], items: [], history: [original, { ...original, id: "repeat", batchId: "separate-generation", item: { ...original.item, versionId: "repeat", file: "out/repeat.png" } }] });
     check("相同描述的两次真实生成仍保留为两轮", repeated.length === 2);
+    const materials = bundle.__test.imageConversationMaterials;
+    const refs = [{ file: "refs/a.png", name: "参考.png" }];
+    const cutout2 = { ...cutout, id: "cut2", createdAt: 6, item: { ...cutout.item, versionId: "cut2", keyedFile: "keyed/a2.png" } };
+    const rich = { ...fixture, refs, history: [original, second, cutout, cutout2], items: [cutout2.item] };
+    const assets = materials(rich, build(rich));
+    check("素材按文件去重，保留参考图、两张原图和两次抠图", assets.length === 5 && new Set(assets.map(asset => asset.file)).size === 5);
+    check("素材显示真实类型与对应轮次张数", assets.find(asset => asset.file === "out/a.png")?.kind === "original" && assets.find(asset => asset.file === "out/b.png")?.imageNumber === 2 && assets.find(asset => asset.file === "keyed/a.png")?.roundNumber === 1 && assets.find(asset => asset.file === "refs/a.png")?.kind === "reference");
+    check("两次抠图拥有独立版本编号", assets.find(asset => asset.file === "keyed/a.png")?.label === "抠图版本 1" && assets.find(asset => asset.file === "keyed/a2.png")?.label === "抠图版本 2");
+    const auto = { ...original, item: { ...original.item, keyedFile: "keyed/auto.png" } };
+    const autoJob = { ...makeImageJob(), items: [auto.item], history: [auto] };
+    const display = bundle.__test.imageConversationDisplayVersions(build(autoJob)[0].slots[0]);
+    check("自动抠图同条历史也能分别选择原图与透明图", display.length === 2 && !display[0].item.keyedFile && display[1].item.keyedFile === "keyed/auto.png" && display[0].displayId !== display[1].id);
+    check("原图显示分支保留真实历史ID且不改写历史", display[0].id === auto.id && auto.item.keyedFile === "keyed/auto.png" && !auto.displayId);
+    const autoMaterials = materials(autoJob, build(autoJob));
+    check("自动抠图依据实际文件分类而非历史kind", autoMaterials.some(asset => asset.file === "out/a.png" && asset.kind === "original") && autoMaterials.some(asset => asset.file === "keyed/auto.png" && asset.label === "抠图版本 1"));
+    check("没有历史的旧结果也会出现在素材中", materials({ items: [original.item] }, build({ items: [original.item] })).some(asset => asset.file === "out/a.png"));
+    check("空素材不产生占位文件", materials({}, build({})).length === 0);
   }
   section("模块② 图片生成");
   {
@@ -1265,6 +1282,9 @@ if (typeof ImageModule === "function") {
     check("图片结果菜单移除不再使用的「通过」", approveLabels(acceptance.tree).length === 0, approveLabels(acceptance.tree).join("、"));
     check("结果区只有一张主图卡片", byClass(acceptance.tree, "SPR_node").length === 1);
     check("底部保留所有结果的缩略图", byClass(acceptance.tree, "SPR_imageGalleryThumb").length === 2);
+    const single = renderModule(ImageModule, makeImageJob({ items: [makeImageJob().items[0]] }), makeTasks());
+    check("单张结果隐藏整个缩略图条", byClass(single.tree, "SPR_imageGalleryThumbs").length === 0);
+    check("复用描述使用图标并保留可访问名称和悬停说明", byTag(acceptance.tree, "button").some(node => node.props["aria-label"] === "复用描述" && node.props.title === "复用描述" && byTag(node, "svg").length === 1 && textOf(node) === ""));
     const firstNav = byClass(acceptance.tree, "SPR_imageGalleryArrow");
     check("首张禁用上一张，下一张可切换", firstNav.length === 2 && firstNav[0].props.disabled && !firstNav[1].props.disabled);
     const secondTree = renderSelection(acceptance.tree, 1);

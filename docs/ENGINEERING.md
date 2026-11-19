@@ -664,6 +664,10 @@ dsh --profile gmmweb --port 19388     # 打印 http://127.0.0.1:19388/?token=…
 
 当前结果、历史和参考图共用 `ImagePreviewDialog`。缩放比例相对原始像素，打开/尺寸变化时自适应；原始图片不重采样落盘。滚轮在视口以非 passive 原生监听处理，阻止页面滚动并按光标位置缩放；Pointer Capture 处理拖动，按图片缩放后边界限制平移。缩放与平移即时值保存在 ref，避免连续滚轮事件读取过期 state；卸载清理监听和 ResizeObserver。透明网格固定在视口，放大时不随图片一起变大；原生 dialog 保留 Tab 焦点范围与 Esc 关闭，关闭先退出模态再恢复触发按钮焦点。以合成图片、假 API 在真实浏览器验证缩放、锚点、拖动、上下界、重开复位、窄屏与三种预览入口，不触发计费调用。
 
+图片版本收藏保存于同一 `image-conversation:<jobId>` 的 `favoriteFiles`，键为项目内资源相对路径；原图与每次抠图独立，聊天与素材卡共用状态。旧 `bookmarks` 仍表示整轮定位收藏，不将其推断为图片收藏。`imageConversationMaterials` 从归组轮次及当前/历史参考图构建文件去重列表，兼容无 history 的旧结果，按实际 keyedFile 分类并编号。版本选择使用下拉框，已收藏选项附状态文字；自动抠图可能仅有一条同时含 file/keyedFile 的历史，`imageConversationDisplayVersions` 为原图提供 displayId，但保留真实 history ID，不写伪造历史，原图显示分支不启用透明图局部补抠。画廊只有多图才渲染缩略图条；复用描述改为带 title/aria-label 的图标按钮，原确认流程不变。收藏均为本地视图状态，不请求生成接口；本次仅客户端代码，刷新即可。
+
+`verify-feedback` 新增10项，覆盖素材去重/类型/多抠图编号、自动抠图原图分支、真实历史ID不变、旧结果与空态、单图缩略条和复用图标。真实浏览器使用临时宿主、真实 wire 与合成图片，验证原图/两次抠图独立收藏、素材与聊天双向同步、切项目及重新加载客户端后恢复、旧整轮收藏不迁移、自动抠图切回原图、复用确认、浅深色与360px布局、空素材；模型和生图调用均为零。
+
 `ImageJob.history` 保存完成版本，`ImageItem.versionId` 标识当前结果对应的版本。`ImageItem.roundId` 与 `ImageHistoryEntry.roundId` 保存消息所属的稳定轮次：生成时为 batch/round ID，上传时为原始版本 ID；重新抠像和局部补抠沿用源图的 roundId，本次处理的 batchId 只标识处理批次。旧数据读取时按显式 ID、原始轮次版本、递归来源版本与原图路径恢复，下一次写入持久化；不依赖历史数组顺序或时间，移除父记录后也保留已保存的 roundId。客户端优先按 roundId 归组，兼容旧来源关系，不按提示词相同与否合并真正独立的生成。整理消息不修改原始 rounds.results 数组。
 
 原图 `out/img-<UUID>.*`、上传图 `out/upload-<UUID>.*` 和透明图 `keyed/img-<UUID>.png` 永不按槽位覆盖；重新抠像新增 `kind:"keyed"` 记录，沿用原始生成请求并单独记录本次抠像参数。上传与旧任务图片没有可推断的生成请求，保留文件但禁用参数复用；缺少 `history` 的旧任务在读取时建立 `legacy` 条目，下一次写入持久化，不补造提示词。

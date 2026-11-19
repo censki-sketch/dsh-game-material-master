@@ -84,6 +84,8 @@ The organize icon opens a two-level menu for grouping by save folder or combinin
 
 The image page uses a conversation timeline: each round keeps its description, references, execution state and results together, with a fixed composer below. Completion appears in the round's execution state, without a duplicate badge beside each image. Bookmarked rounds use a solid bookmark with a blue background and border. The right-hand navigator supports previews, jumps, current-round highlighting and bookmarks; narrow panels use a round directory. Generation settings, cutout settings and project assets share an on-demand panel. Logs are collapsed within each round.
 
+Original images and each cutout version can be bookmarked separately. Outline or filled bookmarks stay in sync below the image and on asset cards, with state remembered locally per project. Cards identify references, original results and numbered cutouts, together with their round and image number. Existing round bookmarks still control navigation and do not bookmark every image in the round. A version dropdown marks bookmarked choices; automatic cutouts also let you switch back to the original. Single-image results hide the thumbnail strip, and Reuse description uses an icon with a hover label. Refresh the plugin page to apply these client changes.
+
 These local operations never call a generation API. Existing projects require no migration. This update includes host code: fully quit DSH, including its tray process, then reopen it.
 
 All eight modules share the same "generate → review → re-run" workbench. Every stage can be **redone on its

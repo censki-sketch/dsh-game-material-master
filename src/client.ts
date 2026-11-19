@@ -69,6 +69,10 @@
   "旧版图片记录": "Legacy image record",
   "取消收藏本轮": "Unbookmark this round",
   "收藏本轮": "Bookmark this round",
+  "收藏 {n0}": "Bookmark {n0}",
+  "取消收藏 {n0}": "Unbookmark {n0}",
+  "已收藏": "Bookmarked",
+  "参考图": "Reference image",
   "查看执行详情": "View execution details",
   "请求已提交": "Request submitted",
   "等待生成结果": "Waiting for results",
@@ -5654,9 +5658,9 @@
 .SPR_chatResponse{margin-top:18px;min-width:0}
 .SPR_chatRoundHead{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--dsw-alias-label-tertiary);margin:0 0 8px}
 .SPR_chatRoundHead>time{margin-left:auto}
-.SPR_chatRoundHead>.SPR_taskIconButton[data-bookmarked=true]{color:var(--dsw-alias-state-business-primary,#4977ff);background:color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 32%,transparent)}
-.SPR_chatRoundHead>.SPR_taskIconButton[data-bookmarked=true]:hover{background:color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 23%,transparent)}
-.SPR_chatRoundHead>.SPR_taskIconButton[data-bookmarked=true] svg{fill:currentColor}
+.SPR_imageBookmark[data-bookmarked=true]{color:var(--dsw-alias-state-business-primary,#4977ff);background:color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 32%,transparent)}
+.SPR_imageBookmark[data-bookmarked=true]:hover{background:color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 23%,transparent)}
+.SPR_imageBookmark[data-bookmarked=true] svg{fill:currentColor}
 .SPR_chatProgress{margin:0 0 12px;color:var(--dsw-alias-label-secondary);font-size:12px}
 .SPR_chatProgress>summary{display:flex;align-items:center;gap:7px;cursor:pointer;list-style:none;width:fit-content;border-radius:6px;padding:3px 0}
 .SPR_chatProgress>summary::-webkit-details-marker{display:none}
@@ -5671,9 +5675,12 @@
 .SPR_chatResponse .SPR_imageResultPreview>.SPR_thumb{height:clamp(210px,43vh,480px);max-height:480px;aspect-ratio:auto}
 .SPR_chatResponse .SPR_imageGalleryThumbs{margin-top:9px}
 .SPR_chatResponse .SPR_thumbEmpty{height:180px;aspect-ratio:auto;background:var(--dsw-alias-bg-layer-3)}
-.SPR_chatVersions{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap}
-.SPR_chatVersions button{border:1px solid transparent;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;padding:4px 8px;cursor:pointer}
-.SPR_chatVersions button[aria-pressed=true]{background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l2)}
+.SPR_chatVersionBar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px}
+.SPR_chatVersionSelect{display:inline-flex;align-items:center;position:relative;max-width:100%;min-width:0}
+.SPR_chatVersionSelect select{appearance:none;padding:5px 28px 5px 9px;font-size:11px;border-radius:7px;cursor:pointer;max-width:100%;min-width:0}
+.SPR_chatVersionSelect>svg{position:absolute;right:8px;pointer-events:none;color:var(--dsw-alias-label-secondary)}
+.SPR_chatVersionLabel{font-size:11px;color:var(--dsw-alias-label-secondary)}
+.SPR_chatVersionBar>.SPR_chatImageActions{margin:0}
 .SPR_chatRoundActions,.SPR_chatImageActions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:8px}
 .SPR_chatRoundActions .SPR_btn,.SPR_chatImageActions .SPR_btn{padding:4px 8px;font-size:11px;border:0;background:transparent;box-shadow:none;text-decoration:none;color:var(--dsw-alias-label-secondary)}
 .SPR_chatRoundActions .SPR_btn:hover,.SPR_chatImageActions .SPR_btn:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
@@ -5764,6 +5771,11 @@
 .SPR_chatMaterials:has(.SPR_chatMaterialsEmpty){display:flex;min-height:calc(100dvh - 210px)}
 .SPR_chatMaterialsEmpty{flex:1}
 .SPR_chatMaterial{min-width:0;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:8px}
+.SPR_chatMaterial[data-bookmarked=true]{border-color:color-mix(in srgb,var(--dsw-alias-state-business-primary,#4977ff) 45%,var(--dsw-alias-border-l2))}
+.SPR_chatMaterialHead{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:7px;font-size:11px;color:var(--dsw-alias-label-secondary)}
+.SPR_chatMaterialHead>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_chatMaterialHead>.SPR_imageBookmark{flex:none}
+.SPR_chatMaterialLocation{color:var(--dsw-alias-label-tertiary)}
 .SPR_chatMaterial>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;margin:5px 0}
 .SPR_chatMaterial>.SPR_btn{width:100%;font-size:11px;padding:4px}
 .SPR_chatRequestDialog{width:min(620px,calc(100vw - 24px));max-height:86dvh;overflow:auto}
@@ -19054,7 +19066,7 @@
       const counter = h("span", { className: "SPR_imageGalleryCount", role: "status", "aria-live": "polite", "aria-label": T("当前第 {n0} 张，共 {n1} 张", { n0: index + 1, n1: items.length }) }, `${index + 1} / ${items.length}`);
       return h("div", { className: "SPR_imageGallery" },
         h("div", { className: "SPR_imageGalleryStage" }, items[index] ? renderItem(items[index], index, { navigation, counter }) : null),
-        h("div", { className: "SPR_imageGalleryThumbs", ref: thumbsRef, role: "group", "aria-label": T("结果缩略图") }, items.map((item, i) => {
+        items.length > 1 ? h("div", { className: "SPR_imageGalleryThumbs", ref: thumbsRef, role: "group", "aria-label": T("结果缩略图") }, items.map((item, i) => {
           const loading = item.status === "running" || tasks.has(K_IMG_ITEM(i)) || tasks.has(K_IMG_JOB) || keying;
           const file = item.keyedFile ?? item.file;
           const title = T("第 {n0} 张", { n0: i + 1 }) + " · " + (loading ? T("生成中") : item.status === "error" ? T("失败") : file ? T("已完成") : T("等待生成"));
@@ -19066,7 +19078,7 @@
             } },
             file ? h("img", { className: "SPR_thumb", src: `${assetBase}${file}?v=${item.updatedAt}`, alt: "" }) : h("span", { className: "SPR_imageGalleryThumbEmpty", "aria-hidden": "true" }, i + 1),
             loading ? h("span", { className: "SPR_imageGalleryThumbBusy", "aria-hidden": "true" }, h("span", { className: "SPR_spinSm" })) : null);
-        })));
+        })) : null);
     }
 
     function ImageReferenceList(props) {
@@ -19218,6 +19230,46 @@
       });
     }
 
+    // Automatic cutouts can share one history entry with the original. Give
+    // the original a display-only choice while retaining the real history ID
+    // for restore/keying actions; never fabricate a persisted history entry.
+    function imageConversationDisplayVersions(slot) {
+      const originals = new Set(slot.versions.filter(entry => !entry.item.keyedFile).map(entry => entry.item.file));
+      return slot.versions.flatMap(entry => {
+        if (!entry.item.file || !entry.item.keyedFile || originals.has(entry.item.file)) return [entry];
+        originals.add(entry.item.file);
+        return [{ ...entry, displayId: "original:" + entry.id, item: { ...entry.item, keyedFile: undefined, backgroundFraction: undefined } }, entry];
+      });
+    }
+
+    function imageConversationVersionLabel(entry, slot) {
+      if (!entry.item.keyedFile) return T("原始结果");
+      const files = [...new Set(slot.versions.map(version => version.item.keyedFile).filter(Boolean))];
+      return T("抠图版本 {n0}", { n0: files.indexOf(entry.item.keyedFile) + 1 });
+    }
+
+    function imageConversationMaterials(job, rounds) {
+      const materials = new Map();
+      for (const ref of [...(job.refs ?? []), ...rounds.flatMap(round => round.request?.refs ?? [])]) {
+        if (ref.file) materials.set(ref.file, { ...ref, label: T("参考图"), kind: "reference" });
+      }
+      for (const round of rounds) for (const [index, slot] of round.slots.entries()) for (const entry of slot.versions) {
+        const add = (file, kind, label) => {
+          if (!file) return;
+          materials.set(file, { file, name: file.split("/").at(-1), kind, label, roundNumber: round.number, imageNumber: index + 1 });
+        };
+        add(entry.item.file, "original", T("原始结果"));
+        add(entry.item.keyedFile, "keyed", imageConversationVersionLabel(entry, slot));
+      }
+      return [...materials.values()];
+    }
+
+    function ImageFileBookmark({ file, label, bookmarked, onToggle }) {
+      const action = bookmarked ? T("取消收藏 {n0}", { n0: label }) : T("收藏 {n0}", { n0: label });
+      return h("button", { type: "button", className: "SPR_taskIconButton SPR_imageBookmark", "data-file": file, "data-bookmarked": bookmarked,
+        "aria-pressed": bookmarked, "aria-label": action, title: action, onClick: () => onToggle(file) }, h(ImageChatIcon, { name: "bookmark" }));
+    }
+
     function ImageChatIcon({ name }) {
       const attrs = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" };
       if (name === "plus") return h("svg", attrs, h("path", { d: "M12 5v14M5 12h14" }));
@@ -19225,6 +19277,7 @@
       if (name === "down") return h("svg", attrs, h("path", { d: "M12 4v16m-6-6 6 6 6-6" }));
       if (name === "send") return h("svg", attrs, h("path", { d: "M12 19V5m-6 6 6-6 6 6" }));
       if (name === "stop") return h("svg", attrs, h("rect", { x: 7, y: 7, width: 10, height: 10, rx: 1, fill: "currentColor", stroke: "none" }));
+      if (name === "reuse") return h("svg", attrs, h("path", { d: "M9 10H4V5m0 5 4-4a7 7 0 1 1-1 11M9 10h6" }));
       if (name === "image") return h("svg", attrs, h("rect", { x: 3, y: 3, width: 18, height: 18, rx: 4 }), h("circle", { cx: 8, cy: 8, r: 1.5 }), h("path", { d: "m3 16 5-5 4 4 4-6 5 7" }));
       return h(ProjectActionIcon, { name: name === "parameters" ? "settings" : name });
     }
@@ -19240,9 +19293,10 @@
           h(Btn, { role: "menuitem", disabled, onClick: () => imageInput.current?.click() }, T("导入已有图片"))));
     }
 
-    function ImageChatRound({ round, job, busy, keyingBusy, renderResult, onReuse, onReference, onHistory, onKeying, bookmarked, onBookmark }) {
+    function ImageChatRound({ round, job, busy, keyingBusy, renderResult, onReuse, onReference, onHistory, onKeying, bookmarked, onBookmark, favoriteFiles, onFavorite }) {
       const [versions, setVersions] = React.useState({});
-      const entries = round.slots.map(slot => slot.versions.find(entry => entry.id === versions[slot.id]) ?? slot.versions.at(-1));
+      const slots = round.slots.map(slot => ({ ...slot, versions: imageConversationDisplayVersions(slot) }));
+      const entries = slots.map(slot => slot.versions.find(entry => (entry.displayId || entry.id) === versions[slot.id]) ?? slot.versions.at(-1));
       const date = new Date(round.createdAt).toLocaleString(activeLang() === "en" ? "en-US" : "zh-CN", { hour12: false });
       const request = round.request;
       const status = round.status === "running" ? T("生成中") : round.status === "error" ? T("生成失败") : T("已完成");
@@ -19253,7 +19307,7 @@
           h("div", { className: "SPR_chatRequestMeta" }, request ? [request.settings?.size, T("{n0} 张图片", { n0: round.results.length || round.slots.length }), request.keying?.enabled ? T("透明背景") : null].filter(Boolean).join(" · ") : T("这条记录没有生成参数快照。"))),
         h("div", { className: "SPR_chatResponse" },
           h("div", { className: "SPR_chatRoundHead" }, h("span", null, T("第 {n0} 轮", { n0: round.number })), h("time", { dateTime: new Date(round.createdAt).toISOString() }, date),
-            h("button", { type: "button", className: "SPR_taskIconButton", "data-bookmarked": bookmarked, "aria-pressed": bookmarked, "aria-label": bookmarked ? T("取消收藏本轮") : T("收藏本轮"), onClick: onBookmark }, h(ImageChatIcon, { name: "bookmark" }))),
+            h("button", { type: "button", className: "SPR_taskIconButton SPR_imageBookmark", "data-bookmarked": bookmarked, "aria-pressed": bookmarked, "aria-label": bookmarked ? T("取消收藏本轮") : T("收藏本轮"), title: bookmarked ? T("取消收藏本轮") : T("收藏本轮"), onClick: onBookmark }, h(ImageChatIcon, { name: "bookmark" }))),
           h("details", { className: "SPR_chatProgress", "data-status": round.status },
             h("summary", null, round.status === "running" ? h("span", { className: "SPR_spinSm" }) : h("span", { className: "SPR_chatStatusDot" }), status, h("span", null, T("查看执行详情"))),
             request ? h("ol", { className: "SPR_chatSteps" }, h("li", null, T("请求已提交")), h("li", null, round.status === "running" ? T("等待生成结果") : status),
@@ -19265,17 +19319,22 @@
             }))),
           entries.length ? h(ImageResultGallery, { items: entries.map(entry => entry.item), assetBase: job.assetBase, tasks: { has: () => false }, keying: keyingBusy && entries.some(entry => job.items.some(item => item === entry.item || item.versionId && item.versionId === entry.id)),
             renderItem: (item, index, controls) => {
-              const entry = entries[index], slot = round.slots[index], currentIndex = (job.items ?? []).findIndex(value => value === item || value.versionId && value.versionId === item.versionId);
-              return h("div", null, renderResult(item, currentIndex, controls, entry, round),
-                slot.versions.length > 1 ? h("div", { className: "SPR_chatVersions", role: "group", "aria-label": T("图片版本") }, slot.versions.map((version, i) => h("button", { key: version.id, type: "button", "aria-pressed": version.id === entry.id,
-                  onClick: () => setVersions(current => ({ ...current, [slot.id]: version.id })) }, version.kind === "keyed" ? T("抠图版本 {n0}", { n0: slot.versions.slice(0, i + 1).filter(value => value.kind === "keyed").length }) : T("原始结果")))) : null,
-                item.file ? h("div", { className: "SPR_chatImageActions" },
+              const entry = entries[index], slot = slots[index], currentIndex = (job.items ?? []).findIndex(value => value === item || value.versionId && value.versionId === item.versionId && value.keyedFile === item.keyedFile);
+              const file = item.keyedFile || item.file, label = imageConversationVersionLabel(entry, slot);
+              return h("div", { className: "SPR_chatImageResult", "data-file": file }, renderResult(item, currentIndex, controls, entry, round),
+                file ? h("div", { className: "SPR_chatVersionBar" },
+                  slot.versions.length > 1 ? h("span", { className: "SPR_chatVersionSelect" },
+                    h("select", { "aria-label": T("图片版本"), value: entry.displayId || entry.id, onChange: event => { const id = event.target.value; setVersions(current => ({ ...current, [slot.id]: id })); } },
+                      slot.versions.map(version => h("option", { key: version.displayId || version.id, value: version.displayId || version.id }, imageConversationVersionLabel(version, slot), (favoriteFiles ?? []).includes(version.item.keyedFile || version.item.file) ? " · " + T("已收藏") : ""))),
+                    h("svg", { width: 12, height: 12, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.5, "aria-hidden": "true" }, h("path", { d: "m4 6 4 4 4-4" }))) : h("span", { className: "SPR_chatVersionLabel" }, label),
+                  h(ImageFileBookmark, { file, label, bookmarked: (favoriteFiles ?? []).includes(file), onToggle: onFavorite }),
+                  h("div", { className: "SPR_chatImageActions" },
                   h(Btn, { disabled: busy, onClick: () => onReference({ file: item.keyedFile || item.file, name: T("第 {n0} 轮", { n0: round.number }) + ".png" }) }, T("作为参考")),
                   h(Btn, { disabled: busy, onClick: () => onKeying(entry, currentIndex) }, T("抠图设置")),
-                  item.keyedFile ? h("a", { className: "SPR_btn", href: job.assetBase + item.keyedFile, download: `image-${entry.id}.png` }, T("下载 PNG")) : h("a", { className: "SPR_btn", href: job.assetBase + item.file, download: `image-${entry.id}.${item.file.split(".").at(-1)}` }, T("下载原图"))) : null);
+                  item.keyedFile ? h("a", { className: "SPR_btn", href: job.assetBase + item.keyedFile, download: `image-${entry.id}.png` }, T("下载 PNG")) : h("a", { className: "SPR_btn", href: job.assetBase + item.file, download: `image-${entry.id}.${item.file.split(".").at(-1)}` }, T("下载原图")))) : null);
             } }) : h("p", { className: "SPR_hint" }, T("本轮图片已移除")),
           h("div", { className: "SPR_chatRoundActions" },
-            h(Btn, { disabled: !request || busy, onClick: () => onReuse(request, "prompt", round) }, T("复用描述")),
+            h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("复用描述"), title: T("复用描述"), disabled: !request || busy, onClick: () => onReuse(request, "prompt", round) }, h(ImageChatIcon, { name: "reuse" })),
             h(Btn, { disabled: !request || busy, onClick: () => onReuse(request, "parameters", round) }, T("复用参数")),
             h(ImageResultMenu, { label: T("本轮更多操作") },
               request ? h(Btn, { role: "menuitem", disabled: busy, onClick: () => onReuse(request, "all", round) }, T("复用本轮")) : null,
@@ -19300,6 +19359,10 @@
       const persist = patch => {
         const next = { ...stateRef.current, ...patch }; stateRef.current = next; imageConversationViews.set(job.id, next); setView(next);
         try { window.localStorage.setItem("dsh-game-material-master:image-conversation:" + job.id, JSON.stringify(next)); } catch { /* In-memory view remains available. */ }
+      };
+      const toggleFavorite = file => {
+        const files = stateRef.current.favoriteFiles ?? [];
+        persist({ favoriteFiles: files.includes(file) ? files.filter(value => value !== file) : [...files, file] });
       };
       const locate = (id, smooth = true) => {
         const element = [...(scroller.current?.querySelectorAll("[data-round-id]") ?? [])].find(node => node.dataset.roundId === id);
@@ -19364,9 +19427,7 @@
         } catch (error) { setNotice(msg(error)); }
         finally { dialogLock.current = false; setWorking(false); }
       };
-      const media = new Map();
-      for (const ref of [...(job.refs ?? []), ...rounds.flatMap(round => round.request?.refs ?? [])]) media.set(ref.file, { ...ref, reference: true });
-      for (const entry of job.history ?? []) for (const file of [entry.item.file, entry.item.keyedFile].filter(Boolean)) media.set(file, { file, name: file.split("/").at(-1) });
+      const media = imageConversationMaterials(job, rounds);
       const preview = rounds.find(round => round.id === hovered?.id);
       return h("div", { className: "SPR_imageChat", "data-testid": "image-conversation" },
         h("header", { className: "SPR_chatTop" }, h("span", { className: "SPR_chatTitle" }, job.name),
@@ -19374,6 +19435,7 @@
             h(Btn, { on: panel === "parameters", onClick: () => setPanel(panel === "parameters" ? null : "parameters"), "aria-label": T("生成参数") }, h(ImageChatIcon, { name: "parameters" })))),
         h("div", { className: "SPR_chatScroll", "data-empty": rounds.length === 0, ref: scroller, onScroll: scroll, onPointerLeave: () => setHovered(null), "data-testid": "image-message-scroll" },
           h("div", { className: "SPR_chatMessages", "data-empty": rounds.length === 0 }, rounds.length ? rounds.map(round => h(ImageChatRound, { key: round.id, round, job, busy, keyingBusy, renderResult, onReference, onReuse: act,
+            favoriteFiles: view.favoriteFiles ?? [], onFavorite: toggleFavorite,
             onHistory: (entry, action) => setConfirmation({ entry, action }), onKeying: async (entry, index) => { try { if (index < 0 && !await onHistory(entry, "restore")) return; setPanel("keying"); } catch (error) { setNotice(msg(error)); } },
             bookmarked: (view.bookmarks ?? []).includes(round.id), onBookmark: () => persist({ bookmarks: (stateRef.current.bookmarks ?? []).includes(round.id) ? stateRef.current.bookmarks.filter(id => id !== round.id) : [...(stateRef.current.bookmarks ?? []), round.id] }) }))
             : h("div", { className: "SPR_chatWelcome" }, h(ImageChatIcon, { name: "image" }), h("h2", null, T("想创作什么游戏素材？")), h("p", null, T("描述你的想法，或添加参考图片开始。"))))),
@@ -19392,8 +19454,11 @@
           h("aside", { className: "SPR_chatPanel", onKeyDown: event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setPanel(null); } } },
             h("header", null, h("strong", null, panel === "materials" ? T("项目素材") : panel === "keying" ? T("抠图设置") : T("生成参数")), h(Btn, { "aria-label": T("关闭"), onClick: () => setPanel(null) }, h(TaskHeaderIcon, { name: "close" }))),
             h("nav", { className: "SPR_chatPanelTabs" }, [["parameters", T("生成参数")], ["keying", T("抠图设置")], ["materials", T("项目素材")]].map(([id, label]) => h(Btn, { key: id, on: panel === id, "aria-pressed": panel === id, onClick: () => setPanel(id) }, label))),
-            panel === "materials" ? h("div", { className: "SPR_chatMaterials" }, media.size ? [...media.values()].map(ref => h("div", { key: ref.file, className: "SPR_chatMaterial" }, h(ImageResultPreview, { src: job.assetBase + ref.file, alt: ref.name, label: ref.name }),
-              h("span", null, ref.name), h(Btn, { disabled: busy, onClick: () => onReference(ref) }, T("加入输入框")))) : h("div", { className: "SPR_chatMaterialsEmpty", "data-testid": "image-materials-empty" },
+            panel === "materials" ? h("div", { className: "SPR_chatMaterials" }, media.length ? media.map(ref => h("div", { key: ref.file, className: "SPR_chatMaterial", "data-file": ref.file, "data-kind": ref.kind, "data-bookmarked": (view.favoriteFiles ?? []).includes(ref.file) },
+              h("div", { className: "SPR_chatMaterialHead" }, h("span", null, ref.label), h(ImageFileBookmark, { file: ref.file, label: ref.label, bookmarked: (view.favoriteFiles ?? []).includes(ref.file), onToggle: toggleFavorite })),
+              h(ImageResultPreview, { src: job.assetBase + ref.file, alt: ref.name, label: ref.label + " · " + ref.name }),
+              ref.roundNumber ? h("span", { className: "SPR_chatMaterialLocation" }, T("第 {n0} 轮", { n0: ref.roundNumber }), " · ", T("第 {n0} 张", { n0: ref.imageNumber })) : null,
+              h("span", { title: ref.name }, ref.name), h(Btn, { disabled: busy, onClick: () => onReference(ref) }, T("加入输入框")))) : h("div", { className: "SPR_chatMaterialsEmpty", "data-testid": "image-materials-empty" },
               h(ImageChatIcon, { name: "image" }), h("h4", null, T("暂无项目素材")), h("p", null, T("添加参考图或生成图片后，素材会显示在这里。")),
               h("label", { className: "SPR_btn" }, T("添加参考图"), h("input", { type: "file", accept: "image/*", multiple: true, hidden: true, disabled: busy,
                 onChange: event => { const files = Array.from(event.target.files || []); event.target.value = ""; if (files.length && !busy) void onUpload(files, "ref"); } })))) : panel === "keying" ? keying : parameters)) : null,
@@ -26438,6 +26503,8 @@
     bundleModule.exports.__test.ImageProjectContextMenu = ImageProjectContextMenu;
     bundleModule.exports.__test.ImageProjectRenameDialog = ImageProjectRenameDialog;
     bundleModule.exports.__test.imageConversationRounds = imageConversationRounds;
+    bundleModule.exports.__test.imageConversationMaterials = imageConversationMaterials;
+    bundleModule.exports.__test.imageConversationDisplayVersions = imageConversationDisplayVersions;
     return bundleModule.exports;
   }
 });
