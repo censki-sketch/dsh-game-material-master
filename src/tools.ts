@@ -117,6 +117,7 @@ export const METHOD_MODULE: Record<string, ModuleKey> = {
   runImageJob: "image",
   keyImageJob: "image",
   manageImageHistory: "image",
+  cleanImageRegion: "image",
   // 模块三 序列帧生成
   listSequenceJobs: "sequence",
   createSequenceJob: "sequence",

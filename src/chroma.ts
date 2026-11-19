@@ -465,7 +465,7 @@ export function keyGreen(rgba: Buffer, width: number, height: number, options: K
   };
 }
 
-/** Recover screen-connected color spill, including thin strands and enclosed gaps; never erode the whole silhouette. */
+/** Recover screen spill without eroding the whole silhouette. */
 function refineKeyEdges(source: Buffer, out: Buffer, width: number, height: number, key: { r: number; g: number; b: number }, dominant: number[], strength: number): void {
   if (strength <= 0) return;
   const pixels = width * height;
@@ -522,10 +522,34 @@ function refineKeyEdges(source: Buffer, out: Buffer, width: number, height: numb
     }
     if (stable) reference[i] = 1;
   }
+  // Closed gaps have no path to the outside screen. Admit only small islands
+  // without a stable opaque core; a stricter color-mixture fit below is required.
+  // This does not identify arbitrary same-colored accessories as background.
+  const enclosed = new Uint8Array(pixels), seen = new Uint8Array(pixels);
+  const maxSpan = Math.min(36, Math.max(4, Math.round(Math.min(width, height) * 0.025)));
+  for (let start = 0; start < pixels; start++) {
+    if (seen[start] || connected[start] || tint[start] < 8 || source[start * 4 + 3] < 250) continue;
+    head = 0; tail = 0; queue[tail++] = start; seen[start] = 1;
+    let minX = width, maxX = 0, minY = height, maxY = 0, stable = false, peak = 0;
+    while (head < tail) {
+      const i = queue[head++], x = i % width, y = Math.floor(i / width);
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+      stable ||= reference[i] === 1; peak = Math.max(peak, tint[i]);
+      const visit = (n: number) => {
+        if (!seen[n] && !connected[n] && tint[n] >= 8 && source[n * 4 + 3] >= 250) { seen[n] = 1; queue[tail++] = n; }
+      };
+      if (x > 0) visit(i - 1);
+      if (x + 1 < width) visit(i + 1);
+      if (y > 0) visit(i - width);
+      if (y + 1 < height) visit(i + width);
+    }
+    if (tail < 4 || tail > 576 || stable || peak < 40 || maxX - minX + 1 > maxSpan || maxY - minY + 1 > maxSpan) continue;
+    for (let n = 0; n < tail; n++) enclosed[queue[n]] = 1;
+  }
   const radius = 36, amount = Math.min(1, strength / 0.65);
   for (let i = 0; i < pixels; i++) {
     const p = i * 4;
-    if (!connected[i] || reference[i] || source[p + 3] < 250 || out[p + 3] === 0 || tint[i] < 8) continue;
+    if ((!connected[i] && !enclosed[i]) || reference[i] || source[p + 3] < 250 || out[p + 3] === 0 || tint[i] < 8) continue;
     const x = i % width, y = Math.floor(i / width);
     let bestError = Infinity, bestAlpha = 1, best = -1;
     // Fit P = alpha * F + (1 - alpha) * screen using a nearby, uncontaminated opaque color.
@@ -539,12 +563,14 @@ function refineKeyEdges(source: Buffer, out: Buffer, width: number, height: numb
       if (norm < 4096) continue;
       const alpha = dot / norm;
       if (alpha < 0.02 || alpha > 1.02) continue;
+      if (enclosed[i] && alpha > 0.85) continue;
       let error = 0;
       for (let c = 0; c < 3; c++) error += (source[p + c] - (alpha * source[q + c] + (1 - alpha) * screen[c])) ** 2;
       const score = error + square * 0.15;
-      if (error <= 32 ** 2 && score < bestError) { bestError = score; bestAlpha = Math.min(1, alpha); best = q; }
+      if (error <= (enclosed[i] ? 8 : 32) ** 2 && score < bestError) { bestError = score; bestAlpha = Math.min(1, alpha); best = q; }
     }
     if (best < 0) {
+      if (enclosed[i]) continue;
       // An isolated tinted hair tip may have no opaque reference. A color-difference
       // matte removes its screen contribution in RGB and alpha instead of painting a gray rim.
       bestAlpha = Math.max(0, 1 - tint[i] / screenExcess);
@@ -562,6 +588,35 @@ function refineKeyEdges(source: Buffer, out: Buffer, width: number, height: numb
     const recoveredAlpha = Math.round(bestAlpha * source[p + 3]);
     out[p + 3] = Math.min(out[p + 3], Math.round(source[p + 3] + (recoveredAlpha - source[p + 3]) * amount));
   }
+}
+
+export interface ImageCleanupPoint { x: number; y: number; radius: number; tolerance: number }
+
+/** Explicit local selection: remove only seed-similar, four-connected pixels
+ * inside the chosen radius. No global key-color inference or silhouette erosion. */
+export function cleanImageRegions(rgba: Buffer, width: number, height: number, points: ImageCleanupPoint[]): { rgba: Buffer; changedPixels: number } {
+  if (rgba.length !== width * height * 4) throw new Error("图片像素尺寸不一致。");
+  if (!Array.isArray(points) || points.length < 1 || points.length > 100) throw new Error("请点选 1～100 个局部区域。");
+  const out = Buffer.from(rgba);
+  let changedPixels = 0;
+  for (const { x, y, radius, tolerance } of points) {
+    if (![x, y, radius, tolerance].every(Number.isInteger) || x < 0 || x >= width || y < 0 || y >= height || radius < 1 || radius > 64 || tolerance < 0 || tolerance > 160) throw new Error("局部补抠坐标或范围无效。");
+    const seed = y * width + x, color = out.subarray(seed * 4, seed * 4 + 3);
+    if (out[seed * 4 + 3] === 0) continue;
+    const seen = new Set<number>([seed]), queue = [seed];
+    for (let head = 0; head < queue.length; head++) {
+      const i = queue[head], px = i % width, py = Math.floor(i / width), p = i * 4;
+      if ((px - x) ** 2 + (py - y) ** 2 > radius ** 2 || out[p + 3] === 0 || Math.max(...[0, 1, 2].map(c => Math.abs(out[p + c] - color[c]))) > tolerance) continue;
+      // Keep hidden RGB unchanged; only the explicitly selected alpha is removed.
+      out[p + 3] = 0; changedPixels++;
+      const visit = (n: number) => { if (!seen.has(n)) { seen.add(n); queue.push(n); } };
+      if (px > 0) visit(i - 1);
+      if (px + 1 < width) visit(i + 1);
+      if (py > 0) visit(i - width);
+      if (py + 1 < height) visit(i + width);
+    }
+  }
+  return { rgba: out, changedPixels };
 }
 
 /** 对 alpha 通道做可分离的最小值滤波，等价于把前景边界向内收缩 n 像素。 */

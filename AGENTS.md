@@ -116,6 +116,7 @@ node scripts/verify-feedback.mjs   # 浏览器半区真渲染（217 项，含功
 node scripts/verify-i18n.mjs       # 中英词条表契约（9 项）
 node scripts/verify-prompt-optimizer.mjs # DSH现有模型优化提示词：真实网关与wire、假LLM，零网络、零真实计费
 node scripts/verify-image-transparency.mjs # 图片透明背景：回环假API、实际抠像alpha与背景提示词一致，零真实计费
+node scripts/verify-image-cleanup.mjs # 封闭区域混色修复与局部补抠：真实wire/网关、版本锁、原图保留，禁止网络
 node scripts/verify-comfy.mjs      # 本地 ComfyUI 后端（124 项，自起 mock ComfyUI，纯本地、不用装 ComfyUI）
 node scripts/verify-custom-image.mjs  # 自定义生图后端三协议（68 项：起本地假服务端，离线、零计费）
 node scripts/verify-toapis.mjs       # ToAPIs 可选异步图片 / 视频后端（43 项，mock HTTP、零付费调用）

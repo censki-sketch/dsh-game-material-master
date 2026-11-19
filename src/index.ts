@@ -1856,6 +1856,12 @@ export class GameStudioGateway extends TypertRemoteService {
     return imagegen.manageImageHistory(jobId, asString(input.historyId), input.action as "restore" | "reuse" | "delete");
   }
 
+  async cleanImageRegion(payload) {
+    const input = asRecord(payload), jobId = asString(input.jobId);
+    if (imageTasks.get(jobId)?.size) throw new Error("图片任务正在处理，请完成后再补抠。");
+    return imagegen.cleanImageJobRegions(jobId, input.index as number, asString(input.versionId), input.points as import("./chroma.js").ImageCleanupPoint[], input.action as "preview" | "save");
+  }
+
   async runImageJob(payload) {
     const input = asRecord(payload);
     const jobId = asString(input.jobId);

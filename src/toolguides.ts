@@ -279,6 +279,7 @@ const MODULE_TEXTS: Record<StudioModule, string> = {
     "- `addImageItem({jobId,name,data})` / `removeImageItem({jobId,index})` / `runImageJob({jobId,count?})` / `keyImageJob({jobId})`",
     "- 每批生成保留在`getImageJob.history`，原图/透明图使用独立文件，不覆盖旧版；`runImageJob({jobId,index})`只重生指定一张（★计费），不能同时传count。",
     "- `manageImageHistory({jobId,historyId,action:'restore'|'reuse'|'delete'})`均为本地操作：设为当前结果/复用提示词和参数/删除历史。复用固定当时尺寸，模型和后端仍跟随当前全局配置，绝不自动提交生成；旧记录无参数快照时不可复用。删除任务会删除其全部历史。",
+    "- `cleanImageRegion({jobId,index,versionId,points:[{x,y,radius,tolerance}],action:'preview'|'save'})`仅本地补抠当前透明图：坐标是实际 PNG 像素，半径1～64、颜色容差0～160、最多100点。只清除点选半径内与起点颜色相似的连通区域；先preview查看，save另存历史版本，不覆盖原图、不调用生图。versionId必须匹配当前结果；参考图与历史预览只读。",
     "",
     "## 产出与交接",
     "`getImageJob` 返回 `dir`（本机绝对目录）：作品绝对路径 = `dir + \"/\" + items[i].file`（形如 out/img-<UUID>.png）；历史条目的图片路径在`history[i].item.file/keyedFile`。",
