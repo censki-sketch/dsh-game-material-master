@@ -959,10 +959,7 @@ export class GameStudioGateway extends TypertRemoteService {
       return { ok: true, id, module, reviewMode: reviewMode ?? null };
     }
     if (module === "image") {
-      const job = await imagegen.readImageJob(id);
-      if (job === undefined) throw new Error(`任务不存在：${id}`);
-      job.reviewMode = reviewMode;
-      await imagegen.writeImageJob(job);
+      await imagegen.editImageJob(id, job => { job.reviewMode = reviewMode; });
       return { ok: true, id, module, reviewMode: reviewMode ?? null };
     }
     if (module === "sequence") {
@@ -1743,7 +1740,9 @@ export class GameStudioGateway extends TypertRemoteService {
   }
 
   async deleteImageJob(payload) {
-    await imagegen.deleteImageJob(asString(asRecord(payload).jobId));
+    const jobId = asString(asRecord(payload).jobId);
+    if (imageTasks.get(jobId)?.size) throw new Error("图片任务正在处理，请完成后再删除。");
+    await imagegen.deleteImageJob(jobId);
     return { ok: true };
   }
 
@@ -1770,60 +1769,59 @@ export class GameStudioGateway extends TypertRemoteService {
   async saveImageJob(payload) {
     const input = asRecord(payload);
     const jobId = asString(input.jobId);
-    const job = await imagegen.readImageJob(jobId);
-    if (job === undefined) throw new Error(`任务不存在：${jobId}`);
-    if (typeof input.name === "string" && input.name.trim() !== "") job.name = input.name.trim().slice(0, 80);
-    if (typeof input.prompt === "string") job.prompt = input.prompt;
-    if (typeof input.suffix === "string") { job.suffix = input.suffix; delete job.promptTemplateId; delete job.promptTemplateLang; }
-    if (input.promptTemplate !== undefined) {
-      if (input.promptTemplate === null) { job.suffix = ""; delete job.promptTemplateId; delete job.promptTemplateLang; }
-      else {
-        const template = (await loadConfig()).imagePromptTemplates.find(item => item.id === input.promptTemplate);
-        if (!template && typeof input.suffix !== "string") throw new Error("提示词模板已不存在，请刷新后重新选择。");
-        job.promptTemplateId = input.promptTemplate;
-        job.promptTemplateLang = input.lang === "en" ? "en" : "zh";
-        // Deferred UI choices submit their visible text once with generation; keep that exact snapshot.
-        job.suffix = typeof input.suffix === "string" ? input.suffix : template!.prompt[job.promptTemplateLang];
-      }
-    }
-    if (input.settings !== undefined) {
-      const raw = asRecord(input.settings);
-      const current = await loadConfig();
-      // 生图模型是全局设置（设置 → 游戏素材大师 → 生图后端），任务里不保留可覆盖的副本。
-      job.settings.model = imageModelOf(current);
-      /**
-       * 尺寸来源：默认跟随全局；用户显式选「自定义」后，本任务的 size 才保留。
-       *
-       * 兼容老客户端 / 对话工具面：只传 `size` 不传 `sizeMode` 时，如果它和当前
-       * 全局尺寸不同，就视为「这个任务要自定义」，避免「传了 size 却被静默忽略」。
-       */
-      const globalSize = imageSizeOf(current);
-      const requested = typeof raw.size === "string" ? raw.size.trim() : "";
-      let mode: "global" | "custom" =
-        raw.sizeMode === "custom" ? "custom" : raw.sizeMode === "global" ? "global" : job.settings.sizeMode === "custom" ? "custom" : "global";
-      if (raw.sizeMode === undefined && requested !== "" && requested !== globalSize) mode = "custom";
-      job.settings.sizeMode = mode;
-      job.settings.size = mode === "custom"
-        ? requested !== "" ? requested : job.settings.size || globalSize
-        : globalSize;
-      job.settings.count = clampInt(raw.count, job.settings.count, 1, 8);
-      job.settings.watermark = raw.watermark === true;
-    }
-    if (input.keying !== undefined) applyKeying(job.keying, asRecord(input.keying));
-    // 验收打标：不带 index 就是整个任务，带 index 只改那一张。和界面上的「通过」是同一份数据。
-    if (typeof input.approved === "boolean") {
-      const index = input.index === undefined || input.index === null ? undefined : clampInt(input.index, -1, 0, 9999);
-      let touched = 0;
-      for (const item of job.items) {
-        if (index === undefined || item.index === index) {
-          item.approved = input.approved;
-          touched++;
+    return imagegen.editImageJob(jobId, async job => {
+      if (typeof input.name === "string" && input.name.trim() !== "") job.name = input.name.trim().slice(0, 80);
+      if (typeof input.prompt === "string") job.prompt = input.prompt;
+      if (typeof input.suffix === "string") { job.suffix = input.suffix; delete job.promptTemplateId; delete job.promptTemplateLang; }
+      if (input.promptTemplate !== undefined) {
+        if (input.promptTemplate === null) { job.suffix = ""; delete job.promptTemplateId; delete job.promptTemplateLang; }
+        else {
+          const template = (await loadConfig()).imagePromptTemplates.find(item => item.id === input.promptTemplate);
+          if (!template && typeof input.suffix !== "string") throw new Error("提示词模板已不存在，请刷新后重新选择。");
+          job.promptTemplateId = input.promptTemplate;
+          job.promptTemplateLang = input.lang === "en" ? "en" : "zh";
+          // Deferred UI choices submit their visible text once with generation; keep that exact snapshot.
+          job.suffix = typeof input.suffix === "string" ? input.suffix : template!.prompt[job.promptTemplateLang];
         }
       }
-      if (index !== undefined && touched === 0) throw new Error(`没有第 ${index} 张产物`);
-    }
-    await imagegen.writeImageJob(job);
-    return { ok: true };
+      if (input.settings !== undefined) {
+        const raw = asRecord(input.settings);
+        const current = await loadConfig();
+        // 生图模型是全局设置（设置 → 游戏素材大师 → 生图后端），任务里不保留可覆盖的副本。
+        job.settings.model = imageModelOf(current);
+        /**
+         * 尺寸来源：默认跟随全局；用户显式选「自定义」后，本任务的 size 才保留。
+         *
+         * 兼容老客户端 / 对话工具面：只传 `size` 不传 `sizeMode` 时，如果它和当前
+         * 全局尺寸不同，就视为「这个任务要自定义」，避免「传了 size 却被静默忽略」。
+         */
+        const globalSize = imageSizeOf(current);
+        const requested = typeof raw.size === "string" ? raw.size.trim() : "";
+        let mode: "global" | "custom" =
+          raw.sizeMode === "custom" ? "custom" : raw.sizeMode === "global" ? "global" : job.settings.sizeMode === "custom" ? "custom" : "global";
+        if (raw.sizeMode === undefined && requested !== "" && requested !== globalSize) mode = "custom";
+        job.settings.sizeMode = mode;
+        job.settings.size = mode === "custom"
+          ? requested !== "" ? requested : job.settings.size || globalSize
+          : globalSize;
+        job.settings.count = clampInt(raw.count, job.settings.count, 1, 8);
+        job.settings.watermark = raw.watermark === true;
+      }
+      if (input.keying !== undefined) applyKeying(job.keying, asRecord(input.keying));
+      // 验收打标：不带 index 就是整个任务，带 index 只改那一张。和界面上的「通过」是同一份数据。
+      if (typeof input.approved === "boolean") {
+        const index = input.index === undefined || input.index === null ? undefined : clampInt(input.index, -1, 0, 9999);
+        let touched = 0;
+        for (const item of job.items) {
+          if (index === undefined || item.index === index) {
+            item.approved = input.approved;
+            touched++;
+          }
+        }
+        if (index !== undefined && touched === 0) throw new Error(`没有第 ${index} 张产物`);
+      }
+      return { ok: true };
+    });
   }
 
   async uploadImageRef(payload) {
@@ -1846,8 +1844,16 @@ export class GameStudioGateway extends TypertRemoteService {
 
   async removeImageItem(payload) {
     const input = asRecord(payload);
+    if (imageTasks.get(asString(input.jobId))?.size) throw new Error("图片任务正在处理，请完成后再删除。");
     await imagegen.removeImageItem(asString(input.jobId), clampInt(input.index, 0, 0, 9999));
     return { ok: true };
+  }
+
+  async manageImageHistory(payload) {
+    const input = asRecord(payload);
+    const jobId = asString(input.jobId);
+    if (imageTasks.get(jobId)?.size) throw new Error("图片任务正在处理，请完成后再操作历史记录。");
+    return imagegen.manageImageHistory(jobId, asString(input.historyId), input.action as "restore" | "reuse" | "delete");
   }
 
   async runImageJob(payload) {
@@ -1856,14 +1862,17 @@ export class GameStudioGateway extends TypertRemoteService {
     const job = await imagegen.readImageJob(jobId);
     if (job === undefined) throw new Error(`任务不存在：${jobId}`);
     if (job.prompt.trim() === "") throw new Error("提示词为空，请先填写");
-    const count = clampInt(input.count, job.settings.count, 1, 8);
-    if (count !== job.settings.count) {
-      job.settings.count = count;
-      await imagegen.writeImageJob(job);
-    }
+    if (imageTasks.get(jobId)?.size) throw new Error("图片任务正在处理，请完成后再生成。");
+    if (input.index !== undefined && input.count !== undefined) throw new Error("单张重生不能同时指定批量张数。");
+    const index = input.index === undefined ? undefined : clampInt(input.index, -1, 0, 9999);
+    if (index !== undefined && (index < 0 || !job.items[index])) throw new Error("要重新生成的图片不存在。");
+    const count = index === undefined ? clampInt(input.count, job.settings.count, 1, 8) : undefined;
+    const batch = await imagegen.prepareImageBatch(jobId, count);
+    // Preparation awaits disk/config reads; another submission may have started.
+    if (imageTasks.get(jobId)?.size) throw new Error("图片任务正在处理，请完成后再生成。");
     let started = 0;
-    for (let i = 0; i < count; i++) {
-      if (kickImageItem(jobId, i)) started++;
+    for (const i of index === undefined ? Array.from({ length: count! }, (_, i) => i) : [index]) {
+      if (kickImageItem(jobId, i, batch)) started++;
     }
     if (started === 0) throw new Error("这些图片已经在生成中，请等它们跑完");
     return { started: true, count: started };
@@ -1871,6 +1880,7 @@ export class GameStudioGateway extends TypertRemoteService {
 
   async keyImageJob(payload) {
     const jobId = asString(asRecord(payload).jobId);
+    if (imageTasks.get(jobId)?.size) return { started: false, reason: "图片任务正在处理" };
     const ok = kickImageKey(jobId);
     return ok ? { started: true } : { started: false, reason: "抠像已在进行中" };
   }
@@ -2893,8 +2903,8 @@ function trackImageTask(jobId: string, key: string, run: () => Promise<unknown>)
   return true;
 }
 
-function kickImageItem(jobId: string, index: number): boolean {
-  return trackImageTask(jobId, `image:${index}`, () => imagegen.generateImageItem(jobId, index));
+function kickImageItem(jobId: string, index: number, batch: imagegen.ImageBatch): boolean {
+  return trackImageTask(jobId, `image:${index}`, () => imagegen.generateImageItem(jobId, index, batch));
 }
 
 function kickImageKey(jobId: string): boolean {

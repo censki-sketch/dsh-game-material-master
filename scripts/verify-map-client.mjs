@@ -140,6 +140,10 @@ try {
   // ══ 1. 浏览器束与假 React ════════════════════════════════════════════════
   section("1) 浏览器束与假 React（有状态、会重渲染）");
   const source = readFileSync(target, "utf8");
+  // Advance the client animation clock explicitly; fixture IO must not add frames.
+  // Host timestamps and timers keep the real clock.
+  const animationEpoch = Date.now();
+  class ClientDate extends Date { static now() { return animationEpoch; } }
 
   /**
    * 迷你 React：真的**有状态、会重渲染**。
@@ -569,10 +573,10 @@ try {
   };
 
   try {
-    new Function("window", "require", source)(windowStub, (name) => {
+    new Function("window", "require", "Date", source)(windowStub, (name) => {
       if (name === "react") return ReactStub;
       throw new Error(`未预期的 require(${name})`);
-    });
+    }, ClientDate);
     check("浏览器束可加载（经典脚本 + 假 React）", true);
   } catch (error) {
     check("浏览器束可加载（经典脚本 + 假 React）", false, String(error?.message ?? error));
@@ -1591,24 +1595,17 @@ try {
   const frame0Rect = hostLegend.get(hostOps[animated].t).rect;
   const frameNow = frameOf();
   check("第 0 帧画的是 cycle[0] 的矩形", frameNow[animated].sx === frame0Rect.x && frameNow[animated].sy === frame0Rect.y);
-  // 推进全局帧号：面板用 rAF + Date.now 推时钟，这里把时钟拨快再跑一次排队的回调。
-  const realNow = Date.now;
+  // 客户端时钟固定在挂载时刻；只有显式推进才增加动画帧，宿主 IO 耗时不参与。
+  const realNow = ClientDate.now;
   const pendingTicks = [...rafQueue.values()];
   rafQueue.clear();
   check("画面在动时确实注册了动画回调（不是死帧）", pendingTicks.length > 0, `${pendingTicks.length} 个`);
   try {
-    /**
-     * ⚠️ 拨**恰好一个帧间隔**（`fps = 1` → 1000ms），不能拨 1500ms。
-     *
-     * 面板算的是 `floor(elapsed * fps) % frameCount`：拨 1.5s 时落到哪一帧取决于
-     * `elapsed` 的奇偶 —— 也就是说这条断言隐含依赖「跑到这里时一共花了多少挂钟时间」。
-     * 前面的用例多花半秒（例如新增的导出段要真写盘）就会翻成 frame 0，表现为
-     * 「莫名其妙挂一条与本次改动无关的动画断言」。拨整数个间隔则恒 +1 帧。
-     */
-    Date.now = () => realNow() + 1000;
+    // fps=1，精确推进1000ms，仍断言第1帧及其真实源矩形。
+    ClientDate.now = () => realNow() + 1000;
     for (const tick of pendingTicks) tick();
   } finally {
-    Date.now = realNow;
+    ClientDate.now = realNow;
   }
   tree = await renderTree(() => MapModule({ api }));
   const frame1 = frameOf();
@@ -1987,16 +1984,16 @@ try {
     const before = frameOf();
     const beforeFast = indexAt(drawAt(before, fastCell));
     const beforeSlow = indexAt(drawAt(before, slowCell));
-    const realNow2 = Date.now;
+    const realNow2 = ClientDate.now;
     const ticks2 = [...rafQueue.values()];
     rafQueue.clear();
     check("画面里有会动的素材时确实注册了动画回调", ticks2.length > 0, `${ticks2.length} 个`);
     try {
       // 拨**恰好一秒**：8 帧/秒的走 8 帧（3 个变体 → 模 3 = +2），1 帧/秒的只走 1 帧。
-      Date.now = () => realNow2() + 1000;
+      ClientDate.now = () => realNow2() + 1000;
       for (const tick of ticks2) tick();
     } finally {
-      Date.now = realNow2;
+      ClientDate.now = realNow2;
     }
     tree = await renderTree(() => MapModule({ api }));
     const after = frameOf();

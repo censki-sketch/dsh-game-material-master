@@ -195,7 +195,8 @@ const saveImageJobSchema = z.object({
 const uploadSchema2 = z.object({ jobId: z.string(), name: z.string().optional(), data: z.string() });
 const removeRefSchema2 = z.object({ jobId: z.string(), file: z.string() });
 const removeItemSchema2 = z.object({ jobId: z.string(), index: z.number() });
-const runImageJobSchema = z.object({ jobId: z.string(), count: z.number().optional() });
+const runImageJobSchema = z.object({ jobId: z.string(), count: z.number().optional(), index: z.number().int().min(0).max(9999).optional() });
+const imageHistoryActionSchema = z.object({ jobId: z.string(), historyId: z.string(), action: z.enum(["restore", "reuse", "delete"]) });
 
 // ── 序列帧生成模块 ──────────────────────────────────────────────────────
 const sequenceJobIdSchema = z.object({ jobId: z.string() });
@@ -1274,6 +1275,7 @@ export const METHODS: MethodSpec[] = [  { method: "getConfig", result: configVie
   { method: "addImageItem", payload: uploadSchema2, result: okSchema },
   { method: "removeImageItem", payload: removeItemSchema2, result: okSchema },
   { method: "runImageJob", payload: runImageJobSchema, result: startedSchema },
+  { method: "manageImageHistory", payload: imageHistoryActionSchema, result: jsonObject },
   { method: "keyImageJob", payload: imageJobIdSchema, result: startedSchema },
 
   // 白模动作流程（现有八方向模块内）

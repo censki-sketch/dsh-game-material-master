@@ -248,6 +248,10 @@ without spending anything on generation. Still images recover foreground color a
 
 Transparent-background instructions describe a separate flat layer that does not illuminate or reflect onto the subject. Unless lighting is specified, they request neutral white light and shadows in the subject's own color families. Prompt optimization, final request preview and generation share these rules. Instructions can only reduce color contamination: if the source image already paints the screen color inside hair or an object, re-keying cannot reliably recover its original color. Removing all purple or green would also damage intentional colors.
 
+The results card has **Current results / History** tabs. Batch generation, single-image regeneration, uploads and local re-keying retain independent versions, grouped by batch with the latest first. Originals, transparent PNGs, prompts, templates, references, model, size, keying settings and time stay on this device. Preview, download, restore and confirmed parameter reuse never submit generation requests. Reuse replaces current edits and pins the historical size; the next generation still uses the current global model and provider. Regenerating a single image makes only one generation call.
+
+History is not automatically cleared. Delete entries manually; files still used by current results or other entries are retained. Deleting a task also deletes its history. Existing task images appear as legacy records without invented request snapshots; parameter reuse is unavailable for these records. Images overwritten or deleted before this update cannot be recovered. Fully quit DSH, including its tray process, and reopen it after updating.
+
 Advanced settings show the model as read-only information and group size and count controls together. Keying parameters are grouped into Background detection and Edge treatment. The color picker, preset and hex value share one row; description icons contain longer help. Existing-image upload and re-key actions appear at the bottom, with groups stacking in narrow panels.
 
 ### How to use it

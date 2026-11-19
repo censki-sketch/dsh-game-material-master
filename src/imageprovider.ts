@@ -120,8 +120,8 @@ export function imageProviderSummary(config: Config): string {
 }
 
 /** 调一次生图，自动按当前后端分发。 */
-export async function generateImageWithProvider(request: ProviderImageRequest, signal?: AbortSignal): Promise<ProviderImageResult> {
-  const config = await loadConfig();
+export async function generateImageWithProvider(request: ProviderImageRequest, signal?: AbortSignal, configuration?: Config): Promise<ProviderImageResult> {
+  const config = configuration ?? await loadConfig();
   assertImageProviderReady(config);
   if (request.mask && !(config.imageProvider === "custom" && config.customProtocol === "openai")) throw new Error("当前生图后端不支持带遮罩的高清重绘");
   if (config.imageProvider === "toapis") return generateToapisImage(config, request, signal);

@@ -16,7 +16,7 @@
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { basename, join, resolve, sep } from "node:path";
 import { randomUUID } from "node:crypto";
-import { imageJobsRoot, loadConfig } from "./config.js";
+import { imageJobsRoot, loadConfig, type Config } from "./config.js";
 import { generateImageWithProvider, imageModelOf, imageSizeOf, imageWatermarkOf, assertImageProviderReady } from "./imageprovider.js";
 import { decodeToRgba, mimeOf, toDataUri } from "./media.js";
 import { keyGreen } from "./chroma.js";
@@ -28,6 +28,7 @@ import { IMAGE_PROMPT_TEMPLATES } from "./imageprompts.js";
 export type ItemStatus = "empty" | "running" | "ready" | "error";
 
 export interface ImageItem {
+  versionId?: string;
   index: number;
   status: ItemStatus;
   /** 原图（相对任务目录），可能是生成的，也可能是用户上传的。 */
@@ -82,9 +83,42 @@ export interface ImageJob {
   };
   keying: KeyingSettings;
   items: ImageItem[];
+  history: ImageHistoryEntry[];
   /** 固定流程里问过用户的审核模式；没问过就是 undefined。 */
   reviewMode?: "auto" | "manual";
   log: JobLogEntry[];
+}
+
+/** Request snapshot deliberately excludes credentials and provider configuration. */
+export interface ImageRequestSnapshot {
+  prompt: string;
+  suffix: string;
+  promptTemplateId?: string;
+  promptTemplateLang?: "zh" | "en";
+  refs: ImageJob["refs"];
+  referenceFiles: string[];
+  settings: ImageJob["settings"];
+  keying: KeyingSettings;
+  finalPrompt: string;
+  provider: string;
+}
+
+export interface ImageHistoryEntry {
+  id: string;
+  batchId: string;
+  createdAt: number;
+  kind: "generated" | "uploaded" | "legacy" | "keyed";
+  item: ImageItem;
+  request?: ImageRequestSnapshot;
+  /** Local re-key settings, separate from the original generation request. */
+  keying?: KeyingSettings;
+}
+
+export interface ImageBatch {
+  id: string;
+  request: ImageRequestSnapshot;
+  /** In-memory only, never serialized into job/history or returned to clients. */
+  config: Config;
 }
 
 export interface ImageJobSummary {
@@ -152,6 +186,7 @@ export async function createImageJob(name: string, suffix = ""): Promise<ImageJo
       edgeShrink: config.edgeShrink
     },
     items: [],
+    history: [],
     log: []
   };
   await ensureImageJobLayout(id);
@@ -169,6 +204,24 @@ export async function readImageJob(id: string): Promise<ImageJob | undefined> {
 export async function writeImageJob(job: ImageJob): Promise<void> {
   job.updatedAt = Date.now();
   await writeJsonAtomic(jobFile(job.id), job);
+}
+
+const imageEdits = new Map<string, Promise<unknown>>();
+
+/** Serialize read-modify-write phases; paid requests run outside this lock. */
+export async function editImageJob<T>(id: string, change: (job: ImageJob) => T | Promise<T>, afterSave?: (job: ImageJob) => Promise<void>): Promise<T> {
+  const previous = imageEdits.get(id) ?? Promise.resolve();
+  const pending = previous.catch(() => undefined).then(async () => {
+    const job = await readImageJob(id);
+    if (!job) throw new Error(`任务不存在：${id}`);
+    const result = await change(job);
+    await writeImageJob(job);
+    if (afterSave) await afterSave(job);
+    return result;
+  });
+  imageEdits.set(id, pending);
+  try { return await pending; }
+  finally { if (imageEdits.get(id) === pending) imageEdits.delete(id); }
 }
 
 export async function listImageJobs(): Promise<ImageJobSummary[]> {
@@ -212,6 +265,7 @@ function normalizeImageJob(raw: any): ImageJob {
   const legacyTemplate = IMAGE_PROMPT_TEMPLATES.find(item => Object.values(item.prompt).includes(suffix));
   const items: ImageItem[] = Array.isArray(raw?.items)
     ? raw.items.map((item: any, index: number) => ({
+        versionId: typeof item?.versionId === "string" ? item.versionId : !Array.isArray(raw?.history) && typeof item?.file === "string" ? `legacy-${index}` : undefined,
         index: Number.isFinite(item?.index) ? item.index : index,
         status: (item?.status ?? "empty") as ItemStatus,
         file: typeof item?.file === "string" ? item.file : undefined,
@@ -253,6 +307,12 @@ function normalizeImageJob(raw: any): ImageJob {
       edgeShrink: num(raw?.keying?.edgeShrink, 0)
     },
     items,
+    // Old files can be retained, but their original request cannot be inferred
+    // from an editable job draft. Mark them explicitly as lacking a snapshot.
+    history: Array.isArray(raw?.history) ? raw.history : items.filter(item => item.file).map(item => ({
+      id: item.versionId!, batchId: "legacy", createdAt: item.updatedAt ?? raw.updatedAt ?? raw.createdAt ?? Date.now(),
+      kind: "legacy" as const, item: { ...item, status: "ready" as const }
+    })),
     reviewMode: raw?.reviewMode === "manual" ? "manual" : raw?.reviewMode === "auto" ? "auto" : undefined,
     log: Array.isArray(raw?.log) ? raw.log.slice(-200) : []
   };
@@ -345,73 +405,63 @@ export function buildPrompt(job: ImageJob, fallbackKeyColor = DEFAULT_KEY_COLOR)
   return `${append(prompt)}\n\n${imageBackgroundInstruction({ enabled: true, keyColor: color }, lang)}`;
 }
 
-/** 生成一张图（内部一次调用）。 */
-export async function generateImageItem(jobId: string, index: number): Promise<void> {
-  const job = await readImageJob(jobId);
-  if (job === undefined) throw new Error(`任务不存在：${jobId}`);
+/** Freeze one batch before submitting any paid requests. */
+export async function prepareImageBatch(jobId: string, count?: number): Promise<ImageBatch> {
   const config = await loadConfig();
-  // Pin the color and parameters for this request, so later config edits cannot change the key.
-  const keying = { ...job.keying, keyColor: normalizeKeyColor(job.keying.keyColor, config.keyColor) };
-  const prompt = buildPrompt({ ...job, keying });
-  if (prompt === "") throw new Error("提示词为空，请先填写");
   assertImageProviderReady(config);
+  return editImageJob(jobId, job => {
+    job.settings.model = imageModelOf(config);
+    if (job.settings.sizeMode !== "custom") { job.settings.sizeMode = "global"; job.settings.size = imageSizeOf(config); }
+    if (count !== undefined) job.settings.count = count;
+    const keying = { ...job.keying, keyColor: normalizeKeyColor(job.keying.keyColor, config.keyColor) };
+    const finalPrompt = buildPrompt({ ...job, keying });
+    if (!finalPrompt) throw new Error("提示词为空，请先填写");
+    const referenceFiles = resolveImageReferences(`${job.prompt}\n${job.suffix}`, job.refs).map(ref => ref.file);
+    return { id: randomUUID(), config, request: {
+      prompt: job.prompt, suffix: job.suffix, promptTemplateId: job.promptTemplateId, promptTemplateLang: job.promptTemplateLang,
+      refs: job.refs.map(ref => ({ ...ref })), referenceFiles, settings: { ...job.settings, watermark: imageWatermarkOf(config) || job.settings.watermark },
+      keying, finalPrompt, provider: config.imageProvider
+    } };
+  });
+}
 
-  // 生图模型同样是全局设置（设置 → 游戏素材大师 → 生图后端），任务只跟随、不覆盖。
-  job.settings.model = imageModelOf(config);
-  /**
-   * 尺寸只在「跟随全局」时取全局值；用户显式把任务改成「自定义」后，
-   * 任务自己的 size 才是权威 —— 否则又会回到「改任务尺寸不生效」的老 bug。
-   */
-  if (job.settings.sizeMode !== "custom") {
-    job.settings.sizeMode = "global";
-    job.settings.size = imageSizeOf(config);
-  }
-
-  const item: ImageItem = job.items[index] ?? { index, status: "empty", source: "generated" };
-  job.items[index] = { ...item, status: "running", error: undefined };
-  appendJobLog(job.log, "info", `开始生成第 ${index + 1} 张（尺寸 ${job.settings.size}）`);
-  await writeImageJob(job);
-
+/** One image, one paid call. New bytes never overwrite a previous version. */
+export async function generateImageItem(jobId: string, index: number, batch?: ImageBatch): Promise<void> {
+  const prepared = batch ?? await prepareImageBatch(jobId);
+  const request = prepared.request;
+  await editImageJob(jobId, job => {
+    const item = job.items[index] ?? { index, status: "empty", source: "generated" };
+    job.items[index] = { ...item, status: "running", error: undefined };
+    appendJobLog(job.log, "info", `开始生成第 ${index + 1} 张（尺寸 ${request.settings.size}）`);
+  });
   try {
-    const references = resolveImageReferences(`${job.prompt}\n${job.suffix}`, job.refs);
-    const refs = await Promise.all(references.map((ref) => toDataUri(imageAssetPath(jobId, ref.file), mimeOf(ref.file))));
+    const refs = await Promise.all(request.referenceFiles.map(file => toDataUri(imageAssetPath(jobId, file), mimeOf(file))));
     const result = await generateImageWithProvider({
-      prompt,
+      prompt: request.finalPrompt,
       images: refs,
-      size: job.settings.size || imageSizeOf(config),
-      // 水印是火山方舟特有的参数（自定义后端忽略它）。任务上那份是旧版本留下的
-      // 覆盖位，仍然尊重；与全局设置取或，两种写法都不会让水印「突然消失」。
-      watermark: imageWatermarkOf(config) || job.settings.watermark === true
-    });
-
-    const relative = `out/img-${String(index).padStart(2, "0")}.${result.ext}`;
+      size: request.settings.size,
+      model: request.settings.model,
+      watermark: request.settings.watermark
+    }, undefined, prepared.config);
+    const id = randomUUID();
+    const relative = `out/img-${id}.${result.ext}`;
     await writeFile(imageAssetPath(jobId, relative), result.bytes);
-
-    const fresh = await readImageJob(jobId);
-    if (fresh === undefined) return;
-    const next = fresh.items[index] ?? { index, status: "empty" as ItemStatus, source: "generated" as const };
-    next.status = "ready";
-    next.file = relative;
-    next.source = "generated";
-    next.error = undefined;
-    next.updatedAt = Date.now();
-    next.keyedFile = undefined;
-    next.backgroundFraction = undefined;
-    fresh.items[index] = next;
-    appendJobLog(fresh.log, "info", `第 ${index + 1} 张生成完成（${(result.bytes.length / 1024).toFixed(0)} KB）`);
-
-    if (keying.enabled) await keyItem(fresh, index, keying);
-    await writeImageJob(fresh);
+    await editImageJob(jobId, async job => {
+      const item: ImageItem = { versionId: id, index, status: "ready", source: "generated", file: relative, updatedAt: Date.now() };
+      job.items[index] = item;
+      appendJobLog(job.log, "info", `第 ${index + 1} 张生成完成（${(result.bytes.length / 1024).toFixed(0)} KB）`);
+      if (request.keying.enabled) {
+        try { await keyItem(job, index, request.keying); }
+        catch (error) { item.error = messageOf(error); appendJobLog(job.log, "error", `原图已保存，自动抠像失败：${item.error}`); }
+      }
+      job.history.push({ id, batchId: prepared.id, createdAt: Date.now(), kind: "generated", item: { ...item }, request });
+    });
   } catch (error) {
-    const fresh = await readImageJob(jobId);
-    if (fresh === undefined) return;
-    const target = fresh.items[index] ?? { index, status: "empty" as ItemStatus, source: "generated" as const };
-    target.status = "error";
-    target.error = messageOf(error);
-    target.updatedAt = Date.now();
-    fresh.items[index] = target;
-    appendJobLog(fresh.log, "error", `第 ${index + 1} 张生成失败：${target.error}`);
-    await writeImageJob(fresh);
+    await editImageJob(jobId, job => {
+      const target = job.items[index] ?? { index, source: "generated" as const };
+      job.items[index] = { ...target, status: "error", error: messageOf(error), updatedAt: Date.now() };
+      appendJobLog(job.log, "error", `第 ${index + 1} 张生成失败：${messageOf(error)}`);
+    });
     throw error;
   }
 }
@@ -431,7 +481,7 @@ export async function keyItem(job: ImageJob, index: number, keying = job.keying)
     bgTolerance: keying.bgTolerance,
     refineEdges: true
   });
-  const relative = `keyed/img-${String(index).padStart(2, "0")}.png`;
+  const relative = `keyed/img-${randomUUID()}.png`;
   await writeFile(imageAssetPath(job.id, relative), encodePng(result.rgba, decoded.width, decoded.height));
   item.keyedFile = relative;
   item.backgroundFraction = result.backgroundFraction;
@@ -440,91 +490,138 @@ export async function keyItem(job: ImageJob, index: number, keying = job.keying)
 
 /** 重新对全部已生成的图跑一遍抠像（改参数后调用）。 */
 export async function rekeyImageJob(jobId: string): Promise<ImageJob> {
-  const job = await readImageJob(jobId);
-  if (job === undefined) throw new Error(`任务不存在：${jobId}`);
-  let count = 0;
-  for (let i = 0; i < job.items.length; i++) {
-    if (job.items[i]?.file === undefined) continue;
-    try {
-      await keyItem(job, i);
-      count++;
-    } catch (error) {
-      job.items[i].error = messageOf(error);
-      appendJobLog(job.log, "error", `第 ${i + 1} 张抠像失败：${job.items[i].error}`);
+  return editImageJob(jobId, async job => {
+    const config = await loadConfig();
+    const keying = { ...job.keying, keyColor: normalizeKeyColor(job.keying.keyColor, config.keyColor) };
+    const batchId = randomUUID();
+    let count = 0;
+    for (let i = 0; i < job.items.length; i++) {
+      if (job.items[i]?.file === undefined) continue;
+      try {
+        await keyItem(job, i, keying);
+        const previous = job.history.find(entry => entry.id === job.items[i].versionId);
+        const id = randomUUID();
+        job.items[i].versionId = id;
+        job.items[i].status = "ready";
+        job.items[i].error = undefined;
+        job.history.push({ id, batchId, createdAt: Date.now(), kind: "keyed", item: { ...job.items[i] },
+          request: previous?.request, keying: { ...keying } });
+        count++;
+      } catch (error) {
+        job.items[i].error = messageOf(error);
+        appendJobLog(job.log, "error", `第 ${i + 1} 张抠像失败：${job.items[i].error}`);
+      }
     }
-  }
-  appendJobLog(job.log, "info", `抠像完成：${count} 张（背景占比可在每张下方查看）`);
-  await writeImageJob(job);
-  return job;
+    appendJobLog(job.log, "info", `抠像完成：${count} 张（背景占比可在每张下方查看）`);
+    return job;
+  });
 }
 
 /** 上传一张已有图片作为生成结果（用于只做抠像的场景）。 */
 export async function addImageToJob(jobId: string, name: string, base64: string): Promise<ImageItem> {
-  const job = await readImageJob(jobId);
-  if (job === undefined) throw new Error(`任务不存在：${jobId}`);
   const sniffed = sniffImage(base64);
   if (sniffed === undefined) throw new Error("无法识别的图片格式（支持 PNG / JPEG / WebP / BMP）");
   const bytes = Buffer.from(base64.replace(/^data:[^;]+;base64,/, ""), "base64");
   if (bytes.length === 0) throw new Error("图片数据为空");
   if (bytes.length > 30 * 1024 * 1024) throw new Error("图片超过 30 MB");
 
-  const index = job.items.length;
-  const relative = `out/upload-${String(index).padStart(2, "0")}.${sniffed.ext}`;
-  await mkdir(join(imageJobDir(jobId), "out"), { recursive: true });
-  await writeFile(imageAssetPath(jobId, relative), bytes);
+  return editImageJob(jobId, async job => {
+    const index = job.items.length;
+    const id = randomUUID();
+    const relative = `out/upload-${id}.${sniffed.ext}`;
+    await mkdir(join(imageJobDir(jobId), "out"), { recursive: true });
+    await writeFile(imageAssetPath(jobId, relative), bytes);
 
-  const item: ImageItem = { index, status: "ready", file: relative, source: "uploaded", updatedAt: Date.now() };
-  job.items.push(item);
-  appendJobLog(job.log, "info", `已上传图片：${safeName(name)}`);
-  if (job.keying.enabled) {
-    try {
-      await keyItem(job, index);
-    } catch (error) {
-      appendJobLog(job.log, "error", `上传图片抠像失败：${messageOf(error)}`);
+    const item: ImageItem = { versionId: id, index, status: "ready", file: relative, source: "uploaded", updatedAt: Date.now() };
+    job.items.push(item);
+    appendJobLog(job.log, "info", `已上传图片：${safeName(name)}`);
+    if (job.keying.enabled) {
+      try {
+        await keyItem(job, index);
+      } catch (error) {
+        appendJobLog(job.log, "error", `上传图片抠像失败：${messageOf(error)}`);
+      }
     }
-  }
-  await writeImageJob(job);
-  return job.items[index];
+    job.history.push({ id, batchId: id, createdAt: Date.now(), kind: "uploaded", item: { ...item } });
+    return job.items[index];
+  });
 }
 
 /** 上传参考图。 */
 export async function addImageRef(jobId: string, name: string, base64: string): Promise<void> {
-  const job = await readImageJob(jobId);
-  if (job === undefined) throw new Error(`任务不存在：${jobId}`);
   const sniffed = sniffImage(base64);
   if (sniffed === undefined) throw new Error("无法识别的图片格式（支持 PNG / JPEG / WebP / BMP）");
-  if (job.refs.length >= 10) throw new Error("参考图最多 10 张");
+  return editImageJob(jobId, async job => {
+    if (job.refs.length >= 10) throw new Error("参考图最多 10 张");
 
-  const bytes = Buffer.from(base64.replace(/^data:[^;]+;base64,/, ""), "base64");
-  if (bytes.length === 0) throw new Error("图片数据为空");
-  const stem = safeName(name).replace(/\.[^.]+$/, "") || "ref";
-  const relative = `refs/${stem}-${randomUUID().slice(0, 4)}.${sniffed.ext}`;
-  await mkdir(join(imageJobDir(jobId), "refs"), { recursive: true });
-  await writeFile(imageAssetPath(jobId, relative), bytes);
+    const bytes = Buffer.from(base64.replace(/^data:[^;]+;base64,/, ""), "base64");
+    if (bytes.length === 0) throw new Error("图片数据为空");
+    const stem = safeName(name).replace(/\.[^.]+$/, "") || "ref";
+    const relative = `refs/${stem}-${randomUUID()}.${sniffed.ext}`;
+    await mkdir(join(imageJobDir(jobId), "refs"), { recursive: true });
+    await writeFile(imageAssetPath(jobId, relative), bytes);
 
-  job.refs.push({ file: relative, name: safeName(name) });
-  appendJobLog(job.log, "info", `已添加参考图：${safeName(name)}`);
-  await writeImageJob(job);
+    job.refs.push({ file: relative, name: safeName(name) });
+    appendJobLog(job.log, "info", `已添加参考图：${safeName(name)}`);
+  });
 }
 
 export async function removeImageRef(jobId: string, file: string): Promise<void> {
-  const job = await readImageJob(jobId);
-  if (job === undefined) throw new Error(`任务不存在：${jobId}`);
-  job.refs = job.refs.filter((ref) => ref.file !== file);
-  await writeImageJob(job);
+  await editImageJob(jobId, job => { job.refs = job.refs.filter(ref => ref.file !== file); });
 }
 
 export async function removeImageItem(jobId: string, index: number): Promise<void> {
-  const job = await readImageJob(jobId);
-  if (job === undefined) throw new Error(`任务不存在：${jobId}`);
-  const item = job.items[index];
-  if (item?.file !== undefined) await rm(imageAssetPath(jobId, item.file), { force: true }).catch(() => undefined);
-  if (item?.keyedFile !== undefined) await rm(imageAssetPath(jobId, item.keyedFile), { force: true }).catch(() => undefined);
-  job.items.splice(index, 1);
-  job.items.forEach((entry, i) => {
-    entry.index = i;
-  });
-  await writeImageJob(job);
+  let removedFiles: Array<string | undefined> = [];
+  await editImageJob(jobId, async job => {
+    const item = job.items[index];
+    job.items.splice(index, 1);
+    job.items.forEach((entry, i) => {
+      entry.index = i;
+    });
+    // Removing a current result must not delete its archived bytes.
+    if (item) removedFiles = [item.file, item.keyedFile];
+  }, job => removeUnusedImageFiles(job, removedFiles));
+}
+
+async function removeUnusedImageFiles(job: ImageJob, files: Array<string | undefined>): Promise<void> {
+  const retained = new Set([...job.items, ...job.history.map(entry => entry.item)].flatMap(item => [item.file, item.keyedFile]));
+  for (const file of new Set(files)) {
+    if (file && !retained.has(file)) await rm(imageAssetPath(job.id, file), { force: true });
+  }
+}
+
+/** Local history operations; never submit a generation request or change global credentials. */
+export async function manageImageHistory(jobId: string, historyId: string, action: "restore" | "reuse" | "delete") {
+  let removedFiles: Array<string | undefined> = [];
+  return editImageJob(jobId, async job => {
+    if (job.items.some(item => item.status === "running")) throw new Error("图片任务正在处理，请完成后再操作历史记录。");
+    const entry = job.history.find(value => value.id === historyId);
+    if (!entry) throw new Error("历史记录已不存在，请刷新后重试。");
+    if (action === "restore") {
+      await stat(imageAssetPath(jobId, entry.item.file!));
+      if (entry.item.keyedFile) await stat(imageAssetPath(jobId, entry.item.keyedFile));
+      const index = Math.min(entry.item.index, job.items.length);
+      job.items[index] = { ...entry.item, index, status: "ready", error: undefined, updatedAt: Date.now() };
+      return { index };
+    }
+    if (action === "reuse") {
+      const request = entry.request;
+      if (!request) throw new Error("这条旧记录没有保存生成参数，无法复用。");
+      for (const ref of request.refs) await stat(imageAssetPath(jobId, ref.file));
+      job.prompt = request.prompt; job.suffix = request.suffix;
+      job.promptTemplateId = request.promptTemplateId; job.promptTemplateLang = request.promptTemplateLang;
+      job.refs = request.refs.map(ref => ({ ...ref }));
+      // Pin the historical pixel dimensions, while the model/provider still
+      // follow the user's global choice for the next explicitly paid request.
+      job.settings = { ...request.settings, sizeMode: "custom" };
+      job.keying = { ...(entry.keying ?? request.keying) };
+      return { reused: true };
+    }
+    if (action !== "delete") throw new Error("未知的历史记录操作。");
+    job.history = job.history.filter(value => value.id !== historyId);
+    removedFiles = [entry.item.file, entry.item.keyedFile];
+    return { deleted: true };
+  }, job => removeUnusedImageFiles(job, removedFiles));
 }
 
 /** 任务目录是否真实存在。 */
