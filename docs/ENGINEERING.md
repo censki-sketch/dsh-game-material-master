@@ -2730,7 +2730,7 @@ X-Api-Request-Id: <uuid>
 
 ### 图片项目侧栏与自定义保存目录
 
-图片模块的 UI 统一称「项目」，wire 和任务 ID 仍沿用 `imageJob` / `i…`，旧数据兼容。`JobSidebar` 标题箭头使用 `task-list-collapsed:image` 本地缓存，独立于全局 `sidebar-collapsed`。标题不显示项目数量，管理入口为原生 auto-popover 两级菜单：目录分组／合并、最近更新／手动排序。`image-task-preferences` 缓存目录、布局、排序和 ID 顺序；手动顺序显式落盘，后台刷新不重排。支持 HTML 拖放和 Alt + ↑／↓；分组时只在同目录内调整顺序。菜单支持方向键、Escape、点击外部关闭，并按视口切换左右或上下布局。Escape 优先交给活动 dialog / 项目菜单。
+图片模块的 UI 统一称「项目」，wire 和任务 ID 仍沿用 `imageJob` / `i…`，旧数据兼容。`JobSidebar` 标题箭头使用 `task-list-collapsed:image` 本地缓存，独立于全局 `sidebar-collapsed`。标题不显示项目数量，管理入口为原生 manual-popover 两级菜单：目录分组／合并、最近更新／手动排序。文件夹更多与整理菜单的开关由 React 状态控制，显式监听外部 pointerdown 和 Escape；不依赖 React synthetic toggle.newState，避免原生 light-dismiss 与 onClick 状态冲突导致下次点两次。菜单内滚动不关闭文件夹菜单。`image-task-preferences` 缓存目录、布局、排序和 ID 顺序；手动顺序显式落盘，后台刷新不重排。支持 HTML 拖放和 Alt + ↑／↓；分组时只在同目录内调整顺序。菜单支持方向键、Escape、点击外部关闭，并按视口切换左右或上下布局。Escape 优先交给活动 dialog / 项目菜单。
 
 图片侧栏分两层：外层是打开的真实文件夹，内层是图片项目。顶部打开入口仅 `pickImageFolder` → clientOnly `attachImageFolder`，扫描一层有效 `i…/job.json` 并登记外部路径指针，不导入任意图片、不移动文件、不生成项目。目录 realpath，忽略符号链接、无效 ID 和草稿；已损坏或冲突的指针拒绝覆盖。打开空目录也有文件夹行。文件夹旁 compose 使用 `createImageJob({draft:true,saveDirectory})` 准备落盘编辑草稿；`listImageJobs` 隐藏草稿，输入/参考图不发布项目。`runImageJob` 验证请求与后端后将草稿转正式，再发起原有生成流程；新并发闸门覆盖草稿落盘 await。明确 `addImageItem` 也转正式，便于本地抠图项目。`draft` 字段沿 wire 与 normalize 保留。原工具端 `createImageJob` 不传 draft 仍兼容。
 
@@ -2739,6 +2739,10 @@ X-Api-Request-Id: <uuid>
 `ImageSidebarInfo` 读取已有列表摘要，延迟悬停在 top-layer popover 展示目录/项目路径和一行带聊天图标的数量统计，不再显示当前/历史明细与去重说明，不请求 API。文件夹卡片不显示时间；单个图片项目卡片保留创建/更新时间。图片列表本身只显示名称，不渲染 `.SPR_projMeta`；约30px单行、分组间2px，空文件夹无占位段落，整行hover为中性灰。带编辑按钮的文件夹卡片使用具名非模态 dialog 语义，可移入鼠标或用键盘进入按钮。`summarizeImageJob.imageCount/keyedCount` 对当前与历史的 `[file,keyedFile]` 成对去重，同一版本恢复到当前不加数，新 keyed PNG 是新版本；保留旧 total/ready/keyed 为当前结果口径，新增 historyCount 和 dir。`getImageJob.summary` 与列表同源，客户端轮询同步摘要且不覆盖编辑草稿。窗口/菜单/悬停卡的 Escape 优先于全局收起侧栏。
 
 文件夹菜单固定五项：置顶/编辑、分隔、在资源管理器中打开、分隔、归档聊天、分隔、移除项目。约164px宽、29px菜单行、16px线图标，鼠标打开不自动高亮首项，键盘打开聚焦首项。独立compose保留，复制路径不占菜单。`folders[*].pinned` 控制分组置顶，稳定排序保留同级原顺序；编辑源目录时保留pinned。`archivedProjects` 存储图片项目ID，`showArchived` 切换当前/归档视图，都在同一个本机缓存。`imageFolderGroups` 的 `allEntries` 包含归档记录，`entries` 按视图过滤；卡片统计使用前者。归档/取消归档只改本机状态，不调用删除或生成接口；新建回到普通视图，整理菜单提供归档入口。移除项目保留已有二次确认。文件夹移除与已隐藏图片优先于归档展示。
+
+分组布局把 pinned 文件夹只渲染在独立 `.SPR_taskPinned`，普通列表不重复；无置顶文件夹时不渲染该分区。其标题复用项目标题箭头，`pinnedCollapsed` 在同一本机偏好中保存，与普通项目列表折叠互不影响。标题仅内容宽度、hover 背景透明，右侧操作独立靠右；侧栏 gap 4px、标题下无额外 margin，置顶分区底部4px，避免空白点击色块及分区间距累加。
+
+归档后 `NoticePopup` 支持 `persistent`、archive 图标及 `actions`（查看／撤销）。行动按钮先关闭旧提示再执行回调，避免清除回调产生的新提示。撤销只反转本次目标 ID，从最新 sidebar ref 合并偏好，并恢复原视图及仍可见的原选中项，保留提示出现后用户修改的其他设置。侧栏底部 `.SPR_taskArchiveLink` 显示可访问的归档项目数（已移除入口不计），进入归档后替换为返回入口；无归档且不在归档视图时隐藏。浏览器回归覆盖反复开关菜单、外部关闭后单击重开、置顶独立折叠及刷新、归档查看／撤销和历史数据保留，全程假 API、禁止付费请求。
 
 系统选择器 `pickImageFolder` 为 clientOnly：Windows 用隐藏 STA PowerShell helper 调用 IFileDialog / FOS_PICKFOLDERS，macOS 用 osascript，Linux 用 zenity。参数数组启动，路径经环境变量传递，凭据不继承；取消返回 canceled，已失效的上次路径回退主目录，返回值 realpath / stat 校验。`revealImageFolder` 也仅供界面，校验路径后数组参数启动 Explorer/open/xdg-open，捕获 spawn 失败，不执行 shell 字符串。
 

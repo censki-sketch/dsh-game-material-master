@@ -346,7 +346,7 @@ const api = new Proxy(
  */
 const EXPECTED_HOOKS = {
   StudioPanel: 26,
-  ImageModule: 23,
+  ImageModule: 24,
   SequenceModule: 17
 };
 
@@ -962,6 +962,16 @@ function renderModule(component, job, tasks) {
   return { tree, overflow: false, hooks: HOOK.cursor };
 }
 
+section("可撤销的归档提示");
+{
+  HOOK.slots = []; HOOK.cursor = 0;
+  const events = [];
+  const notice = bundle.__test.NoticePopup({ notice: { kind: "ok", text: "已归档聊天", persistent: true, icon: "archive", actions: [{ label: "查看", onClick: () => events.push("view") }, { label: "撤销", primary: true, onClick: () => events.push("undo") }] }, onClose: () => events.push("close") });
+  check("归档提示显示查看和撤销操作", byClass(notice, "SPR_noticePopupActions").length === 1 && byTag(notice, "button").map(textOf).join("/") === "查看/撤销/");
+  byTag(notice, "button").find(node => textOf(node) === "撤销")?.props.onClick();
+  check("先关闭原提示再撤销，保留回调的新提示", events.join() === "close,undo");
+}
+
 section("图片项目侧栏与创建弹窗");
 {
   HOOK.slots = []; HOOK.cursor = 0;
@@ -992,6 +1002,28 @@ section("图片项目侧栏与创建弹窗");
   check("归档视图仅显示已归档内容，移除入口优先于归档", archivedFolders[0].entries.map(item => item.id).join() === "i1" && bundle.__test.imageFolderGroups(linkedJobs, { ...archivePreferences, showArchived: true, hiddenProjects: ["i1"] })[0].entries.length === 0);
   const pinFolders = bundle.__test.imageFolderGroups(linkedJobs, { folders: { "D:/道具": { pinned: true } } });
   check("置顶目录优先显示，取消后沿用原有顺序", pinFolders[0].key === "D:/道具" && bundle.__test.imageFolderGroups(linkedJobs, { folders: { "D:/道具": { pinned: false } } })[0].key === "c:\\素材");
+  HOOK.slots = []; HOOK.cursor = 0;
+  const pinnedSidebar = bundle.__test.JobSidebar({ title: "项目", items: linkedJobs, storageKey: "image", preferences: { ...preferences, layout: "grouped", folders: { "D:/道具": { pinned: true } } }, onPreferences: () => {}, onCreate: () => {} });
+  const pinnedSection = byClass(pinnedSidebar, "SPR_taskPinned")[0], regularSection = byClass(pinnedSidebar, "SPR_taskList").find(node => node.props.id === "task-list-image");
+  check("置顶目录在独立分组内且不在普通列表重复", !!pinnedSection && [...new Set(byClass(pinnedSection, "SPR_taskFolderLabel").map(textOf))].join() === "道具" && [...new Set(byClass(regularSection, "SPR_taskFolderLabel").map(textOf))].join() === "素材" && byClass(pinnedSidebar, "SPR_taskGroup").length === 2);
+  check("没有置顶目录就不显示置顶分组", byClass(grouped, "SPR_taskPinned").length === 0);
+  HOOK.slots = []; HOOK.cursor = 0;
+  let pinnedPatch;
+  const collapsedPins = bundle.__test.JobSidebar({ title: "项目", items: linkedJobs, storageKey: "image", preferences: { ...preferences, layout: "grouped", pinnedCollapsed: true, folders: { "D:/道具": { pinned: true } } }, onPreferences: patch => { pinnedPatch = patch; }, onCreate: () => {} });
+  const pinToggle = byClass(collapsedPins, "SPR_taskSideTitle").find(node => node.props["aria-controls"] === "pinned-task-list-image");
+  pinToggle?.props.onClick();
+  check("置顶分组可独立展开收起", pinToggle?.props["aria-expanded"] === false && byClass(collapsedPins, "SPR_taskList").find(node => node.props.id === "pinned-task-list-image")?.props.hidden === true && pinnedPatch?.pinnedCollapsed === false);
+  HOOK.slots = []; HOOK.cursor = 0;
+  let archivePatch;
+  const archivedSidebar = bundle.__test.JobSidebar({ title: "项目", items: linkedJobs, storageKey: "image", preferences: archivePreferences, onPreferences: patch => { archivePatch = patch; }, onCreate: () => {} });
+  const archiveLink = byClass(archivedSidebar, "SPR_taskArchiveLink")[0];
+  archiveLink?.props.onClick();
+  check("已归档聊天有独立可见入口并包含归档数量", !!archiveLink && textOf(archiveLink) === "已归档聊天（1）" && archivePatch?.showArchived === true);
+  HOOK.slots = []; HOOK.cursor = 0;
+  const archiveView = bundle.__test.JobSidebar({ title: "项目", items: linkedJobs, storageKey: "image", preferences: { ...archivePreferences, showArchived: true }, onPreferences: patch => { archivePatch = patch; }, onCreate: () => {} });
+  byClass(archiveView, "SPR_taskArchiveLink")[0]?.props.onClick();
+  check("归档视图提供返回入口", textOf(byClass(archiveView, "SPR_taskArchiveLink")[0]) === "返回未归档聊天" && archivePatch?.showArchived === false);
+  check("未归档时隐藏空归档入口", byClass(grouped, "SPR_taskArchiveLink").length === 0);
   HOOK.slots = [true]; HOOK.cursor = 0;
   let editedFolder = 0;
   const info = bundle.__test.ImageSidebarInfo({ id: "folder-info-test", name: "角色素材", directory: "C:/素材", directories: ["C:/素材", "D:/道具"], entries: linkedJobs, folder: true, onEdit: () => editedFolder++, children: ReactStub.createElement("button", {}, "角色素材") });

@@ -56,8 +56,8 @@
       "没有归档聊天": "No archived chats",
       "已归档聊天": "Archived chats",
       "移除项目": "Remove project",
-      "已归档，图片与历史记录已保留。": "Archived. Images and history are kept.",
       "已取消归档": "Unarchived",
+      "查看": "View",
       "文件夹「{n0}」的更多操作": "More actions for folder '{n0}'",
       "文件夹操作": "Folder actions",
       "{n0} 个项目 · {n1} 张 · 抠像 {n2}": "{n0} projects \u00b7 {n1} images \u00b7 {n2} keyed",
@@ -4469,6 +4469,13 @@
 .SPR_noticePopup[popover]:not(:popover-open){display:none}
 .SPR_noticePopupIcon{display:flex;align-items:center;flex:none;width:18px;height:20px;color:var(--SPR_noticeTone)}
 .SPR_noticePopupText{min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.SPR_noticePopup[data-actionable=true]{align-items:center;gap:8px;padding:8px 10px}
+.SPR_noticePopup[data-actionable=true] .SPR_noticePopupIcon{color:var(--dsw-alias-label-secondary)}
+.SPR_noticePopupActions{display:flex;align-items:center;gap:6px;flex:none}
+.SPR_noticePopupActions button{padding:3px 9px;border:0;border-radius:9px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;white-space:nowrap;cursor:pointer}
+.SPR_noticePopupActions button[data-primary=true]{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-1)}
+.SPR_noticePopupActions button:hover{filter:brightness(.94)}
+.SPR_noticePopupActions button:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
 .SPR_noticePopupClose{display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;margin:-1px -3px -1px 2px;padding:3px;border:0;border-radius:5px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer}
 .SPR_noticePopupClose:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
 .SPR_noticePopupClose:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
@@ -5040,8 +5047,11 @@
 .SPR_taskDialogError{color:var(--dsw-alias-state-error-primary,#d84949);font-size:13px;line-height:20px;overflow-wrap:anywhere}
 
 
-.SPR_side[data-kind=image] .SPR_taskSideHead{padding:0 0 0 2px;margin-bottom:6px;gap:0}
-.SPR_side[data-kind=image] .SPR_taskSideTitle{font-size:13px;gap:1px}
+.SPR_side[data-kind=image]{gap:4px}
+.SPR_side[data-kind=image] .SPR_taskSideHead,.SPR_taskPinnedHead{display:flex;align-items:center;min-height:28px;padding:0 0 0 2px;margin:0;gap:0;color:var(--dsw-alias-label-tertiary)}
+.SPR_side[data-kind=image] .SPR_taskSideTitle{flex:none;font-size:13px;gap:1px}
+.SPR_side[data-kind=image] .SPR_taskSideTitle:hover{background:transparent;color:var(--dsw-alias-label-primary)}
+.SPR_side[data-kind=image] .SPR_taskIconButton:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
 .SPR_side[data-kind=image] .SPR_taskSideTitle svg{width:14px;height:14px}
 .SPR_side[data-kind=image] .SPR_projItem{box-sizing:border-box;min-height:30px;border:0;border-radius:8px;padding:6px 10px;background:transparent;box-shadow:none}
 .SPR_side[data-kind=image] .SPR_projItem:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
@@ -5052,11 +5062,17 @@
 .SPR_taskGroup+.SPR_taskGroup{margin-top:16px}
 .SPR_side[data-kind=image] .SPR_taskGroup+.SPR_taskGroup{margin-top:2px}
 .SPR_side[data-kind=image] .SPR_taskGroup{gap:2px}
-.SPR_side[data-kind=image] .SPR_taskList{gap:2px}
+.SPR_side[data-kind=image] .SPR_taskList{display:flex;flex-direction:column;gap:2px}
+.SPR_side[data-kind=image] .SPR_taskList[hidden]{display:none}
+.SPR_taskPinned{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
+.SPR_taskArchiveLink{display:flex;align-items:center;gap:8px;flex:none;width:100%;margin-top:auto;padding:8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;text-align:left;cursor:pointer}
+.SPR_taskArchiveLink svg{width:16px;height:16px;flex:none}
+.SPR_taskArchiveLink:hover,.SPR_taskArchiveLink:focus-visible{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
 .SPR_taskGroupTitle{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;color:var(--dsw-alias-label-tertiary);min-width:0}
 .SPR_taskGroupTitle span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .SPR_taskGroupTitle svg{flex:none;width:13px;height:13px}
 .SPR_taskHeadActions{display:flex;align-items:center;flex:none}
+.SPR_side[data-kind=image] .SPR_taskHeadActions{margin-left:auto}
 .SPR_side[data-kind=image] .SPR_taskHeadActions{opacity:0;pointer-events:none;transition:opacity .12s}
 .SPR_side[data-kind=image] .SPR_taskSideHead:hover .SPR_taskHeadActions,.SPR_side[data-kind=image] .SPR_taskSideHead:has(:focus-visible) .SPR_taskHeadActions,.SPR_side[data-kind=image] .SPR_taskHeadActions:has([aria-expanded=true]){opacity:1;pointer-events:auto}
 .SPR_taskGroupTitle{padding:0 3px 0 8px;gap:4px;min-height:30px;border-radius:8px;font-size:13px;color:var(--dsw-alias-label-secondary)}
@@ -5687,7 +5703,7 @@
         const current = { dismiss: () => { hide(); closeRef.current?.(); } };
         activeNoticePopup?.dismiss(); activeNoticePopup = current;
         try { popup.showPopover(); } catch { popup.removeAttribute("popover"); }
-        let timer, started = 0, remaining = tone === "error" ? 0 : tone === "ok" ? 4000 : 6000;
+        let timer, started = 0, remaining = notice?.persistent || tone === "error" ? 0 : tone === "ok" ? 4000 : 6000;
         const pause = () => { if (timer !== undefined) { clearTimeout(timer); timer = undefined; remaining = Math.max(1, remaining - (Date.now() - started)); } };
         const resume = () => { if (remaining && timer === undefined && !popup.matches(":hover") && !popup.contains(document.activeElement)) { started = Date.now(); timer = setTimeout(current.dismiss, remaining); } };
         const escape = event => { if (event.key === "Escape" && !event.defaultPrevented) current.dismiss(); };
@@ -5705,10 +5721,12 @@
         };
       }, [notice, kind]);
       if (!text) return null;
-      return h("div", { ref: popupRef, popover: "manual", className: "SPR_note SPR_noticePopup", "data-kind": tone, "data-testid": "notice-popup", role: tone === "error" ? "alert" : "status", "aria-label": T("操作提示"), "aria-atomic": "true" },
-        h("span", { className: "SPR_noticePopupIcon", "aria-hidden": "true" }, h("svg", { width: 18, height: 18, viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round" },
+      return h("div", { ref: popupRef, popover: "manual", className: "SPR_note SPR_noticePopup", "data-kind": tone, "data-actionable": !!notice?.actions?.length, "data-testid": "notice-popup", role: tone === "error" ? "alert" : "status", "aria-label": T("操作提示"), "aria-atomic": "true" },
+        h("span", { className: "SPR_noticePopupIcon", "aria-hidden": "true" }, notice?.icon ? h(ProjectActionIcon, { name: notice.icon }) : h("svg", { width: 18, height: 18, viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round" },
           h("circle", { cx: 10, cy: 10, r: 8 }), tone === "ok" ? h("path", { d: "m6 10 2.5 2.5L14 7" }) : h("path", { d: "M10 6v5m0 3v.01" }))),
         h("span", { className: "SPR_noticePopupText" }, text),
+        notice?.actions?.length ? h("span", { className: "SPR_noticePopupActions" }, notice.actions.map(action => h("button", { key: action.label, type: "button", "data-primary": action.primary === true,
+          onClick: () => { closeRef.current?.(); action.onClick(); } }, action.label))) : null,
         h("button", { type: "button", className: "SPR_noticePopupClose", "aria-label": T("关闭提示"), title: T("关闭"), onMouseDown: event => event.preventDefault(), onClick: () => closeRef.current?.() },
           h("svg", { width: 14, height: 14, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.5, "aria-hidden": "true" }, h("path", { d: "m4 4 8 8M12 4l-8 8" }))));
     }
@@ -9830,7 +9848,7 @@
           folders[directory] = { collapsed: folder.collapsed === true, removed: folder.removed === true, pinned: folder.pinned === true,
             ...(typeof folder.name === "string" && folder.name.trim() ? { name: folder.name.trim().slice(0, 80) } : {}), ...(sources.length ? { directories: sources } : {}) };
         }
-        return { directory: typeof value?.directory === "string" ? value.directory : "", sort: value?.sort === "manual" ? "manual" : "updated", layout: value?.layout === "merged" ? "merged" : "grouped", order: Array.isArray(value?.order) ? [...new Set(value.order.filter(id => typeof id === "string"))] : [], folders, hiddenProjects: Array.isArray(value?.hiddenProjects) ? value.hiddenProjects.filter(id => typeof id === "string") : [], archivedProjects: Array.isArray(value?.archivedProjects) ? value.archivedProjects.filter(id => typeof id === "string") : [], showArchived: value?.showArchived === true };
+        return { directory: typeof value?.directory === "string" ? value.directory : "", sort: value?.sort === "manual" ? "manual" : "updated", layout: value?.layout === "merged" ? "merged" : "grouped", order: Array.isArray(value?.order) ? [...new Set(value.order.filter(id => typeof id === "string"))] : [], folders, hiddenProjects: Array.isArray(value?.hiddenProjects) ? value.hiddenProjects.filter(id => typeof id === "string") : [], archivedProjects: Array.isArray(value?.archivedProjects) ? value.archivedProjects.filter(id => typeof id === "string") : [], showArchived: value?.showArchived === true, pinnedCollapsed: value?.pinnedCollapsed === true };
       } catch { return { directory: "", sort: "updated", layout: "grouped", order: [], folders: {}, hiddenProjects: [], archivedProjects: [], showArchived: false }; }
     }
 
@@ -9939,7 +9957,10 @@
         };
         position();
         window.addEventListener("resize", position);
-        return () => { window.removeEventListener("resize", position); if (menu.matches(":popover-open")) menu.hidePopover(); };
+        const outside = event => { if (!menu.contains(event.target) && !trigger.contains(event.target)) setOpen(false); };
+        const escape = event => { if (event.key === "Escape" && !event.defaultPrevented) { event.preventDefault(); close(); } };
+        document.addEventListener("pointerdown", outside); document.addEventListener("keydown", escape);
+        return () => { window.removeEventListener("resize", position); document.removeEventListener("pointerdown", outside); document.removeEventListener("keydown", escape); if (menu.matches(":popover-open")) menu.hidePopover(); };
       }, [open]);
       React.useLayoutEffect(() => {
         if (!open || !menuRef.current?.matches(":popover-open")) return;
@@ -9973,7 +9994,7 @@
       return h("div", { className: "SPR_projectSidebarMenuRoot", onKeyDown: event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); } } },
         h("button", { ref: triggerRef, type: "button", className: "SPR_taskIconButton", title: T("整理项目"), "aria-label": T("整理项目"), "aria-haspopup": "menu", "aria-expanded": open,
           onClick: () => { if (open) close(); else { setSection(null); setOpen(true); } }, onKeyDown: event => { if (event.key === "ArrowDown") { event.preventDefault(); setOpen(true); requestAnimationFrame(() => menuRef.current?.querySelector("button")?.focus()); } } }, h(TaskHeaderIcon, { name: "manage" })),
-        h("div", { ref: menuRef, className: "SPR_projectSidebarMenu", popover: "auto", onKeyDown: keys },
+        h("div", { ref: menuRef, className: "SPR_projectSidebarMenu", popover: "manual", onKeyDown: keys },
           h("div", { className: "SPR_projectSidebarMainMenu", role: "menu", "aria-label": T("整理项目") },
             [["layout", T("整理侧边栏"), "panel"], ["sort", T("项目排序方式"), "sort"]].map(([id, label, icon]) => h("button", {
               key: id, type: "button", role: "menuitem", "aria-haspopup": "menu", "aria-expanded": section === id, "data-selected": section === id,
@@ -10062,9 +10083,12 @@
           menu.style.top = Math.max(8, Math.min(r.bottom + 6 + m.height > window.innerHeight - 8 ? r.top - m.height - 6 : r.bottom + 6, window.innerHeight - m.height - 8)) + "px";
         };
         position(); if (keyboardOpenRef.current) menu.querySelector("button")?.focus({ preventScroll: true });
-        const dismiss = () => setOpen(false);
+        const dismiss = event => { if (!menu.contains(event.target)) setOpen(false); };
+        const outside = event => { if (!menu.contains(event.target) && !triggerRef.current?.contains(event.target)) setOpen(false); };
+        const escape = event => { if (event.key === "Escape" && !event.defaultPrevented) { event.preventDefault(); close(); } };
+        document.addEventListener("pointerdown", outside); document.addEventListener("keydown", escape);
         window.addEventListener("resize", dismiss); document.addEventListener("scroll", dismiss, true);
-        return () => { window.removeEventListener("resize", dismiss); document.removeEventListener("scroll", dismiss, true); if (menu.matches(":popover-open")) menu.hidePopover(); };
+        return () => { document.removeEventListener("pointerdown", outside); document.removeEventListener("keydown", escape); window.removeEventListener("resize", dismiss); document.removeEventListener("scroll", dismiss, true); if (menu.matches(":popover-open")) menu.hidePopover(); };
       }, [open]);
       const keys = event => {
         event.stopPropagation();
@@ -10083,8 +10107,7 @@
           h("button", { ref: triggerRef, type: "button", className: "SPR_taskIconButton", title: T("文件夹操作"), "aria-label": T("文件夹「{n0}」的更多操作", { n0: name }), "aria-haspopup": "menu", "aria-expanded": open,
             onClick: event => { keyboardOpenRef.current = event.detail === 0; if (open) close(); else setOpen(true); }, onKeyDown: event => { if (event.key === "ArrowDown") { event.preventDefault(); keyboardOpenRef.current = true; setOpen(true); requestAnimationFrame(() => menuRef.current?.querySelector("button")?.focus({ preventScroll: true })); } } }, h(ProjectActionIcon, { name: "more" })),
           h("button", { type: "button", className: "SPR_taskIconButton", title: T("新建项目"), "aria-label": T("在此文件夹新建项目"), onClick: () => onCreate(primaryDirectory) }, h(TaskHeaderIcon, { name: "compose" }))),
-        h("div", { ref: menuRef, className: "SPR_projectMenu SPR_taskFolderMenu", popover: "auto", role: "menu", "aria-label": T("文件夹操作"), onKeyDown: keys,
-          onToggle: event => { if (event.newState === "closed") setOpen(false); } },
+        h("div", { ref: menuRef, className: "SPR_projectMenu SPR_taskFolderMenu", popover: "manual", role: "menu", "aria-label": T("文件夹操作"), onKeyDown: keys },
           h("button", { type: "button", role: "menuitem", onClick: () => { close(); onPin?.(); } }, h(ProjectActionIcon, { name: "pin" }), group.pinned ? T("取消置顶") : activeLang() === "en" ? T("置顶项目") : T("置顶")),
           h("button", { type: "button", role: "menuitem", disabled: !onEdit, onClick: () => { close(); setEditing(true); } }, h(ProjectActionIcon, { name: "settings" }), T("编辑")),
           h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
@@ -10121,19 +10144,7 @@
       const folderGroups = preferences ? imageFolderGroups(items, preferences) : [];
       const visibleItems = preferences ? folderGroups.flatMap(folder => folder.entries) : items;
       const groups = preferences?.layout === "grouped" ? folderGroups : [{ key: "", entries: visibleItems }];
-      return h(
-        "div",
-        { className: "SPR_side", "data-kind": storageKey },
-        h("div", { className: "SPR_taskSideHead" },
-          h("button", { type: "button", className: "SPR_taskSideTitle", onClick: toggle, "aria-expanded": !collapsed, "aria-controls": "task-list-" + storageKey },
-            h("span", null, preferences ? preferences.showArchived ? T("已归档聊天") : title : T("{n0}（{n1}）", { n0: title, n1: items.length })), h(TaskHeaderIcon, { name: "chevron", collapsed })),
-          h("div", { className: "SPR_taskHeadActions" },
-            preferences ? h(ProjectSidebarMenu, { preferences, onChange: onPreferences }) : null,
-            h("button", { type: "button", className: "SPR_taskIconButton", title: preferences ? T("打开文件夹") : T("新建任务"), "aria-label": preferences ? T("打开文件夹") : T("新建任务"), onClick: preferences ? onOpenFolder : onCreate }, h(TaskHeaderIcon, { name: preferences ? "folderAdd" : "add" })))),
-        h("div", { className: "SPR_taskList", id: "task-list-" + storageKey, hidden: collapsed },
-        visibleItems.length === 0 && !folderGroups.length ? h("p", { className: "SPR_hint" }, preferences ? T("新建项目将在点击生成后出现在这里。") : T("点击标题右侧的 + 新建任务。")) : null,
-        preferences?.showArchived && !visibleItems.length && folderGroups.length ? h("p", { className: "SPR_hint" }, T("没有归档聊天")) : null,
-        groups.map(group => { const directory = group.key, entries = group.entries; return h("div", { key: directory, className: "SPR_taskGroup" },
+      const renderGroups = list => list.map(group => { const directory = group.key, entries = group.entries; return h("div", { key: directory, className: "SPR_taskGroup" },
           preferences?.layout === "grouped" ? h(ImageFolderHeader, { group, api, onEdit: onEditFolder, onCreate, onReveal: onRevealFolder, onNotice, showArchived: preferences.showArchived,
             onPin: () => onPreferences({ folders: { ...preferences.folders, [directory]: { ...(preferences.folders?.[directory] ?? {}), pinned: !group.pinned } } }),
             onArchive: () => onArchiveFolder?.(group),
@@ -10164,8 +10175,30 @@
             onDragEnd: () => { dragged.current = null; setDropTarget(null); },
             onKeyDown: event => { if (manual && event.altKey && ["ArrowUp", "ArrowDown"].includes(event.key)) { event.preventDefault(); const index = entries.findIndex(row => row.id === item.id); const other = entries[index + (event.key === "ArrowUp" ? -1 : 1)]; if (other) move(item.id, other.id, event.key === "ArrowDown"); } }
           }, preferences ? h(ImageSidebarInfo, { id: "image-project-info-" + item.id, name: item.name, directory: item.dir || item.saveDirectory, entries: [item] }, select) : select, renderActions(item)) : select;
-        }))); }),
-        items.length === 0 && createInSidebar ? h(Btn, { onClick: onCreate, primary: true }, T("新建")) : null)
+        }))); });
+      const pinned = preferences?.layout === "grouped" ? groups.filter(group => group.pinned) : [];
+      const regular = groups.filter(group => !pinned.includes(group));
+      const archivedCount = folderGroups.reduce((count, group) => count + group.allEntries.filter(item => preferences.archivedProjects?.includes(item.id)).length, 0);
+      return h(
+        "div",
+        { className: "SPR_side", "data-kind": storageKey },
+        pinned.length ? h("section", { className: "SPR_taskPinned", "aria-label": activeLang() === "en" ? T("置顶项目") : T("置顶") },
+          h("div", { className: "SPR_taskPinnedHead" }, h("button", { type: "button", className: "SPR_taskSideTitle", "aria-expanded": !preferences.pinnedCollapsed, "aria-controls": "pinned-task-list-" + storageKey, onClick: () => onPreferences({ pinnedCollapsed: !preferences.pinnedCollapsed }) },
+            h("span", null, activeLang() === "en" ? T("置顶项目") : T("置顶")), h(TaskHeaderIcon, { name: "chevron", collapsed: preferences.pinnedCollapsed }))),
+          h("div", { className: "SPR_taskList", id: "pinned-task-list-" + storageKey, hidden: preferences.pinnedCollapsed === true }, renderGroups(pinned))) : null,
+        h("div", { className: "SPR_taskSideHead" },
+          h("button", { type: "button", className: "SPR_taskSideTitle", onClick: toggle, "aria-expanded": !collapsed, "aria-controls": "task-list-" + storageKey },
+            h("span", null, preferences ? preferences.showArchived ? T("已归档聊天") : title : T("{n0}（{n1}）", { n0: title, n1: items.length })), h(TaskHeaderIcon, { name: "chevron", collapsed })),
+          h("div", { className: "SPR_taskHeadActions" },
+            preferences ? h(ProjectSidebarMenu, { preferences, onChange: onPreferences }) : null,
+            h("button", { type: "button", className: "SPR_taskIconButton", title: preferences ? T("打开文件夹") : T("新建任务"), "aria-label": preferences ? T("打开文件夹") : T("新建任务"), onClick: preferences ? onOpenFolder : onCreate }, h(TaskHeaderIcon, { name: preferences ? "folderAdd" : "add" })))),
+        h("div", { className: "SPR_taskList", id: "task-list-" + storageKey, hidden: collapsed },
+          visibleItems.length === 0 && !folderGroups.length ? h("p", { className: "SPR_hint" }, preferences ? T("新建项目将在点击生成后出现在这里。") : T("点击标题右侧的 + 新建任务。")) : null,
+          preferences?.showArchived && !visibleItems.length && folderGroups.length ? h("p", { className: "SPR_hint" }, T("没有归档聊天")) : null,
+          renderGroups(regular),
+          items.length === 0 && createInSidebar ? h(Btn, { onClick: onCreate, primary: true }, T("新建")) : null),
+        preferences && (archivedCount > 0 || preferences.showArchived) ? h("button", { type: "button", className: "SPR_taskArchiveLink", "data-testid": "image-archive-link", onClick: () => onPreferences({ showArchived: !preferences.showArchived }) },
+          h(ProjectActionIcon, { name: "archive" }), preferences.showArchived ? T("返回未归档聊天") : T("{n0}（{n1}）", { n0: T("已归档聊天"), n1: archivedCount })) : null
       );
     }
 
@@ -18632,14 +18665,18 @@
       const sortedJobs = [...jobs].sort((a, b) => taskPreferences.sort === "manual"
         ? (manualOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (manualOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER) || b.updatedAt - a.updatedAt
         : b.updatedAt - a.updatedAt);
+      const sidebarStateRef = React.useRef(null);
+      sidebarStateRef.current = { preferences: taskPreferences, jobs: sortedJobs, jobId };
       const saveTaskPreferences = patch => {
-        const next = { ...taskPreferences, ...patch };
-        if (patch.sort === "manual" && taskPreferences.sort !== "manual") next.order = sortedJobs.map(item => item.id);
+        const current = sidebarStateRef.current;
+        const next = { ...current.preferences, ...patch };
+        if (patch.sort === "manual" && current.preferences.sort !== "manual") next.order = current.jobs.map(item => item.id);
+        sidebarStateRef.current = { ...current, preferences: next };
         try { window.localStorage.setItem(IMAGE_TASK_PREFERENCES_KEY, JSON.stringify(next)); } catch { /* Optional persistence. */ }
         setTaskPreferences(next);
         if (patch.showArchived !== undefined) {
-          const visible = imageFolderGroups(sortedJobs, next).flatMap(folder => folder.entries);
-          if (!visible.some(item => item.id === jobId)) { setJobId(visible[0]?.id ?? null); if (!visible.length) setJob(null); }
+          const visible = imageFolderGroups(current.jobs, next).flatMap(folder => folder.entries);
+          if (!visible.some(item => item.id === current.jobId)) { setJobId(visible[0]?.id ?? null); if (!visible.length) setJob(null); }
         }
       };
 
@@ -18804,6 +18841,7 @@
       };
       const archiveFolder = group => {
         const targetIds = new Set(group.entries.map(item => item.id));
+        const wasArchiveView = taskPreferences.showArchived === true, previousJobId = jobId;
         const archivedProjects = taskPreferences.showArchived ? (taskPreferences.archivedProjects ?? []).filter(id => !targetIds.has(id))
           : [...new Set([...(taskPreferences.archivedProjects ?? []), ...targetIds])];
         saveTaskPreferences({ archivedProjects });
@@ -18811,7 +18849,20 @@
           const next = imageFolderGroups(sortedJobs, { ...taskPreferences, archivedProjects }).flatMap(folder => folder.entries)[0];
           setJobId(next?.id ?? null); if (!next) setJob(null);
         }
-        setNotice({ kind: "ok", text: taskPreferences.showArchived ? T("已取消归档") : T("已归档，图片与历史记录已保留。") });
+        let undone = false;
+        setNotice({ kind: "ok", text: wasArchiveView ? T("已取消归档") : T("已归档聊天"), persistent: true, icon: "archive", actions: [
+          ...(!wasArchiveView ? [{ label: T("查看"), onClick: () => { saveTaskPreferences({ showArchived: true }); const first = group.entries.find(item => targetIds.has(item.id)); if (first) setJobId(first.id); } }] : []),
+          { label: T("撤销"), primary: true, onClick: () => {
+            if (undone) return; undone = true;
+            const current = sidebarStateRef.current;
+            const restored = wasArchiveView ? [...new Set([...(current.preferences.archivedProjects ?? []), ...targetIds])]
+              : (current.preferences.archivedProjects ?? []).filter(id => !targetIds.has(id));
+            saveTaskPreferences({ archivedProjects: restored, showArchived: wasArchiveView });
+            const visible = imageFolderGroups(current.jobs, { ...current.preferences, archivedProjects: restored, showArchived: wasArchiveView }).flatMap(folder => folder.entries);
+            if (visible.some(item => item.id === previousJobId)) setJobId(previousJobId);
+            setNotice({ kind: "ok", text: T("已撤销") });
+          } }
+        ] });
       };
       const editFolder = async (group, value) => {
         // Validate/discover every source before updating the local sidebar arrangement.
