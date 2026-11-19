@@ -475,7 +475,7 @@
       "描述你要生成的图片…": "Describe the image you want to generate…",
       "统一附加提示词（可留空）": "Shared suffix prompt (optional)",
       "生图模型": "Image model",
-      "生成张数（1~8）": "Images to generate (1~8)",
+      "生成张数（1~8）": "Images (1~8)",
       "正在生成 {n0} 张…": "Generating {n0} images…",
       "已开始生成 {n0} 张": "Started generating {n0} images",
       "正在生成 {n0} 张图片…": "Generating {n0} images…",
@@ -498,6 +498,13 @@
       "开启后自动补充纯色背景要求，生成完成后在本地抠成透明 PNG；不会修改输入内容。": "Automatically add solid-background instructions and remove the background locally after generation to produce a transparent PNG. Your input stays unchanged.",
       "抠像背景色：{n0}": "Key background: {n0}",
       "高级抠像与已有图片": "Advanced keying and existing images",
+      "背景识别": "Background detection",
+      "边缘处理": "Edge treatment",
+      "分割容差": "Tolerance",
+      "去溢色": "Despill",
+      "边缘收缩": "Edge shrink",
+      "下限和上限控制背景色接近度；分割容差设为 0 时，只按背景色判断。": "The lower and upper thresholds control similarity to the key color. Set segmentation tolerance to 0 to use color alone.",
+      "去溢色强度为 0~1，设为 0 时关闭；边缘收缩单位为 px。": "Despill strength ranges from 0 to 1; 0 disables it. Edge shrink is measured in px.",
       "把参考图拖到这里": "Drag reference images here",
       "已移除参考图": "Reference image removed",
       "移除": "Remove",
@@ -4904,6 +4911,7 @@
 .SPR_imageResults>.SPR_toolbar>.SPR_input{max-width:100%}
 .SPR_imageResults .SPR_refRow{overflow-wrap:anywhere}
 .SPR_card.SPR_imageAdvanced{padding:4px 18px}
+.SPR_imageAdvanced{container-type:inline-size}
 .SPR_imageAdvanced>details{padding:12px 0}
 .SPR_imageAdvanced>details+details{border-top:1px solid var(--dsw-alias-border-l2)}
 .SPR_imageAdvanced>details>summary{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;font-weight:500;line-height:22px;color:var(--dsw-alias-label-secondary);list-style:none;border-radius:5px}
@@ -4912,6 +4920,46 @@
 .SPR_imageAdvanced>details[open]>summary::before{transform:rotate(45deg)}
 .SPR_imageAdvanced>details>summary:hover,.SPR_imageAdvanced>details[open]>summary{color:var(--dsw-alias-label-primary)}
 .SPR_imageAdvanced>details>summary:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:4px}
+.SPR_imageModelMeta{display:flex;align-items:center;gap:8px;min-width:0;margin:14px 0 12px;font-size:12px;line-height:20px;color:var(--dsw-alias-label-secondary)}
+.SPR_imageModelValue{font-weight:500;color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;min-width:0}
+.SPR_imageAdvanced .SPR_imageGenerationFields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(96px,.6fr);gap:14px;margin:0 0 4px;align-items:start}
+.SPR_imageAdvanced .SPR_imageFieldHead,.SPR_imageKeyingGroupTitle{display:flex;align-items:center;gap:5px;height:20px;line-height:20px}
+.SPR_imageFieldHead>.SPR_fieldLabel{line-height:20px}
+.SPR_imageGenerationFields>.SPR_field>.SPR_fieldLabel{min-height:20px;line-height:20px}
+.SPR_imageAdvanced .SPR_input,.SPR_imageAdvanced select{height:36px;min-height:36px}
+.SPR_keyColorControls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.SPR_keyColorSwatch{width:40px;height:30px;padding:0;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:transparent}
+.SPR_keyColorControls>select{flex:1 1 120px}
+.SPR_keyColorHex{width:108px}
+.SPR_imageKeyingFields{display:flex;flex-direction:column;gap:18px;margin:14px 0 18px}
+.SPR_imageKeyingFields .SPR_keyColorControls{display:grid;grid-template-columns:36px minmax(100px,180px) minmax(90px,112px);gap:8px;flex-wrap:nowrap}
+.SPR_imageKeyingFields .SPR_keyColorSwatch{box-sizing:border-box;width:36px;height:36px;border-radius:8px;cursor:pointer}
+.SPR_imageKeyingFields .SPR_keyColorHex{width:100%;font-family:ui-monospace,monospace}
+.SPR_imageKeyingGroups{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:24px;align-items:start}
+.SPR_imageKeyingGroup{min-width:0}
+.SPR_imageKeyingGroupTitle{margin:0 0 8px;font-size:12px;font-weight:500;color:var(--dsw-alias-label-secondary)}
+.SPR_imageKeyingGroupFields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.SPR_imageKeyingGroup[data-group=edges] .SPR_imageKeyingGroupFields{grid-template-columns:repeat(2,minmax(0,1fr))}
+.SPR_imageAdvanced .SPR_imageKeyingActions{display:flex;align-items:center;gap:12px;margin:0 0 4px}
+.SPR_imageExistingUpload{flex:1;min-width:0}
+.SPR_imageExistingUpload>.SPR_uploadDrop{min-height:44px;padding:9px 12px;border-radius:9px;justify-content:flex-start;text-align:left;line-height:18px}
+.SPR_imageExistingUpload .SPR_uploadAdd{width:18px;height:18px}
+.SPR_imageKeyingActions>.SPR_btn{flex:none;white-space:nowrap;min-height:36px}
+@container(max-width:660px){
+  .SPR_imageKeyingGroups{grid-template-columns:minmax(0,1fr);gap:16px}
+  .SPR_imageKeyingGroup[data-group=edges] .SPR_imageKeyingGroupFields{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@container(max-width:460px){
+  .SPR_imageAdvanced .SPR_imageGenerationFields{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .SPR_imageGenerationFields>[data-num-field]{grid-column:1/-1;max-width:calc(50% - 6px);width:100%}
+  .SPR_imageAdvanced .SPR_imageKeyingActions{flex-wrap:wrap}
+  .SPR_imageExistingUpload{flex-basis:100%}
+  .SPR_imageKeyingActions>.SPR_btn{margin-left:auto}
+}
+@container(max-width:300px){
+  .SPR_imageAdvanced .SPR_imageGenerationFields,.SPR_imageKeyingGroupFields,.SPR_imageKeyingGroup[data-group=edges] .SPR_imageKeyingGroupFields{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .SPR_imageKeyingFields .SPR_keyColorControls{grid-template-columns:36px minmax(0,1fr) 92px}
+}
 .SPR_imageGenerateActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .SPR_imageGenerateActions>.SPR_refRow{flex-basis:100%;line-height:18px}
 .SPR_imageReview{display:flex;align-items:center;gap:8px;margin-left:auto;min-width:0;flex:1}
@@ -4956,7 +5004,7 @@
 .SPR_transparentToggle input:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:3px}
 .SPR_transparentToggle:has(input:disabled){opacity:.5;cursor:default}
 .SPR_imageKeyingAdvanced>summary{font-size:12px;color:var(--dsw-alias-label-secondary);cursor:pointer}
-.SPR_imageKeyingAdvanced[open]>summary{margin-bottom:14px}
+.SPR_imageKeyingAdvanced[open]>summary{margin-bottom:0}
 .SPR_promptOptimize{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:500;min-height:30px;padding:4px 9px;border:0;border-radius:7px;color:var(--dsw-alias-label-primary);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 10%,transparent);cursor:pointer;white-space:nowrap}
 .SPR_promptOptimize:hover:not(:disabled){background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 18%,transparent)}
 .SPR_promptOptimize:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
@@ -9165,17 +9213,26 @@
     }
 
     /** 抠像参数表单（三个模块共用同一套字段）。 */
-    function KeyingFields({ draft, onChange, fallbackColor }) {
-      return h(
-        "div",
-        { className: "SPR_fields" },
-        h(KeyColorField, { value: draft.keyColor || fallbackColor, onChange: (v) => onChange({ keyColor: v }) }),
-        h(NumField, { label: T("抠像下限（背景色接近度）"), value: draft.keyLow ?? 14, min: 0, max: 255, onChange: (v) => onChange({ keyLow: v }) }),
-        h(NumField, { label: T("抠像上限（背景色接近度）"), value: draft.keyHigh ?? 80, min: 1, max: 255, onChange: (v) => onChange({ keyHigh: v }) }),
-        h(NumField, { label: T("去溢色 0~1"), value: draft.despill ?? 0.65, min: 0, max: 1, step: 0.05, onChange: (v) => onChange({ despill: v }) }),
-        h(NumField, { label: T("背景分割容差（0 = 只认背景色）"), value: draft.bgTolerance ?? 90, min: 0, max: 160, onChange: (v) => onChange({ bgTolerance: v }) }),
-        h(NumField, { label: T("边缘收缩（px）"), value: draft.edgeShrink ?? 0, min: 0, max: 8, onChange: (v) => onChange({ edgeShrink: v }) })
-      );
+    function KeyingFields({ draft, onChange, fallbackColor, layout }) {
+      const grouped = layout === "image";
+      const color = h(KeyColorField, { value: draft.keyColor || fallbackColor, onChange: (v) => onChange({ keyColor: v }) });
+      const lower = h(NumField, { label: grouped ? T("抠像下限") : T("抠像下限（背景色接近度）"), value: draft.keyLow ?? 14, min: 0, max: 255, onChange: (v) => onChange({ keyLow: v }) });
+      const upper = h(NumField, { label: grouped ? T("抠像上限") : T("抠像上限（背景色接近度）"), value: draft.keyHigh ?? 80, min: 1, max: 255, onChange: (v) => onChange({ keyHigh: v }) });
+      const despill = h(NumField, { label: grouped ? T("去溢色") : T("去溢色 0~1"), value: draft.despill ?? 0.65, min: 0, max: 1, step: 0.05, onChange: (v) => onChange({ despill: v }) });
+      const tolerance = h(NumField, { label: grouped ? T("分割容差") : T("背景分割容差（0 = 只认背景色）"), value: draft.bgTolerance ?? 90, min: 0, max: 160, onChange: (v) => onChange({ bgTolerance: v }) });
+      const shrink = h(NumField, { label: grouped ? T("边缘收缩") : T("边缘收缩（px）"), value: draft.edgeShrink ?? 0, min: 0, max: 8, onChange: (v) => onChange({ edgeShrink: v }) });
+      if (grouped) return h("div", { className: "SPR_imageKeyingFields" }, color,
+        h("div", { className: "SPR_imageKeyingGroups" },
+          h("section", { className: "SPR_imageKeyingGroup", "data-group": "background", "aria-labelledby": "image-keying-background" },
+            h("h4", { className: "SPR_imageKeyingGroupTitle", id: "image-keying-background" }, T("背景识别"),
+              h(DescriptionTip, { id: "image-keying-background-tip", label: T("背景识别"), text: T("下限和上限控制背景色接近度；分割容差设为 0 时，只按背景色判断。") })),
+            h("div", { className: "SPR_imageKeyingGroupFields" }, lower, upper, tolerance)),
+          h("section", { className: "SPR_imageKeyingGroup", "data-group": "edges", "aria-labelledby": "image-keying-edges" },
+            h("h4", { className: "SPR_imageKeyingGroupTitle", id: "image-keying-edges" }, T("边缘处理"),
+              h(DescriptionTip, { id: "image-keying-edges-tip", label: T("边缘处理"), text: T("去溢色强度为 0~1，设为 0 时关闭；边缘收缩单位为 px。") })),
+            h("div", { className: "SPR_imageKeyingGroupFields" }, despill, shrink))
+        ));
+      return h("div", { className: "SPR_fields" }, color, lower, upper, despill, tolerance, shrink);
     }
 
     /**
@@ -9202,21 +9259,20 @@
         h("span", { className: "SPR_fieldLabel" }, label ?? T("抠像背景色")),
         h(
           "div",
-          { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
+          { className: "SPR_keyColorControls" },
           h("input", {
             type: "color",
             value: current,
             "data-testid": "key-color",
             title: T("自定义背景色"),
             onChange: (event) => onChange(normalizeKeyColorHex(event.target.value)),
-            style: { width: 40, height: 30, padding: 0, border: "1px solid var(--dsw-alias-border-l2)", borderRadius: 6, background: "transparent" }
+            className: "SPR_keyColorSwatch"
           }),
           h(
             "select",
             {
               className: "SPR_input",
               "data-testid": "key-color-preset",
-              style: { flex: "1 1 120px" },
               value: presets.some((preset) => preset.hex === current) ? current : "",
               onChange: (event) => onChange(event.target.value === "" ? current : event.target.value)
             },
@@ -9224,8 +9280,7 @@
             presets.some((preset) => preset.hex === current) ? null : h("option", { value: "" }, T("自定义"))
           ),
           h("input", {
-            className: "SPR_input",
-            style: { width: 108 },
+            className: "SPR_input SPR_keyColorHex",
             defaultValue: current,
             key: current,
             "data-testid": "key-color-hex",
@@ -17827,10 +17882,13 @@
                   h("div", { className: "SPR_card SPR_imageAdvanced" },
                     h("details", { className: "SPR_imageGenerationAdvanced" },
                     h("summary", null, T("高级设置")),
+                    h("div", { className: "SPR_imageModelMeta" },
+                      h("span", null, T("生图模型")),
+                      h("span", { className: "SPR_imageModelValue" }, globalConfig?.imageModel ?? globalConfig?.arkModel ?? settingsDraft.model ?? "—"),
+                      h(DescriptionTip, { id: "image-model-description", label: T("生图模型"), text: T("跟随即「设置 → 游戏素材大师」") })),
                     h(
                       "div",
-                      { className: "SPR_fields" },
-                      h(GlobalModelField, { label: T("生图模型"), value: globalConfig?.imageModel ?? globalConfig?.arkModel ?? settingsDraft.model }),
+                      { className: "SPR_fields SPR_imageGenerationFields" },
                       h(
                         "label",
                         { className: "SPR_field" },
@@ -17860,7 +17918,9 @@
                         ? h(
                             "label",
                             { className: "SPR_field" },
-                            h("span", { className: "SPR_fieldLabel" }, T("任务尺寸")),
+                            h("span", { className: "SPR_imageFieldHead" },
+                              h("span", { className: "SPR_fieldLabel" }, T("任务尺寸")),
+                              h(DescriptionTip, { id: "image-task-size-description", label: T("任务尺寸"), text: T("只影响这个任务；支持 1K / 2K / 4K 或 宽x高") })),
                             h("input", {
                               className: "SPR_input",
                               "data-testid": "image-task-size",
@@ -17871,15 +17931,15 @@
                                 if (event.key === "Enter") event.target.blur();
                               },
                               onBlur: () => void saveJob({ settings: settingsDraft })
-                            }),
-                            h("span", { className: "SPR_fieldLabel" }, T("只影响这个任务；支持 1K / 2K / 4K 或 宽x高"))
+                            })
                           )
                         : h(
                             "label",
                             { className: "SPR_field" },
-                            h("span", { className: "SPR_fieldLabel" }, T("当前全局尺寸")),
-                            h("input", { className: "SPR_input", value: globalConfig?.imageProviderSize ?? settingsDraft.size ?? "", readOnly: true, disabled: true, "data-testid": "image-global-size" }),
-                            h("span", { className: "SPR_fieldLabel" }, T("在「设置 → 游戏素材大师 → 输出尺寸」里改"))
+                            h("span", { className: "SPR_imageFieldHead" },
+                              h("span", { className: "SPR_fieldLabel" }, T("当前全局尺寸")),
+                              h(DescriptionTip, { id: "image-global-size-description", label: T("当前全局尺寸"), text: T("在「设置 → 游戏素材大师 → 输出尺寸」里改") })),
+                            h("input", { className: "SPR_input", value: globalConfig?.imageProviderSize ?? settingsDraft.size ?? "", readOnly: true, disabled: true, "data-testid": "image-global-size" })
                           ),
                       h(NumField, { label: T("生成张数（1~8）"), value: settingsDraft.count ?? 1, min: 1, max: 8, onChange: (v) => { setSettingsDraft({ ...settingsDraft, count: v }); void saveJob({ settings: { ...settingsDraft, count: v } }); } })
                     )),
@@ -17887,9 +17947,12 @@
                     "details",
                     { className: "SPR_imageKeyingAdvanced" },
                     h("summary", null, T("高级抠像与已有图片")),
+                    h(KeyingFields, { layout: "image", draft: keyingDraft, fallbackColor: globalConfig?.keyColor, onChange: (patch) => { const next = { ...keyingDraft, ...patch }; setKeyingDraft(next); void saveJob({ keying: patch }); } }),
                     h(
                       "div",
-                      { className: "SPR_toolbar" },
+                      { className: "SPR_imageKeyingActions" },
+                      h("div", { className: "SPR_imageExistingUpload" },
+                        h(UploadBox, { label: T("上传一张已有图片，直接抠成透明 PNG"), accept: "image/*", multiple: false, busy: uploading || tasks.has(K_IMG_UPLOAD), onFiles: (files) => void upload(files, "item") })),
                       h(
                         BusyBtn,
                         {
@@ -17909,8 +17972,6 @@
                         T("按当前参数重新抠像")
                       )
                     ),
-                    h(KeyingFields, { draft: keyingDraft, fallbackColor: globalConfig?.keyColor, onChange: (patch) => { const next = { ...keyingDraft, ...patch }; setKeyingDraft(next); void saveJob({ keying: patch }); } }),
-                    h(UploadBox, { label: T("上传一张已有图片，直接抠成透明 PNG"), accept: "image/*", multiple: false, busy: uploading || tasks.has(K_IMG_UPLOAD), onFiles: (files) => void upload(files, "item") }),
                     tasks.has(K_IMG_UPLOAD) ? h(BusyBadge, { show: true, text: tasks.label(K_IMG_UPLOAD) }) : null
                   ))),
                   h(

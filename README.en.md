@@ -248,6 +248,8 @@ without spending anything on generation. Still images recover foreground color a
 
 Transparent-background instructions describe a separate flat layer that does not illuminate or reflect onto the subject. Unless lighting is specified, they request neutral white light and shadows in the subject's own color families. Prompt optimization, final request preview and generation share these rules. Instructions can only reduce color contamination: if the source image already paints the screen color inside hair or an object, re-keying cannot reliably recover its original color. Removing all purple or green would also damage intentional colors.
 
+Advanced settings show the model as read-only information and group size and count controls together. Keying parameters are grouped into Background detection and Edge treatment. The color picker, preset and hex value share one row; description icons contain longer help. Existing-image upload and re-key actions appear at the bottom, with groups stacking in narrow panels.
+
 ### How to use it
 
 1. Write the main prompt; put requirements you reuse across batches (for example "no text watermarks") into the
