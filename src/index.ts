@@ -34,7 +34,8 @@ import {
 import { DEFAULT_KEY_COLOR, normalizeKeyColor } from "./keycolor.js";
 import { checkFfmpeg } from "./media.js";
 import { testArk } from "./ark.js";
-import { customImageBlocker, imageModelOf, imageSizeOf, imageProviderBlocker, imageProviderSummary, testCustomImage } from "./imageprovider.js";
+import { customImageBlocker, generateImageWithProvider, imageModelOf, imageSizeOf, imageProviderBlocker, imageProviderSummary, testCustomImage } from "./imageprovider.js";
+import { imageModelTests, imageTestFingerprint, runModelTest } from "./modeltests.js";
 import {
   detectComfyBindings,
   fetchComfyObjectInfo,
@@ -83,7 +84,7 @@ import {
 } from "./pipeline.js";
 import { assetPath, createProject, deleteProject, listProjects, log, patchProject, projectDir, projectExists, readProject, resetDerivedFromSource, } from "./store.js";
 import * as imagegen from "./imagegen.js";
-import { optimizeImagePrompt, promptOptimizerModels } from "./promptoptimizer.js";
+import { optimizeImagePrompt, promptOptimizerModels, testPromptOptimizerModel } from "./promptoptimizer.js";
 import { IMAGE_PROMPT_TEMPLATES, validateImagePromptTemplates } from "./imageprompts.js";
 import * as seqgen from "./seqgen.js";
 import * as riggen from "./riggen.js";
@@ -301,6 +302,7 @@ export class GameStudioGateway extends TypertRemoteService {
       imageProviderSummary: imageProviderSummary(config),
       /** 当前生效的生图模型（模块里那个只读展示位用它，比 summary 短）。 */
       imageModel: imageModelOf(config),
+      imageModelTests: await imageModelTests(config),
       imageProviderSize: imageSizeOf(config),
       videoProviderBackend: videoBackendOf(config),
       videoProviderModel: videoBackendOf(config) === "toapis" ? config.toapisVideoModel : config.minimaxModel,
@@ -508,16 +510,25 @@ export class GameStudioGateway extends TypertRemoteService {
     const config = await loadConfig();
     if (config.arkApiKey.trim() === "")
       throw new Error("尚未配置火山方舟 API Key");
-    return testArk({
+    return runModelTest(imageTestFingerprint(config, "ark"), () => testArk({
       baseUrl: config.arkBaseUrl,
       apiKey: config.arkApiKey,
       model: config.arkModel,
       timeoutMs: config.arkTimeoutMs
-    });
+    }));
   }
   /** 测自定义生图后端。与 testArk 对称，各自测各自那一组配置。 */
   async testCustomImage() {
-    return testCustomImage();
+    const config = await loadConfig();
+    return runModelTest(imageTestFingerprint(config, "custom"), () => testCustomImage(config));
+  }
+  async testToapisImage(input) {
+    if (input.confirmed !== true) throw new Error("请确认测试会真实生成一张图片并计费。");
+    const config = { ...await loadConfig(), imageProvider: "toapis" as const };
+    return runModelTest(imageTestFingerprint(config, "toapis"), async () => {
+      const result = await generateImageWithProvider({ prompt: "A small blue circle on a plain white background.", images: [], size: config.toapisImageSize, watermark: false }, undefined, config);
+      return { ok: true, model: config.toapisImageModel, bytes: result.bytes.length, ext: result.ext };
+    });
   }
   async testMinimax() {
     const config = await loadConfig();
@@ -1771,6 +1782,7 @@ export class GameStudioGateway extends TypertRemoteService {
   }
 
   async getPromptOptimizerModel() { return promptOptimizerModels(this.ctx); }
+  async testPromptOptimizerModel(input) { return testPromptOptimizerModel(this.ctx, input); }
   async previewImagePrompt(payload) {
     const input = asRecord(payload);
     const context = await imagegen.imagePromptContext(asString(input.jobId), { prompt: asString(input.prompt), suffix: input.suffix, keying: input.keying, lang: input.lang });
@@ -1892,7 +1904,7 @@ export class GameStudioGateway extends TypertRemoteService {
     const historyId = input.historyId === undefined ? undefined : asString(input.historyId);
     const job = await imagegen.readImageJob(jobId);
     if (job === undefined) throw new Error(`任务不存在：${jobId}`);
-    if (!historyId && job.prompt.trim() === "") throw new Error("提示词为空，请先填写");
+    if (!historyId && asString(input.submittedPrompt, job.prompt).trim() === "") throw new Error("提示词为空，请先填写");
     if (imageTasks.get(jobId)?.size) throw new Error("图片任务正在处理，请完成后再生成。");
     if (input.index !== undefined && input.count !== undefined) throw new Error("单张重生不能同时指定批量张数。");
     if (historyId && (input.index !== undefined || input.count !== undefined)) throw new Error("历史重生固定生成一张，不能同时指定槽位或批量张数。");
@@ -1901,17 +1913,26 @@ export class GameStudioGateway extends TypertRemoteService {
     const count = historyId ? 1 : index === undefined ? clampInt(input.count, job.settings.count, 1, 8) : undefined;
     imageTasks.set(jobId, new Set(["image:submit"]));
     try {
-      const batch = await imagegen.prepareImageBatch(jobId, count, index, historyId);
+      const batch = await imagegen.prepareImageBatch(jobId, count, index, historyId, { roundId: input.roundId as string | undefined, consumePrompt: input.consumePrompt === true, prompt: input.submittedPrompt as string | undefined });
+      const controller = new AbortController();
+      imageControllers.set(jobId, controller);
       let started = 0;
       if (job.draft) await imagegen.editImageJob(jobId, current => { current.draft = false; });
       for (const i of index === undefined ? Array.from({ length: count! }, (_, i) => i) : [index]) {
-        if (kickImageItem(jobId, i, batch)) started++;
+        if (kickImageItem(jobId, i, batch, controller.signal)) started++;
       }
       if (started === 0) throw new Error("这些图片已经在生成中，请等它们跑完");
-      return { started: true, count: started };
+      return { started: true, count: started, roundId: batch.id };
     } finally {
-      const tasks = imageTasks.get(jobId); tasks?.delete("image:submit"); if (!tasks?.size) imageTasks.delete(jobId);
+      const tasks = imageTasks.get(jobId); tasks?.delete("image:submit"); if (!tasks?.size) { imageTasks.delete(jobId); imageControllers.delete(jobId); }
     }
+  }
+
+  async cancelImageJob(payload) {
+    const jobId = asString(asRecord(payload).jobId);
+    const controller = imageControllers.get(jobId);
+    if (controller) controller.abort();
+    return { ok: true, stopped: !!controller };
   }
 
   async keyImageJob(payload) {
@@ -2920,6 +2941,7 @@ function applyKeying(target, raw): void {
  * 同一张图重复点「生成」会白花一次钱，所以这里和八方向模块一样做拒绝。
  */
 const imageTasks = new Map<string, Set<string>>();
+const imageControllers = new Map<string, AbortController>();
 
 function startedImageTask(jobId: string, key: string): boolean {
   return imageTasks.get(jobId)?.has(key) === true;
@@ -2934,13 +2956,13 @@ function trackImageTask(jobId: string, key: string, run: () => Promise<unknown>)
     .catch(() => undefined)
     .finally(() => {
       set.delete(key);
-      if (set.size === 0) imageTasks.delete(jobId);
+      if (set.size === 0) { imageTasks.delete(jobId); imageControllers.delete(jobId); }
     });
   return true;
 }
 
-function kickImageItem(jobId: string, index: number, batch: imagegen.ImageBatch): boolean {
-  return trackImageTask(jobId, `image:${index}`, () => imagegen.generateImageItem(jobId, index, batch));
+function kickImageItem(jobId: string, index: number, batch: imagegen.ImageBatch, signal?: AbortSignal): boolean {
+  return trackImageTask(jobId, `image:${index}`, () => imagegen.generateImageItem(jobId, index, batch, signal));
 }
 
 function kickImageKey(jobId: string): boolean {
@@ -2948,6 +2970,8 @@ function kickImageKey(jobId: string): boolean {
 }
 
 function disposeImageTasks(): void {
+  for (const controller of imageControllers.values()) controller.abort();
+  imageControllers.clear();
   imageTasks.clear();
 }
 

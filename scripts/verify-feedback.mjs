@@ -1208,7 +1208,8 @@ if (typeof ImageModule === "function") {
     check("失败图片直接提供重新生成，不显示空的更多菜单", byTag(failedTree, "button").some(node => textOf(node) === "重新生成" && !node.props.disabled) && !byTag(failedTree, "button").some(node => node.props["aria-label"] === "第 1 张图片的更多操作"));
     const failureLogs = byClass(failedTree, "SPR_chatLogs").map(textOf).join();
     check("旧HTML报错在执行详情中保留502原因并隐藏源码", failureLogs.includes("HTTP 502") && failureLogs.includes("中转服务或上游") && !/DOCTYPE|<html|<title>/.test(failureLogs));
-    check("图标生成按钮转圈并禁止重复提交", byTag(gen.tree, "button").some(node => node.props.className?.includes("SPR_chatGenerate") && node.props["data-busy"] === "true" && node.props.disabled && byClass(node, "SPR_spinSm").length === 1));
+    check("提交中图标变为停止方块并禁止重复提交", byTag(gen.tree, "button").some(node => node.props.className?.includes("SPR_chatGenerate") && node.props["aria-label"] === "停止生成" && node.props.disabled && byTag(node, "rect").length === 1));
+    check("后台生成期间停止按钮保持可用且不重复显示底部进度条", byTag(pendingTree, "button").some(node => node.props.className?.includes("SPR_chatGenerate") && node.props["aria-label"] === "停止生成" && !node.props.disabled) && byClass(pendingTree, "SPR_chatRound").every(node => byClass(node, "SPR_busyBadge").length === 0));
 
     const one = renderModule(ImageModule, makeImageJob(), makeTasks(["img:item:0"]));
     check("单张重新生成时只有那张被盖住", overlays(one.tree).length === 1, `${overlays(one.tree).length} 个`);

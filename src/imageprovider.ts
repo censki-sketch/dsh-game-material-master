@@ -171,8 +171,8 @@ export async function generateImageWithProvider(request: ProviderImageRequest, s
  * —— 用户经常是先把两边的地址都填好、各测一次，再决定切哪个。
  * 只有真跑一次才能同时验证「地址对不对」和「服务端真的能出图」，看配置看不出来。
  */
-export async function testCustomImage(): Promise<{ ok: true; provider: string; model: string; bytes: number; ext: string }> {
-  const config = await loadConfig();
+export async function testCustomImage(configuration?: Config): Promise<{ ok: true; provider: string; model: string; bytes: number; ext: string }> {
+  const config = configuration ?? await loadConfig();
   const blocker = customImageBlocker(config);
   if (blocker !== undefined) throw new Error(blocker);
   const result = await generateCustomImage({

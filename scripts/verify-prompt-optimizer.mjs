@@ -196,7 +196,7 @@ try {
   return provider==='deepseek'?[{id:'deepseek-chat',name:'DeepSeek Chat',provider,inputModalities:['text'],apiKey:'private-test-key'}]:[{id:'vision-choice',name:'Vision Choice',provider,inputModalities:['text','image']}];
  };
  const selectionBefore=structuredClone(selection),catalogCount=calls.length,catalog=await invoke('getPromptOptimizerModel');
- check('lists DSH routes and model modalities without dispatch or credentials',calls.length===catalogCount&&catalog.models.some(model=>model.provider==='deepseek'&&model.model==='deepseek-chat')&&catalog.models.some(model=>model.model==='vision-choice'&&model.inputModalities.includes('image'))&&!JSON.stringify(catalog).includes('private-test-key'));
+ check('lists configured DSH routes without dispatch, excludes untested choices and credentials',calls.length===catalogCount&&catalog.models.length===0&&catalog.configuredModels.some(model=>model.provider==='deepseek'&&model.model==='deepseek-chat')&&catalog.configuredModels.some(model=>model.model==='vision-choice'&&model.inputModalities.includes('image'))&&!JSON.stringify(catalog).includes('private-test-key'));
  check('one failed catalog leaves other model choices usable and hides provider errors',catalog.modelsMessage&&!catalog.modelsMessage.includes('private-test-key'));
  const picked=await invoke('optimizeImagePrompt',{...input,modelSelection:{provider:'deepseek',model:'deepseek-chat'}});
  check('explicit choice survives wire and dispatches exactly once on the chosen route',calls.length===catalogCount+1&&picked.provider==='deepseek'&&picked.model==='deepseek-chat'&&calls.at(-1).model==='deepseek-chat'&&calls.at(-1).reasoningEffort===undefined);

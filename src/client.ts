@@ -44,6 +44,33 @@
     /** 中文原文 → 英文译文。key 里可能带 `{nN}` 占位符。 */
 /* i18n-ignore-start */
     const EN: Record<string, string> = {
+  "本次消息未提交，请重试。": "This message was not submitted. Please retry.",
+  "停止生成": "Stop generation",
+  "停止等待生成，已提交的请求仍可能计费。": "Stop waiting for generation. Submitted requests may still be billed.",
+  "正在停止…": "Stopping…",
+  "模型测试通过": "Model test passed",
+  "测试通过": "Passed",
+  "尚未测试通过": "Not verified",
+  "重新测试": "Retest",
+  "测试": "Test",
+  "管理模型测试": "Manage model tests",
+  "模型测试": "Model tests",
+  "切换菜单只显示测试通过的模型。修改地址、模型或密钥后需重新测试；打开此窗口不会发起测试。": "Only verified models appear in the switcher. Retest after changing an endpoint, model or key. Opening this window does not run tests.",
+  "确认测试 {n0}？": "Test {n0}?",
+  "将调用一次DSH文字模型，按该模型用量规则计费。": "Makes one DSH text model call under its usage rules.",
+  "将真实生成一张测试图，按所配置服务计费。": "Generates one test image, billed by your configured service.",
+  "确认测试": "Confirm test",
+  "请先在DSH设置中配置文字模型。": "Configure a text model in DSH settings first.",
+  "模型配置已变更，请重新测试。": "Model configuration changed. Please retest.",
+  "选择模型": "Choose model",
+  "切换模型": "Switch model",
+  "生图模型（全局）": "Image model (global)",
+  "暂无测试通过的生图模型": "No verified image models",
+  "暂无测试通过的提示词模型": "No verified prompt models",
+  "请先在输入栏选择测试通过的提示词模型。": "Choose a verified prompt model in the composer first.",
+  "模型在主输入栏切换，沿用DSH登录与用量规则；带参考图时需支持图片输入。指定@图片时只参考指定图片，否则使用全部参考图。": "Switch models in the main composer using DSH sign-in and usage rules. References require image support. Explicit @ mentions select references; otherwise all are used.",
+  "暂无项目素材": "No project materials yet",
+  "添加参考图或生成图片后，素材会显示在这里。": "Reference uploads and generated images will appear here.",
   "导入已有图片": "Import existing images",
   "添加图片": "Add images",
   "生成失败": "Generation failed",
@@ -174,7 +201,6 @@
       "角色素材": "Character asset",
       "像素角色": "Pixel character",
       "八方向外观": "Eight-direction views",
-      "只读": "Read only",
       "管理模板": "Manage templates",
       "返回": "Back",
       "查看原 Key": "Show saved key",
@@ -213,19 +239,15 @@
       "撤销优化": "Undo optimization",
       "正在读取DSH模型…": "Loading the DSH model…",
       "文字模型未返回提示词": "The text model did not return a prompt",
-      "可选择DSH已配置的模型，沿用已有登录和用量规则，无需单独填写Key。只影响本项目的提示词优化，不修改DSH默认模型；带参考图时需要支持图片输入。": "Choose a model configured in DSH, using your existing sign-in and usage rules without another key. This only affects prompt optimization in this project, not DSH's default model. References require image input support.",
-      "DSH模型列表读取失败，请重试；未提交优化请求。": "Could not read the DSH model list. Try again; no optimization request was submitted.",
       "提示词优化模型": "Prompt optimization model",
       "DSH默认模型": "DSH default model",
       "支持图片": "Image input",
       "重新读取模型": "Reload models",
       "只优化文字，使用DSH现有模型；图片仍需单独点击生成。": "Optimizes text using your existing DSH model. Generate images separately.",
       "DSH模型：{n0}": "DSH model: {n0}",
-      "无法读取DSH模型；更新插件后请完全退出DSH（包括托盘）再打开。": "Could not read the DSH model. After updating the plugin, quit DSH completely, including the tray, then reopen it.",
       "原提示词": "Original prompt",
       "优化结果（可编辑）": "Optimized prompt (editable)",
       "点击优化后，结果会显示在这里。": "The result will appear here after optimization.",
-      "不使用模板时不追加美术模板。指定@图片时只使用指定图片，否则使用全部已上传参考图；优化和生图使用相同范围。": "No art template is added when none is selected. Explicit @ mentions select the images used; otherwise all uploaded references are used. Optimization and generation use the same selection.",
       "需求核对": "Intent review",
       "目标": "Goal",
       "必须修改": "Required changes",
@@ -612,9 +634,6 @@
       "统一附加提示词（可留空）": "Shared suffix prompt (optional)",
       "生图模型": "Image model",
       "生成张数（1~8）": "Images (1~8)",
-      "正在生成 {n0} 张…": "Generating {n0} images…",
-      "已开始生成 {n0} 张": "Started generating {n0} images",
-      "正在生成 {n0} 张图片…": "Generating {n0} images…",
       "生成 {n0} 张": "Generate {n0}",
       "添加参考图": "Add reference images",
       "预览参考图": "Preview reference image",
@@ -3339,6 +3358,8 @@
       ["saveConfig", true],
       ["testArk", false],
       ["testCustomImage", false],
+      ["testToapisImage", true],
+      ["testPromptOptimizerModel", true],
       ["testMinimax", false],
       ["testComfy", false],
       ["testMusic", false],
@@ -3394,6 +3415,7 @@
       ["addImageItem", true],
       ["removeImageItem", true],
       ["runImageJob", true],
+      ["cancelImageJob", true],
       ["keyImageJob", true],
       ["manageImageHistory", true],
       ["cleanImageRegion", true],
@@ -5443,8 +5465,8 @@
 .SPR_transparentToggle:has(input:disabled){opacity:.5;cursor:default}
 .SPR_imageKeyingAdvanced>summary{font-size:12px;color:var(--dsw-alias-label-secondary);cursor:pointer}
 .SPR_imageKeyingAdvanced[open]>summary{margin-bottom:0}
-.SPR_promptOptimize{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:500;min-height:30px;padding:4px 9px;border:0;border-radius:7px;color:var(--dsw-alias-label-primary);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 10%,transparent);cursor:pointer;white-space:nowrap}
-.SPR_promptOptimize:hover:not(:disabled){background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 18%,transparent)}
+.SPR_promptOptimize{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:500;min-height:30px;padding:4px 9px;border:0;border-radius:7px;color:var(--dsw-alias-label-primary);background:transparent;cursor:pointer;white-space:nowrap}
+.SPR_promptOptimize:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-solid)}
 .SPR_promptOptimize:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
 .SPR_promptOptimize:disabled{opacity:.55;cursor:default}
 .SPR_promptOptimize svg{width:16px;height:16px;flex:none;color:var(--dsw-alias-state-business-primary)}
@@ -5659,7 +5681,21 @@
 .SPR_chatTop .SPR_btn:hover,.SPR_chatTop .SPR_btn[data-on=true]{background:var(--dsw-alias-interactive-bg-hover-solid)}
 .SPR_chatScroll{position:relative;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;min-height:0;flex:1;scrollbar-gutter:stable}
 .SPR_chatMessages{box-sizing:border-box;width:min(100%,840px);margin:0 auto;padding:18px 46px 30px 24px}
-.SPR_chatWelcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;height:36vh;text-align:center;color:var(--dsw-alias-label-secondary);gap:12px}
+.SPR_chatScroll[data-empty=true]{display:flex;scrollbar-gutter:auto}
+.SPR_chatMessages[data-empty=true]{display:flex;flex-direction:column;flex:1;padding:24px}
+.SPR_chatWelcome{display:flex;flex-direction:column;flex:1;align-items:center;justify-content:center;min-height:180px;text-align:center;color:var(--dsw-alias-label-secondary);gap:12px}
+.SPR_chatMaterialsEmpty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:240px;padding:32px 16px;text-align:center;color:var(--dsw-alias-label-secondary)}
+.SPR_chatMaterialsEmpty>svg{width:36px;height:36px;color:var(--dsw-alias-label-tertiary)}
+.SPR_chatMaterialsEmpty h4,.SPR_chatMaterialsEmpty p{margin:0;line-height:1.7}
+.SPR_chatMaterialsEmpty h4{font-size:14px;font-weight:500;color:var(--dsw-alias-label-primary)}
+.SPR_modelGroupLabel{margin:8px 6px 4px;font-size:11px;color:var(--dsw-alias-label-tertiary)}
+.SPR_modelTestList{display:flex;flex-direction:column;gap:8px}
+.SPR_modelTestRow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.SPR_modelTestRow>div{flex:1;min-width:0;overflow-wrap:anywhere}
+.SPR_modelTestRow p{margin:4px 0 0;font-size:12px;color:var(--dsw-alias-label-secondary)}
+.SPR_chatModelTrigger{display:flex;align-items:center;gap:4px;max-width:180px;font-size:12px}
+.SPR_chatModelTrigger>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_chatComposerBottom .SPR_chatModels .SPR_imageResultMore{width:auto;padding:4px 6px}
 .SPR_chatWelcome>svg{width:34px;height:34px;opacity:.6}
 .SPR_chatWelcome h2{font-size:20px;font-weight:550;margin:0;line-height:1.5;color:var(--dsw-alias-label-primary)}
 .SPR_chatWelcome p{margin:0;line-height:1.7}
@@ -5779,6 +5815,8 @@
 .SPR_chatPanel .SPR_imageKeyingActions>.SPR_btn{width:100%;min-height:38px;margin:0;border-radius:10px;box-shadow:none;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-1);border-color:transparent}
 .SPR_chatPanel .SPR_imageKeyingActions>.SPR_btn:hover:not(:disabled){opacity:.86;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-1)}
 .SPR_chatMaterials{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.SPR_chatMaterials:has(.SPR_chatMaterialsEmpty){display:flex;min-height:calc(100dvh - 210px)}
+.SPR_chatMaterialsEmpty{flex:1}
 .SPR_chatMaterial{min-width:0;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:8px}
 .SPR_chatMaterial>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;margin:5px 0}
 .SPR_chatMaterial>.SPR_btn{width:100%;font-size:11px;padding:4px}
@@ -6387,16 +6425,19 @@
       const [value, setValue] = React.useState(null);
       React.useEffect(() => {
         let alive = true;
-        void (async () => {
+        const load = async () => {
           try {
             const next = await api.getConfig();
             if (alive) setValue(next);
           } catch {
             /* 取不到就退回任务里记录的值 */
           }
-        })();
+        };
+        void load();
+        window.addEventListener("gmm-model-config", load);
         return () => {
           alive = false;
+          window.removeEventListener("gmm-model-config", load);
         };
       }, [api]);
       return value;
@@ -18512,7 +18553,7 @@
       };
       return h("div", { className: "SPR_promptBase", "data-testid": "image-base-prompt" },
         h("div", { className: "SPR_promptBaseHead" },
-          h("strong", null, T("基础提示词")), h("span", { className: "SPR_promptReadonly" }, T("只读")),
+          h("strong", null, T("基础提示词")),
           h("div", { className: "SPR_promptTemplateSelectRow" },
           h("select", { className: "SPR_input SPR_promptTemplateSelect", "aria-label": T("基础提示词"), disabled: props.disabled,
             value: template ? selected : props.suffix ? "__saved__" : "", onChange: event => apply(event.target.value || null) },
@@ -18648,6 +18689,124 @@
             h("textarea", { className: "SPR_area", "aria-label": T("最终生图提示词"), readOnly: true, value: current.prompt })) : !error ? h("span", { className: "SPR_spinSm", "aria-label": T("正在加载…") }) : null) : null);
     }
 
+    function usePromptModel(jobId) {
+      const key = "dsh-game-material-master:prompt-model:" + jobId;
+      const read = () => {
+        try { const saved = JSON.parse(window.localStorage.getItem(key) || "null"); return saved && typeof saved.provider === "string" && typeof saved.model === "string" ? saved : null; } catch { return null; }
+      };
+      const [selected, setSelected] = React.useState(read);
+      React.useEffect(() => {
+        const sync = (event = null) => setSelected(event?.detail?.jobId === jobId ? event.detail.value : read());
+        sync(); window.addEventListener("gmm-prompt-model", sync); window.addEventListener("storage", sync);
+        return () => { window.removeEventListener("gmm-prompt-model", sync); window.removeEventListener("storage", sync); };
+      }, [key]);
+      const choose = value => {
+        setSelected(value);
+        try { if (value) window.localStorage.setItem(key, JSON.stringify(value)); else window.localStorage.removeItem(key); } catch { /* Keep this session's choice. */ }
+        window.dispatchEvent(new CustomEvent("gmm-prompt-model", { detail: { jobId, value } }));
+      };
+      return [selected, choose];
+    }
+
+    function ModelTestManager({ api, onChanged, visible = false, hideTrigger = false, onDismiss }) {
+      const [open, setOpen] = React.useState(false), [config, setConfig] = React.useState(null), [catalog, setCatalog] = React.useState(null);
+      const [pending, setPending] = React.useState(null), [confirmation, setConfirmation] = React.useState(null), [notice, setNotice] = React.useState(null);
+      const dialog = React.useRef(null), lock = React.useRef(false), alive = React.useRef(true);
+      React.useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+      React.useEffect(() => { if (open && dialog.current && !dialog.current.open) dialog.current.showModal(); }, [open]);
+      const load = async () => {
+        const results = await Promise.allSettled([api.getConfig(), api.getPromptOptimizerModel()]);
+        if (!alive.current) return;
+        if (results[0].status === "fulfilled") setConfig(results[0].value);
+        if (results[1].status === "fulfilled") setCatalog(results[1].value);
+        for (const result of results) if (result.status === "rejected") setNotice({ kind: "error", text: msg(result.reason) });
+      };
+      React.useEffect(() => { if (visible) { setOpen(true); setNotice(null); void load(); } }, [visible]);
+      const close = () => { if (!lock.current) { dialog.current?.close(); setOpen(false); setConfirmation(null); onDismiss?.(); } };
+      const test = async () => {
+        if (lock.current || !confirmation) return;
+        const target = confirmation;
+        lock.current = true; setPending(target.id); setConfirmation(null); setNotice(null);
+        try {
+          if (target.selection) await api.testPromptOptimizerModel({ ...target.selection, confirmed: true });
+          else if (target.provider === "ark") await api.testArk();
+          else if (target.provider === "custom") await api.testCustomImage();
+          else if (target.provider === "toapis") await api.testToapisImage({ confirmed: true });
+          if (alive.current) setNotice({ kind: "ok", text: T("模型测试通过") });
+        } catch (error) { if (alive.current) setNotice({ kind: "error", text: msg(error) }); }
+        finally {
+          try { await load(); await onChanged?.(); window.dispatchEvent(new Event("gmm-model-config")); }
+          finally { lock.current = false; if (alive.current) setPending(null); }
+        }
+      };
+      const row = (id, name, detail, passed, disabled, target) => h("div", { key: id, className: "SPR_modelTestRow" },
+        h("div", null, h("strong", null, name), h("p", null, detail), h("p", null, passed ? T("测试通过") : T("尚未测试通过"))),
+        h(BusyBtn, { busy: pending === id, disabled: !!pending || disabled, onClick: () => setConfirmation({ id, name, ...target }) }, passed ? T("重新测试") : T("测试")));
+      return h(React.Fragment, null,
+        !hideTrigger ? h(Btn, { onClick: () => { setOpen(true); setNotice(null); void load(); } }, T("管理模型测试")) : null,
+        h("dialog", { className: "SPR_promptDialog", ref: dialog, "aria-label": T("模型测试"), onCancel: event => { event.preventDefault(); close(); }, onClose: () => { setOpen(false); onDismiss?.(); } }, open ? h(React.Fragment, null,
+          h("div", { className: "SPR_promptDialogHead" }, h("h3", null, T("模型测试")), h(Btn, { disabled: !!pending, onClick: close }, T("关闭"))),
+          h("p", { className: "SPR_hint" }, T("切换菜单只显示测试通过的模型。修改地址、模型或密钥后需重新测试；打开此窗口不会发起测试。")),
+          h(NoticePopup, { notice, onClose: () => setNotice(null) }),
+          confirmation ? h("section", { className: "SPR_note", "data-kind": "warning", role: "alert" }, h("strong", null, T("确认测试 {n0}？", { n0: confirmation.name })),
+            h("p", null, confirmation.selection ? T("将调用一次DSH文字模型，按该模型用量规则计费。") : T("将真实生成一张测试图，按所配置服务计费。")),
+            h("div", { className: "SPR_btnRow" }, h(Btn, { onClick: () => setConfirmation(null) }, T("取消")), h(Btn, { primary: true, onClick: () => void test() }, T("确认测试")))) : null,
+          h("div", { className: "SPR_modelTestList" }, h("h4", null, T("生图模型")), config ? (config.imageModelTests ?? []).map(model => row("image:" + model.provider,
+            model.provider === "ark" ? T("火山方舟（生图）") : model.provider === "toapis" ? "ToAPIs" : T("自定义生图模型"), model.model || "—", model.testedAt,
+            model.provider === "ark" ? !config.arkApiKeySet : model.provider === "toapis" ? !config.toapisApiKeySet : !!config.customImageBlocker, { provider: model.provider })) : h("p", null, T("正在载入配置…")),
+            h("h4", null, T("提示词优化模型")), (catalog?.configuredModels ?? []).map(model => row("prompt:" + model.provider + ":" + model.model, model.name, model.providerName, model.testedAt, false, { selection: { provider: model.provider, model: model.model } })),
+            catalog && !catalog.configuredModels?.length ? h("p", { className: "SPR_hint" }, T("请先在DSH设置中配置文字模型。")) : null)) : null));
+    }
+
+    function ImageModelPicker({ api, jobId, disabled, imageConfig = null }) {
+      const [selected, choose] = usePromptModel(jobId), [catalog, setCatalog] = React.useState(null), [images, setImages] = React.useState(imageConfig);
+      const [loading, setLoading] = React.useState(false), [notice, setNotice] = React.useState(null);
+      const [testsOpen, setTestsOpen] = React.useState(false);
+      const lock = React.useRef(false), alive = React.useRef(true);
+      React.useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+      React.useEffect(() => { setImages(imageConfig); }, [imageConfig]);
+      const load = async () => {
+        if (lock.current) return;
+        lock.current = true; setLoading(true);
+        try {
+          const results = await Promise.allSettled([api.getPromptOptimizerModel(), ...(imageConfig ? [api.getConfig()] : [])]);
+          if (!alive.current) return;
+          if (results[0].status === "fulfilled") setCatalog(results[0].value);
+          if (results[1]?.status === "fulfilled") setImages(results[1].value);
+          for (const result of results) if (result.status === "rejected") setNotice({ kind: "error", text: msg(result.reason) });
+        } finally { lock.current = false; if (alive.current) setLoading(false); }
+      };
+      const switchImage = async model => {
+        if (lock.current) return;
+        lock.current = true; setLoading(true);
+        try {
+          const current = await api.getConfig();
+          if (!current.imageModelTests?.some(value => value.provider === model.provider && value.model === model.model && value.testedAt)) throw new Error(T("模型配置已变更，请重新测试。"));
+          const next = await api.saveConfig({ imageProvider: model.provider });
+          if (alive.current) setImages(next);
+          window.dispatchEvent(new Event("gmm-model-config"));
+        } catch (error) { if (alive.current) setNotice({ kind: "error", text: msg(error) }); }
+        finally { lock.current = false; if (alive.current) setLoading(false); }
+      };
+      const promptName = selected ? (catalog?.models?.find(model => model.provider === selected.provider && model.model === selected.model)?.name || selected.model) : catalog?.defaultTested ? catalog.model : T("选择模型");
+      return h("div", { className: "SPR_chatModels" }, h(ImageResultMenu, { label: imageConfig ? T("切换模型") : T("提示词优化模型"), disabled: disabled || loading, onOpen: () => void load(),
+        icon: h("span", { className: "SPR_chatModelTrigger" }, loading ? h("span", { className: "SPR_spinSm", "aria-hidden": "true" }) : null,
+          h("span", null, imageConfig ? images?.imageModel || T("选择模型") : promptName), h("svg", { width: 12, height: 12, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", "aria-hidden": "true" }, h("path", { d: "m4 6 4 4 4-4" }))) },
+        imageConfig ? h(React.Fragment, null, h("p", { className: "SPR_modelGroupLabel" }, T("生图模型（全局）")),
+          (images?.imageModelTests ?? []).filter(model => model.testedAt).map(model => h(Btn, { key: model.provider, role: "menuitemradio", "aria-checked": images.imageProvider === model.provider, onClick: () => void switchImage(model) },
+            (model.provider === "ark" ? T("火山方舟（生图）") : model.provider === "toapis" ? "ToAPIs" : T("自定义生图模型")) + " · " + (model.model || "—"))),
+          !images?.imageModelTests?.some(model => model.testedAt) ? h("p", { className: "SPR_hint" }, T("暂无测试通过的生图模型")) : null) : null,
+        h("p", { className: "SPR_modelGroupLabel" }, T("提示词优化模型")),
+        catalog?.defaultTested ? h(Btn, { role: "menuitemradio", "aria-checked": !selected, onClick: () => choose(null) }, T("DSH默认模型")) : null,
+        (catalog?.models ?? []).map(model => h(Btn, { key: JSON.stringify([model.provider, model.model]), role: "menuitemradio", "aria-checked": selected?.provider === model.provider && selected?.model === model.model,
+          onClick: () => choose({ provider: model.provider, model: model.model }) }, model.providerName + " · " + model.name, model.inputModalities?.includes("image") ? " · " + T("支持图片") : "")),
+        !loading && !catalog?.models?.length ? h("p", { className: "SPR_hint" }, T("暂无测试通过的提示词模型")) : null,
+        catalog?.modelsMessage ? h("p", { className: "SPR_hint" }, catalog.modelsMessage) : null,
+        h(Btn, { role: "menuitem", onClick: () => setTestsOpen(true) }, T("管理模型测试")), h(Btn, { role: "menuitem", disabled: loading, onClick: () => void load() }, T("重新读取模型"))),
+        h(ModelTestManager, { api, onChanged: load, hideTrigger: true, visible: testsOpen, onDismiss: () => setTestsOpen(false) }),
+        h(NoticePopup, { notice, onClose: () => setNotice(null) }));
+    }
+
     /** DSH optimization is explicit; opening and editing never dispatch a model call. */
     function PromptOptimizer(props) {
       const [open, setOpen] = React.useState(false);
@@ -18657,14 +18816,7 @@
       const [result, setResult] = React.useState(null);
       const [undo, setUndo] = React.useState(null);
       const [sourceDraft, setSourceDraft] = React.useState(props.prompt ?? "");
-      const [modelSelection, setModelSelection] = React.useState(() => {
-        try {
-          const saved = JSON.parse(window.localStorage.getItem("dsh-game-material-master:prompt-model:" + props.jobId) || "null");
-          return saved && typeof saved.provider === "string" && typeof saved.model === "string" ? saved : null;
-        } catch { return null; }
-      });
-      const [modelsLoading, setModelsLoading] = React.useState(false);
-      const modelsLock = React.useRef(false);
+      const [modelSelection] = usePromptModel(props.jobId);
       const dialogRef = React.useRef(null);
       const triggerRef = React.useRef(null);
       const lockRef = React.useRef(false);
@@ -18681,22 +18833,6 @@
       }, [open]);
       const close = (force = false) => { if (applyingRef.current && !force) return; setOpen(false); triggerRef.current?.focus(); };
       const referenceSignature = JSON.stringify((props.references ?? []).map(ref => ref.file));
-      const loadModels = async () => {
-        if (modelsLock.current) return;
-        modelsLock.current = true; setModelsLoading(true);
-        try {
-          const cfg = await latestRef.current.api.getPromptOptimizerModel();
-          if (aliveRef.current) setConfig(cfg);
-        } catch { if (aliveRef.current) setError(T("DSH模型列表读取失败，请重试；未提交优化请求。")); }
-        finally { modelsLock.current = false; if (aliveRef.current) setModelsLoading(false); }
-      };
-      const chooseModel = value => {
-        setModelSelection(value);
-        try {
-          const key = "dsh-game-material-master:prompt-model:" + props.jobId;
-          if (value) window.localStorage.setItem(key, JSON.stringify(value)); else window.localStorage.removeItem(key);
-        } catch { /* Current dialog choice remains available. */ }
-      };
       const optimize = async () => {
         if (lockRef.current) return;
         const current = latestRef.current;
@@ -18713,7 +18849,7 @@
           const cfg = await current.api.getPromptOptimizerModel();
           if (!aliveRef.current) return;
           setConfig(cfg);
-          if (!cfg?.available && !cfg?.models?.some(model => model.provider === modelSelection?.provider && model.model === modelSelection?.model)) throw new Error(cfg?.message ?? T("无法读取DSH模型；更新插件后请完全退出DSH（包括托盘）再打开。"));
+          if (!(modelSelection ? cfg?.models?.some(model => model.provider === modelSelection.provider && model.model === modelSelection.model) : cfg?.defaultTested)) throw new Error(T("请先在输入栏选择测试通过的提示词模型。"));
           if (referenceFiles.length && cfg.imageReferencesSupported !== true) throw new Error(T("当前DSH未提供图片引用功能，请完全退出DSH（包括托盘）再打开；仍不可用时请更新DSH。"));
           setOperation("optimize");
           const response = await current.api.optimizeImagePrompt({ jobId: current.jobId, ...source, referenceFiles, ...(modelSelection ? { modelSelection } : {}), confirmed: true });
@@ -18758,13 +18894,13 @@
           open ? h(React.Fragment, null,
           h("div", { className: "SPR_promptDialogHead" },
             h("div", { className: "SPR_promptDialogTitle" }, h("h3", null, T("优化提示词")),
-              h(DescriptionTip, { id: props.jobId + "-prompt-optimizer-description", label: T("优化提示词"), text: T("可选择DSH已配置的模型，沿用已有登录和用量规则，无需单独填写Key。只影响本项目的提示词优化，不修改DSH默认模型；带参考图时需要支持图片输入。") })),
+              h(DescriptionTip, { id: props.jobId + "-prompt-optimizer-description", label: T("优化提示词"), text: T("模型在主输入栏切换，沿用DSH登录与用量规则；带参考图时需支持图片输入。指定@图片时只参考指定图片，否则使用全部参考图。") })),
             h(Btn, { "data-prompt-close": true, disabled: operation === "apply", onClick: () => close() }, T("关闭"))),
           h(NoticePopup, { notice: error, onClose: () => setError("") }),
           status ? h("p", { role: "status" }, h("span", { className: "SPR_spinSm", "aria-hidden": "true" }), " ", status) : null,
           h(React.Fragment, null,
             h("div", { className: "SPR_promptCompare" },
-              h(PromptReferenceInput, { id: props.jobId + "-prompt-source", value: sourceDraft, disabled: busy, references: props.references, assetBase: props.assetBase, onChange: value => { setSourceDraft(value); setError(""); },
+              h(PromptReferenceInput, { id: props.jobId + "-prompt-source", value: sourceDraft, disabled: busy, referenceActions: false, references: props.references, assetBase: props.assetBase, onChange: value => { setSourceDraft(value); setError(""); },
                 footer: h(ImagePromptTemplates, { jobId: props.jobId, templates: props.templates, templateId: props.templateId, templateLang: props.lang,
                   suffix: props.suffix, disabled: busy || props.disabled, onApply: props.onTemplateApply, onManage: () => { close(); props.onManageTemplates(); } }) }),
               h(PromptReferenceInput, { id: props.jobId + "-prompt-result", label: T("优化结果（可编辑）"), value: result?.optimized ?? "", placeholder: T("点击优化后，结果会显示在这里。"), disabled: busy || result === null || needsClarification, references: props.references, assetBase: props.assetBase, referenceActions: false, onChange: value => setResult({ ...result, optimized: value }) },
@@ -18779,20 +18915,8 @@
               needsClarification ? h("div", { className: "SPR_promptClarifications" }, h("strong", null, T("需要补充")), h("ul", null, result.summary.clarifications.map((question, index) => h("li", { key: index }, question))), T("请在原提示词中补充后重新优化。")) : null,
               result.optimized !== result.originalOptimized ? h("p", { className: "SPR_hint" }, T("结果已手动编辑，请重新核对修改项与参考用途。")) : null) : null,
             h(ImagePromptPreview, { api: props.api, jobId: props.jobId, prompt: result && !stale && !needsClarification ? result.optimized : sourceDraft, suffix: props.suffix, keying: props.keying, lang: props.lang, references: props.references }),
-            h("p", { className: "SPR_hint" }, T("不使用模板时不追加美术模板。指定@图片时只使用指定图片，否则使用全部已上传参考图；优化和生图使用相同范围。")),
             stale ? h("p", { className: "SPR_error", role: "alert" }, T("提示词、模板、参考图或背景设置已修改，请重新优化后再采用。")) : null,
             h("div", { className: "SPR_btnRow SPR_promptModelActions" },
-              h("div", { className: "SPR_promptModelPicker" },
-                h(ImageResultMenu, { label: T("提示词优化模型"), disabled: busy, onOpen: () => void loadModels(), icon: h("span", { className: "SPR_promptModelLabel" },
-                  modelsLoading ? h("span", { className: "SPR_spinSm", "aria-hidden": "true" }) : null,
-                  h("span", null, modelSelection ? (config?.models?.find(model => model.provider === modelSelection.provider && model.model === modelSelection.model)?.name || modelSelection.model) : T("DSH默认模型")),
-                  h("svg", { width: 12, height: 12, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", "aria-hidden": "true" }, h("path", { d: "m4 6 4 4 4-4" }))) },
-                  h(Btn, { role: "menuitemradio", "aria-checked": !modelSelection, onClick: () => chooseModel(null) }, T("DSH默认模型")),
-                  (config?.models ?? []).map(model => h(Btn, { key: JSON.stringify([model.provider, model.model]), role: "menuitemradio", "aria-checked": modelSelection?.provider === model.provider && modelSelection?.model === model.model,
-                    onClick: () => chooseModel({ provider: model.provider, model: model.model }) }, model.providerName + " · " + model.name,
-                    model.inputModalities?.includes("image") ? " · " + T("支持图片") : "")),
-                  config?.modelsMessage ? h("p", { className: "SPR_hint" }, config.modelsMessage) : null,
-                  h(Btn, { role: "menuitem", disabled: modelsLoading, onClick: () => void loadModels() }, modelsLoading ? T("正在读取DSH模型…") : T("重新读取模型")))),
               h(BusyBtn, { busy: operation === "optimize", busyText: T("优化提示词"), disabled: busy || props.disabled || !sourceDraft.trim(), onClick: () => void optimize() }, T("优化提示词")),
               h(BusyBtn, { primary: true, busy: operation === "apply", disabled: busy || props.disabled || result === null || !result.optimized.trim() || stale || needsClarification, onClick: () => void apply() }, T("采用优化结果"))))) : null));
     }
@@ -19188,6 +19312,7 @@
       if (name === "bookmark") return h("svg", attrs, h("path", { d: "M6 4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17l-6-4-6 4V4Z" }));
       if (name === "down") return h("svg", attrs, h("path", { d: "M12 4v16m-6-6 6 6 6-6" }));
       if (name === "send") return h("svg", attrs, h("path", { d: "M12 19V5m-6 6 6-6 6 6" }));
+      if (name === "stop") return h("svg", attrs, h("rect", { x: 7, y: 7, width: 10, height: 10, rx: 1, fill: "currentColor", stroke: "none" }));
       if (name === "image") return h("svg", attrs, h("rect", { x: 3, y: 3, width: 18, height: 18, rx: 4 }), h("circle", { cx: 8, cy: 8, r: 1.5 }), h("path", { d: "m3 16 5-5 4 4 4-6 5 7" }));
       return h(ProjectActionIcon, { name: name === "parameters" ? "settings" : name });
     }
@@ -19335,8 +19460,8 @@
         h("header", { className: "SPR_chatTop" }, h("span", { className: "SPR_chatTitle" }, job.name),
           h("div", null, h(Btn, { on: panel === "materials", onClick: () => setPanel(panel === "materials" ? null : "materials"), "aria-label": T("项目素材") }, h(ImageChatIcon, { name: "image" })),
             h(Btn, { on: panel === "parameters", onClick: () => setPanel(panel === "parameters" ? null : "parameters"), "aria-label": T("生成参数") }, h(ImageChatIcon, { name: "parameters" })))),
-        h("div", { className: "SPR_chatScroll", ref: scroller, onScroll: scroll, onPointerLeave: () => setHovered(null), "data-testid": "image-message-scroll" },
-          h("div", { className: "SPR_chatMessages" }, rounds.length ? rounds.map(round => h(ImageChatRound, { key: round.id, round, job, busy, keyingBusy, renderResult, onReference, onReuse: act,
+        h("div", { className: "SPR_chatScroll", "data-empty": rounds.length === 0, ref: scroller, onScroll: scroll, onPointerLeave: () => setHovered(null), "data-testid": "image-message-scroll" },
+          h("div", { className: "SPR_chatMessages", "data-empty": rounds.length === 0 }, rounds.length ? rounds.map(round => h(ImageChatRound, { key: round.id, round, job, busy, keyingBusy, renderResult, onReference, onReuse: act,
             onHistory: (entry, action) => setConfirmation({ entry, action }), onKeying: async (entry, index) => { try { if (index < 0 && !await onHistory(entry, "restore")) return; setPanel("keying"); } catch (error) { setNotice(msg(error)); } },
             bookmarked: (view.bookmarks ?? []).includes(round.id), onBookmark: () => persist({ bookmarks: (stateRef.current.bookmarks ?? []).includes(round.id) ? stateRef.current.bookmarks.filter(id => id !== round.id) : [...(stateRef.current.bookmarks ?? []), round.id] }) }))
             : h("div", { className: "SPR_chatWelcome" }, h(ImageChatIcon, { name: "image" }), h("h2", null, T("想创作什么游戏素材？")), h("p", null, T("描述你的想法，或添加参考图片开始。"))))),
@@ -19355,8 +19480,11 @@
           h("aside", { className: "SPR_chatPanel", onKeyDown: event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setPanel(null); } } },
             h("header", null, h("strong", null, panel === "materials" ? T("项目素材") : panel === "keying" ? T("抠图设置") : T("生成参数")), h(Btn, { "aria-label": T("关闭"), onClick: () => setPanel(null) }, h(TaskHeaderIcon, { name: "close" }))),
             h("nav", { className: "SPR_chatPanelTabs" }, [["parameters", T("生成参数")], ["keying", T("抠图设置")], ["materials", T("项目素材")]].map(([id, label]) => h(Btn, { key: id, on: panel === id, "aria-pressed": panel === id, onClick: () => setPanel(id) }, label))),
-            panel === "materials" ? h("div", { className: "SPR_chatMaterials" }, [...media.values()].map(ref => h("div", { key: ref.file, className: "SPR_chatMaterial" }, h(ImageResultPreview, { src: job.assetBase + ref.file, alt: ref.name, label: ref.name }),
-              h("span", null, ref.name), h(Btn, { disabled: busy, onClick: () => onReference(ref) }, T("加入输入框"))))) : panel === "keying" ? keying : parameters)) : null,
+            panel === "materials" ? h("div", { className: "SPR_chatMaterials" }, media.size ? [...media.values()].map(ref => h("div", { key: ref.file, className: "SPR_chatMaterial" }, h(ImageResultPreview, { src: job.assetBase + ref.file, alt: ref.name, label: ref.name }),
+              h("span", null, ref.name), h(Btn, { disabled: busy, onClick: () => onReference(ref) }, T("加入输入框")))) : h("div", { className: "SPR_chatMaterialsEmpty", "data-testid": "image-materials-empty" },
+              h(ImageChatIcon, { name: "image" }), h("h4", null, T("暂无项目素材")), h("p", null, T("添加参考图或生成图片后，素材会显示在这里。")),
+              h("label", { className: "SPR_btn" }, T("添加参考图"), h("input", { type: "file", accept: "image/*", multiple: true, hidden: true, disabled: busy,
+                onChange: event => { const files = Array.from(event.target.files || []); event.target.value = ""; if (files.length && !busy) void onUpload(files, "ref"); } })))) : panel === "keying" ? keying : parameters)) : null,
         request ? h("dialog", { ref: requestRef, className: "SPR_chatRequestDialog SPR_projectRenameDialog", "aria-label": T("查看最终生图请求"), onCancel: () => setRequest(null) },
           h("h3", null, T("查看最终生图请求")), request.settings ? h("div", { className: "SPR_hint" },
             h("div", null, T("历史模型：{n0}", { n0: request.settings.model || "—" })), h("div", null, T("历史尺寸：{n0}", { n0: request.settings.size })),
@@ -19368,6 +19496,7 @@
         h(NoticePopup, { notice: notice && notice !== T("有新结果") ? { kind: "error", text: notice } : null, onClose: () => setNotice(null) }));
     }
 
+    const imageSubmittingRounds = new Map();
     const LAST_IMAGE_JOB_KEY = "dsh-game-material-master:last-image-job";
     let lastImageJobId = null;
     let handledImageIntent = null;
@@ -19460,6 +19589,7 @@
       React.useEffect(() => () => { loadSequence.current++; }, []);
 
       const keyingBusy = tasks.has(K_IMG_KEY) || job?.tasks?.includes("image:key") === true;
+      const generationBusy = tasks.has(K_IMG_JOB) || (job?.tasks ?? []).some(key => /^image:(submit|\d+)$/.test(key)) || (job?.rounds ?? []).some(round => round.results.some(result => result.status === "running"));
       const busy = (job !== null && ((job.items ?? []).some((item) => item.status === "running") || (job.tasks ?? []).length > 0)) || tasks.active;
 
       const refresh = React.useCallback(async () => {
@@ -19490,6 +19620,8 @@
           const settings = { ...(next.settings ?? {}) };
           const keying = { ...(next.keying ?? {}) };
           loadedDrafts.current = { id, prompt: next.prompt ?? "", suffix: effective.suffix ?? "", settings, keying };
+          const submitting = imageSubmittingRounds.get(id);
+          if (submitting && !next.rounds?.some(round => round.id === submitting.id)) effective.rounds = [...(next.rounds ?? []), submitting];
           setJob(effective);
           setPromptDraft((current) => mergeDrafts(current, previous.prompt, cached?.prompt ?? next.prompt ?? "", force));
           setSuffixDraft((current) => mergeDrafts(current, previous.suffix, effective.suffix ?? "", force));
@@ -19699,6 +19831,37 @@
         if (draft && templateDrafts.get(id) === draft) templateDrafts.delete(id);
       };
 
+      const sendImageMessage = async () => {
+        const id = job.id;
+        if (busy || imageSubmittingRounds.has(id) || !promptDraft.trim()) return;
+        const bytes = crypto.getRandomValues(new Uint8Array(16)); bytes[6] = (bytes[6] & 15) | 64; bytes[8] = (bytes[8] & 63) | 128;
+        const token = [...bytes].map(value => value.toString(16).padStart(2, "0")).join("");
+        const roundId = `${token.slice(0, 8)}-${token.slice(8, 12)}-${token.slice(12, 16)}-${token.slice(16, 20)}-${token.slice(20)}`;
+        const round = { id: roundId, createdAt: Date.now(), request: { prompt: promptDraft, suffix: suffixDraft,
+          refs: job.refs.map(ref => ({ ...ref })), settings: { ...settingsDraft }, keying: { ...keyingDraft } },
+          logs: [], results: Array.from({ length: settingsDraft.count ?? 1 }, (_, index) => ({ index, status: "running" })) };
+        imageSubmittingRounds.set(id, round);
+        setJob(current => current?.id === id ? { ...current, rounds: [...(current.rounds ?? []), round] } : current);
+        window.dispatchEvent(new CustomEvent("gmm-image-conversation", { detail: { jobId: id, latest: true } }));
+        return run(async () => {
+          try {
+            await saveImageDraft();
+            const response = await api.runImageJob({ jobId: id, roundId: round.id, consumePrompt: true, submittedPrompt: round.request.prompt });
+            if (!response?.started) throw new Error(response?.reason || T("本次消息未提交，请重试。"));
+            imageSubmittingRounds.delete(id);
+            // Only clear the text that was sent. Typing the next message or changing chats is preserved.
+            const cached = readImageEditorDraft(id);
+            if (cached?.prompt === round.request.prompt) writeImageEditorDraft(id, { ...cached, prompt: "" });
+            if (selectedJobId.current === id) setPromptDraft(current => current === round.request.prompt ? "" : current);
+            return response;
+          } catch (error) {
+            imageSubmittingRounds.delete(id);
+            if (selectedJobId.current === id) { setJob(current => current?.id === id ? { ...current, rounds: (current.rounds ?? []).filter(value => value.id !== round.id) } : current); }
+            throw error;
+          }
+        }, undefined, { key: K_IMG_JOB, label: T("正在提交…") });
+      };
+
       const historyAction = async (entry, action) => run(async () => {
         const id = job.id;
         await imageSaveQueue.current;
@@ -19880,7 +20043,6 @@
                                       } : undefined })
                                     : h("div", { className: "SPR_thumbEmpty" }, overlay ? T("生成中…") : T("等待生成"))
                               ), navigation) : null,
-                              overlay ? h(BusyBadge, { show: true, text: overlayText }) : null,
                               item.status === "error" ? h("div", { className: "SPR_chatImageActions" },
                                 h(BusyBtn, { busy: tasks.has(K_IMG_JOB), disabled: busy, onClick: () => void regenerateFailedImage(round, position) }, T("重新生成"))) : null
                             );
@@ -19995,6 +20157,7 @@
                       }
                     }, h("div", { className: "SPR_chatComposerBottom" },
                       h(ImageChatAddMenu, { disabled: busy || uploading, onUpload: upload }),
+                      h(ImageModelPicker, { key: job.id, api, jobId: job.id, imageConfig: globalConfig, disabled: busy || uploading }),
                       h(Btn, { "aria-label": T("生成参数"), onClick: () => window.dispatchEvent(new CustomEvent("gmm-image-conversation", { detail: { jobId: job.id, panel: "parameters" } })) }, h(ImageChatIcon, { name: "parameters" }), settingsDraft.sizeMode === "custom" ? settingsDraft.size : globalConfig?.imageProviderSize || settingsDraft.size),
                       h("div", { className: "SPR_promptRightActions" },
                       h("label", { className: "SPR_transparentToggle", title: T("开启后自动补充纯色背景要求，生成完成后在本地抠成透明 PNG；不会修改输入内容。") + " " + T("抠像背景色：{n0}", { n0: normalizeKeyColorHex(keyingDraft.keyColor || globalConfig?.keyColor) }) },
@@ -20011,24 +20174,14 @@
                         {
                           primary: true,
                           className: "SPR_btn SPR_chatGenerate",
-                          "aria-label": T("生成 {n0} 张", { n0: settingsDraft.count ?? 1 }),
-                          title: T("生成 {n0} 张", { n0: settingsDraft.count ?? 1 }),
-                          busy: tasks.has(K_IMG_JOB),
-                          busyText: h("span", { className: "SPR_chatGenerateLabel" }, T("正在生成 {n0} 张…", { n0: settingsDraft.count ?? 1 })),
-                          disabled: promptDraft.trim() === "" || busy,
-                          onClick: () =>
-                            void run(
-                              async () => {
-                                await saveImageDraft();
-                                const response = await api.runImageJob({ jobId: job.id });
-                                if (response?.started) window.dispatchEvent(new CustomEvent("gmm-image-conversation", { detail: { jobId: job.id, latest: true } }));
-                                return response;
-                              },
-                              T("已开始生成 {n0} 张", { n0: settingsDraft.count ?? 1 }),
-                              { key: K_IMG_JOB, label: T("正在生成 {n0} 张图片…", { n0: settingsDraft.count ?? 1 }) }
-                            )
+                          "aria-label": generationBusy ? T("停止生成") : T("生成 {n0} 张", { n0: settingsDraft.count ?? 1 }),
+                          title: generationBusy ? T("停止等待生成，已提交的请求仍可能计费。") : T("生成 {n0} 张", { n0: settingsDraft.count ?? 1 }),
+                          "aria-busy": generationBusy,
+                          busy: tasks.has("image:stop"),
+                          disabled: generationBusy ? tasks.has(K_IMG_JOB) || imageSubmittingRounds.has(job.id) || tasks.has("image:stop") : promptDraft.trim() === "" || busy,
+                          onClick: () => generationBusy ? void run(() => api.cancelImageJob({ jobId: job.id }), undefined, { key: "image:stop", label: T("正在停止…") }) : void sendImageMessage()
                         },
-                        h(ImageChatIcon, { name: "send" })
+                        h(ImageChatIcon, { name: generationBusy ? "stop" : "send" })
                       ),
                       h(ReviewModeBar, { api, module: "image", id: job.id, mode: job.reviewMode, compact: true, onChanged: () => load(job.id) })
                     ))))))
@@ -24734,6 +24887,7 @@
             )
           ),
           h("p", { className: "SPR_hint" }, T("当前生效：{n0}", { n0: config.imageProviderSummary ?? "" })),
+          h(ModelTestManager, { api, onChanged: () => { void load(); window.dispatchEvent(new Event("gmm-model-config")); } }),
           config.imageProviderBlocker
             ? h("div", { className: "SPR_note", "data-kind": "error" }, T("还不能开跑：{n0}", { n0: config.imageProviderBlocker }))
             : h("div", { className: "SPR_note", "data-kind": "ok" }, T("后端已就绪，可以开跑。"))
@@ -24950,7 +25104,8 @@
             h(Btn, { disabled: !toapisKey.trim(), onClick: () => run(async () => { await api.saveConfig({ toapisApiKey: toapisKey }); setToapisKey(""); }, T("ToAPIs Key 已保存")) }, T("保存 Key")),
             h(Btn, { disabled: !config.toapisApiKeySet, onClick: () => run(() => api.saveConfig({ clearToapisApiKey: true }), T("已清除 ToAPIs Key")) }, T("清除"))
           ),
-          h("p", { className: "SPR_hint" }, config.toapisApiKeySet ? T("ToAPIs Key 已配置") : T("ToAPIs Key 未配置"))
+          h("p", { className: "SPR_hint" }, config.toapisApiKeySet ? T("ToAPIs Key 已配置") : T("ToAPIs Key 未配置")),
+          h(ModelTestManager, { api, onChanged: () => { void load(); window.dispatchEvent(new Event("gmm-model-config")); } })
         ),
 
         /**
@@ -26095,6 +26250,8 @@
         saveConfig: (payload) => call("saveConfig", payload),
         testArk: () => call("testArk"),
         testCustomImage: () => call("testCustomImage"),
+        testToapisImage: (payload) => call("testToapisImage", payload),
+        testPromptOptimizerModel: (payload) => call("testPromptOptimizerModel", payload),
         testMinimax: () => call("testMinimax"),
         testComfy: () => call("testComfy"),
         listProjects: () => call("listProjects"),
@@ -26148,6 +26305,7 @@
         addImageItem: (payload) => call("addImageItem", payload),
         removeImageItem: (payload) => call("removeImageItem", payload),
         runImageJob: (payload) => call("runImageJob", payload),
+        cancelImageJob: (payload) => call("cancelImageJob", payload),
         keyImageJob: (payload) => call("keyImageJob", payload),
         manageImageHistory: (payload) => call("manageImageHistory", payload),
         cleanImageRegion: (payload) => call("cleanImageRegion", payload),

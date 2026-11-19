@@ -573,13 +573,14 @@ export function buildPrompt(job: ImageJob, fallbackKeyColor = DEFAULT_KEY_COLOR)
 }
 
 /** Freeze one batch before submitting any paid requests. */
-export async function prepareImageBatch(jobId: string, count?: number, index?: number, historyId?: string): Promise<ImageBatch> {
+export async function prepareImageBatch(jobId: string, count?: number, index?: number, historyId?: string, submission?: { roundId?: string; consumePrompt?: boolean; prompt?: string }): Promise<ImageBatch> {
   const config = await loadConfig();
   assertImageProviderReady(config);
   return editImageJob(jobId, async job => {
+    if (submission?.roundId && job.rounds?.some(round => round.id === submission.roundId)) throw new Error("本次消息已经提交，未重复生成。");
     const snapshot = historyId ? job.rounds?.find(round => round.id === historyId)?.request ?? job.history.find(entry => entry.id === historyId)?.request : undefined;
     if (historyId && !snapshot) throw new Error("这条记录没有生成参数快照，无法重新生成。");
-    const draft = snapshot ? { ...job, ...snapshot, settings: { ...snapshot.settings, count: 1, sizeMode: "custom" as const }, refs: snapshot.refs.map(ref => ({ ...ref })) } : job;
+    const draft = snapshot ? { ...job, ...snapshot, settings: { ...snapshot.settings, count: 1, sizeMode: "custom" as const }, refs: snapshot.refs.map(ref => ({ ...ref })) } : { ...job, prompt: submission?.prompt ?? job.prompt };
     draft.settings.model = imageModelOf(config);
     if (draft.settings.sizeMode !== "custom") { draft.settings.sizeMode = "global"; draft.settings.size = imageSizeOf(config); }
     if (count !== undefined) draft.settings.count = count;
@@ -588,19 +589,20 @@ export async function prepareImageBatch(jobId: string, count?: number, index?: n
     if (!finalPrompt) throw new Error("提示词为空，请先填写");
     const referenceFiles = snapshot ? [...snapshot.referenceFiles] : resolveImageReferences(`${draft.prompt}\n${draft.suffix}`, draft.refs).map(ref => ref.file);
     if (snapshot) for (const file of referenceFiles) await stat(imageAssetPath(jobId, file));
-    const batch: ImageBatch = { id: randomUUID(), config, request: {
+    const batch: ImageBatch = { id: submission?.roundId ?? randomUUID(), config, request: {
       prompt: draft.prompt, suffix: draft.suffix, promptTemplateId: draft.promptTemplateId, promptTemplateLang: draft.promptTemplateLang,
       refs: draft.refs.map(ref => ({ ...ref })), referenceFiles, settings: { ...draft.settings, watermark: imageWatermarkOf(config) || draft.settings.watermark },
       keying, finalPrompt, provider: config.imageProvider
     } };
     (job.rounds ??= []).push({ id: batch.id, createdAt: Date.now(), request: batch.request, logs: [],
       results: (index === undefined ? Array.from({ length: batch.request.settings.count }, (_, i) => i) : [index]).map(i => ({ index: i, status: "running" })) });
+    if (submission?.consumePrompt && !historyId && index === undefined && job.prompt === batch.request.prompt) job.prompt = "";
     return batch;
   });
 }
 
 /** One image, one paid call. New bytes never overwrite a previous version. */
-export async function generateImageItem(jobId: string, index: number, batch?: ImageBatch): Promise<void> {
+export async function generateImageItem(jobId: string, index: number, batch?: ImageBatch, signal?: AbortSignal): Promise<void> {
   const prepared = batch ?? await prepareImageBatch(jobId, undefined, index);
   const request = prepared.request;
   await editImageJob(jobId, job => {
@@ -610,6 +612,7 @@ export async function generateImageItem(jobId: string, index: number, batch?: Im
     appendImageRoundLog(job, prepared.id, "info", `开始生成第 ${index + 1} 张（尺寸 ${request.settings.size}）`);
   });
   try {
+    signal?.throwIfAborted();
     const refs = await Promise.all(request.referenceFiles.map(file => toDataUri(imageAssetPath(jobId, file), mimeOf(file))));
     const result = await generateImageWithProvider({
       prompt: request.finalPrompt,
@@ -617,7 +620,7 @@ export async function generateImageItem(jobId: string, index: number, batch?: Im
       size: request.settings.size,
       model: request.settings.model,
       watermark: request.settings.watermark
-    }, undefined, prepared.config);
+    }, signal, prepared.config);
     const id = randomUUID();
     const relative = `out/img-${id}.${result.ext}`;
     await writeFile(imageAssetPath(jobId, relative), result.bytes);
@@ -634,12 +637,13 @@ export async function generateImageItem(jobId: string, index: number, batch?: Im
       completeImageRoundItem(job, prepared.id, index, { status: "ready", versionId: id, error: item.error });
     });
   } catch (error) {
+    const failure = signal?.aborted ? "已停止等待生成；已提交的请求可能仍会计费，未自动重试。" : messageOf(error);
     await editImageJob(jobId, job => {
       const target = job.items[index] ?? { index, source: "generated" as const };
-      job.items[index] = { ...target, status: "error", error: messageOf(error), updatedAt: Date.now() };
-      appendJobLog(job.log, "error", `第 ${index + 1} 张生成失败：${messageOf(error)}`);
-      appendImageRoundLog(job, prepared.id, "error", `第 ${index + 1} 张生成失败：${messageOf(error)}`);
-      completeImageRoundItem(job, prepared.id, index, { status: "error", error: messageOf(error) });
+      job.items[index] = { ...target, status: "error", error: failure, updatedAt: Date.now() };
+      appendJobLog(job.log, "error", `第 ${index + 1} 张生成失败：${failure}`);
+      appendImageRoundLog(job, prepared.id, "error", `第 ${index + 1} 张生成失败：${failure}`);
+      completeImageRoundItem(job, prepared.id, index, { status: "error", error: failure });
     });
     throw error;
   }
