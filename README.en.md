@@ -76,6 +76,10 @@ is remembered.
 The image sidebar now uses a **Projects** heading. Its arrow collapses only the list; the header panel icon collapses the entire sidebar. Both choices are remembered separately.
 Click **+** to create a project and choose a local save folder. A separate project subfolder holds reference images, generated images, keyed PNGs and history. Leaving the folder unset uses the DSH default location.
 The organize icon opens a two-level menu for grouping by save folder or combining the list, and for recently updated or manual order. In manual mode, drag projects or press Alt + Up / Down; the order persists after refresh.
+The source-folder area has separate empty and selected states. **Add** opens the native system folder picker directly; canceling keeps the prior folder. Windows uses the Explorer-style picker.
+
+Empty current results and history share a centered placeholder. On wide screens, their card aligns with the collapsed advanced-settings card; populated history keeps its existing height rules. Project creation progress appears as a floating message instead of a workbench row.
+
 These local operations never call a generation API. Existing projects require no migration. This update includes host code: fully quit DSH, including its tray process, then reopen it.
 
 All eight modules share the same "generate → review → re-run" workbench. Every stage can be **redone on its

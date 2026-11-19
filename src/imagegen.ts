@@ -16,7 +16,6 @@
 import { readFileSync } from "node:fs";
 import { mkdir, readFile, readdir, realpath, lstat, rm, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
-import { homedir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { imageJobsRoot, loadConfig, type Config } from "./config.js";
 import { generateImageWithProvider, imageModelOf, imageSizeOf, imageWatermarkOf, assertImageProviderReady } from "./imageprovider.js";
@@ -155,23 +154,6 @@ export function imageJobDir(id: string): string {
     return resolve(location.directory);
   }
   return join(imageJobsRoot(), id);
-}
-
-/** Read-only folder picker for the host filesystem; no files or credentials are returned. */
-export async function browseImageFolders(path?: string) {
-  const requested = path?.trim() || homedir();
-  if (!isAbsolute(requested)) throw new Error("请输入完整的文件夹路径。");
-  const directory = await realpath(requested);
-  if (!(await stat(directory)).isDirectory()) throw new Error("请选择一个文件夹。");
-  const folders = (await readdir(directory, { withFileTypes: true }))
-    .filter(entry => entry.isDirectory() && !entry.name.startsWith("."))
-    .map(entry => entry.name).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-  const roots = process.platform === "win32"
-    ? (await Promise.all(Array.from({ length: 26 }, (_, i) => `${String.fromCharCode(65 + i)}:\\`).map(async drive => {
-        try { return (await stat(drive)).isDirectory() ? drive : null; } catch { return null; }
-      }))).filter(Boolean)
-    : ["/"];
-  return { directory, parent: dirname(directory), folders, roots, home: homedir(), defaultDirectory: imageJobsRoot() };
 }
 
 function jobFile(id: string): string {

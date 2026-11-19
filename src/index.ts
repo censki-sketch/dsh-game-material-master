@@ -10,6 +10,7 @@ import {assertVideoBackendReady,assertVideoSubmissionConfirmed,videoBackendOf} f
 * 直接发给浏览器——否则界面每帧都要靠 RPC 传 base64，又慢又费内存。
 */
 import { createReadStream, readdirSync, statSync } from "node:fs";
+import { pickImageFolder } from "./folderpicker.js";
 import * as motiongen from "./motiongen.js";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
@@ -1718,8 +1719,8 @@ export class GameStudioGateway extends TypertRemoteService {
     return { jobs: await imagegen.listImageJobs() };
   }
 
-  async browseImageFolders(payload) {
-    return imagegen.browseImageFolders(asString(asRecord(payload).path, ""));
+  async pickImageFolder(payload) {
+    return pickImageFolder(asString(asRecord(payload).path, ""));
   }
 
   async createImageJob(payload) {

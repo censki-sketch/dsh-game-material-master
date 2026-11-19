@@ -25,9 +25,7 @@ const check=(label,ok)=>{assert.ok(ok,label);checks++;console.log('✓ '+label);
 try{
  const parent=join(testRoot,'选定素材目录'),child=join(parent,'characters');await mkdir(child,{recursive:true});
  await writeFile(join(parent,'keep-user-file.txt'),'keep');
- const browsed=await invoke('browseImageFolders',{path:parent});check('folder browser reads canonical host folders only',browsed.directory===await realpath(parent)&&browsed.folders.join()==='characters'&&!browsed.folders.includes('keep-user-file.txt'));
- check('folder browser is client-only',wire.METHODS.find(m=>m.method==='browseImageFolders').clientOnly===true);
- await assert.rejects(invoke('browseImageFolders',{path:'relative'}));await assert.rejects(invoke('browseImageFolders',{path:join(parent,'keep-user-file.txt')}));
+ check('native folder picker is client-only',wire.METHODS.find(m=>m.method==='pickImageFolder').clientOnly===true);
  const legacy=await invoke('createImageJob',{name:'默认位置'});check('default layout remains unchanged',imagegen.imageJobDir(legacy.jobId)===join(imageJobsRoot(),legacy.jobId));
  const {jobId}=await invoke('createImageJob',{name:'自定义位置',saveDirectory:parent,promptTemplate:'character',lang:'zh'});
  const directory=imagegen.imageJobDir(jobId),pointer=join(imageJobsRoot(),jobId+'.location.json');

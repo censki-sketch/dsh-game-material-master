@@ -1265,7 +1265,7 @@ export const METHODS: MethodSpec[] = [  { method: "getConfig", result: configVie
   { method: "compose", payload: projectOnlySchema, result: startedSchema },
 
   // 图片生成
-  { method: "browseImageFolders", payload: z.object({ path: z.string().max(4096).optional() }), result: jsonObject, clientOnly: true },
+  { method: "pickImageFolder", payload: z.object({ path: z.string().max(4096).optional() }), result: jsonObject, clientOnly: true },
   { method: "listImageJobs", result: z.object({ jobs: z.array(jsonObject) }) },
   { method: "createImageJob", payload: createImageJobSchema, result: jsonObject },
   { method: "getImageJob", payload: imageJobIdSchema, result: projectViewSchema },

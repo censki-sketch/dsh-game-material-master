@@ -972,7 +972,16 @@ section("图片项目侧栏与创建弹窗");
   check("自定义创建项目弹窗使用原生modal容器", byTag(dialog, "dialog").some(node => node.props["aria-label"] === "创建项目"));
   check("项目名称必填且有长度限制", byTag(dialog, "input").some(node => node.props["aria-label"] === "项目名称" && node.props.required && node.props.maxLength === 80));
   check("未填写名称时禁用创建项目", byTag(dialog, "button").some(node => node.props.type === "submit" && node.props.disabled));
-  check("文件夹选择入口只有点击时读取目录", byTag(dialog, "button").some(node => node.props["aria-label"] === "选择保存文件夹" && typeof node.props.onClick === "function"));
+  check("添加文件夹只有点击时打开系统选择窗口", byTag(dialog, "button").some(node => node.props["aria-label"] === "添加文件夹" && typeof node.props.onClick === "function"));
+  check("未选文件夹显示居中添加态", byClass(dialog, "SPR_taskSourceEmpty").length === 1 && byClass(dialog, "SPR_taskSourceRow").length === 0);
+  check("未选目录不显示此电脑", byClass(dialog, "SPR_taskComputer").length === 0);
+  HOOK.slots = []; HOOK.cursor = 0;
+  const selectedDialog = bundle.__test.ImageTaskDialog({ api, preferences: { ...preferences, directory: "/tmp/project" }, onSubmit: () => {}, onClose: () => {} });
+  check("选中目录显示目录行与移除", byClass(selectedDialog, "SPR_taskSourceRow").length === 1 && byTag(selectedDialog, "button").some(node => node.props["aria-label"] === "移除文件夹"));
+  check("选中目录显示此电脑并隐藏居中态", byClass(selectedDialog, "SPR_taskComputer").length === 1 && byClass(selectedDialog, "SPR_taskSourceEmpty").length === 0);
+  check("当前结果空态有说明与图标", byTag(bundle.__test.ImageResultsEmpty({}), "strong").some(node => textOf(node) === "还没有生成结果"));
+  check("历史记录空态说明自动保存", byTag(bundle.__test.ImageResultsEmpty({ history: true }), "p").some(node => textOf(node).includes("自动保存")));
+
 }
 
 if (typeof ImageModule === "function") {
