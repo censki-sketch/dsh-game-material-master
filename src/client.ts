@@ -4940,8 +4940,7 @@
 .SPR_imageWorkspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);grid-template-rows:auto 1fr;grid-template-areas:"editor results" "log results";column-gap:16px;align-items:start}
 .SPR_imageEditor{grid-area:editor;container-type:inline-size;min-width:0}
 .SPR_imageResults{grid-area:results;min-width:0}
-.SPR_imageWorkspace[data-result-tab=history]{grid-template-areas:"editor results" "log ."}
-.SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults{display:flex;flex-direction:column;align-self:stretch;contain:size;min-height:0}
+.SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults{display:flex;flex-direction:column;align-self:start;contain:size;box-sizing:border-box;height:var(--SPR_imageHistoryHeight);min-height:0}
 .SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults>.SPR_cardHead,.SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults>.SPR_toolbar,.SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults>.SPR_imageResultTabs{flex:none}
 .SPR_imageResultPanels{position:relative;min-width:0;min-height:0}
 .SPR_imageWorkspace[data-result-tab=history] .SPR_imageResultPanels{flex:1;overflow:clip}
@@ -5053,8 +5052,8 @@
   .SPR_promptTemplateSelect option:disabled{opacity:.5;cursor:default}
 }
 @container(max-width:900px){
-  .SPR_imageWorkspace,.SPR_imageWorkspace[data-result-tab=history]{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"editor" "results" "log"}
-  .SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults{display:block;align-self:start;contain:none}
+  .SPR_imageWorkspace{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"editor" "results" "log"}
+  .SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults{display:block;align-self:start;contain:none;height:auto}
   .SPR_imageWorkspace[data-result-tab=history] .SPR_imageResultPanels{min-height:200px}
   .SPR_imageGalleryStage .SPR_imageResultPreview>.SPR_thumb{max-height:480px}
 }
@@ -17916,7 +17915,7 @@
     }
 
     function ImageModule(props) {
-      useLocaleTick();
+      const localeTick = useLocaleTick();
       const api = props.api;
       const [jobs, setJobs] = React.useState([]);
       const [jobId, setJobId] = React.useState(null);
@@ -17941,12 +17940,36 @@
       const loadedDrafts = React.useRef({ id: null, prompt: "", suffix: "", settings: {}, keying: {} });
       const imageSaveQueue = React.useRef(Promise.resolve());
       const createRef = React.useRef(null);
+      const imageWorkspaceRef = React.useRef(null);
       const [resultView, setResultView] = React.useState({ jobId: null, tab: "current", index: 0, version: "" });
       const selectedJobId = React.useRef(jobId);
       selectedJobId.current = jobId;
       const view = resultView.jobId === jobId ? resultView : { tab: "current", index: 0, version: "" };
       const templateDrafts = imageTemplateDraftCache.get(api) ?? new Map();
       imageTemplateDraftCache.set(api, templateDrafts);
+
+      React.useLayoutEffect(() => {
+        const workspace = imageWorkspaceRef.current;
+        const editor = workspace?.querySelector(".SPR_imageEditor"), advanced = editor?.querySelector(".SPR_imageAdvanced");
+        if (!editor || !advanced) return;
+        const measureExpandedHeight = () => {
+          // Measure an inert, offscreen copy so closed sections still reserve
+          // their expanded height without toggling the user's actual controls.
+          const probe = advanced.cloneNode(true);
+          probe.setAttribute("inert", ""); probe.setAttribute("aria-hidden", "true");
+          Object.assign(probe.style, { position: "fixed", left: "-10000px", top: "0", width: advanced.getBoundingClientRect().width + "px", boxSizing: "border-box", margin: "0", visibility: "hidden", pointerEvents: "none" });
+          probe.querySelectorAll(":scope > details").forEach(section => { section.open = true; });
+          editor.appendChild(probe);
+          try {
+            const height = advanced.getBoundingClientRect().top - editor.getBoundingClientRect().top + probe.getBoundingClientRect().height;
+            workspace.style.setProperty("--SPR_imageHistoryHeight", height + "px");
+          } finally { probe.remove(); }
+        };
+        measureExpandedHeight();
+        const observer = new ResizeObserver(measureExpandedHeight);
+        observer.observe(editor);
+        return () => observer.disconnect();
+      }, [job?.id, globalConfig, settingsDraft.sizeMode, localeTick]);
 
       React.useEffect(() => {
         if (intent === null) return;
@@ -18160,7 +18183,7 @@
               ? h("p", { className: "SPR_empty" }, T("请选择或新建一个图片任务"))
               : h(
                   "div",
-                  { className: "SPR_imageWorkspace", key: job.id, "data-result-tab": view.tab },
+                  { className: "SPR_imageWorkspace", ref: imageWorkspaceRef, key: job.id, "data-result-tab": view.tab },
                   h("div", { className: "SPR_imageEditor" },
                   h(
                     "div",

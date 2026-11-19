@@ -343,7 +343,7 @@ const api = new Proxy(
  */
 const EXPECTED_HOOKS = {
   StudioPanel: 26,
-  ImageModule: 20,
+  ImageModule: 21,
   SequenceModule: 17
 };
 
