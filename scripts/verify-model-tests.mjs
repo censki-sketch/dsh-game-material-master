@@ -36,6 +36,7 @@ try {
   await invoke("saveConfig", { imageProvider: "custom", customBaseUrl: "http://127.0.0.1/custom", customApiKey: "fake-custom-secret", customModel: "model-one", customSize: "1024x1024",
     arkBaseUrl: "http://127.0.0.1/ark", arkApiKey: "fake-ark-secret", arkModel: "ark-one", toapisBaseUrl: "http://127.0.0.1/v1", toapisApiKey: "fake-toapis-secret", toapisImageModel: "toapis-one" });
   let view = await invoke("getConfig"); check("configured keys do not count as passing tests", view.imageModelTests.every(model => model.testedAt === null) && requests.length === 0);
+  check("all three configured image routes are available without tests or generation", view.imageModels.length === 3 && view.imageModels.every(model => model.blocker === null) && view.imageModels.some(model => model.provider === "custom" && model.model === "model-one") && requests.length === 0 && !JSON.stringify(view.imageModels).includes("fake-"));
   for (const [method, provider] of [["testArk", "ark"], ["testCustomImage", "custom"], ["testToapisImage", "toapis"]]) {
     await invoke(method, method === "testToapisImage" ? { confirmed: true } : undefined);
     view = await invoke("getConfig"); check(provider + ": actual test success is visible through config/wire", view.imageModelTests.find(model => model.provider === provider).testedAt > 0);
@@ -76,22 +77,22 @@ try {
     }
   });
   let catalog = await invoke("getPromptOptimizerModel");
-  check("prompt catalog reads metadata without dispatch, and hides untested models", catalog.models.length === 0 && catalog.configuredModels.length === 2 && modelCalls.length === 0 && !catalog.defaultTested);
+  check("prompt catalog exposes configured models without a test or model call", catalog.models.length === 2 && catalog.configuredModels.length === 2 && catalog.models.every(model => model.testedAt === null) && modelCalls.length === 0 && !catalog.defaultTested);
   await assert.rejects(invoke("testPromptOptimizerModel", { provider: "local", model: "first", confirmed: false }), /确认/);
   check("unconfirmed prompt tests never dispatch", modelCalls.length === 0);
   await invoke("testPromptOptimizerModel", { provider: "local", model: "first", confirmed: true });
   catalog = await invoke("getPromptOptimizerModel");
-  check("only the tested prompt route becomes selectable", catalog.models.length === 1 && catalog.models[0].model === "first" && catalog.defaultTested && modelCalls.length === 1);
+  check("test evidence does not remove other configured prompt choices", catalog.models.length === 2 && catalog.models.filter(model => model.testedAt).length === 1 && catalog.defaultTested && modelCalls.length === 1);
   check("prompt tests use a bounded single call without tools", modelCalls[0].maxTokens === 128 && modelCalls[0].tools.length === 0 && modelCalls[0].signal instanceof AbortSignal);
   profile = { ...profile, baseURL: "https://changed.invalid" };
-  check("prompt endpoint changes invalidate its pass", (await invoke("getPromptOptimizerModel")).models.length === 0);
+  check("prompt endpoint changes invalidate its pass", (await invoke("getPromptOptimizerModel")).models.every(model => model.testedAt === null));
   await invoke("testPromptOptimizerModel", { provider: "local", model: "first", confirmed: true }); secret = "fake-changed-llm-secret";
-  check("resolved credential changes invalidate prompt evidence", (await invoke("getPromptOptimizerModel")).models.length === 0);
+  check("resolved credential changes invalidate prompt evidence", (await invoke("getPromptOptimizerModel")).models.every(model => model.testedAt === null));
   llmMode = "incomplete"; await assert.rejects(invoke("testPromptOptimizerModel", { provider: "local", model: "second", confirmed: true }), /未自动重试/);
-  check("incomplete output is not a successful test", (await invoke("getPromptOptimizerModel")).models.length === 0);
+  check("incomplete output is not a successful test", (await invoke("getPromptOptimizerModel")).models.every(model => model.testedAt === null));
   llmMode = "ready"; await invoke("testPromptOptimizerModel", { provider: "local", model: "second", confirmed: true });
   llmMode = "throw"; await assert.rejects(invoke("testPromptOptimizerModel", { provider: "local", model: "second", confirmed: true }), error => !error.message.includes("fake-llm-secret"));
-  check("failed prompt retests remove old passes and redact service errors", (await invoke("getPromptOptimizerModel")).models.length === 0);
+  check("failed prompt retests remove old passes and redact service errors", (await invoke("getPromptOptimizerModel")).models.every(model => model.testedAt === null));
   const records = await readdir(join(dataRoot(), "model-tests"));
   const stored = (await Promise.all(records.map(file => readFile(join(dataRoot(), "model-tests", file), "utf8")))).join("");
   check("test evidence never stores keys or prompt bodies", !/fake-|MOCK_MODEL_KEY|Reply with|baseURL/.test(stored) && records.every(file => /^[a-f0-9]{64}\.json$/.test(file)));

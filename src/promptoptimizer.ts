@@ -42,7 +42,7 @@ export async function promptOptimizerModels(ctx: any) {
   }
   const configuredModels = await Promise.all(models.map(async model => ({ ...model,
     testedAt: await modelTestStatus(await promptTestFingerprint(ctx, model.provider, model.model)) })));
-  return { ...status, models: configuredModels.filter(model => model.testedAt !== null), configuredModels,
+  return { ...status, models: configuredModels, configuredModels,
     defaultTested: configuredModels.some(model => model.provider === status.provider && model.model === status.model && model.testedAt !== null),
     ...(modelsMessage ? { modelsMessage } : {}) };
 }

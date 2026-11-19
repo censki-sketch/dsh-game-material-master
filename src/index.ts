@@ -302,6 +302,10 @@ export class GameStudioGateway extends TypertRemoteService {
       imageProviderSummary: imageProviderSummary(config),
       /** 当前生效的生图模型（模块里那个只读展示位用它，比 summary 短）。 */
       imageModel: imageModelOf(config),
+      imageModels: (["ark", "toapis", "custom"] as const).map(provider => {
+        const route = { ...config, imageProvider: provider };
+        return { provider, model: imageModelOf(route), blocker: imageProviderBlocker(route) ?? null };
+      }),
       imageModelTests: await imageModelTests(config),
       imageProviderSize: imageSizeOf(config),
       videoProviderBackend: videoBackendOf(config),
