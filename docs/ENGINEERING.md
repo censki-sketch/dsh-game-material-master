@@ -2734,13 +2734,17 @@ X-Api-Request-Id: <uuid>
 
 图片侧栏分两层：外层是打开的真实文件夹，内层是图片项目。顶部打开入口仅 `pickImageFolder` → clientOnly `attachImageFolder`，扫描一层有效 `i…/job.json` 并登记外部路径指针，不导入任意图片、不移动文件、不生成项目。目录 realpath，忽略符号链接、无效 ID 和草稿；已损坏或冲突的指针拒绝覆盖。打开空目录也有文件夹行。文件夹旁 compose 使用 `createImageJob({draft:true,saveDirectory})` 准备落盘编辑草稿；`listImageJobs` 隐藏草稿，输入/参考图不发布项目。`runImageJob` 验证请求与后端后将草稿转正式，再发起原有生成流程；新并发闸门覆盖草稿落盘 await。明确 `addImageItem` 也转正式，便于本地抠图项目。`draft` 字段沿 wire 与 normalize 保留。原工具端 `createImageJob` 不传 draft 仍兼容。
 
-`image-task-preferences.folders` 保存目录折叠、移除状态与可选的本机显示名 `name`、关联源目录 `directories`；缺省源目录为该项 key，旧缓存兼容。`hiddenProjects` 保存本机移除的图片项目 ID。文件夹按钮始终显示 open/closed folder 图标，hover 不替换为 chevron；compose 与 more 统一线条。操作在 hover/键盘 focus-visible 时出现，触屏保持可用。文件夹卡片和菜单的「编辑项目」复用 `ImageTaskDialog(editableSources:true)`，名称、关联源目录先留在弹窗草稿，保存前逐个 attach 校验并发现已有项目；同目录去重、多个源合并为同一个本机分组，compose 使用首个源目录。取消、选择器取消及保存失败保留原列表；文件不搬迁，已隐藏的单个图片项目不会因分组改名而恢复。目录移除及文件夹编辑器左下角移除共用 modal alertdialog 二次确认，默认焦点取消，Escape 只关闭确认框。单个图片项目的编辑弹窗仍只改名称，源路径只读。原对话工具 `deleteImageJob` 仍是显式永久删除接口，界面的本地移除不调用它。重新打开目录恢复其入口，已归组的源复用现有分组。
+`image-task-preferences.folders` 保存目录折叠、移除状态与可选的本机显示名 `name`、关联源目录 `directories`；缺省源目录为该项 key，旧缓存兼容。`hiddenProjects` 保存本机移除的图片项目 ID。文件夹按钮始终显示 open/closed folder 图标，hover 不替换为 chevron；compose 与 more 统一线条。操作在 hover/键盘 focus-visible 时出现，触屏保持可用。文件夹卡片和菜单的「编辑项目」复用 `ImageTaskDialog(editableSources:true)`，名称、关联源目录先留在弹窗草稿，保存前逐个 attach 校验并发现已有项目；同目录去重、多个源合并为同一个本机分组，compose 使用首个源目录。取消、选择器取消及保存失败保留原列表；文件不搬迁，已隐藏的单个图片项目不会因分组改名而恢复。目录移除及文件夹编辑器左下角移除共用 modal alertdialog 二次确认，默认焦点取消，Escape 只关闭确认框。单个图片项目行已改用置顶／归档快捷操作，文件夹的编辑器与更多菜单保留。原对话工具 `deleteImageJob` 仍是显式永久删除接口，界面的本地移除不调用它。重新打开目录恢复其入口，已归组的源复用现有分组。
 
 `ImageSidebarInfo` 读取已有列表摘要，延迟悬停在 top-layer popover 展示目录/项目路径和一行带聊天图标的数量统计，不再显示当前/历史明细与去重说明，不请求 API。文件夹卡片不显示时间；单个图片项目卡片保留创建/更新时间。图片列表本身只显示名称，不渲染 `.SPR_projMeta`；约30px单行、分组间2px，空文件夹无占位段落，整行hover为中性灰。带编辑按钮的文件夹卡片使用具名非模态 dialog 语义，可移入鼠标或用键盘进入按钮。`summarizeImageJob.imageCount/keyedCount` 对当前与历史的 `[file,keyedFile]` 成对去重，同一版本恢复到当前不加数，新 keyed PNG 是新版本；保留旧 total/ready/keyed 为当前结果口径，新增 historyCount 和 dir。`getImageJob.summary` 与列表同源，客户端轮询同步摘要且不覆盖编辑草稿。窗口/菜单/悬停卡的 Escape 优先于全局收起侧栏。
 
 文件夹菜单固定五项：置顶/编辑、分隔、在资源管理器中打开、分隔、归档聊天、分隔、移除项目。约164px宽、29px菜单行、16px线图标，鼠标打开不自动高亮首项，键盘打开聚焦首项。独立compose保留，复制路径不占菜单。`folders[*].pinned` 控制分组置顶，稳定排序保留同级原顺序；编辑源目录时保留pinned。`archivedProjects` 存储图片项目ID，`showArchived` 切换当前/归档视图，都在同一个本机缓存。`imageFolderGroups` 的 `allEntries` 包含归档记录，`entries` 按视图过滤；卡片统计使用前者。归档/取消归档只改本机状态，不调用删除或生成接口；新建回到普通视图，整理菜单提供归档入口。移除项目保留已有二次确认。文件夹移除与已隐藏图片优先于归档展示。
 
 两种布局均把 pinned 文件夹只渲染在独立 `.SPR_taskPinned`，普通列表不重复；无置顶文件夹时不渲染该分区。合并布局只合并未置顶的项目，保留输入的全局项目顺序，置顶文件夹仍保留名称、菜单和折叠状态。合并列表使用独立DOM ID，避免与默认目录置顶时的折叠目标冲突。其标题复用项目标题箭头，`pinnedCollapsed` 在同一本机偏好中保存，与普通项目列表折叠互不影响。标题仅内容宽度、hover 背景透明，右侧操作独立靠右；侧栏 gap 4px、标题下无额外 margin，置顶分区底部4px，避免空白点击色块及分区间距累加。
+
+单个图片项目使用 `ImageProjectActions`，右侧两个24px图标在hover／键盘focus-visible时显示，触屏保持可见；按钮阻止冒泡，不触发项目选择。此替换仅用于ImageModule，其他模块的 `ProjectActionsMenu` 和文件夹／分类菜单保持原逻辑。`pinnedProjects` 在本机偏好中保存图片项目ID，与文件夹pinned分别管理。单独置顶项目先在置顶区展示，再渲染置顶文件夹；文件夹子列表过滤已独立置顶ID，统计和文件夹批量归档仍使用原始entries/allEntries。分组／合并布局共用去重规则，置顶项目可独立取消置顶。
+
+归档视图始终渲染单一项目列表，不受目录折叠、布局或置顶分区影响；保留项目的置顶标记，取消归档后按原标记恢复。无归档内容时显示 `.SPR_archiveEmpty` 图标与居中文案，不渲染空文件夹。`archiveEntries` 复用于单个项目和文件夹批量归档，两者均保留查看／撤销提示、历史与文件；旧的单项目编辑／本机移除菜单及其死状态已从ImageModule移除。
 
 手动模式新增文件夹整组拖放：`ImageFolderHeader` 仅在 manual 时 draggable，目标分组显示前／后插入线，drop 保存独立的 `folderOrder`；项目ID顺序仍使用 `order`，两种拖动引用互不干扰。`imageFolderGroups` 始终先按pinned分区，再按folderOrder排同区目录，缺少字段的旧缓存保持原顺序；切到手动模式首次初始化目录顺序。文件夹可按Alt+↑/↓调整，拖放不能跨越置顶／普通分区，合并显示下项目也不能拖出其置顶文件夹。真实浏览器验证整组拖动、键盘排序、刷新恢复、多个置顶目录排序和合并布局切换；只修改本机缓存，不搬动文件。
 

@@ -54,6 +54,7 @@
       "查看归档聊天": "View archived chats",
       "返回未归档聊天": "Back to active chats",
       "没有归档聊天": "No archived chats",
+      "归档后可在这里查看和恢复。": "View and restore archived projects here.",
       "已归档聊天": "Archived chats",
       "移除项目": "Remove project",
       "已取消归档": "Unarchived",
@@ -65,7 +66,6 @@
       "创建时间：{n0}": "Created: {n0}",
       "编辑项目": "Edit project",
       "移除本地项目": "Remove local project",
-      "项目已移除，本地文件已保留。": "Project removed. Local files are kept.",
       "移除后仅在本机侧栏隐藏项目，不删除文件夹、图片或历史记录。": "Removes the project from this local sidebar. Folders, images and history are kept.",
       "展开项目": "Expand project",
       "收起项目": "Collapse project",
@@ -5111,7 +5111,15 @@
 .SPR_taskGroupTitle .SPR_taskFolderMenu .SPR_projectMenuSeparator{margin:4px 8px}
 .SPR_sidebarInfoRoot{min-width:0}
 .SPR_sidebarInfoRoot>.SPR_projItem{width:100%}
-.SPR_side[data-kind=image] .SPR_projectRow .SPR_projItem{padding-right:40px}
+.SPR_side[data-kind=image] .SPR_projectRow .SPR_projItem{padding-right:62px}
+.SPR_imageProjectActions{position:absolute;right:4px;top:calc(50% - 12px);display:flex;align-items:center;gap:2px;opacity:0;pointer-events:none;transition:opacity .12s}
+.SPR_projectRow:hover .SPR_imageProjectActions,.SPR_projectRow:has(:focus-visible) .SPR_imageProjectActions{opacity:1;pointer-events:auto}
+.SPR_imageProjectActions .SPR_taskIconButton{width:24px;height:24px;border-radius:6px}
+.SPR_imageProjectActions svg{width:15px;height:15px}
+.SPR_imageProjectActions [aria-pressed=true]{color:var(--dsw-alias-label-primary)}
+.SPR_archiveEmpty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:140px;padding:16px 8px;color:var(--dsw-alias-label-tertiary);text-align:center;font-size:12px;line-height:20px}
+.SPR_archiveEmpty>svg{width:26px;height:26px;margin-bottom:2px}
+.SPR_archiveEmpty p{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px}
 .SPR_sidebarInfo{position:fixed;inset:auto;box-sizing:border-box;margin:0;width:min(332px,calc(100vw - 16px));max-height:calc(100dvh - 16px);overflow:auto;padding:0;border:1px solid var(--dsw-alias-border-l2);border-radius:16px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:0 8px 24px rgba(0,0,0,.1);font:inherit;font-size:12px;line-height:20px;text-align:left}
 .SPR_sidebarInfoHead{display:flex;align-items:center;gap:8px;padding:12px 14px 4px;font-size:13px}
 .SPR_sidebarInfoHead strong{min-width:0;overflow-wrap:anywhere;font-weight:600}
@@ -5201,6 +5209,7 @@
 .SPR_templateDeleteDialog.SPR_projectRenameDialog[data-kind=delete]{width:min(420px,calc(100vw - 32px));max-height:calc(100vh - 32px);margin:auto;overflow:auto;font:inherit;text-align:left}
 .SPR_templateDeleteDialog::backdrop{background:rgba(0,0,0,.35)}
 @media(hover:none){.SPR_projectMoreInline .SPR_projectMoreButton{opacity:1}}
+@media(hover:none){.SPR_imageProjectActions{opacity:1;pointer-events:auto}}
 @media(hover:none){.SPR_side[data-kind=image] .SPR_taskHeadActions,.SPR_taskFolderActions,.SPR_side[data-kind=image] .SPR_projectRow:not(:hover):not(:has(:focus-visible)) .SPR_projectMoreButton[aria-expanded=false]{opacity:1;pointer-events:auto}}
 .SPR_root>.SPR_modules{display:flex;flex-wrap:nowrap;gap:20px;padding:0 22px;overflow-x:auto;align-items:stretch;background:transparent;scrollbar-width:thin}
 .SPR_root>.SPR_modules>.SPR_module{position:relative;display:inline-flex;flex-direction:row;align-items:center;flex:none;gap:6px;min-height:44px;padding:10px 2px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--dsw-alias-label-secondary);box-shadow:none;white-space:nowrap;transition:color .12s,border-color .12s}
@@ -5764,12 +5773,20 @@
       if (name === "settings") return h("svg", props, h("path", { d: "m9 3-.6 2.2-2 .9-2-.6L2 10l1.7 1.5v2L2 15l2.4 4.5 2-.6 2 .9L9 22h6l.6-2.2 2-.9 2 .6L22 15l-1.7-1.5v-2L22 10l-2.4-4.5-2 .6-2-.9L15 3Z" }), h("circle", { cx: 12, cy: 12.5, r: 3 }));
       if (name === "pin") return h("svg", props, h("path", { d: "m16 3 5 5-4 3-2 5-3-1-7 7M4 12l5-2 3-7 4 0M4 12l8 8" }));
       if (name === "archive") return h("svg", props, h("rect", { x: 4, y: 3, width: 16, height: 4, rx: 1 }), h("path", { d: "M5 7v13h14V7M10 11h4" }));
+      if (name === "unarchive") return h("svg", props, h("rect", { x: 4, y: 3, width: 16, height: 4, rx: 1 }), h("path", { d: "M5 7v13h14V7M12 17v-6m-3 3 3-3 3 3" }));
       if (name === "remove") return h("svg", props, h("path", { d: "m6 6 12 12M6 18 18 6" }));
       if (name === "openFolder") return h("svg", props, h("path", { d: "M3 17V6a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v2M3 19l3-8h16l-3 8H3Z" }));
       return h("svg", props, h("path", { d: "M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" }));
     }
 
     /** 列表操作绑定本行项目或任务，不依赖当前选中项。 */
+    function ImageProjectActions({ pinned, archived, onPin, onArchive }) {
+      const pinLabel = pinned ? T("取消置顶") : T("置顶项目"), archiveLabel = archived ? T("取消归档") : T("归档聊天");
+      return h("div", { className: "SPR_imageProjectActions" },
+        h("button", { type: "button", className: "SPR_taskIconButton", title: pinLabel, "aria-label": pinLabel, "aria-pressed": pinned === true, "data-action": "pin", onClick: event => { event.stopPropagation(); onPin(); } }, h(ProjectActionIcon, { name: "pin" })),
+        h("button", { type: "button", className: "SPR_taskIconButton", title: archiveLabel, "aria-label": archiveLabel, "data-action": "archive", onClick: event => { event.stopPropagation(); onArchive(); } }, h(ProjectActionIcon, { name: archived ? "unarchive" : "archive" })));
+    }
+
     function ProjectActionsMenu({ project, inline = false, task = false, local = false, onEdit, onRename, onDelete, onNotice }) {
       const menuLabel = task ? T("更多任务操作") : T("更多项目操作");
       const deleteLabel = local ? T("移除本地项目") : task ? T("删除任务") : T("删除项目");
@@ -9855,7 +9872,7 @@
           folders[directory] = { collapsed: folder.collapsed === true, removed: folder.removed === true, pinned: folder.pinned === true,
             ...(typeof folder.name === "string" && folder.name.trim() ? { name: folder.name.trim().slice(0, 80) } : {}), ...(sources.length ? { directories: sources } : {}) };
         }
-        return { directory: typeof value?.directory === "string" ? value.directory : "", sort: value?.sort === "manual" ? "manual" : "updated", layout: value?.layout === "merged" ? "merged" : "grouped", order: Array.isArray(value?.order) ? [...new Set(value.order.filter(id => typeof id === "string"))] : [], folderOrder: Array.isArray(value?.folderOrder) ? [...new Set(value.folderOrder.filter(path => typeof path === "string"))] : [], folders, hiddenProjects: Array.isArray(value?.hiddenProjects) ? value.hiddenProjects.filter(id => typeof id === "string") : [], archivedProjects: Array.isArray(value?.archivedProjects) ? value.archivedProjects.filter(id => typeof id === "string") : [], showArchived: value?.showArchived === true, pinnedCollapsed: value?.pinnedCollapsed === true };
+        return { directory: typeof value?.directory === "string" ? value.directory : "", sort: value?.sort === "manual" ? "manual" : "updated", layout: value?.layout === "merged" ? "merged" : "grouped", order: Array.isArray(value?.order) ? [...new Set(value.order.filter(id => typeof id === "string"))] : [], folderOrder: Array.isArray(value?.folderOrder) ? [...new Set(value.folderOrder.filter(path => typeof path === "string"))] : [], folders, hiddenProjects: Array.isArray(value?.hiddenProjects) ? value.hiddenProjects.filter(id => typeof id === "string") : [], archivedProjects: Array.isArray(value?.archivedProjects) ? value.archivedProjects.filter(id => typeof id === "string") : [], pinnedProjects: Array.isArray(value?.pinnedProjects) ? [...new Set(value.pinnedProjects.filter(id => typeof id === "string"))] : [], showArchived: value?.showArchived === true, pinnedCollapsed: value?.pinnedCollapsed === true };
       } catch { return { directory: "", sort: "updated", layout: "grouped", order: [], folders: {}, hiddenProjects: [], archivedProjects: [], showArchived: false }; }
     }
 
@@ -10145,11 +10162,16 @@
       const manual = preferences?.sort === "manual";
       const folderGroups = preferences ? imageFolderGroups(items, preferences) : [];
       const visibleItems = preferences ? folderGroups.flatMap(folder => folder.entries) : items;
-      const pinned = folderGroups.filter(group => group.pinned);
+      const archiveView = preferences?.showArchived === true;
+      const pinnedProjectIds = new Set(preferences?.pinnedProjects ?? []);
+      const visibleIds = new Set(visibleItems.map(item => item.id));
+      const pinnedItems = archiveView ? [] : items.filter(item => visibleIds.has(item.id) && pinnedProjectIds.has(item.id));
+      const pinned = archiveView ? [] : folderGroups.filter(group => group.pinned);
       const regularFolders = folderGroups.filter(group => !group.pinned);
-      const regularIds = new Set(regularFolders.flatMap(group => group.entries.map(item => item.id)));
-      const regular = preferences?.layout === "grouped" ? regularFolders : [{ key: "", entries: preferences ? items.filter(item => regularIds.has(item.id)) : items }];
-      const groupOf = item => preferences?.layout === "grouped" ? item.saveDirectory || "" : pinned.find(group => group.entries.some(entry => entry.id === item.id))?.key ?? null;
+      const regularIds = new Set(regularFolders.flatMap(group => group.entries.filter(item => !pinnedProjectIds.has(item.id)).map(item => item.id)));
+      const regular = archiveView ? [{ key: "", entries: items.filter(item => visibleIds.has(item.id)) }]
+        : preferences?.layout === "grouped" ? regularFolders : [{ key: "", entries: preferences ? items.filter(item => regularIds.has(item.id)) : items }];
+      const groupOf = item => archiveView ? null : pinnedProjectIds.has(item.id) ? "pinned-projects" : preferences?.layout === "grouped" ? item.saveDirectory || "" : pinned.find(group => group.entries.some(entry => entry.id === item.id))?.key ?? null;
       const move = (id, target, after) => {
         if (!manual || id === target || !id || groupOf(items.find(item => item.id === id) || {}) !== groupOf(items.find(item => item.id === target) || {})) return;
         const order = items.map(item => item.id).filter(value => value !== id);
@@ -10163,7 +10185,7 @@
         order.splice(order.indexOf(target) + (after ? 1 : 0), 0, source);
         onPreferences({ folderOrder: order });
       };
-      const renderGroups = (list, showFolders = preferences?.layout === "grouped") => list.map(group => { const directory = group.key, entries = group.entries; return h("div", { key: directory, className: "SPR_taskGroup", "data-folder-drop": folderDropTarget?.key === directory ? folderDropTarget.after ? "after" : "before" : undefined,
+      const renderGroups = (list, showFolders = !archiveView && preferences?.layout === "grouped") => list.map(group => { const directory = group.key, entries = showFolders ? group.entries.filter(item => !pinnedProjectIds.has(item.id)) : group.entries; return h("div", { key: directory, className: "SPR_taskGroup", "data-folder-drop": folderDropTarget?.key === directory ? folderDropTarget.after ? "after" : "before" : undefined,
           onDragOver: event => { if (!showFolders || !canMoveFolder(draggedFolder.current, directory)) return; event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = "move"; const rect = event.currentTarget.getBoundingClientRect(); setFolderDropTarget({ key: directory, after: event.clientY > rect.top + rect.height / 2 }); },
           onDrop: event => { if (!showFolders || draggedFolder.current === null) return; event.preventDefault(); event.stopPropagation(); const rect = event.currentTarget.getBoundingClientRect(); moveFolder(draggedFolder.current, directory, event.clientY > rect.top + rect.height / 2); draggedFolder.current = null; setFolderDropTarget(null); }
         },
@@ -10175,7 +10197,7 @@
             onArchive: () => onArchiveFolder?.(group),
             onToggle: () => onPreferences({ folders: { ...preferences.folders, [directory]: { ...(preferences.folders?.[directory] ?? {}), collapsed: !group.collapsed } } }),
             onRemove: () => onRemoveFolder?.(directory) }) : null,
-          h("div", { className: "SPR_taskGroupItems", id: showFolders ? "image-folder-" + encodeURIComponent(directory) : "image-merged-" + storageKey, hidden: showFolders && group.collapsed === true },
+          h("div", { className: "SPR_taskGroupItems", id: showFolders ? "image-folder-" + encodeURIComponent(directory) : "image-merged-" + storageKey + (directory ? "-" + directory : ""), hidden: showFolders && group.collapsed === true },
           entries.map((item) => {
           const select = h(
             "button",
@@ -10205,10 +10227,11 @@
       return h(
         "div",
         { className: "SPR_side", "data-kind": storageKey },
-        pinned.length ? h("section", { className: "SPR_taskPinned", "aria-label": activeLang() === "en" ? T("置顶项目") : T("置顶") },
+        pinned.length || pinnedItems.length ? h("section", { className: "SPR_taskPinned", "aria-label": activeLang() === "en" ? T("置顶项目") : T("置顶") },
           h("div", { className: "SPR_taskPinnedHead" }, h("button", { type: "button", className: "SPR_taskSideTitle", "aria-expanded": !preferences.pinnedCollapsed, "aria-controls": "pinned-task-list-" + storageKey, onClick: () => onPreferences({ pinnedCollapsed: !preferences.pinnedCollapsed }) },
             h("span", null, activeLang() === "en" ? T("置顶项目") : T("置顶")), h(TaskHeaderIcon, { name: "chevron", collapsed: preferences.pinnedCollapsed }))),
-          h("div", { className: "SPR_taskList", id: "pinned-task-list-" + storageKey, hidden: preferences.pinnedCollapsed === true }, renderGroups(pinned, true))) : null,
+          h("div", { className: "SPR_taskList", id: "pinned-task-list-" + storageKey, hidden: preferences.pinnedCollapsed === true },
+            pinnedItems.length ? renderGroups([{ key: "pinned-projects", entries: pinnedItems }], false) : null, renderGroups(pinned, true))) : null,
         h("div", { className: "SPR_taskSideHead" },
           h("button", { type: "button", className: "SPR_taskSideTitle", onClick: toggle, "aria-expanded": !collapsed, "aria-controls": "task-list-" + storageKey },
             h("span", null, preferences ? preferences.showArchived ? T("已归档聊天") : title : T("{n0}（{n1}）", { n0: title, n1: items.length })), h(TaskHeaderIcon, { name: "chevron", collapsed })),
@@ -10216,9 +10239,9 @@
             preferences ? h(ProjectSidebarMenu, { preferences, onChange: onPreferences }) : null,
             h("button", { type: "button", className: "SPR_taskIconButton", title: preferences ? T("打开文件夹") : T("新建任务"), "aria-label": preferences ? T("打开文件夹") : T("新建任务"), onClick: preferences ? onOpenFolder : onCreate }, h(TaskHeaderIcon, { name: preferences ? "folderAdd" : "add" })))),
         h("div", { className: "SPR_taskList", id: "task-list-" + storageKey, hidden: collapsed },
-          visibleItems.length === 0 && !folderGroups.length ? h("p", { className: "SPR_hint" }, preferences ? T("新建项目将在点击生成后出现在这里。") : T("点击标题右侧的 + 新建任务。")) : null,
-          preferences?.showArchived && !visibleItems.length && folderGroups.length ? h("p", { className: "SPR_hint" }, T("没有归档聊天")) : null,
-          renderGroups(regular),
+          archiveView && !visibleItems.length ? h("div", { className: "SPR_archiveEmpty", "data-testid": "image-archive-empty", role: "status" }, h(ProjectActionIcon, { name: "archive" }), h("p", null, T("没有归档聊天")), h("span", null, T("归档后可在这里查看和恢复。")))
+            : visibleItems.length === 0 && !folderGroups.length ? h("p", { className: "SPR_hint" }, preferences ? T("新建项目将在点击生成后出现在这里。") : T("点击标题右侧的 + 新建任务。")) : null,
+          archiveView && !visibleItems.length ? null : renderGroups(regular),
           items.length === 0 && createInSidebar ? h(Btn, { onClick: onCreate, primary: true }, T("新建")) : null),
         preferences && (archivedCount > 0 || preferences.showArchived) ? h("button", { type: "button", className: "SPR_taskArchiveLink", "data-testid": "image-archive-link", onClick: () => onPreferences({ showArchived: !preferences.showArchived }) },
           h(ProjectActionIcon, { name: "archive" }), preferences.showArchived ? T("返回未归档聊天") : T("{n0}（{n1}）", { n0: T("已归档聊天"), n1: archivedCount })) : null
@@ -18682,7 +18705,6 @@
       const resultEmpty = ((view.tab === "history" ? job?.history : job?.items) ?? []).length === 0;
       const templateDrafts = imageTemplateDraftCache.get(api) ?? new Map();
       imageTemplateDraftCache.set(api, templateDrafts);
-      const [taskDialog, setTaskDialog] = React.useState(null);
       const [taskPreferences, setTaskPreferences] = React.useState(readImageTaskPreferences);
       const manualOrder = new Map<string, number>(taskPreferences.order.map((id, index) => [id, index]));
       const sortedJobs = [...jobs].sort((a, b) => taskPreferences.sort === "manual"
@@ -18845,15 +18867,6 @@
         } catch (error) { setNotice({ kind: "error", text: msg(error) }); }
         finally { createLock.current = false; }
       };
-      const removeLocalProject = target => {
-        const hiddenProjects = [...new Set([...(taskPreferences.hiddenProjects ?? []), target.id])];
-        saveTaskPreferences({ hiddenProjects });
-        if (jobId === target.id) {
-          const next = imageFolderGroups(sortedJobs, { ...taskPreferences, hiddenProjects }).flatMap(folder => folder.entries)[0];
-          setJobId(next?.id ?? null); if (!next) setJob(null);
-        }
-        setTaskDialog(null); setNotice({ kind: "ok", text: T("项目已移除，本地文件已保留。") });
-      };
       const removeFolder = directory => {
         const group = imageFolderGroups(sortedJobs, taskPreferences).find(folder => folder.key === directory);
         const contains = path => (group ? imageFolderSources(group) : [directory]).some(source => imageFolderPathKey(source) === imageFolderPathKey(path || ""));
@@ -18865,8 +18878,8 @@
         }
         setNotice({ kind: "ok", text: T("文件夹已移除，本地文件已保留。") });
       };
-      const archiveFolder = group => {
-        const targetIds = new Set(group.entries.map(item => item.id));
+      const archiveEntries = entries => {
+        const targetIds = new Set(entries.map(item => item.id));
         const wasArchiveView = taskPreferences.showArchived === true, previousJobId = jobId;
         const archivedProjects = taskPreferences.showArchived ? (taskPreferences.archivedProjects ?? []).filter(id => !targetIds.has(id))
           : [...new Set([...(taskPreferences.archivedProjects ?? []), ...targetIds])];
@@ -18877,7 +18890,7 @@
         }
         let undone = false;
         setNotice({ kind: "ok", text: wasArchiveView ? T("已取消归档") : T("已归档聊天"), persistent: true, icon: "archive", actions: [
-          ...(!wasArchiveView ? [{ label: T("查看"), onClick: () => { saveTaskPreferences({ showArchived: true }); const first = group.entries.find(item => targetIds.has(item.id)); if (first) setJobId(first.id); } }] : []),
+          ...(!wasArchiveView ? [{ label: T("查看"), onClick: () => { saveTaskPreferences({ showArchived: true }); const first = entries.find(item => targetIds.has(item.id)); if (first) setJobId(first.id); } }] : []),
           { label: T("撤销"), primary: true, onClick: () => {
             if (undone) return; undone = true;
             const current = sidebarStateRef.current;
@@ -18889,6 +18902,11 @@
             setNotice({ kind: "ok", text: T("已撤销") });
           } }
         ] });
+      };
+      const archiveFolder = group => archiveEntries(group.entries);
+      const toggleProjectPin = item => {
+        const pinnedProjects = sidebarStateRef.current.preferences.pinnedProjects ?? [];
+        saveTaskPreferences({ pinnedProjects: pinnedProjects.includes(item.id) ? pinnedProjects.filter(id => id !== item.id) : [...pinnedProjects, item.id] });
       };
       const editFolder = async (group, value) => {
         // Validate/discover every source before updating the local sidebar arrangement.
@@ -18911,11 +18929,6 @@
         const visible = imageFolderGroups(list, { ...taskPreferences, folders }).flatMap(folder => folder.entries);
         if (jobId && !job?.draft && !visible.some(item => item.id === jobId)) { setJobId(visible[0]?.id ?? null); if (!visible.length) setJob(null); }
         setNotice({ kind: "ok", text: T("已保存") });
-      };
-      const submitTaskDialog = async ({ name }) => {
-        await api.saveImageJob({ jobId: taskDialog.project.id, name });
-        await refresh(); if (jobId === taskDialog.project.id) await load(jobId);
-        setTaskDialog(null); setNotice({ kind: "ok", text: T("已保存") });
       };
 
       const enqueueImageSave = (patch) => {
@@ -18968,12 +18981,6 @@
       }, action === "reuse" ? T("已复用历史参数，点击生成才会计费；模型与后端使用当前设置。") : action === "restore" ? T("已设为当前结果") : T("已删除"),
       { key: "img:history", label: T("正在处理历史记录…") });
 
-      const renameJobEntry = async (target, name) => {
-        await api.saveImageJob({ jobId: target.id, name });
-        await refresh();
-        if (target.id === jobId) await load(target.id);
-      };
-
       const upload = async (files, kind) => {
         setUploading(true);
         // 上传本身也要有反馈：走同一个 tasks 表，key 固定成上传中的那批。
@@ -18997,8 +19004,6 @@
       return h(
         React.Fragment,
         null,
-        taskDialog ? h(ImageTaskDialog, { api, preferences: { ...taskPreferences, directory: taskDialog.project.saveDirectory || "" }, project: { name: taskDialog.project.name, directories: [taskDialog.project.saveDirectory || ""].filter(Boolean) }, defaultDirectory: globalConfig?.imageJobsRoot,
-          onRemove: () => removeLocalProject(taskDialog.project), onSubmit: submitTaskDialog, onClose: () => setTaskDialog(null) }) : null,
         h(
           "div",
           { className: "SPR_body" },
@@ -19020,7 +19025,7 @@
             onEditFolder: editFolder,
             onArchiveFolder: archiveFolder,
             api,
-            renderActions: item => h(ProjectActionsMenu, { project: item, inline: true, local: true, onEdit: target => setTaskDialog({ project: target }), onRename: renameJobEntry, onDelete: removeLocalProject, onNotice: setNotice }),
+            renderActions: item => h(ImageProjectActions, { pinned: taskPreferences.pinnedProjects?.includes(item.id), archived: taskPreferences.archivedProjects?.includes(item.id), onPin: () => toggleProjectPin(item), onArchive: () => archiveEntries([item]) }),
             renderMeta: null
           }),
           h(
@@ -19033,7 +19038,7 @@
               h(BusyBadge, { show: tasks.active, text: tasks.label(K_IMG_JOB) ?? tasks.label(K_IMG_KEY) ?? tasks.label(K_IMG_UPLOAD) ?? tasks.firstLabel ?? T("正在调用接口…") })
             ) : null,
             job === null
-              ? h("p", { className: "SPR_empty" }, T("选择文件夹旁的新建图标开始一个项目。"))
+              ? h("p", { className: "SPR_empty" }, taskPreferences.showArchived ? T("没有归档聊天") : T("选择文件夹旁的新建图标开始一个项目。"))
               : h(
                   "div",
                   { className: "SPR_imageWorkspace", ref: imageWorkspaceRef, key: job.id, "data-result-tab": view.tab, "data-result-empty": resultEmpty ? "true" : "false" },
@@ -25659,6 +25664,7 @@
     bundleModule.exports.__test.NoticePopup = NoticePopup;
     bundleModule.exports.__test.imageFolderGroups = imageFolderGroups;
     bundleModule.exports.__test.ImageSidebarInfo = ImageSidebarInfo;
+    bundleModule.exports.__test.ImageProjectActions = ImageProjectActions;
     return bundleModule.exports;
   }
 });

@@ -346,7 +346,7 @@ const api = new Proxy(
  */
 const EXPECTED_HOOKS = {
   StudioPanel: 26,
-  ImageModule: 24,
+  ImageModule: 23,
   SequenceModule: 17
 };
 
@@ -975,6 +975,12 @@ section("可撤销的归档提示");
 section("图片项目侧栏与创建弹窗");
 {
   HOOK.slots = []; HOOK.cursor = 0;
+  const projectEvents = [];
+  const projectActions = bundle.__test.ImageProjectActions({ pinned: true, archived: true, onPin: () => projectEvents.push("pin"), onArchive: () => projectEvents.push("archive") });
+  const projectButtons = byTag(projectActions, "button");
+  projectButtons[1]?.props.onClick({ stopPropagation: () => projectEvents.push("stop") });
+  check("单个项目使用置顶和归档快捷图标，不再展开更多菜单", projectButtons.length === 2 && projectButtons[0].props["aria-label"] === "取消置顶" && projectButtons[0].props["aria-pressed"] === true && projectButtons[1].props["aria-label"] === "取消归档" && !byClass(projectActions, "SPR_projectMoreButton").length && projectEvents.join() === "stop,archive");
+  HOOK.slots = []; HOOK.cursor = 0;
   const preferences = { directory: "", sort: "updated", layout: "merged", order: [] };
   const tree = bundle.__test.JobSidebar({ title: "项目", items: [makeImageJob()], activeId: "i1", storageKey: "image", preferences, onPreferences: () => {}, onCreate: () => {}, renderMeta: () => "" });
   check("图片侧栏标题为项目，不显示数量", byClass(tree, "SPR_taskSideTitle").some(node => textOf(node) === "项目"));
@@ -1011,6 +1017,18 @@ section("图片项目侧栏与创建弹窗");
   const mergedPins = bundle.__test.JobSidebar({ title: "项目", items: linkedJobs, storageKey: "image", preferences: { ...preferences, folders: { "D:/道具": { pinned: true } } }, onPreferences: () => {}, onCreate: () => {} });
   const mergedPinSection = byClass(mergedPins, "SPR_taskPinned")[0], mergedRegular = byClass(mergedPins, "SPR_taskList").find(node => node.props.id === "task-list-image");
   check("合并显示仍保留置顶文件夹，普通列表不重复", byClass(mergedPinSection, "SPR_taskGroupTitle").length === 1 && byClass(mergedPinSection, "SPR_projItem").length === 1 && !byClass(mergedRegular, "SPR_taskGroupTitle").length && byClass(mergedRegular, "SPR_projItem").length === 1);
+  for (const layout of ["grouped", "merged"]) {
+    HOOK.slots = []; HOOK.cursor = 0;
+    const pinnedProject = bundle.__test.JobSidebar({ title: "项目", items: linkedJobs, storageKey: "image", preferences: { ...preferences, layout, pinnedProjects: ["i1"], folders: { "c:\\素材": { pinned: true } } }, onPreferences: () => {}, onCreate: () => {} });
+    const pinnedList = byClass(pinnedProject, "SPR_taskPinned")[0];
+    check(`${layout}中单独置顶项目与置顶文件夹同时显示且不重复`, byClass(pinnedList, "SPR_projItem").length === 1 && byClass(pinnedProject, "SPR_projItem").length === 2 && byClass(pinnedList, "SPR_taskGroupTitle").length === 1);
+  }
+  HOOK.slots = []; HOOK.cursor = 0;
+  const emptyArchive = bundle.__test.JobSidebar({ title: "项目", items: linkedJobs, storageKey: "image", preferences: { ...linkedPreferences, showArchived: true, folders: { "C:/素材": { ...linkedPreferences.folders["C:/素材"], pinned: true } } }, onPreferences: () => {}, onCreate: () => {} });
+  check("归档空状态不夹带空文件夹或置顶标题", byClass(emptyArchive, "SPR_archiveEmpty").length === 1 && !byClass(emptyArchive, "SPR_taskGroupTitle").length && !byClass(emptyArchive, "SPR_taskPinned").length);
+  HOOK.slots = []; HOOK.cursor = 0;
+  const archivedPinnedProject = bundle.__test.JobSidebar({ title: "项目", items: linkedJobs, storageKey: "image", preferences: { ...linkedPreferences, showArchived: true, archivedProjects: ["i1"], pinnedProjects: ["i1"] }, onPreferences: () => {}, onCreate: () => {} });
+  check("归档项目使用单一紧凑列表，独立于普通布局和置顶", byClass(archivedPinnedProject, "SPR_projItem").length === 1 && !byClass(archivedPinnedProject, "SPR_taskGroupTitle").length && !byClass(archivedPinnedProject, "SPR_taskPinned").length && !byClass(archivedPinnedProject, "SPR_archiveEmpty").length);
   HOOK.slots = []; HOOK.cursor = 0;
   let folderMove;
   const sortableFolders = bundle.__test.JobSidebar({ title: "项目", items: linkedJobs, storageKey: "image", preferences: { ...preferences, layout: "grouped", sort: "manual" }, onPreferences: patch => { folderMove = patch; }, onCreate: () => {} });
