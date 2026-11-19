@@ -2736,7 +2736,9 @@ X-Api-Request-Id: <uuid>
 
 `image-task-preferences.folders` 保存目录折叠、移除状态与可选的本机显示名 `name`、关联源目录 `directories`；缺省源目录为该项 key，旧缓存兼容。`hiddenProjects` 保存本机移除的图片项目 ID。文件夹按钮始终显示 open/closed folder 图标，hover 不替换为 chevron；compose 与 more 统一线条。操作在 hover/键盘 focus-visible 时出现，触屏保持可用。文件夹卡片和菜单的「编辑项目」复用 `ImageTaskDialog(editableSources:true)`，名称、关联源目录先留在弹窗草稿，保存前逐个 attach 校验并发现已有项目；同目录去重、多个源合并为同一个本机分组，compose 使用首个源目录。取消、选择器取消及保存失败保留原列表；文件不搬迁，已隐藏的单个图片项目不会因分组改名而恢复。目录移除及文件夹编辑器左下角移除共用 modal alertdialog 二次确认，默认焦点取消，Escape 只关闭确认框。单个图片项目的编辑弹窗仍只改名称，源路径只读。原对话工具 `deleteImageJob` 仍是显式永久删除接口，界面的本地移除不调用它。重新打开目录恢复其入口，已归组的源复用现有分组。
 
-`ImageSidebarInfo` 读取已有列表摘要，延迟悬停在 top-layer popover 展示目录/项目路径、更新时间和一行带聊天图标的数量统计，不再显示当前/历史明细与去重说明，不请求 API。带编辑按钮的文件夹卡片使用具名非模态 dialog 语义，可移入鼠标或用键盘进入按钮。`summarizeImageJob.imageCount/keyedCount` 对当前与历史的 `[file,keyedFile]` 成对去重，同一版本恢复到当前不加数，新 keyed PNG 是新版本；保留旧 total/ready/keyed 为当前结果口径，新增 historyCount 和 dir。`getImageJob.summary` 与列表同源，客户端轮询同步摘要且不覆盖编辑草稿。窗口/菜单/悬停卡的 Escape 优先于全局收起侧栏。
+`ImageSidebarInfo` 读取已有列表摘要，延迟悬停在 top-layer popover 展示目录/项目路径和一行带聊天图标的数量统计，不再显示当前/历史明细与去重说明，不请求 API。文件夹卡片不显示时间；单个图片项目卡片保留创建/更新时间。图片列表本身只显示名称，不渲染 `.SPR_projMeta`；约30px单行、分组间2px，空文件夹无占位段落，整行hover为中性灰。带编辑按钮的文件夹卡片使用具名非模态 dialog 语义，可移入鼠标或用键盘进入按钮。`summarizeImageJob.imageCount/keyedCount` 对当前与历史的 `[file,keyedFile]` 成对去重，同一版本恢复到当前不加数，新 keyed PNG 是新版本；保留旧 total/ready/keyed 为当前结果口径，新增 historyCount 和 dir。`getImageJob.summary` 与列表同源，客户端轮询同步摘要且不覆盖编辑草稿。窗口/菜单/悬停卡的 Escape 优先于全局收起侧栏。
+
+文件夹菜单固定五项：置顶/编辑、分隔、在资源管理器中打开、分隔、归档聊天、分隔、移除项目。约164px宽、29px菜单行、16px线图标，鼠标打开不自动高亮首项，键盘打开聚焦首项。独立compose保留，复制路径不占菜单。`folders[*].pinned` 控制分组置顶，稳定排序保留同级原顺序；编辑源目录时保留pinned。`archivedProjects` 存储图片项目ID，`showArchived` 切换当前/归档视图，都在同一个本机缓存。`imageFolderGroups` 的 `allEntries` 包含归档记录，`entries` 按视图过滤；卡片统计使用前者。归档/取消归档只改本机状态，不调用删除或生成接口；新建回到普通视图，整理菜单提供归档入口。移除项目保留已有二次确认。文件夹移除与已隐藏图片优先于归档展示。
 
 系统选择器 `pickImageFolder` 为 clientOnly：Windows 用隐藏 STA PowerShell helper 调用 IFileDialog / FOS_PICKFOLDERS，macOS 用 osascript，Linux 用 zenity。参数数组启动，路径经环境变量传递，凭据不继承；取消返回 canceled，已失效的上次路径回退主目录，返回值 realpath / stat 校验。`revealImageFolder` 也仅供界面，校验路径后数组参数启动 Explorer/open/xdg-open，捕获 spawn 失败，不执行 shell 字符串。
 

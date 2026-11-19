@@ -45,10 +45,21 @@
 /* i18n-ignore-start */
     const EN: Record<string, string> = {
       "在此文件夹新建项目": "New project in this folder",
+      "置顶项目": "Pin project",
+      "取消置顶": "Unpin",
+      "编辑": "Edit",
+      "在资源管理器中打开": "Open in file explorer",
+      "归档聊天": "Archive chats",
+      "取消归档": "Unarchive",
+      "查看归档聊天": "View archived chats",
+      "返回未归档聊天": "Back to active chats",
+      "没有归档聊天": "No archived chats",
+      "已归档聊天": "Archived chats",
+      "移除项目": "Remove project",
+      "已归档，图片与历史记录已保留。": "Archived. Images and history are kept.",
+      "已取消归档": "Unarchived",
       "文件夹「{n0}」的更多操作": "More actions for folder '{n0}'",
       "文件夹操作": "Folder actions",
-      "在文件资源管理器中打开": "Open in file explorer",
-      "复制文件夹路径": "Copy folder path",
       "{n0} 个项目 · {n1} 张 · 抠像 {n2}": "{n0} projects \u00b7 {n1} images \u00b7 {n2} keyed",
       "最近更新：{n0}": "Last updated: {n0}",
       "创建时间：{n0}": "Created: {n0}",
@@ -5032,13 +5043,16 @@
 .SPR_side[data-kind=image] .SPR_taskSideHead{padding:0 0 0 2px;margin-bottom:6px;gap:0}
 .SPR_side[data-kind=image] .SPR_taskSideTitle{font-size:13px;gap:1px}
 .SPR_side[data-kind=image] .SPR_taskSideTitle svg{width:14px;height:14px}
-.SPR_side[data-kind=image] .SPR_projItem{border:0;border-radius:8px;padding:9px 10px;background:transparent;box-shadow:none}
-.SPR_side[data-kind=image] .SPR_projItem:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}
-.SPR_side[data-kind=image] .SPR_projItem[data-active=true]{background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_side[data-kind=image] .SPR_projItem{box-sizing:border-box;min-height:30px;border:0;border-radius:8px;padding:6px 10px;background:transparent;box-shadow:none}
+.SPR_side[data-kind=image] .SPR_projItem:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
+.SPR_side[data-kind=image] .SPR_projItem[data-active=true]{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
 .SPR_side[data-kind=image] .SPR_projName{font-weight:400;font-size:13px}
 .SPR_side[data-kind=image] .SPR_projMeta{font-size:11px;margin-top:2px}
 .SPR_taskGroup{display:flex;flex-direction:column;gap:3px;min-width:0}
 .SPR_taskGroup+.SPR_taskGroup{margin-top:16px}
+.SPR_side[data-kind=image] .SPR_taskGroup+.SPR_taskGroup{margin-top:2px}
+.SPR_side[data-kind=image] .SPR_taskGroup{gap:2px}
+.SPR_side[data-kind=image] .SPR_taskList{gap:2px}
 .SPR_taskGroupTitle{display:flex;align-items:center;gap:7px;padding:4px 8px;font-size:11px;color:var(--dsw-alias-label-tertiary);min-width:0}
 .SPR_taskGroupTitle span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .SPR_taskGroupTitle svg{flex:none;width:13px;height:13px}
@@ -5046,7 +5060,7 @@
 .SPR_side[data-kind=image] .SPR_taskHeadActions{opacity:0;pointer-events:none;transition:opacity .12s}
 .SPR_side[data-kind=image] .SPR_taskSideHead:hover .SPR_taskHeadActions,.SPR_side[data-kind=image] .SPR_taskSideHead:has(:focus-visible) .SPR_taskHeadActions,.SPR_side[data-kind=image] .SPR_taskHeadActions:has([aria-expanded=true]){opacity:1;pointer-events:auto}
 .SPR_taskGroupTitle{padding:0 3px 0 8px;gap:4px;min-height:30px;border-radius:8px;font-size:13px;color:var(--dsw-alias-label-secondary)}
-.SPR_taskGroupTitle:hover,.SPR_taskGroupTitle:focus-within{background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_taskGroupTitle:hover,.SPR_taskGroupTitle:has(:focus-visible),.SPR_taskGroupTitle[data-menu-open=true]{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
 .SPR_taskGroupTitle>.SPR_sidebarInfoRoot{flex:1;min-width:0}
 .SPR_taskFolderLabel{display:flex;align-items:center;gap:7px;min-width:0;min-height:30px;outline-offset:2px;cursor:default}
 .SPR_taskFolderLabel{box-sizing:border-box;width:100%;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
@@ -5069,7 +5083,11 @@
 .SPR_taskDialogActions .SPR_removeLocalProject{margin-right:auto;padding:7px 13px;border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-error-primary,#d84949) 14%,transparent);color:var(--dsw-alias-state-error-primary,#d84949);font-size:12px}
 .SPR_taskDialogActions .SPR_removeLocalProject:hover:not(:disabled){background:color-mix(in srgb,var(--dsw-alias-state-error-primary,#d84949) 20%,transparent);color:var(--dsw-alias-state-error-primary,#d84949)}
 .SPR_taskProjectEdit .SPR_taskComputer{display:none}
-.SPR_taskFolderMenu{inset:auto;margin:0;max-width:calc(100vw - 16px);font:inherit;width:228px}
+.SPR_taskGroupTitle .SPR_taskFolderMenu{inset:auto;margin:0;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overflow:auto;font:inherit;width:164px;padding:4px;border-radius:16px;box-shadow:0 5px 16px rgba(0,0,0,.09)}
+.SPR_taskGroupTitle .SPR_taskFolderMenu button{box-sizing:border-box;min-height:29px;padding:4px 8px;gap:8px;font-size:12px;line-height:20px;border-radius:10px}
+.SPR_taskGroupTitle .SPR_taskFolderMenu button:hover,.SPR_taskGroupTitle .SPR_taskFolderMenu button:focus-visible{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
+.SPR_taskGroupTitle .SPR_taskFolderMenu button:disabled{opacity:.4;cursor:default}
+.SPR_taskGroupTitle .SPR_taskFolderMenu .SPR_projectMenuSeparator{margin:4px 8px}
 .SPR_sidebarInfoRoot{min-width:0}
 .SPR_sidebarInfoRoot>.SPR_projItem{width:100%}
 .SPR_side[data-kind=image] .SPR_projectRow .SPR_projItem{padding-right:40px}
@@ -5138,6 +5156,7 @@
 .SPR_projectRow{position:relative;flex:none;min-width:0}
 .SPR_projectRow>.SPR_projItem{padding-right:40px}
 .SPR_projectMoreInline{position:absolute;right:5px;top:6px}
+.SPR_side[data-kind=image] .SPR_projectMoreInline{top:calc(50% - 14px)}
 .SPR_projectMoreInline .SPR_projectMoreButton{width:28px;height:28px;opacity:0;transition:opacity .12s}
 .SPR_projectRow:hover .SPR_projectMoreButton,.SPR_projectRow:focus-within .SPR_projectMoreButton,.SPR_projectRow[data-active=true] .SPR_projectMoreButton{opacity:1}
 .SPR_side[data-kind=image] .SPR_projectRow:not(:hover):not(:has(:focus-visible)) .SPR_projectMoreButton[aria-expanded=false]{opacity:0;pointer-events:none}
@@ -5720,6 +5739,10 @@
       if (name === "rename") return h("svg", props, h("path", { d: "M13.5 5.5l5 5M4 20l4.5-1 12-12a2.1 2.1 0 0 0-5-5l-12 12L4 20Z" }));
       if (name === "copy") return h("svg", props, h("rect", { x: 8, y: 8, width: 12, height: 12, rx: 2 }), h("path", { d: "M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4" }));
       if (name === "settings") return h("svg", props, h("path", { d: "m9 3-.6 2.2-2 .9-2-.6L2 10l1.7 1.5v2L2 15l2.4 4.5 2-.6 2 .9L9 22h6l.6-2.2 2-.9 2 .6L22 15l-1.7-1.5v-2L22 10l-2.4-4.5-2 .6-2-.9L15 3Z" }), h("circle", { cx: 12, cy: 12.5, r: 3 }));
+      if (name === "pin") return h("svg", props, h("path", { d: "m16 3 5 5-4 3-2 5-3-1-7 7M4 12l5-2 3-7 4 0M4 12l8 8" }));
+      if (name === "archive") return h("svg", props, h("rect", { x: 4, y: 3, width: 16, height: 4, rx: 1 }), h("path", { d: "M5 7v13h14V7M10 11h4" }));
+      if (name === "remove") return h("svg", props, h("path", { d: "m6 6 12 12M6 18 18 6" }));
+      if (name === "openFolder") return h("svg", props, h("path", { d: "M3 17V6a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v2M3 19l3-8h16l-3 8H3Z" }));
       return h("svg", props, h("path", { d: "M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" }));
     }
 
@@ -9780,7 +9803,8 @@
     const imageFolderPathKey = directory => /^[a-z]:[\\/]/i.test(directory) || directory.startsWith("\\\\") ? directory.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase() : directory.replace(/\/+$/, "");
     const imageFolderSources = folder => folder.directories?.length ? folder.directories : [folder.key];
     function imageFolderGroups(items, preferences) {
-      const folders = Object.entries(preferences?.folders ?? {}).map(([key, value]: [string, any]) => ({ ...value, key, entries: [] }));
+      const folders = Object.entries(preferences?.folders ?? {}).map(([key, value]: [string, any]) => ({ ...value, key, entries: [], allEntries: [] }));
+      const archived = new Set(preferences?.archivedProjects ?? []);
       const groups = new Map();
       for (const item of items) {
         if ((preferences?.hiddenProjects ?? []).includes(item.id)) continue;
@@ -9789,11 +9813,12 @@
         const configured = folders.find(folder => !folder.removed && matches(folder)) ?? folders.find(matches);
         if (configured?.removed) continue;
         const key = configured?.key ?? directory;
-        if (!groups.has(key)) groups.set(key, configured ?? { key, entries: [] });
-        groups.get(key).entries.push(item);
+        if (!groups.has(key)) groups.set(key, configured ?? { key, entries: [], allEntries: [] });
+        groups.get(key).allEntries.push(item);
+        if (archived.has(item.id) === (preferences?.showArchived === true)) groups.get(key).entries.push(item);
       }
       for (const folder of folders) if (!folder.removed && !groups.has(folder.key)) groups.set(folder.key, folder);
-      return [...groups.values()];
+      return [...groups.values()].sort((a, b) => Number(b.pinned === true) - Number(a.pinned === true));
     }
     function readImageTaskPreferences() {
       try {
@@ -9802,11 +9827,11 @@
         if (value?.folders && typeof value.folders === "object" && !Array.isArray(value.folders)) for (const [directory, folder] of Object.entries(value.folders) as [string, any][]) {
           if (!folder || typeof folder !== "object" || ["__proto__", "constructor", "prototype"].includes(directory)) continue;
           const sources = Array.isArray(folder.directories) ? [...new Map(folder.directories.filter(path => typeof path === "string" && path.trim()).map(path => [imageFolderPathKey(path), path])).values()] : [];
-          folders[directory] = { collapsed: folder.collapsed === true, removed: folder.removed === true,
+          folders[directory] = { collapsed: folder.collapsed === true, removed: folder.removed === true, pinned: folder.pinned === true,
             ...(typeof folder.name === "string" && folder.name.trim() ? { name: folder.name.trim().slice(0, 80) } : {}), ...(sources.length ? { directories: sources } : {}) };
         }
-        return { directory: typeof value?.directory === "string" ? value.directory : "", sort: value?.sort === "manual" ? "manual" : "updated", layout: value?.layout === "merged" ? "merged" : "grouped", order: Array.isArray(value?.order) ? [...new Set(value.order.filter(id => typeof id === "string"))] : [], folders, hiddenProjects: Array.isArray(value?.hiddenProjects) ? value.hiddenProjects.filter(id => typeof id === "string") : [] };
-      } catch { return { directory: "", sort: "updated", layout: "grouped", order: [], folders: {}, hiddenProjects: [] }; }
+        return { directory: typeof value?.directory === "string" ? value.directory : "", sort: value?.sort === "manual" ? "manual" : "updated", layout: value?.layout === "merged" ? "merged" : "grouped", order: Array.isArray(value?.order) ? [...new Set(value.order.filter(id => typeof id === "string"))] : [], folders, hiddenProjects: Array.isArray(value?.hiddenProjects) ? value.hiddenProjects.filter(id => typeof id === "string") : [], archivedProjects: Array.isArray(value?.archivedProjects) ? value.archivedProjects.filter(id => typeof id === "string") : [], showArchived: value?.showArchived === true };
+      } catch { return { directory: "", sort: "updated", layout: "grouped", order: [], folders: {}, hiddenProjects: [], archivedProjects: [], showArchived: false }; }
     }
 
     function TaskHeaderIcon({ name, collapsed = false }) {
@@ -9934,7 +9959,7 @@
           const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : (index + (event.key === "ArrowUp" ? -1 : 1) + buttons.length) % buttons.length;
           buttons[next]?.focus({ preventScroll: true });
         }
-        if (event.key === "ArrowRight" && !submenu) {
+        if (event.key === "ArrowRight" && !submenu && index < 2) {
           event.preventDefault(); setSection(index === 1 ? "sort" : "layout");
           requestAnimationFrame(() => menuRef.current?.querySelector(".SPR_projectSidebarSubmenu button")?.focus({ preventScroll: true }));
         }
@@ -9953,7 +9978,10 @@
             [["layout", T("整理侧边栏"), "panel"], ["sort", T("项目排序方式"), "sort"]].map(([id, label, icon]) => h("button", {
               key: id, type: "button", role: "menuitem", "aria-haspopup": "menu", "aria-expanded": section === id, "data-selected": section === id,
               onPointerEnter: event => { if (event.pointerType !== "touch") setSection(id); }, onFocus: () => setSection(id), onClick: () => setSection(id) },
-              h(TaskHeaderIcon, { name: icon }), h("span", null, label), h("span", { className: "SPR_projectSubmenuArrow", "aria-hidden": "true" }, "›")))),
+              h(TaskHeaderIcon, { name: icon }), h("span", null, label), h("span", { className: "SPR_projectSubmenuArrow", "aria-hidden": "true" }, "›"))),
+            h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
+            h("button", { type: "button", role: "menuitem", onPointerEnter: () => setSection(null), onFocus: () => setSection(null), onClick: () => select({ showArchived: !preferences.showArchived }) },
+              h(ProjectActionIcon, { name: "archive" }), h("span", null, preferences.showArchived ? T("返回未归档聊天") : T("查看归档聊天")))),
           section ? h("div", { className: "SPR_projectSidebarSubmenu", role: "menu", "aria-label": section === "layout" ? T("整理侧边栏") : T("项目排序方式"), "data-section": section },
             section === "layout" ? [choice(T("按目录分组"), "grouped", "layout", "folder"), choice(T("合并显示"), "merged", "layout", "list")]
               : [choice(T("最近更新"), "updated", "sort", null), choice(T("手动排序"), "manual", "sort", null)]) : null));
@@ -10001,18 +10029,19 @@
           h("div", { className: "SPR_sidebarInfoStats" },
             h(TaskHeaderIcon, { name: "chat" }), h("span", null, folder ? T("{n0} 个项目 · {n1} 张 · 抠像 {n2}", { n0: entries.length, n1: images, n2: keyed }) : T("{n0} 张 · 抠像 {n1}", { n0: images, n1: keyed }))),
           (directories ?? (directory ? [directory] : [])).map(path => h("div", { key: path, className: "SPR_sidebarInfoPath" }, h(TaskHeaderIcon, { name: "folder" }), h("span", null, path))),
-          updated || (!folder && created) ? h("div", { className: "SPR_sidebarInfoDates" },
-            !folder && created ? h("div", null, T("创建时间：{n0}", { n0: date(created) })) : null,
+          !folder && (updated || created) ? h("div", { className: "SPR_sidebarInfoDates" },
+            created ? h("div", null, T("创建时间：{n0}", { n0: date(created) })) : null,
             updated ? h("div", null, T("最近更新：{n0}", { n0: date(updated) })) : null) : null,
           onEdit ? h("button", { type: "button", className: "SPR_sidebarInfoEdit", onClick: () => { dismiss(); onEdit(); } }, h(ProjectActionIcon, { name: "settings" }), T("编辑项目")) : null) : null);
     }
 
-    function ImageFolderHeader({ group, api, onEdit, onCreate, onReveal, onNotice, onToggle, onRemove }) {
+    function ImageFolderHeader({ group, api, onEdit, onPin, onArchive, showArchived, onCreate, onReveal, onNotice, onToggle, onRemove }) {
       const directory = group.key, entries = group.entries, collapsed = group.collapsed === true;
       const [open, setOpen] = React.useState(false);
       const [confirmRemove, setConfirmRemove] = React.useState(false);
       const [editing, setEditing] = React.useState(false);
       const menuRef = React.useRef(null), triggerRef = React.useRef(null);
+      const keyboardOpenRef = React.useRef(false);
       const removeDialogRef = React.useRef(null), cancelRemoveRef = React.useRef(null);
       const sources = imageFolderSources(group), primaryDirectory = sources[0];
       const name = group.name || directory.split(/[\\/]/).filter(Boolean).pop() || T("默认位置");
@@ -10032,7 +10061,7 @@
           menu.style.left = Math.max(8, Math.min(r.right - m.width, window.innerWidth - m.width - 8)) + "px";
           menu.style.top = Math.max(8, Math.min(r.bottom + 6 + m.height > window.innerHeight - 8 ? r.top - m.height - 6 : r.bottom + 6, window.innerHeight - m.height - 8)) + "px";
         };
-        position(); menu.querySelector("button")?.focus({ preventScroll: true });
+        position(); if (keyboardOpenRef.current) menu.querySelector("button")?.focus({ preventScroll: true });
         const dismiss = () => setOpen(false);
         window.addEventListener("resize", dismiss); document.addEventListener("scroll", dismiss, true);
         return () => { window.removeEventListener("resize", dismiss); document.removeEventListener("scroll", dismiss, true); if (menu.matches(":popover-open")) menu.hidePopover(); };
@@ -10047,21 +10076,23 @@
         }
       };
       return h("div", { className: "SPR_taskGroupTitle", "data-menu-open": open },
-        h(ImageSidebarInfo, { id: "image-folder-info-" + encodeURIComponent(directory), name, directory, directories: sources, entries, folder: true, onEdit: onEdit ? () => setEditing(true) : undefined },
+        h(ImageSidebarInfo, { id: "image-folder-info-" + encodeURIComponent(directory), name, directory, directories: sources, entries: group.allEntries ?? entries, folder: true, onEdit: onEdit ? () => setEditing(true) : undefined },
           h("button", { type: "button", className: "SPR_taskFolderLabel", onClick: onToggle, "aria-expanded": !collapsed, "aria-controls": "image-folder-" + encodeURIComponent(directory), title: collapsed ? T("展开项目") : T("收起项目") },
             h("span", { className: "SPR_taskFolderToggleIcon" }, h(TaskHeaderIcon, { name: collapsed ? "folderClosed" : "folderOpen" })), h("span", null, name))),
         h("div", { className: "SPR_taskFolderActions" },
           h("button", { ref: triggerRef, type: "button", className: "SPR_taskIconButton", title: T("文件夹操作"), "aria-label": T("文件夹「{n0}」的更多操作", { n0: name }), "aria-haspopup": "menu", "aria-expanded": open,
-            onClick: () => open ? close() : setOpen(true), onKeyDown: event => { if (event.key === "ArrowDown") { event.preventDefault(); setOpen(true); } } }, h(ProjectActionIcon, { name: "more" })),
+            onClick: event => { keyboardOpenRef.current = event.detail === 0; if (open) close(); else setOpen(true); }, onKeyDown: event => { if (event.key === "ArrowDown") { event.preventDefault(); keyboardOpenRef.current = true; setOpen(true); requestAnimationFrame(() => menuRef.current?.querySelector("button")?.focus({ preventScroll: true })); } } }, h(ProjectActionIcon, { name: "more" })),
           h("button", { type: "button", className: "SPR_taskIconButton", title: T("新建项目"), "aria-label": T("在此文件夹新建项目"), onClick: () => onCreate(primaryDirectory) }, h(TaskHeaderIcon, { name: "compose" }))),
         h("div", { ref: menuRef, className: "SPR_projectMenu SPR_taskFolderMenu", popover: "auto", role: "menu", "aria-label": T("文件夹操作"), onKeyDown: keys,
           onToggle: event => { if (event.newState === "closed") setOpen(false); } },
-          h("button", { type: "button", role: "menuitem", onClick: () => { close(); onCreate(primaryDirectory); } }, h(TaskHeaderIcon, { name: "compose" }), T("在此文件夹新建项目")),
-          onEdit ? h("button", { type: "button", role: "menuitem", onClick: () => { close(); setEditing(true); } }, h(ProjectActionIcon, { name: "settings" }), T("编辑项目")) : null,
-          h("button", { type: "button", role: "menuitem", disabled: !primaryDirectory || !onReveal, onClick: () => { close(); void onReveal(primaryDirectory); } }, h(TaskHeaderIcon, { name: "folder" }), T("在文件资源管理器中打开")),
-          h("button", { type: "button", role: "menuitem", disabled: !primaryDirectory, onClick: async () => { close(); const ok = await copyIdText(primaryDirectory); onNotice?.({ kind: ok ? "ok" : "error", text: ok ? T("已复制") : T("复制失败") }); } }, h(ProjectActionIcon, { name: "copy" }), T("复制文件夹路径")),
+          h("button", { type: "button", role: "menuitem", onClick: () => { close(); onPin?.(); } }, h(ProjectActionIcon, { name: "pin" }), group.pinned ? T("取消置顶") : activeLang() === "en" ? T("置顶项目") : T("置顶")),
+          h("button", { type: "button", role: "menuitem", disabled: !onEdit, onClick: () => { close(); setEditing(true); } }, h(ProjectActionIcon, { name: "settings" }), T("编辑")),
           h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
-          h("button", { type: "button", role: "menuitem", onClick: () => { close(); setConfirmRemove(true); } }, h(ProjectActionIcon, { name: "delete" }), T("移除文件夹"))),
+          h("button", { type: "button", role: "menuitem", disabled: !primaryDirectory || !onReveal, onClick: () => { close(); void onReveal(primaryDirectory); } }, h(ProjectActionIcon, { name: "openFolder" }), T("在资源管理器中打开")),
+          h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
+          h("button", { type: "button", role: "menuitem", disabled: !entries.length || !onArchive, onClick: () => { close(); onArchive?.(); } }, h(ProjectActionIcon, { name: "archive" }), showArchived ? T("取消归档") : T("归档聊天")),
+          h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
+          h("button", { type: "button", role: "menuitem", onClick: () => { close(); setConfirmRemove(true); } }, h(ProjectActionIcon, { name: "remove" }), T("移除项目"))),
         editing ? h(ImageTaskDialog, { api, preferences: { directory: primaryDirectory }, project: { name, directories: sources }, editableSources: true,
           onClose: () => setEditing(false), onRemove: () => { setEditing(false); setConfirmRemove(true); }, onSubmit: async value => { await onEdit(group, value); setEditing(false); } }) : null,
         confirmRemove ? h("dialog", { ref: removeDialogRef, className: "SPR_projectRenameDialog SPR_templateDeleteDialog", "data-kind": "delete", role: "alertdialog", "aria-label": T("移除文件夹？"),
@@ -10073,7 +10104,7 @@
               h("button", { type: "submit", className: "SPR_btn SPR_projectDeleteConfirm" }, T("确认移除"))))) : null);
     }
 
-    function JobSidebar({ title, items, activeId, onSelect, onCreate, onOpenFolder, renderMeta, renderActions, createInSidebar = true, storageKey = "sequence", preferences, onPreferences, onReorder, onRevealFolder, onNotice, onRemoveFolder, onEditFolder, api }) {
+    function JobSidebar({ title, items, activeId, onSelect, onCreate, onOpenFolder, renderMeta, renderActions, createInSidebar = true, storageKey = "sequence", preferences, onPreferences, onReorder, onRevealFolder, onNotice, onRemoveFolder, onEditFolder, onArchiveFolder, api }) {
       const key = "dsh-game-material-master:task-list-collapsed:" + storageKey;
       const [collapsed, setCollapsed] = React.useState(() => { try { return window.localStorage.getItem(key) === "true"; } catch { return false; } });
       const dragged = React.useRef(null);
@@ -10095,18 +10126,20 @@
         { className: "SPR_side", "data-kind": storageKey },
         h("div", { className: "SPR_taskSideHead" },
           h("button", { type: "button", className: "SPR_taskSideTitle", onClick: toggle, "aria-expanded": !collapsed, "aria-controls": "task-list-" + storageKey },
-            h("span", null, preferences ? title : T("{n0}（{n1}）", { n0: title, n1: items.length })), h(TaskHeaderIcon, { name: "chevron", collapsed })),
+            h("span", null, preferences ? preferences.showArchived ? T("已归档聊天") : title : T("{n0}（{n1}）", { n0: title, n1: items.length })), h(TaskHeaderIcon, { name: "chevron", collapsed })),
           h("div", { className: "SPR_taskHeadActions" },
             preferences ? h(ProjectSidebarMenu, { preferences, onChange: onPreferences }) : null,
             h("button", { type: "button", className: "SPR_taskIconButton", title: preferences ? T("打开文件夹") : T("新建任务"), "aria-label": preferences ? T("打开文件夹") : T("新建任务"), onClick: preferences ? onOpenFolder : onCreate }, h(TaskHeaderIcon, { name: preferences ? "folderAdd" : "add" })))),
         h("div", { className: "SPR_taskList", id: "task-list-" + storageKey, hidden: collapsed },
         visibleItems.length === 0 && !folderGroups.length ? h("p", { className: "SPR_hint" }, preferences ? T("新建项目将在点击生成后出现在这里。") : T("点击标题右侧的 + 新建任务。")) : null,
+        preferences?.showArchived && !visibleItems.length && folderGroups.length ? h("p", { className: "SPR_hint" }, T("没有归档聊天")) : null,
         groups.map(group => { const directory = group.key, entries = group.entries; return h("div", { key: directory, className: "SPR_taskGroup" },
-          preferences?.layout === "grouped" ? h(ImageFolderHeader, { group, api, onEdit: onEditFolder, onCreate, onReveal: onRevealFolder, onNotice,
+          preferences?.layout === "grouped" ? h(ImageFolderHeader, { group, api, onEdit: onEditFolder, onCreate, onReveal: onRevealFolder, onNotice, showArchived: preferences.showArchived,
+            onPin: () => onPreferences({ folders: { ...preferences.folders, [directory]: { ...(preferences.folders?.[directory] ?? {}), pinned: !group.pinned } } }),
+            onArchive: () => onArchiveFolder?.(group),
             onToggle: () => onPreferences({ folders: { ...preferences.folders, [directory]: { ...(preferences.folders?.[directory] ?? {}), collapsed: !group.collapsed } } }),
             onRemove: () => onRemoveFolder?.(directory) }) : null,
           h("div", { className: "SPR_taskGroupItems", id: "image-folder-" + encodeURIComponent(directory), hidden: preferences?.layout === "grouped" && group.collapsed === true },
-          entries.length === 0 ? h("p", { className: "SPR_taskGroupEmpty" }, T("新建项目将在点击生成后出现在这里。")) : null,
           entries.map((item) => {
           const select = h(
             "button",
@@ -10121,7 +10154,7 @@
               h("span", { className: "SPR_projName" }, item.name),
               renderActions ? null : h(CopyIdButton, { id: item.id, inline: true })
             ),
-            h("span", { className: "SPR_projMeta" }, renderMeta(item))
+            renderMeta ? h("span", { className: "SPR_projMeta" }, renderMeta(item)) : null
           );
           return renderActions ? h("div", { key: item.id, className: "SPR_projectRow", "data-active": item.id === activeId ? "true" : "false", "data-drop": dropTarget?.id === item.id ? (dropTarget.after ? "after" : "before") : undefined, draggable: manual,
             title: manual ? T("拖动调整顺序，或按 Alt + ↑ / ↓") : undefined,
@@ -18604,6 +18637,10 @@
         if (patch.sort === "manual" && taskPreferences.sort !== "manual") next.order = sortedJobs.map(item => item.id);
         try { window.localStorage.setItem(IMAGE_TASK_PREFERENCES_KEY, JSON.stringify(next)); } catch { /* Optional persistence. */ }
         setTaskPreferences(next);
+        if (patch.showArchived !== undefined) {
+          const visible = imageFolderGroups(sortedJobs, next).flatMap(folder => folder.entries);
+          if (!visible.some(item => item.id === jobId)) { setJobId(visible[0]?.id ?? null); if (!visible.length) setJob(null); }
+        }
       };
 
       React.useLayoutEffect(() => {
@@ -18720,6 +18757,7 @@
           const initialTemplate = globalConfig?.imagePromptTemplates?.find(item => item.id === "character") ?? globalConfig?.imagePromptTemplates?.[0];
           const created = await api.createImageJob({ name: T("图片 {n0}", { n0: new Date().toLocaleString(activeLang() === "en" ? "en-US" : "zh-CN", { hour12: false }) }), draft: true,
             ...(target ? { saveDirectory: target } : {}), ...(initialTemplate ? { promptTemplate: initialTemplate.id, lang: activeLang() } : {}) });
+          if (taskPreferences.showArchived) saveTaskPreferences({ showArchived: false });
           setJobId(created.jobId);
         } catch (error) { setNotice({ kind: "error", text: msg(error) }); }
         finally { createLock.current = false; }
@@ -18737,7 +18775,7 @@
           const attached = await api.attachImageFolder({ path: result.directory });
           const owner = imageFolderGroups([], taskPreferences).find(folder => imageFolderSources(folder).some(path => imageFolderPathKey(path) === imageFolderPathKey(attached.directory)));
           const key = owner?.key ?? attached.directory;
-          saveTaskPreferences({ directory: attached.directory, layout: "grouped", folders: { ...taskPreferences.folders, [key]: { ...taskPreferences.folders?.[key], collapsed: false, removed: false } }, hiddenProjects: (taskPreferences.hiddenProjects ?? []).filter(id => !attached.ids.includes(id)) });
+          saveTaskPreferences({ directory: attached.directory, layout: "grouped", showArchived: false, folders: { ...taskPreferences.folders, [key]: { ...taskPreferences.folders?.[key], collapsed: false, removed: false } }, hiddenProjects: (taskPreferences.hiddenProjects ?? []).filter(id => !attached.ids.includes(id)) });
           const list = await refresh(), first = list.find(item => attached.ids.includes(item.id));
           if (first) setJobId(first.id);
           setNotice({ kind: "ok", text: T("文件夹已打开") });
@@ -18764,6 +18802,17 @@
         }
         setNotice({ kind: "ok", text: T("文件夹已移除，本地文件已保留。") });
       };
+      const archiveFolder = group => {
+        const targetIds = new Set(group.entries.map(item => item.id));
+        const archivedProjects = taskPreferences.showArchived ? (taskPreferences.archivedProjects ?? []).filter(id => !targetIds.has(id))
+          : [...new Set([...(taskPreferences.archivedProjects ?? []), ...targetIds])];
+        saveTaskPreferences({ archivedProjects });
+        if (targetIds.has(jobId)) {
+          const next = imageFolderGroups(sortedJobs, { ...taskPreferences, archivedProjects }).flatMap(folder => folder.entries)[0];
+          setJobId(next?.id ?? null); if (!next) setJob(null);
+        }
+        setNotice({ kind: "ok", text: taskPreferences.showArchived ? T("已取消归档") : T("已归档，图片与历史记录已保留。") });
+      };
       const editFolder = async (group, value) => {
         // Validate/discover every source before updating the local sidebar arrangement.
         const attached = [];
@@ -18779,7 +18828,7 @@
         }
         for (const source of imageFolderSources(group)) if (!selected.has(imageFolderPathKey(source))) folders[source] = { ...folders[source], removed: true };
         const key = directories[0];
-        folders[key] = { name: value.name, directories, collapsed: group.collapsed === true, removed: false };
+        folders[key] = { name: value.name, directories, collapsed: group.collapsed === true, pinned: group.pinned === true, removed: false };
         saveTaskPreferences({ folders, directory: key });
         const list = await refresh();
         const visible = imageFolderGroups(list, { ...taskPreferences, folders }).flatMap(folder => folder.entries);
@@ -18892,9 +18941,10 @@
             onNotice: setNotice,
             onRemoveFolder: removeFolder,
             onEditFolder: editFolder,
+            onArchiveFolder: archiveFolder,
             api,
             renderActions: item => h(ProjectActionsMenu, { project: item, inline: true, local: true, onEdit: target => setTaskDialog({ project: target }), onRename: renameJobEntry, onDelete: removeLocalProject, onNotice: setNotice }),
-            renderMeta: (item) => T("{n0} 张 · 抠像 {n1}", { n0: item.imageCount ?? item.ready, n1: item.keyedCount ?? item.keyed })
+            renderMeta: null
           }),
           h(
             "div",
