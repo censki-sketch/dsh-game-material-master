@@ -4940,6 +4940,12 @@
 .SPR_imageWorkspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);grid-template-rows:auto 1fr;grid-template-areas:"editor results" "log results";column-gap:16px;align-items:start}
 .SPR_imageEditor{grid-area:editor;container-type:inline-size;min-width:0}
 .SPR_imageResults{grid-area:results;min-width:0}
+.SPR_imageWorkspace[data-result-tab=history]{grid-template-areas:"editor results" "log ."}
+.SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults{display:flex;flex-direction:column;align-self:stretch;contain:size;min-height:0}
+.SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults>.SPR_cardHead,.SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults>.SPR_toolbar,.SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults>.SPR_imageResultTabs{flex:none}
+.SPR_imageResultPanels{position:relative;min-width:0;min-height:0}
+.SPR_imageWorkspace[data-result-tab=history] .SPR_imageResultPanels{flex:1;overflow:clip}
+.SPR_imageResultPanels>[aria-hidden=true]{visibility:hidden;pointer-events:none}
 .SPR_imageWorkspace>.SPR_log{grid-area:log;min-width:0}
 .SPR_imageWorkspace>.SPR_log .SPR_logFilters{max-width:100%;flex-wrap:wrap}
 .SPR_imageGallery{display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -4968,7 +4974,7 @@
 .SPR_imageResultTab{font:inherit;font-size:12px;line-height:20px;padding:8px 0;color:var(--dsw-alias-label-secondary);border:0;border-bottom:2px solid transparent;background:transparent;cursor:pointer}
 .SPR_imageResultTab[aria-selected=true]{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-state-business-primary);font-weight:500}
 .SPR_imageResultTab:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px;border-radius:3px}
-.SPR_imageHistory{display:flex;flex-direction:column;gap:16px;min-width:0;max-height:clamp(160px,calc(100dvh - 420px),560px);overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;padding:2px}
+.SPR_imageHistory{position:absolute;inset:0;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;min-width:0;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;padding:2px}
 .SPR_imageHistoryBatch{min-width:0}
 .SPR_imageHistoryBatchHead{display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;align-items:center;margin:0 0 8px;font-size:11px;line-height:18px;color:var(--dsw-alias-label-secondary)}
 .SPR_imageHistoryBatchHead time{font-variant-numeric:tabular-nums}
@@ -5047,7 +5053,9 @@
   .SPR_promptTemplateSelect option:disabled{opacity:.5;cursor:default}
 }
 @container(max-width:900px){
-  .SPR_imageWorkspace{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"editor" "results" "log"}
+  .SPR_imageWorkspace,.SPR_imageWorkspace[data-result-tab=history]{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"editor" "results" "log"}
+  .SPR_imageWorkspace[data-result-tab=history]>.SPR_imageResults{display:block;align-self:start;contain:none}
+  .SPR_imageWorkspace[data-result-tab=history] .SPR_imageResultPanels{min-height:200px}
   .SPR_imageGalleryStage .SPR_imageResultPreview>.SPR_thumb{max-height:480px}
 }
 .SPR_imageComposer{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,220px);gap:12px 16px;align-items:start}
@@ -18152,7 +18160,7 @@
               ? h("p", { className: "SPR_empty" }, T("请选择或新建一个图片任务"))
               : h(
                   "div",
-                  { className: "SPR_imageWorkspace", key: job.id },
+                  { className: "SPR_imageWorkspace", key: job.id, "data-result-tab": view.tab },
                   h("div", { className: "SPR_imageEditor" },
                   h(
                     "div",
@@ -18321,7 +18329,8 @@
                       h("button", { type: "button", className: "SPR_imageResultTab", id: "image-history-tab", role: "tab", "aria-selected": view.tab === "history", "aria-controls": "image-history-panel",
                         tabIndex: view.tab === "history" ? 0 : -1, onClick: () => setResultView({ ...view, jobId: job.id, tab: "history" }) }, T("历史记录（{n0}）", { n0: (job.history ?? []).length }))),
                     h(DescriptionTip, { id: "image-history-help", label: T("历史记录"), text: T("每次生成保留独立版本。预览、下载、设为当前和复用参数均不调用生成接口。") })),
-                    view.tab === "history" ? h(ImageHistoryPanel, { key: job.id, job, busy, onAction: historyAction }) : h("div", { id: "image-current-panel", role: "tabpanel", "aria-labelledby": "image-current-tab" },
+                    h("div", { className: "SPR_imageResultPanels" },
+                    h("div", { id: "image-current-panel", role: "tabpanel", "aria-labelledby": "image-current-tab", "aria-hidden": view.tab === "history" ? true : undefined },
                     (job.items ?? []).length === 0
                       ? h("p", { className: "SPR_empty" }, T("还没有图片"))
                       : h(ImageResultGallery, {
@@ -18409,7 +18418,8 @@
                               item.error !== undefined ? h("p", { className: "SPR_error" }, item.error) : null
                             );
                           }
-                        }))
+                        })),
+                    view.tab === "history" ? h(ImageHistoryPanel, { key: job.id, job, busy, onAction: historyAction }) : null)
                   ),
                   h(JobLogPanel, { job })
                 )
