@@ -2527,6 +2527,7 @@ running 落在下一次 `getProject` 里**：
 - 项目列表只有一套 `JobSidebar`，图片、音乐、音效均复用其行、置顶/归档/未读、右键、重命名、删除确认、排序与折叠；音频通过 `useAudioSidebar` 接入宿主方法与统计。音频隐藏目录布局选项，保留项目排序和归档。状态按模块分别存储，不能复用图片的缓存键。
 - 无项目时，`data-list-empty` 让列表占满标题与归档入口间的可用高度，图标与空状态居中；已打开的空目录仍保留其分组。音频配置错误通过 `AudioTimeline.blocker` 统一显示在输入框上方的 `SPR_chatErrorCard` 中，与输入框同宽，长文限高滚动，不能塞回输入卡片内部。
 - `AudioChoice` 的按钮选择器须覆盖 `.SPR_imageResultMore.SPR_btn` 的 26px 图标宽度，文字和箭头独立包裹；窄屏只允许音乐输入框的左侧选项组横向滚动，右侧审核与发送固定显示。`verify-audio-browser` 检查文字/箭头边界、审核切换、箭头原位旋转和 360px 布局。
+- 音效参考说明复用 `DescriptionTip` 的自定义图标与操作回调，附在上传加号上；悬停/聚焦显示主题浮层，点击先收起说明并同步打开文件选择，不再保留独立感叹号。现有标题说明按钮仍保持点击固定与 Esc/点外部关闭。
 - `MusicModule` / `SfxModule` 使用 `AudioModule` 管理加载、选择、轮询和草稿入口；每次选择有 ticket，迟到响应不能切回旧项目。`useAudioStored` 把草稿、阅读锚点与逐文件收藏存到本机，内存兜底；轮询只刷新结果，不覆盖输入。重复新建恢复未提交草稿，上传参考所需的临时项目也复用。
 - `AudioTimeline` 保持每轮描述、附件、折叠日志、结果与操作在一起；输入区固定底部，参数和素材按需打开。右侧定位条及窄屏目录可跳转，`ResizeObserver` 保持阅读锚点，程序滚动不覆写用户位置。
 - 音乐仍开 DSH 新对话，音效仍在插件内直接提交。音乐发送生成 `source.conversationId`，generation/composition 保存提交时的 source 快照，编辑版本通过 songId 归入原轮。旧谱曲交给 Suno 时优先使用该 composition 的 source，不读当前轮的描述。待处理 DSH 记录按本轮 ID 与返回产物合并，缺快照的旧记录不伪造历史请求。

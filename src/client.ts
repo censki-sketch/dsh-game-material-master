@@ -84,7 +84,6 @@
       "谱曲依赖尚未就绪": "Composition dependencies are not ready",
       "输入方式": "Input type",
       "重新生成会再次计费，确认提交这一轮的请求？": "Regenerating will be billed again. Submit this round's request?",
-      "音效生成说明": "Sound generation info",
       "音效设计": "Sound design",
       "音频暂时无法播放，请检查文件或刷新。": "Audio cannot be played right now. Check the file or refresh.",
 
@@ -7104,8 +7103,8 @@
         }, h("div", { className: "SPR_moduleTipTitle" }, entry.title), h("div", { className: "SPR_moduleTipText" }, entry.hint)) : null);
     }
 
-    /** 标题后的说明按钮：悬停 / 聚焦预览，点击后保持展开，Esc 或点外部收起。 */
-    function DescriptionTip({ id, label, text }) {
+    /** 说明浮层：悬停 / 聚焦预览；默认点击固定，也可给操作按钮附带说明。 */
+    function DescriptionTip({ id, label, text, icon = null, className = "SPR_descriptionButton", disabled = false, onClick = null }) {
       const [tip, setTip] = React.useState(null);
       const buttonRef = React.useRef(null);
       const tipRef = React.useRef(null);
@@ -7149,12 +7148,12 @@
       }, [tip !== null]);
       return h(React.Fragment, null,
         h("button", {
-          type: "button", className: "SPR_descriptionButton", ref: buttonRef,
-          "aria-label": T("查看{n0}说明", { n0: label }), "aria-expanded": tip !== null,
+          type: "button", className, ref: buttonRef, disabled,
+          "aria-label": onClick ? label : T("查看{n0}说明", { n0: label }), "aria-expanded": onClick ? undefined : tip !== null,
           "aria-describedby": tip !== null ? id : undefined,
           onMouseEnter: show, onMouseLeave: hide, onFocus: show, onBlur: dismiss,
-          onClick: () => { if (pinnedRef.current) dismiss(); else { pinnedRef.current = true; show(); } }
-        }, h("svg", { viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.5, "aria-hidden": "true" },
+          onClick: () => { if (onClick) { dismiss(); onClick(); } else if (pinnedRef.current) dismiss(); else { pinnedRef.current = true; show(); } }
+        }, icon ?? h("svg", { viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.5, "aria-hidden": "true" },
           h("circle", { cx: 10, cy: 10, r: 7.5 }), h("path", { d: "M10 5.5v5", strokeLinecap: "round" }), h("circle", { cx: 10, cy: 14, r: 0.8, fill: "currentColor", stroke: "none" }))),
         tip !== null ? h("div", {
           className: "SPR_moduleTip SPR_descriptionTip", role: "tooltip", id, ref: tipRef,
@@ -15664,8 +15663,8 @@
           (refs.audios ?? []).map((ref, index) => h("div", { className: "SPR_audioRef", key: ref.file }, h("button", { type: "button", className: "SPR_btn", onClick: () => update({ prompt: draft.prompt + " @音频" + (index + 1) }) }, "@音频" + (index + 1)), h("span", null, ref.name), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("移除"), disabled: busy, onClick: () => void removeRef("audio", ref.file) }, h(TaskHeaderIcon, { name: "close" }))))),
         h("textarea", { className: "SPR_area SPR_audioPrompt", "data-testid": "sfx-prompt", "aria-label": T("提示词"), maxLength: 2048, rows: 3, value: draft.prompt, placeholder: T("描述你想要的声音…"), onChange: event => update({ prompt: event.target.value }) }),
         h("div", { className: "SPR_chatComposerBottom" }, h("input", { ref: filesRef, type: "file", hidden: true, accept: "image/png,image/jpeg,image/webp,audio/wav,audio/mpeg,audio/ogg", onChange: upload }),
-          h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("添加参考素材"), title: T("添加参考素材"), disabled: busy, onClick: () => filesRef.current.click() }, uploading ? h("span", { className: "SPR_spinSm" }) : h(TaskHeaderIcon, { name: "add" })),
-          h("span", { className: "SPR_audioModel" }, config?.sfxModel || "seed-audio-1.0"), h("span", { className: "SPR_spacer" }), h(DescriptionTip, { id: "sfx-billing-tip", label: T("音效生成说明"), text: T("参考图与参考音频不能同时使用。时长写在描述里，最长120秒；每次生成会计费。") }),
+          h(DescriptionTip, { id: "sfx-reference-tip", label: T("添加参考素材"), text: T("参考图与参考音频不能同时使用。时长写在描述里，最长120秒；每次生成会计费。"), className: "SPR_taskIconButton", disabled: busy, onClick: () => filesRef.current.click(), icon: uploading ? h("span", { className: "SPR_spinSm" }) : h(TaskHeaderIcon, { name: "add" }) }),
+          h("span", { className: "SPR_audioModel" }, config?.sfxModel || "seed-audio-1.0"), h("span", { className: "SPR_spacer" }),
           h("button", { type: "button", className: "SPR_chatGenerate", "data-testid": "sfx-generate", "aria-label": busy ? T("停止生成") : T("生成（计费）"), disabled: busy ? !job?.busy || working : !!blocker || !draft.prompt.trim(),
             onClick: async () => { if (job?.busy) { try { await api.cancelSfxGeneration({ jobId: job.id }); onUpdate(await api.getSfxJob({ jobId: job.id })); } catch (error) { setNotice({ kind: "error", text: msg(error) }); } } else void submit(null); } }, h(ImageChatIcon, { name: busy ? "stop" : "send" }))));
       return h(React.Fragment, null, h(NoticePopup, { notice, onClose: () => setNotice(null) }), h(AudioTimeline, { key: job?.id || "new", module: "sfx", job, rounds, busy, composer, blocker, emptyTitle: T("想创作什么声音？"), onReuse: reuse, onRegenerate: round => submit(round),

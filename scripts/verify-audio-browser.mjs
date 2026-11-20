@@ -72,6 +72,14 @@ try {
   await page.locator('[data-testid="sfx-conversation"]').waitFor();
   check('音效恢复默认项目且显示14轮', await page.locator('.SPR_chatRound').count() === 14);
   check('音效未加载音乐专用波形', await page.evaluate(() => !calls.some(c => c.method === 'musicPeaks')));
+  const addReference = page.getByRole('button', { name: '添加参考素材', exact: true }), referenceTip = page.locator('#sfx-reference-tip');
+  await addReference.hover(); await referenceTip.waitFor();
+  check('参考与计费说明由加号悬停显示，输入框不再有感叹号', (await referenceTip.textContent()).includes('每次生成会计费') && await page.locator('.SPR_audioInput .SPR_descriptionButton').count() === 0 && await addReference.getAttribute('title') === null);
+  await page.screenshot({ path: '.verify/sfx-reference-tooltip-light.png' });
+  const fileChooser = page.waitForEvent('filechooser'); await addReference.click(); await fileChooser; await referenceTip.waitFor({ state: 'hidden' });
+  check('点击加号直接打开文件选择且收起提示', await page.evaluate(() => !calls.some(c => c.method === 'runSfxGeneration' || c.method === 'uploadSfxRef')));
+  await prompt().focus(); await addReference.focus(); await referenceTip.waitFor(); await page.keyboard.press('Escape'); await referenceTip.waitFor({ state: 'hidden' });
+  check('加号支持键盘聚焦查看说明和Esc关闭', await addReference.getAttribute('aria-describedby') === null);
   await prompt().fill('尚未发送的声音想法'); await go('音效项目2'); await go('音效项目1');
   check('项目切换恢复未发送草稿', await prompt().inputValue() === '尚未发送的声音想法');
   await page.evaluate(() => window.delays = { f1: 180 }); await go('音效项目2');
