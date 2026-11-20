@@ -14,6 +14,7 @@ import { DEFAULT_KEY_COLOR, normalizeKeyColor } from "./keycolor.js";
 import { STUDIO_MODULES } from "./links.js";
 import { normalizeImagePromptTemplates, type ImagePromptTemplate } from "./imageprompts.js";
 import { MUSIC_DEFAULT_MODEL } from "./musicmodels.js";
+import { applyModelParams, ARK_MODEL_PARAM_KEYS, CUSTOM_MODEL_PARAM_KEYS, TOAPIS_MODEL_PARAM_KEYS, normalizeImageModels, validateImageModel, type ImageModelDefinition } from "./imagemodels.js";
 import {
   SFX_DEFAULT_BASE_URL,
   SFX_DEFAULT_FORMAT,
@@ -162,8 +163,11 @@ export const CUSTOM_PROTOCOL_DEFAULTS: Record<CustomProtocol, { baseUrl: string;
 };
 
 export const CUSTOM_IMAGE_FIELDS = ["customProtocol", "customBaseUrl", "customApiKey", "customModel", "customSize", "customNegativePrompt", "customSteps", "customCfgScale", "customSampler", "customDenoising", "customSeed", "customWorkflow", "customTimeoutMs"] as const;
-export type CustomImageConnection = Pick<Config, typeof CUSTOM_IMAGE_FIELDS[number]> & { id: string; name: string; models: string[]; enabled: boolean };
+export type CustomImageConnection = Pick<Config, typeof CUSTOM_IMAGE_FIELDS[number]> & { id: string; name: string; models: string[]; modelConfigs: ImageModelDefinition[]; enabled: boolean };
 export interface Config {
+  imageConnectionPresets: ("ark" | "toapis")[];
+  arkImageModels: ImageModelDefinition[];
+  toapisImageModels: ImageModelDefinition[];
   arkImageEnabled: boolean;
   toapisImageEnabled: boolean;
   customImageConnections: CustomImageConnection[];
@@ -226,6 +230,8 @@ export interface Config {
    * 默认给到 5 分钟：本地跑一张 SD 图经常要一两分钟，云端 3 分钟的超时在这里是常态失败。
    */
   customTimeoutMs: number;
+  /** Optional per-model OpenAI image quality; not a connection credential/default. */
+  customQuality?: "low" | "medium" | "high" | "auto";
 
   /** 火山方舟（Ark）API Key。 */
   arkApiKey: string;
@@ -410,6 +416,9 @@ export interface Config {
 }
 
 export const DEFAULT_CONFIG: Config = {
+  imageConnectionPresets: [],
+  arkImageModels: [],
+  toapisImageModels: [],
   arkImageEnabled: true,
   toapisImageEnabled: true,
   imagePromptTemplates: normalizeImagePromptTemplates(undefined),
@@ -625,6 +634,9 @@ export function normalizeConfig(input: unknown): Config {
   const comfyWorkflow = comfyWorkflowRaw.trim() === "" ? DEFAULT_CONFIG.comfyWorkflow : comfyWorkflowRaw;
 
   const config: Config = {
+    imageConnectionPresets: [],
+    arkImageModels: [],
+    toapisImageModels: [],
     arkImageEnabled: asBool(raw.arkImageEnabled, DEFAULT_CONFIG.arkImageEnabled),
     toapisImageEnabled: asBool(raw.toapisImageEnabled, DEFAULT_CONFIG.toapisImageEnabled),
     imagePromptTemplates: normalizeImagePromptTemplates(raw.imagePromptTemplates),
@@ -735,18 +747,31 @@ export function normalizeConfig(input: unknown): Config {
     moduleOrder: normalizeModuleOrder(raw.moduleOrder),
     concurrency: asInt(raw.concurrency, DEFAULT_CONFIG.concurrency, 1, 8)
   };
+  const legacyModel = (id: string, mapping: Record<string, string>) => [{ id, params: Object.fromEntries(Object.entries(mapping).map(([param, key]) => [param, config[key]])) }];
+  config.arkImageModels = normalizeImageModels(raw.arkImageModels ?? (raw.arkApiKey || raw.arkModel ? legacyModel(config.arkModel, ARK_MODEL_PARAM_KEYS) : []), []);
+  config.toapisImageModels = normalizeImageModels(raw.toapisImageModels ?? (raw.toapisApiKey || raw.toapisImageModel ? legacyModel(config.toapisImageModel, TOAPIS_MODEL_PARAM_KEYS) : []), []);
+  config.imageConnectionPresets = ["ark", "toapis"].filter(provider => Array.isArray(raw.imageConnectionPresets) ? raw.imageConnectionPresets.includes(provider) : !!raw[provider === "ark" ? "arkApiKey" : "toapisApiKey"]) as Config["imageConnectionPresets"];
   const entries = Array.isArray(raw.customImageConnections) ? raw.customImageConnections
     : CUSTOM_IMAGE_FIELDS.some(key => raw[key] !== undefined) ? [{ ...config, id: "legacy", name: "Custom", models: [config.customModel] }] : [];
   const seen = new Set<string>();
   config.customImageConnections = entries.filter(entry => entry && typeof entry.id === "string" && /^[a-zA-Z0-9_-]{1,80}$/.test(entry.id) && !seen.has(entry.id) && seen.add(entry.id)).map(entry => {
     const normalized = normalizeConfig({ ...entry, customImageConnections: [] });
+    if (entry.modelConfigs === undefined && normalized.customProtocol !== "openai" && !normalized.customModel.trim()) normalized.customModel = "default";
+    const modelConfigs = normalizeImageModels(entry.modelConfigs, [normalized.customModel, ...(Array.isArray(entry.models) ? entry.models : [])]);
     return { id: entry.id, name: asString(entry.name, "Custom").trim().slice(0, 80) || "Custom", enabled: entry.enabled !== false,
-      models: [...new Set([normalized.customModel, ...(Array.isArray(entry.models) ? entry.models : [])].filter(value => typeof value === "string" && value.trim()).map(value => value.trim().slice(0, 300)))].slice(0, 50),
+      modelConfigs, models: modelConfigs.map(model => model.id),
       ...Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, normalized[key]])) } as CustomImageConnection;
   });
   config.activeCustomImageConnectionId = config.customImageConnections.some(entry => entry.id === raw.activeCustomImageConnectionId) ? String(raw.activeCustomImageConnectionId) : config.customImageConnections[0]?.id || "";
   const active = config.customImageConnections.find(entry => entry.id === config.activeCustomImageConnectionId);
   if (active) for (const key of CUSTOM_IMAGE_FIELDS) (config as any)[key] = active[key];
+  applyModelParams(config, "custom", active?.modelConfigs.find(model => model.id === config.customModel));
+  const videoTimeoutMs = config.toapisTimeoutMs;
+  for (const key of [...Object.values(ARK_MODEL_PARAM_KEYS), ...Object.values(TOAPIS_MODEL_PARAM_KEYS)]) (config as any)[key] = DEFAULT_CONFIG[key];
+  applyModelParams(config, "ark", config.arkImageModels.find(model => model.id === config.arkModel));
+  applyModelParams(config, "toapis", config.toapisImageModels.find(model => model.id === config.toapisImageModel));
+  // ToAPIs video shares the connection timeout; image model overrides are applied only to image requests.
+  config.toapisTimeoutMs = videoTimeoutMs;
   return config;
 }
 
@@ -755,7 +780,16 @@ export function customConnectionConfig(config: Config, id: string, model?: strin
   const entry = config.customImageConnections.find(value => value.id === id);
   if (!entry) throw new Error("所选生图连接已删除，请重新选择。");
   if (model !== undefined && model !== entry.customModel && !entry.models.includes(model)) throw new Error("所选模型已从连接中移除，请重新选择。");
-  return { ...config, ...Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, entry[key]])), imageProvider: "custom", activeCustomImageConnectionId: id, customModel: model ?? entry.customModel };
+  const result = { ...config, ...Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, entry[key]])), customQuality: undefined, imageProvider: "custom" as const, activeCustomImageConnectionId: id, customModel: model ?? entry.customModel };
+  applyModelParams(result, "custom", entry.modelConfigs.find(item => item.id === result.customModel));
+  return result;
+}
+
+export function builtinModelConfig(config: Config, provider: "ark" | "toapis", model: string): Config {
+  const result = { ...config, imageProvider: provider, [provider === "ark" ? "arkModel" : "toapisImageModel"]: model };
+  for (const key of Object.values(provider === "ark" ? ARK_MODEL_PARAM_KEYS : TOAPIS_MODEL_PARAM_KEYS)) if (key !== "toapisTimeoutMs") result[key] = DEFAULT_CONFIG[key] as never;
+  applyModelParams(result, provider, (provider === "ark" ? config.arkImageModels : config.toapisImageModels).find(item => item.id === model));
+  return result;
 }
 
 let cache: Config | undefined;
@@ -771,7 +805,7 @@ export async function loadConfig(): Promise<Config> {
   return cache;
 }
 
-type ConfigPatch = Partial<Config> & { customConnection?: { op: "create" | "update" | "duplicate" | "delete"; id?: string; values?: Partial<CustomImageConnection> } };
+type ConfigPatch = Partial<Config> & { customConnection?: { op: "create" | "update" | "duplicate" | "delete"; id?: string; values?: Partial<CustomImageConnection> }; imageModelEdit?: { provider: "ark" | "toapis" | "custom"; connectionId?: string; op: "create" | "update" | "delete"; id?: string; values?: Partial<ImageModelDefinition> } };
 let configWrites: Promise<unknown> = Promise.resolve();
 export function saveConfig(patch: ConfigPatch): Promise<Config> {
   const write = configWrites.then(() => writeConfig(patch));
@@ -780,8 +814,10 @@ export function saveConfig(patch: ConfigPatch): Promise<Config> {
 }
 async function writeConfig(patch: ConfigPatch): Promise<Config> {
   const current = await loadConfig();
-  const { customConnection, ...fields } = patch;
-  let connections = current.customImageConnections.map(entry => ({ ...entry, models: [...entry.models] }));
+  const { customConnection, imageModelEdit, ...fields } = patch;
+  if (fields.imageConnectionPresets !== undefined && (!Array.isArray(fields.imageConnectionPresets) || fields.imageConnectionPresets.some(provider => !["ark", "toapis"].includes(provider)))) throw new Error("无效的连接预设");
+  if (fields.arkApiKey?.trim() || fields.toapisApiKey?.trim() || imageModelEdit?.provider === "ark" || imageModelEdit?.provider === "toapis") fields.imageConnectionPresets = [...new Set([...(fields.imageConnectionPresets ?? current.imageConnectionPresets), ...(fields.arkApiKey?.trim() || imageModelEdit?.provider === "ark" ? ["ark" as const] : []), ...(fields.toapisApiKey?.trim() || imageModelEdit?.provider === "toapis" ? ["toapis" as const] : [])])];
+  let connections = current.customImageConnections.map(entry => ({ ...entry, models: [...entry.models], modelConfigs: [...entry.modelConfigs] }));
   let activeId = fields.activeCustomImageConnectionId ?? current.activeCustomImageConnectionId;
   if (customConnection) {
     const { op, id, values = {} } = customConnection;
@@ -800,12 +836,53 @@ async function writeConfig(patch: ConfigPatch): Promise<Config> {
     if (clean.models !== undefined && (!Array.isArray(clean.models) || clean.models.length > 50 || clean.models.some(value => typeof value !== "string" || !value.trim() || value.length > 300))) throw new Error("模型列表格式不正确");
     if (typeof clean.customApiKey === "string") clean.customApiKey = clean.customApiKey.trim();
     if (op === "create" || op === "duplicate") {
-      const created = { ...(source ?? Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, DEFAULT_CONFIG[key]]))), enabled: source?.enabled ?? false, models: source?.models ?? [], ...clean, id: randomUUID(), name: clean.name || (source ? source.name + " copy" : "Custom") } as CustomImageConnection;
+      const created = { ...(source ?? Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, DEFAULT_CONFIG[key]]))), enabled: source?.enabled ?? false, models: source?.models ?? [], modelConfigs: source?.modelConfigs ?? normalizeImageModels(undefined, clean.models ?? (clean.customModel ? [clean.customModel] : [])), ...clean, id: randomUUID(), name: clean.name || (source ? source.name + " copy" : "Custom") } as CustomImageConnection;
       connections.push(created); if (!activeId) activeId = created.id;
     } else if (op === "delete") {
       connections = connections.filter(entry => entry.id !== id);
       if (activeId === id) activeId = connections[0]?.id || "";
     } else connections = connections.map(entry => entry.id === id ? { ...entry, ...clean, id } : entry);
+  }
+  // Preserve older callers that update the flat model/list while the new UI uses atomic model operations.
+  const legacyValues = customConnection?.values;
+  connections = connections.map(entry => {
+    const values = entry.id === activeId ? fields : {};
+    const change: any = entry.id === customConnection?.id ? legacyValues : values;
+    if (!change || (!("models" in change) && !("customModel" in change))) return entry;
+    const ids = change.models ?? [...entry.models, change.customModel].filter(Boolean);
+    return { ...entry, modelConfigs: normalizeImageModels(ids.map(id => entry.modelConfigs.find(model => model.id === id) ?? { id }), [] ) };
+  });
+  for (const provider of ["ark", "toapis"] as const) {
+    const modelKey = provider === "ark" ? "arkModel" : "toapisImageModel", listKey = provider === "ark" ? "arkImageModels" : "toapisImageModels";
+    const selected = fields[modelKey] ?? current[modelKey];
+    const models = [...current[listKey]];
+    const params = Object.fromEntries(Object.entries(provider === "ark" ? ARK_MODEL_PARAM_KEYS : TOAPIS_MODEL_PARAM_KEYS).filter(([, key]) => fields[key] !== undefined).map(([param, key]) => [param, fields[key]]));
+    if (fields[modelKey] !== undefined && !models.some(model => model.id === selected)) models.push(validateImageModel({ id: selected }));
+    if (Object.keys(params).length) fields[listKey] = models.map(model => model.id === selected ? { ...model, params: { ...model.params, ...params } } : model);
+    else if (fields[modelKey] !== undefined) fields[listKey] = models;
+  }
+  if (imageModelEdit) {
+    const { provider, connectionId, op, id, values = {} } = imageModelEdit;
+    if (!["ark", "toapis", "custom"].includes(provider) || !["create", "update", "delete"].includes(op)) throw new Error("无效的模型操作");
+    const connection = provider === "custom" ? connections.find(entry => entry.id === connectionId) : undefined;
+    if (provider === "custom" && !connection) throw new Error("所选生图连接已删除，请重新选择。");
+    const key = provider === "ark" ? "arkImageModels" : "toapisImageModels";
+    let models = [...(connection ? connection.modelConfigs : current[key])];
+    const source = models.find(model => model.id === id);
+    if (op !== "create" && !source) throw new Error("所选模型已从连接中移除，请重新选择。");
+    if (op === "delete") models = models.filter(model => model.id !== id);
+    else {
+      const next = validateImageModel({ ...source, ...values });
+      const allowed = provider === "ark" ? Object.keys(ARK_MODEL_PARAM_KEYS) : provider === "toapis" ? Object.keys(TOAPIS_MODEL_PARAM_KEYS) : connection?.customProtocol === "openai" ? ["size", "quality", "timeoutMs"] : Object.keys(CUSTOM_MODEL_PARAM_KEYS);
+      if (Object.keys(values.params ?? {}).some(key => !allowed.includes(key))) throw new Error("该协议不支持所填模型参数");
+      if (models.some(model => model.id === next.id && (op === "create" || model.id !== id))) throw new Error("该连接已存在相同的模型 ID");
+      if (op === "create" && models.length >= 50) throw new Error("每个连接最多添加 50 个模型");
+      models = op === "create" ? [...models, next] : models.map(model => model.id === id ? next : model);
+      if (connection && connection.customModel === id) connection.customModel = next.id;
+      if (!connection && current[provider === "ark" ? "arkModel" : "toapisImageModel"] === id) fields[provider === "ark" ? "arkModel" : "toapisImageModel"] = next.id;
+    }
+    if (connection) { connection.modelConfigs = models; connection.models = models.map(model => model.id); }
+    else fields[key] = models;
   }
   const customPatch = Object.fromEntries(CUSTOM_IMAGE_FIELDS.filter(key => fields[key] !== undefined).map(key => [key, fields[key]]));
   if (Object.keys(customPatch).length) {

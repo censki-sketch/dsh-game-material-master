@@ -45,11 +45,30 @@
 /* i18n-ignore-start */
     const EN: Record<string, string> = {
       "启用": "Enabled",
-      "测试失败": "Test failed",
+    "自定义接口": "Custom API",
+    "编辑模型": "Edit model",
+    "添加模型": "Add model",
+    "模型 ID": "Model ID",
+    "显示名称": "Display name",
+    "高级配置": "Advanced configuration",
+    "图片质量": "Image quality",
+    "水印": "Watermark",
+    "工作流 JSON": "Workflow JSON",
+    "添加连接后配置模型": "Add a connection to configure models",
+    "API 格式": "API format",
+    "粘贴 API Key": "Paste API key",
+    "已停用": "Disabled",
+    "删除模型": "Delete model",
+    "暂无模型": "No models",
+    "点击添加模型，填写服务商提供的模型 ID": "Add a model using the ID from your provider",
+    "删除模型？": "Delete model?",
+    "将使用 {n0} 生成一张测试图，服务商会计费。": "Generate a test image with {n0}. Your provider will charge for this request.",
+    "确认测试": "Confirm test",
+    "生图连接": "Image connections",
+    "复制连接": "Duplicate connection",
+
       "测试通过": "Test passed",
       "未测试": "Untested",
-      "测试模型": "Test model",
-      "可用模型（每行一个）": "Models (one per line)",
       "{n0} 副本": "{n0} copy",
       "连接名称": "Connection name",
       "连接 {n0}": "Connection {n0}",
@@ -314,27 +333,15 @@
       "当前任务已切换，未修改提示词。": "The current task changed. Its prompt was not modified.",
       "提示词保存失败，尚未采用优化结果。": "Could not save the prompt. The optimized result has not been applied.",
       "查看{n0}说明": "View {n0} description",
-      "ToAPIs：图片和视频使用独立的异步协议；每次生成会计费。": "ToAPIs uses asynchronous image/video endpoints. Each generation is billable.",
-      "ToAPIs 图片模型": "ToAPIs image model",
-      "ToAPIs 图片尺寸": "ToAPIs image size",
-      "ToAPIs 图片质量": "ToAPIs image quality",
-      "ToAPIs 图片背景（GPT Image）": "ToAPIs image background (GPT Image)",
-      "自动背景": "Automatic background",
-      "原生透明背景": "Native transparent background",
-      "不透明背景": "Opaque background",
-      "透明PNG无需绿幕抠像；MP4视频没有透明通道，视频抽帧仍需背景处理。": "Transparent PNGs need no chroma keying. MP4 video has no alpha channel; extracted video frames still need background removal.",
       "ToAPIs 视频模型": "ToAPIs video model",
       "ToAPIs 视频分辨率": "ToAPIs video resolution",
       "ToAPIs 视频比例": "ToAPIs video aspect ratio",
       "角色首帧为方形时建议1:1，避免宽屏裁掉头脚；MP4抽帧仍需去背景。": "Use 1:1 for square character first frames to avoid widescreen cropping of head and feet. MP4 frames still require background removal.",
-      "国内地址 https://toapis.cn/v1；国际地址 https://toapis.com/v1。": "China: https://toapis.cn/v1; international: https://toapis.com/v1.",
       "ToAPIs 视频参数独立于 MiniMax；目前仅支持文生视频或一张首帧，不支持尾帧及多模态参考。": "ToAPIs video settings are independent of MiniMax. Currently supports text or one first frame, not last-frame/multimodal inputs.",
       "ToAPIs 视频时长（秒）": "ToAPIs video duration (seconds)",
       "使用 ToAPIs 生成视频": "Use ToAPIs for video generation",
       "ToAPIs Key 已配置": "ToAPIs Key configured",
       "ToAPIs Key 未配置": "ToAPIs Key not configured",
-      "ToAPIs Key 已保存": "ToAPIs Key saved",
-      "已清除 ToAPIs Key": "ToAPIs Key cleared",
       "南 · 正对镜头": "South · facing the camera",
       "源图": "Source image",
       "北 · 背对镜头": "North · back to the camera",
@@ -1241,37 +1248,18 @@
       "抠像": "Keying",
       "像素与裁切": "Pixelation & cropping",
       "本机依赖与数据": "Local dependencies & data",
-      "ToAPIs（图片）": "ToAPIs (image)",
       "ToAPIs（视频）": "ToAPIs (video)",
       "图生视频三选一：MiniMax（云端，默认）、ToAPIs（云端异步）、本机 ComfyUI；勾选后两者之一会替换 MiniMax，取消勾选即回到 MiniMax。ToAPIs 的 Base URL / Key / 超时在「生图」里配置，图片与视频共用。": "Pick one video backend: MiniMax (cloud, default), ToAPIs (cloud, async) or local ComfyUI. Enabling either of the latter two replaces MiniMax; clear both to return to MiniMax. ToAPIs' Base URL, key and timeout are configured on the \"Images\" tab and shared by image and video.",
       "生图后端": "Image backend",
       "当前使用": "In use",
-      "还不能开跑：{n0}": "Not ready yet: {n0}",
-      "自定义生图模型": "Custom image model",
-      "填「主机根地址」即可，具体端点由插件按协议拼；本地服务通常不需要 API Key。": "Just the host root URL — the plugin appends the protocol-specific endpoint. Local servers usually need no API key.",
-      "协议": "Protocol",
-      "模型名（SD WebUI 忽略，模型由服务端决定）": "Model name (ignored by SD WebUI; the server decides the model)",
-      "模型名": "Model name",
-      "可不填，由工作流决定": "Optional; the workflow decides",
-      "输出尺寸（宽x高）": "Output size (width x height)",
-      "请求端点：{n0}": "Endpoint: {n0}",
-      "（未配置，本地服务可以留空）": "(not configured; local servers can leave it blank)",
-      "粘贴 API Key（A1111 的 user:pass 也认）": "Paste the API key (A1111's user:pass is also accepted)",
-      "自定义后端 Key 已保存": "Custom backend key saved",
-      "已清除自定义后端 Key": "Custom backend key cleared",
       "负面提示词": "Negative prompt",
-      "走 {{negative_prompt}} 占位符": "Filled via the {{negative_prompt}} placeholder",
       "采样步数": "Sampling steps",
       "CFG / 引导强度": "CFG / guidance scale",
       "采样器": "Sampler",
       "图生图重绘强度（0~1）": "Image-to-image denoising strength (0–1)",
       "随机种子（-1 = 每次随机）": "Seed (-1 = random each time)",
-      "请求超时（毫秒，本地模型建议给足）": "Request timeout (ms; give local models plenty)",
-      "工作流（在 ComfyUI 里点「导出（API）」，把那份 JSON 整段粘贴）。可用占位符：{{prompt}} {{negative_prompt}} {{width}} {{height}} {{seed}} {{steps}} {{cfg}} {{sampler}} {{denoising}} {{model}} {{image}}；一个都不写就原样跑你保存的工作流。": "Workflow (click \"Export (API)\" in ComfyUI and paste the whole JSON). Placeholders: {{prompt}} {{negative_prompt}} {{width}} {{height}} {{seed}} {{steps}} {{cfg}} {{sampler}} {{denoising}} {{model}} {{image}}. With no placeholder at all, your saved workflow runs as-is.",
       "工作流已保存": "Workflow saved",
       "保存工作流": "Save workflow",
-      "清空": "Clear",
-      "火山方舟（生图）": "Volcengine Ark (image generation)",
       "ffmpeg 可用：{n0}": "ffmpeg available: {n0}",
       "ffmpeg 不可用：{n0}": "ffmpeg unavailable: {n0}",
       "未知": "Unknown",
@@ -1279,16 +1267,11 @@
       "（已配置 {n0}）": "(configured {n0})",
       "（未配置）": "(not configured)",
       "留空表示不修改": "Leave blank to keep unchanged",
-      "粘贴 ARK_API_KEY": "Paste ARK_API_KEY",
-      "火山方舟 Key 已保存": "Volcengine Ark key saved",
       "保存 Key": "Save key",
-      "已清除火山方舟 Key": "Volcengine Ark key cleared",
       "自定义：{n0}": "Custom: {n0}",
       "部件重绘模型": "Part redraw model",
       "跟生图模型相同": "Same as the generation model",
       "输出尺寸": "Output size",
-      "正在生成测试图…": "Generating test image…",
-      "连接正常：{n0} 返回 {n1} 字节图片": "Connection OK: {n0} returned a {n1}-byte image",
       "MiniMax（图生视频）": "MiniMax (image-to-video)",
       "视频提交正在确认或处理中，请勿重复点击": "A video submission is being confirmed or processed. Please do not click again.",
       "付费视频已锁定，请先打开右上角「设置 → 生视频」，检查参数后手动开启": "Paid videos are locked. Open Settings → Video in the top-right corner, check the parameters, and enable submission manually.",
@@ -2405,7 +2388,6 @@
       "  抠像底色是 {n0}：composeMapAsset 必须带上 keyColor:'{n0}'，与提示词里的背景色一致。": "  The key color is {n0}: composeMapAsset must pass keyColor:'{n0}' so keying matches the prompt background.",
       "第四步 · 整理并回链：game_material({action:'call', method:'composeIsoAsset', payload:{projectId:'{n0}', name:'{n1}', files:[<上面那些绝对路径，按顺序>], kind:'<ground 或 object>', footprint:<物件时给 {{cols:{n2},rows:{n3}}}>, keyColor:'{n4}'}})": "Step 4 - assemble and post the link: game_material({action:'call', method:'composeIsoAsset', payload:{projectId:'{n0}', name:'{n1}', files:[<those absolute paths, in order>], kind:'<ground or object>', footprint:<for objects: {{cols:{n2},rows:{n3}}}>, keyColor:'{n4}'}})",
       "  抠像底色是 {n0}：composeIsoAsset 必须带上 keyColor:'{n0}'，与提示词里的背景色一致。": "  The key color is {n0}: composeIsoAsset must pass keyColor:'{n0}' so keying matches the prompt background.",
-      "1K / 2K / 4K 由模型决定像素；要固定尺寸请直接填 宽x高": "1K / 2K / 4K are model-defined pixel sizes; enter width x height to pin exact dimensions",
       "尺寸来源": "Size source",
       "跟随全局（{n0}）": "Follow global ({n0})",
       "任务尺寸": "Task size",
@@ -3354,7 +3336,7 @@
       ["getConfig", false],
       ["revealConfigKey", true],
       ["saveConfig", true],
-      ["testArk", false],
+      ["testArk", true],
       ["testCustomImage", true],
       ["testToapisImage", true],
       ["testPromptOptimizerModel", true],
@@ -4592,6 +4574,40 @@
 .SPR_settingsWorkspace .SPR_settingsGroup{background:var(--dsw-alias-bg-layer-1);padding:22px;border-radius:16px}
 .SPR_settingsWorkspace .SPR_settingsGroupHead{align-items:center;margin-bottom:20px;gap:12px}
 .SPR_settingsGroupHead .SPR_settingsEnable{margin-left:auto;flex:none}
+.SPR_imageConnectionForm{display:flex;flex-direction:column;gap:18px;min-width:0}
+.SPR_imageConnectionForm>.SPR_field,.SPR_imageConnectionForm .SPR_keyRow{margin:0!important}
+.SPR_connectionProtocol{padding:10px 12px;border-radius:8px;background:var(--dsw-alias-bg-layer-2);font-size:12px;color:var(--dsw-alias-label-secondary)}
+.SPR_connectionAddLabel{display:flex;align-items:center;gap:6px;font-size:12px;white-space:normal;text-align:left}
+.SPR_settingsChildren>.SPR_imageResultActions{display:block;width:100%;margin-top:4px}
+.SPR_settingsChildren>.SPR_imageResultActions>.SPR_btn{width:100%;justify-content:flex-start;padding:7px;border:0;background:transparent;color:var(--dsw-alias-label-secondary)}
+.SPR_imageModelListHead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--dsw-alias-label-secondary);margin-top:4px}
+.SPR_imageModelListHead>.SPR_btn{display:flex;align-items:center;gap:4px;font-size:12px;padding:5px 9px}
+.SPR_imageModelList{border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden}
+.SPR_imageModelRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;min-width:0}
+.SPR_imageModelRow+.SPR_imageModelRow{border-top:1px solid var(--dsw-alias-border-l2)}
+.SPR_imageModelRow:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_imageModelIdentity{display:flex;align-items:center;gap:8px;min-width:0;font-size:13px}
+.SPR_imageModelIdentity>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_imageModelStatus{width:7px;height:7px;border-radius:50%;background:var(--dsw-alias-label-tertiary);flex:none}
+.SPR_imageModelStatus[data-state=passed]{background:#22a668}
+.SPR_imageModelStatus[data-state=untested]{background:#d99a26}
+.SPR_imageModelActions{display:flex;align-items:center;gap:4px;flex:none}
+.SPR_imageModelActions>.SPR_iconBtn,.SPR_imageModelDialogHead>.SPR_iconBtn{display:grid;place-items:center;width:28px;height:28px;min-width:28px;padding:5px;border:0;background:transparent;color:var(--dsw-alias-label-secondary)}
+.SPR_imageModelActions>.SPR_iconBtn:hover,.SPR_imageModelDialogHead>.SPR_iconBtn:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}
+.SPR_imageModelActions .SPR_settingsEnable{font-size:0;gap:0;margin-left:6px}
+.SPR_connectionEmpty{padding:32px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;font-size:13px;color:var(--dsw-alias-label-secondary)}
+.SPR_projectRenameDialog.SPR_imageModelDialog{width:min(560px,calc(100vw - 32px));max-width:calc(100vw - 32px);padding:0;overflow:hidden}
+.SPR_imageModelDialog>form{display:flex;flex-direction:column;max-height:min(780px,calc(100dvh - 48px))}
+.SPR_imageModelDialogHead{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;gap:12px}
+.SPR_imageModelDialogHead h3{margin:0;font-size:15px}
+.SPR_imageModelDialogBody{padding:0 22px 18px;display:flex;flex-direction:column;gap:16px;overflow:auto;min-height:0}
+.SPR_imageModelDialog .SPR_projectRenameActions{margin:0;padding:14px 22px;border-top:1px solid var(--dsw-alias-border-l2)}
+.SPR_imageModelDialog .SPR_fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.SPR_imageModelDialog .SPR_settingsAdvanced{margin-top:0}
+.SPR_imageModelWorkflow{margin-top:16px}
+@media(max-width:720px){.SPR_imageModelRow{flex-wrap:wrap;gap:10px;padding:12px}.SPR_imageModelActions{margin-left:auto}.SPR_imageModelListHead{flex-wrap:wrap}}
+@media(max-width:440px){.SPR_imageModelDialog .SPR_fields{grid-template-columns:minmax(0,1fr)}.SPR_imageModelDialogBody{padding:0 16px 16px}.SPR_imageModelDialogHead{padding:14px 16px}.SPR_settingsGroupHead h3{min-width:0;overflow-wrap:anywhere}}
+
 .SPR_settingsWorkspace .SPR_settingsGroupHead h3{display:flex;align-items:center;gap:8px;font-size:15px}
 .SPR_settingsWorkspace .SPR_settingsGroupHead .SPR_badge{display:none}
 .SPR_settingsWorkspace .SPR_settingsBody>.SPR_fields{margin-bottom:18px}
@@ -6164,6 +6180,7 @@
 
     function ProjectActionIcon({ name }) {
       const props = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" };
+      if (name === "play") return h("svg", props, h("path", { d: "m9 5 10 7-10 7V5Z" }));
       if (name === "more") return h("svg", props, [5, 12, 19].map(cx => h("circle", { key: cx, cx, cy: 12, r: 1.3, fill: "currentColor", stroke: "none" })));
       if (name === "rename") return h("svg", props, h("path", { d: "M13.5 5.5l5 5M4 20l4.5-1 12-12a2.1 2.1 0 0 0-5-5l-12 12L4 20Z" }));
       if (name === "copy") return h("svg", props, h("rect", { x: 8, y: 8, width: 12, height: 12, rx: 2 }), h("path", { d: "M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4" }));
@@ -10495,7 +10512,7 @@
         onClick: event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) close(); } } },
         h("form", { onSubmit: submit },
           h("div", { className: "SPR_taskDialogHead" }, h("h3", null, title),
-            h("button", { type: "button", className: "SPR_taskIconButton", disabled: saving || picking, "aria-label": T("关闭"), onClick: close }, h(TaskHeaderIcon, { name: "close" }))),
+            h("button", { type: "button", className: "SPR_taskIconButton", disabled: saving || picking, "aria-label": T("关闭"), onClick: close }, h(TaskHeaderIcon, { name: "remove" }))),
           h("label", { className: "SPR_taskName" }, h(TaskHeaderIcon, { name: "folder" }), h("input", { value: name, maxLength: 80, required: true, disabled: saving || picking, placeholder: task ? T("任务名称") : T("项目名称"), "aria-label": task ? T("任务名称") : T("项目名称"), onChange: event => setName(event.target.value) })),
           h("div", { className: "SPR_taskFieldLabel" }, h("span", null, T("源文件夹")),
             h(DescriptionTip, { id: "task-save-location", label: T("源文件夹"), text: editableSources ? T("源文件夹只用于关联本机项目，不移动或删除文件。") : project ? T("已有项目的文件保存在此处。") : T("自动创建独立项目文件夹，保存参考图、生成图和历史记录；不选择时使用 DSH 默认位置。") }),
@@ -10503,7 +10520,7 @@
           h("div", { className: "SPR_taskSourceCard", "data-selected": sources.length > 0 },
             sources.map(source => h("div", { key: source, className: "SPR_taskSourceRow", title: source }, h(TaskHeaderIcon, { name: "folder" }),
               h("span", { className: "SPR_taskSourceName" }, source.split(/[\\/]/).filter(Boolean).pop() || source),
-              project && !editableSources ? null : h("button", { type: "button", className: "SPR_taskIconButton", disabled: saving || picking, "aria-label": T("移除文件夹"), onClick: () => editableSources ? setDirectories(current => current.filter(path => path !== source)) : setDirectory("") }, h(TaskHeaderIcon, { name: "close" })))),
+              project && !editableSources ? null : h("button", { type: "button", className: "SPR_taskIconButton", disabled: saving || picking, "aria-label": T("移除文件夹"), onClick: () => editableSources ? setDirectories(current => current.filter(path => path !== source)) : setDirectory("") }, h(TaskHeaderIcon, { name: "remove" })))),
             project && !editableSources ? null : sources.length ? h(BusyBtn, { className: "SPR_taskSourceAdd", busy: picking, disabled: saving || picking, busyText: T("请选择文件夹…"), onClick: () => void pick(), "aria-label": T("添加文件夹") },
               h(TaskHeaderIcon, { name: "folderAdd" }), T("添加文件夹"))
               : h("div", { className: "SPR_taskSourceEmpty" },
@@ -15232,7 +15249,7 @@
           onProjectPin: item => toggle("pinnedProjects", item.id), onProjectArchive: archive, onProjectDelete: setDeleting,
           renderSummary: describe, renderActions: item => h(ImageProjectActions, { id: item.id, pinned: preferences.pinnedProjects?.includes(item.id), archived: preferences.archivedProjects?.includes(item.id),
             onPin: () => toggle("pinnedProjects", item.id), onArchive: () => archive(item), onDelete: () => setDeleting(item) }) }),
-        undo ? h("div", { className: "SPR_audioUndo", role: "status" }, T("归档状态已更新"), h(Btn, { onClick: () => { update({ archivedProjects: undo }); setUndo(null); } }, T("撤回")), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("关闭"), onClick: () => setUndo(null) }, h(TaskHeaderIcon, { name: "close" }))) : null,
+        undo ? h("div", { className: "SPR_audioUndo", role: "status" }, T("归档状态已更新"), h(Btn, { onClick: () => { update({ archivedProjects: undo }); setUndo(null); } }, T("撤回")), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("关闭"), onClick: () => setUndo(null) }, h(TaskHeaderIcon, { name: "remove" }))) : null,
         deleting ? h(ImageProjectDeleteDialog, { project: deleting, description: T("将永久删除该项目的音频、参考素材和全部版本，无法撤销。"), onClose: () => setDeleting(null),
           onDelete: async item => { await api["delete" + suffix + "Job"]({ jobId: item.id }); for (const field of ["pinnedProjects", "archivedProjects", "unreadProjects"]) update({ [field]: (state.current[field] ?? []).filter(id => id !== item.id) }); await onRefresh(); onDeleted(item.id); } }) : null);
     }
@@ -15247,7 +15264,7 @@
       React.useEffect(() => { const dialog = ref.current, previous = document.activeElement; dialog.showModal(); return () => { if (dialog.open) dialog.close(); if (previous?.isConnected) (previous as HTMLElement).focus({ preventScroll: true }); }; }, []);
       const close = () => { if (canClose()) onClose(); };
       return h("dialog", { ref, className: "SPR_audioPanel SPR_projectRenameDialog", "aria-label": title, onCancel: event => { event.preventDefault(); close(); } },
-        h("div", { className: "SPR_chatRequestHead" }, h("h3", null, title), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("关闭"), onClick: close }, h(TaskHeaderIcon, { name: "close" }))), children);
+        h("div", { className: "SPR_chatRequestHead" }, h("h3", null, title), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("关闭"), onClick: close }, h(TaskHeaderIcon, { name: "remove" }))), children);
     }
     function AudioConfirm({ title, text, onConfirm, onClose }) {
       const [working, setWorking] = React.useState(false), [error, setError] = React.useState("");
@@ -15711,8 +15728,8 @@
         h(AudioChoice, { label: T("审核模式"), value: draft.reviewMode || "auto", choices: [{ id: "auto", label: T("自动审核") }, { id: "manual", label: T("人工审核") }], onChange: value => update({ reviewMode: value }) }),
         h("p", { className: "SPR_hint" }, T("参考图与参考音频不能同时使用。时长写在描述里，最长120秒；每次生成会计费。")));
       const composer = h("div", { className: "SPR_chatInputCard SPR_audioInput" },
-        h("div", { className: "SPR_audioAttachments" }, refs.image ? h("div", { className: "SPR_audioRef" }, h(ImageResultPreview, { src: musicAssetUrl(job, refs.image.file), alt: refs.image.name, label: refs.image.name }), h("span", null, "@图片1"), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("移除"), disabled: busy, onClick: () => void removeRef("image") }, h(TaskHeaderIcon, { name: "close" }))) : null,
-          (refs.audios ?? []).map((ref, index) => h("div", { className: "SPR_audioRef", key: ref.file }, h("button", { type: "button", className: "SPR_btn", onClick: () => update({ prompt: draft.prompt + " @音频" + (index + 1) }) }, "@音频" + (index + 1)), h("span", null, ref.name), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("移除"), disabled: busy, onClick: () => void removeRef("audio", ref.file) }, h(TaskHeaderIcon, { name: "close" }))))),
+        h("div", { className: "SPR_audioAttachments" }, refs.image ? h("div", { className: "SPR_audioRef" }, h(ImageResultPreview, { src: musicAssetUrl(job, refs.image.file), alt: refs.image.name, label: refs.image.name }), h("span", null, "@图片1"), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("移除"), disabled: busy, onClick: () => void removeRef("image") }, h(TaskHeaderIcon, { name: "remove" }))) : null,
+          (refs.audios ?? []).map((ref, index) => h("div", { className: "SPR_audioRef", key: ref.file }, h("button", { type: "button", className: "SPR_btn", onClick: () => update({ prompt: draft.prompt + " @音频" + (index + 1) }) }, "@音频" + (index + 1)), h("span", null, ref.name), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("移除"), disabled: busy, onClick: () => void removeRef("audio", ref.file) }, h(TaskHeaderIcon, { name: "remove" }))))),
         h("textarea", { className: "SPR_area SPR_audioPrompt", "data-testid": "sfx-prompt", "aria-label": T("提示词"), maxLength: 2048, rows: 3, value: draft.prompt, placeholder: T("描述你想要的声音…"), onChange: event => update({ prompt: event.target.value }) }),
         h("div", { className: "SPR_chatComposerBottom" }, h("input", { ref: filesRef, type: "file", hidden: true, accept: "image/png,image/jpeg,image/webp,audio/wav,audio/mpeg,audio/ogg", onChange: upload }),
           h(DescriptionTip, { id: "sfx-reference-tip", label: T("添加参考素材"), text: T("参考图与参考音频不能同时使用。时长写在描述里，最长120秒；每次生成会计费。"), className: "SPR_taskIconButton", disabled: busy, onClick: () => filesRef.current.click(), icon: uploading ? h("span", { className: "SPR_spinSm" }) : h(TaskHeaderIcon, { name: "add" }) }),
@@ -17810,7 +17827,7 @@
           const route = imageModelChoices(current).find(value => value.provider === model.provider && value.model === model.model && value.connectionId === model.connectionId);
           if (!route) throw new Error(T("所选生图模型已变更，请重新打开菜单选择。"));
           if (route.blocker) throw new Error(route.blocker);
-          const next = await api.saveConfig({ imageProvider: model.provider, ...(model.connectionId ? { activeCustomImageConnectionId: model.connectionId, customModel: model.model } : {}) });
+          const next = await api.saveConfig({ imageProvider: model.provider, ...(model.connectionId ? { activeCustomImageConnectionId: model.connectionId, customModel: model.model } : model.provider === "ark" ? { arkModel: model.model } : { toapisImageModel: model.model }) });
           if (next.imageProvider !== model.provider) throw new Error(T("模型未保存成功，请重试。"));
           if (alive.current) setImages(next);
           window.dispatchEvent(new Event("gmm-model-config"));
@@ -17821,7 +17838,8 @@
       const defaultName = promptModels.find(model => model.provider === catalog?.provider && model.model === catalog?.model)?.name || catalog?.model;
       const promptName = selected ? (promptModels.find(model => model.provider === selected.provider && model.model === selected.model)?.name || selected.model) : catalog?.available ? defaultName : T("选择模型");
       const legacyCatalog = !loading && ((imageConfig && images && !Array.isArray(images.imageModels)) || (catalog && !Array.isArray(catalog.models)));
-      const imageName = imageModelChoices(images).some(model => model.provider === images?.imageProvider && model.model === images?.imageModel && (!model.connectionId || model.connectionId === images?.activeCustomImageConnectionId)) ? images.imageModel : T("选择模型");
+      const currentImage = imageModelChoices(images).find(model => model.provider === images?.imageProvider && model.model === images?.imageModel && (!model.connectionId || model.connectionId === images?.activeCustomImageConnectionId));
+      const imageName = currentImage?.label || currentImage?.model || T("选择模型");
       return h("div", { className: "SPR_chatModels" }, h(ImageResultMenu, { label: imageConfig ? T("切换模型") : T("提示词优化模型"), disabled: disabled || loading, onOpen: () => void load(),
         icon: h("span", { className: "SPR_chatModelTrigger" }, loading ? h("span", { className: "SPR_spinSm", "aria-hidden": "true" }) : null,
           imageConfig ? h(React.Fragment, null,
@@ -17831,7 +17849,7 @@
           h("svg", { width: 12, height: 12, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", "aria-hidden": "true" }, h("path", { d: "m4 6 4 4 4-4" }))) },
         imageConfig ? h(React.Fragment, null, h("p", { className: "SPR_modelGroupLabel" }, T("生图"), legacyCatalog ? h(DescriptionTip, { id: jobId + "-model-catalog", label: T("模型列表"), text: T("完全退出DSH（包括托盘）后重开，可显示完整模型列表。") }) : null),
           imageModelChoices(images).map(model => h(Btn, { key: JSON.stringify([model.provider, model.connectionId, model.model]), role: "menuitemradio", disabled: !!model.blocker, title: model.blocker || undefined, "aria-checked": images.imageProvider === model.provider && images.imageModel === model.model && (!model.connectionId || images.activeCustomImageConnectionId === model.connectionId), onClick: () => void switchImage(model) },
-            h("span", null, model.model || "—"), h("span", { className: "SPR_modelProvider" }, model.provider === "ark" ? T("火山方舟") : model.provider === "toapis" ? "ToAPIs" : model.name || T("自定义")))),
+            h("span", null, model.label || model.model || "—"), h("span", { className: "SPR_modelProvider" }, model.provider === "ark" ? T("火山方舟") : model.provider === "toapis" ? "ToAPIs" : model.name || T("自定义")))),
           !loading && !imageModelChoices(images).length ? h("p", { className: "SPR_hint" }, T("暂无生图模型，请先配置生图后端。")) : null) : null,
         h("p", { className: "SPR_modelGroupLabel" }, T("提示词")),
         catalog?.available ? h(Btn, { role: "menuitemradio", "aria-checked": !selected || (selected.provider === catalog.provider && selected.model === catalog.model), onClick: () => choose(null) }, h("span", null, defaultName), h("span", { className: "SPR_modelProvider" }, "DSH")) : null,
@@ -18586,7 +18604,7 @@
           !follow.current && rounds.length ? h("button", { type: "button", className: "SPR_chatLatest SPR_btn", onClick: () => { latest(); setNotice(null); } }, h(ImageChatIcon, { name: "down" }), notice === T("有新结果") ? notice : T("回到最新")) : null, composer),
         panel ? h("dialog", { ref: panelRef, className: "SPR_chatPanelMask", "aria-label": panel === "materials" ? T("项目素材") : panel === "keying" ? T("抠图设置") : T("生成参数"), onCancel: event => { event.preventDefault(); setPanel(null); }, onClick: event => { if (event.target === event.currentTarget) setPanel(null); } },
           h("aside", { className: "SPR_chatPanel", onKeyDown: event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setPanel(null); } } },
-            h("header", null, h("strong", null, panel === "materials" ? T("项目素材") : panel === "keying" ? T("抠图设置") : T("生成参数")), h(Btn, { "aria-label": T("关闭"), onClick: () => setPanel(null) }, h(TaskHeaderIcon, { name: "close" }))),
+            h("header", null, h("strong", null, panel === "materials" ? T("项目素材") : panel === "keying" ? T("抠图设置") : T("生成参数")), h(Btn, { "aria-label": T("关闭"), onClick: () => setPanel(null) }, h(TaskHeaderIcon, { name: "remove" }))),
             h("nav", { className: "SPR_chatPanelTabs" }, [["parameters", T("生成参数")], ["keying", T("抠图设置")], ["materials", T("项目素材")]].map(([id, label]) => h(Btn, { key: id, on: panel === id, "aria-pressed": panel === id, onClick: () => setPanel(id) }, label))),
             panel === "materials" ? h("div", { className: "SPR_chatMaterials" }, media.length ? media.map(ref => h("div", { key: ref.file, className: "SPR_chatMaterial", "data-file": ref.file, "data-kind": ref.kind, "data-bookmarked": (view.favoriteFiles ?? []).includes(ref.file) },
               h("div", { className: "SPR_chatMaterialHead" }, h("span", null, ref.label), h(ImageFileBookmark, { file: ref.file, label: ref.label, bookmarked: (view.favoriteFiles ?? []).includes(ref.file), onToggle: toggleFavorite })),
@@ -18598,7 +18616,7 @@
                 onChange: event => { const files = Array.from(event.target.files || []); event.target.value = ""; if (files.length && !busy) void onUpload(files, "ref"); } })))) : panel === "keying" ? keying : parameters)) : null,
         request ? h("dialog", { ref: requestRef, className: "SPR_chatRequestDialog SPR_projectRenameDialog", "aria-label": T("查看最终生图请求"), onCancel: event => { event.preventDefault(); closeRequest(); } },
           h("div", { className: "SPR_chatRequestHead" }, h("h3", null, T("查看最终生图请求")),
-            h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("关闭"), title: T("关闭"), onClick: closeRequest }, h(TaskHeaderIcon, { name: "close" }))),
+            h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("关闭"), title: T("关闭"), onClick: closeRequest }, h(TaskHeaderIcon, { name: "remove" }))),
           request.settings ? h("div", { className: "SPR_hint" },
             h("div", null, T("历史模型：{n0}", { n0: request.settings.model || "—" })), h("div", null, T("历史尺寸：{n0}", { n0: request.settings.size })),
             h("div", null, T("参考图：{n0}", { n0: request.referenceFiles?.length ?? request.refs?.length ?? 0 })), h("div", null, T("生图后端"), " · ", request.provider || "—")) : null,
@@ -23362,6 +23380,115 @@
      * 都活在子组件里，条件卸载会在切页签 / 收卡片时把用户正在输入的内容打回原形。
      * `defaultOpen` 变化时跟着开合（切换当前后端），普通配置回包不会把它弹回去。
      */
+    function SettingsConnectionAdd({ onCreate, onPreset, presets = [] }) {
+      return h(ImageResultMenu, { label: T("添加连接"), icon: h("span", { className: "SPR_connectionAddLabel" }, h(TaskHeaderIcon, { name: "add" }), T("添加连接")) },
+        h(Btn, { role: "menuitem", onClick: onCreate }, T("自定义接口")),
+        !presets.includes("ark") ? h(Btn, { role: "menuitem", onClick: () => onPreset("ark") }, T("火山方舟")) : null,
+        !presets.includes("toapis") ? h(Btn, { role: "menuitem", onClick: () => onPreset("toapis") }, "ToAPIs") : null);
+    }
+
+    /** Explicit save, theme dialog; parameters are independent for each image model. */
+    function ImageModelEditor({ model, provider, protocol, defaults, onSave, onClose }) {
+      const [draft, setDraft] = React.useState(() => {
+        const allowed = provider === "ark" ? ["size", "timeoutMs", "watermark"] : provider === "toapis" || protocol === "openai" ? ["size", "quality", "timeoutMs"] : ["size", "timeoutMs", "negativePrompt", "steps", "cfgScale", "sampler", "seed", ...(protocol === "comfyui" ? ["workflow"] : ["denoising"])];
+        return { id: model?.id || "", name: model?.name || "", enabled: model?.enabled !== false, params: Object.fromEntries(Object.entries(model?.params ?? {}).filter(([key]) => allowed.includes(key))) };
+      });
+      const [saving, setSaving] = React.useState(false), [error, setError] = React.useState("");
+      const ref = React.useRef(null), input = React.useRef(null), lock = React.useRef(false);
+      React.useEffect(() => { const trigger = document.activeElement as HTMLElement; ref.current?.showModal(); input.current?.focus(); return () => { if (ref.current?.open) ref.current.close(); if (trigger?.isConnected) trigger.focus({ preventScroll: true }); }; }, []);
+      const setParam = (key, value) => setDraft(current => { const params = { ...current.params }; if (value === "") delete params[key]; else params[key] = value; return { ...current, params }; });
+      const close = () => { if (!lock.current) onClose(); };
+      const field = (label, key, placeholder = "", numeric = false, min = undefined, max = undefined, step = undefined) => h("label", { className: "SPR_field", key }, h("span", { className: "SPR_fieldLabel" }, label),
+        h("input", { className: "SPR_input", type: numeric ? "number" : "text", min, max, step, value: draft.params[key] ?? "", placeholder: String(placeholder ?? ""), "data-model-param": key, onChange: event => setParam(key, numeric && event.target.value !== "" ? Number(event.target.value) : event.target.value) }));
+      const submit = async event => {
+        event.preventDefault(); if (lock.current) return;
+        lock.current = true; setSaving(true); setError("");
+        try { await onSave(draft); onClose(); } catch (failure) { setError(msg(failure)); }
+        finally { lock.current = false; setSaving(false); }
+      };
+      return h("dialog", { ref, className: "SPR_projectRenameDialog SPR_imageModelDialog", "data-testid": "image-model-editor", "aria-labelledby": "image-model-editor-title", onCancel: event => { event.preventDefault(); close(); } },
+        h("form", { onSubmit: submit },
+          h("div", { className: "SPR_imageModelDialogHead" }, h("h3", { id: "image-model-editor-title" }, model ? T("编辑模型") : T("添加模型")), h("button", { type: "button", className: "SPR_btn SPR_iconBtn", "aria-label": T("关闭"), disabled: saving, onClick: close }, h(ProjectActionIcon, { name: "remove" }))),
+          h("div", { className: "SPR_imageModelDialogBody" },
+            h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("模型 ID")), h("input", { ref: input, className: "SPR_input", required: true, maxLength: 300, "data-testid": "image-model-id", value: draft.id, onChange: event => setDraft(value => ({ ...value, id: event.target.value })) })),
+            h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("显示名称")), h("input", { className: "SPR_input", maxLength: 80, placeholder: draft.id, "data-testid": "image-model-name", value: draft.name, onChange: event => setDraft(value => ({ ...value, name: event.target.value })) })),
+            h(SettingsEnableSwitch, { enabled: draft.enabled, testId: "image-model-enabled", onChange: value => setDraft(current => ({ ...current, enabled: value })) }),
+            h("details", { className: "SPR_settingsAdvanced" }, h("summary", null, T("高级配置")),
+              h("div", { className: "SPR_fields" },
+                field(T("输出尺寸"), "size", defaults.size),
+                provider !== "ark" && (provider === "toapis" || protocol === "openai") ? h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("图片质量")), h(AudioChoice, { label: T("图片质量"), value: draft.params.quality ?? "", choices: [{ id: "", label: T("默认") }, ...["auto", "low", "medium", "high"].map(id => ({ id, label: id }))], onChange: value => setParam("quality", value) })) : null,
+                field(T("请求超时（毫秒）"), "timeoutMs", defaults.timeoutMs, true, 10000, 3600000, 1000),
+                provider === "ark" ? h("label", { className: "SPR_check" }, h("input", { type: "checkbox", checked: draft.params.watermark ?? defaults.watermark ?? false, onChange: event => setParam("watermark", event.target.checked) }), T("水印")) : null,
+                provider === "custom" && protocol !== "openai" ? h(React.Fragment, null,
+                  field(T("负面提示词"), "negativePrompt", defaults.negativePrompt),
+                  field(T("采样步数"), "steps", defaults.steps, true, 1, 150, 1), field(T("CFG / 引导强度"), "cfgScale", defaults.cfgScale, true, 0, 30, 0.5),
+                  field(T("采样器"), "sampler", defaults.sampler), field(T("随机种子（-1 = 每次随机）"), "seed", defaults.seed, true, -1, 2147483647, 1),
+                  protocol === "sdwebui" ? field(T("图生图重绘强度（0~1）"), "denoising", defaults.denoising, true, 0, 1, 0.05) : null) : null),
+              provider === "custom" && protocol === "comfyui" ? h("label", { className: "SPR_field SPR_imageModelWorkflow" }, h("span", { className: "SPR_fieldLabel" }, T("工作流 JSON")), h("textarea", { className: "SPR_area", rows: 7, "data-testid": "image-model-workflow", value: draft.params.workflow ?? "", placeholder: defaults.workflow || "{}", onChange: event => setParam("workflow", event.target.value) })) : null),
+            error ? h("p", { className: "SPR_taskDialogError", role: "alert" }, error) : null),
+          h("div", { className: "SPR_projectRenameActions" }, h(Btn, { disabled: saving, onClick: close }, T("取消")), h("button", { type: "submit", className: "SPR_btn", "data-primary": "true", disabled: saving || !draft.id.trim() }, saving ? T("正在保存…") : T("保存")))));
+    }
+
+    function ImageConnectionForm({ api, config, provider, connection, onUpdate }) {
+      const keyName = provider === "custom" ? "customApiKey" : provider === "ark" ? "arkApiKey" : "toapisApiKey";
+      const baseKey = provider === "custom" ? "customBaseUrl" : provider === "ark" ? "arkBaseUrl" : "toapisBaseUrl";
+      const source = connection || config, modelKey = provider === "ark" ? "arkImageModels" : "toapisImageModels";
+      const models = provider === "custom" ? connection?.modelConfigs ?? [] : config[modelKey] ?? [];
+      const [keyDraft, setKeyDraft] = React.useState(""), [editor, setEditor] = React.useState(null), [remove, setRemove] = React.useState(null), [confirmation, setConfirmation] = React.useState(null);
+      const [busy, setBusy] = React.useState(null), [notice, setNotice] = React.useState(null);
+      const lock = React.useRef(false);
+      const enabled = provider === "custom" ? connection?.enabled !== false : config[provider === "ark" ? "arkImageEnabled" : "toapisImageEnabled"] !== false;
+      const protocol = connection?.customProtocol || "openai";
+      const apply = async values => {
+        const next = await api.saveConfig(provider === "custom" ? { customConnection: { op: "update", id: connection.id, values } } : values);
+        onUpdate(next); window.dispatchEvent(new Event("gmm-model-config")); return next;
+      };
+      const action = async fn => { try { await fn(); } catch (error) { setNotice({ kind: "error", text: msg(error) }); } };
+      const editModel = async (op, model, values = undefined) => {
+        const next = await api.saveConfig({ imageModelEdit: { provider, connectionId: connection?.id, op, id: model?.id, values } });
+        onUpdate(next); window.dispatchEvent(new Event("gmm-model-config"));
+      };
+      const defaults = provider === "ark" ? { size: config.defaults?.arkSize, timeoutMs: config.defaults?.arkTimeoutMs, watermark: config.defaults?.arkWatermark }
+        : provider === "toapis" ? { size: config.defaults?.toapisImageSize, quality: config.defaults?.toapisImageQuality, timeoutMs: config.defaults?.toapisTimeoutMs }
+        : Object.fromEntries(["size", "timeoutMs", "negativePrompt", "steps", "cfgScale", "sampler", "denoising", "seed", "workflow"].map(key => [key, source["custom" + key[0].toUpperCase() + key.slice(1)]]));
+      const test = async model => {
+        if (lock.current) return; lock.current = true; setBusy(model.id);
+        try {
+          if (provider === "ark") await api.testArk({ model: model.id, confirmed: true });
+          else if (provider === "toapis") await api.testToapisImage({ model: model.id, confirmed: true });
+          else await api.testCustomImage({ connectionId: connection.id, model: model.id, confirmed: true });
+          onUpdate(await api.getConfig());
+        } catch (error) { setNotice({ kind: "error", text: msg(error) }); }
+        finally { lock.current = false; setBusy(null); }
+      };
+      return h("div", { className: "SPR_imageConnectionForm", "data-provider": provider },
+        provider === "custom" && !connection ? h("div", { className: "SPR_connectionEmpty" }, h(TaskHeaderIcon, { name: "add" }), h("span", null, T("添加连接后配置模型"))) : h(React.Fragment, null,
+          provider === "custom" ? h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("连接名称")), h("input", { className: "SPR_input", "aria-label": T("连接名称"), defaultValue: connection.name, onBlur: event => { const name = event.target.value.trim(); if (name && name !== connection.name) void action(() => apply({ name })); } })) : null,
+          h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, "Base URL"), h("input", { key: source[baseKey], className: "SPR_input", "data-testid": "cfg-" + provider + "-base-url", defaultValue: source[baseKey], onBlur: event => { if (event.target.value.trim() !== source[baseKey]) void action(() => apply({ [baseKey]: event.target.value.trim() })); } })),
+          h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("API 格式")), provider === "custom" ? h(SettingsSelect, { "data-testid": "cfg-custom-protocol", value: protocol, onChange: event => { const protocols = config.customProtocols ?? [], target = protocols.find(item => item.id === event.target.value); void action(() => apply({ customProtocol: event.target.value, ...(target && (!source[baseKey] || protocols.some(item => item.baseUrl === source[baseKey])) ? { customBaseUrl: target.baseUrl } : {}) })); } },
+            (config.customProtocols ?? [{ id: "openai", label: "OpenAI API" }, { id: "comfyui", label: "ComfyUI API" }, { id: "sdwebui", label: "Stable Diffusion WebUI API" }]).map(item => h("option", { key: item.id, value: item.id }, item.label))) : h("div", { className: "SPR_connectionProtocol" }, provider === "ark" ? "Seedream / images/generations" : "ToAPIs / images/generations")),
+          h("div", { className: "SPR_keyRow" }, h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, "API Key"), h(ConfigKeyInput, { api, keyName, connectionId: connection?.id, isSet: source[keyName + "Set"], resetToken: source, className: "SPR_input", value: keyDraft, placeholder: source[keyName + "Set"] ? T("留空表示不修改") : T("粘贴 API Key"), onChange: event => setKeyDraft(event.target.value) })),
+            h(Btn, { disabled: !keyDraft.trim(), onClick: () => void action(async () => { await apply({ [keyName]: keyDraft }); setKeyDraft(""); }) }, T("保存 Key")),
+            h(Btn, { disabled: !source[keyName + "Set"], onClick: () => void action(() => apply({ [keyName]: "" })) }, T("清除"))),
+          h("div", { className: "SPR_imageModelListHead" }, h("span", null, T("模型列表")), h(Btn, { disabled: models.length >= 50, onClick: () => setEditor({ model: null }) }, h(TaskHeaderIcon, { name: "add" }), T("添加模型"))),
+          h("div", { className: "SPR_imageModelList", "data-testid": "cfg-" + provider + "-models" }, models.length ? models.map(model => {
+            const status = config.imageModelTests?.find(item => item.provider === provider && item.connectionId === connection?.id && item.model === model.id);
+            const statusLabel = !model.enabled || !enabled ? T("已停用") : status?.testedAt ? T("测试通过") : T("未测试");
+            return h("div", { key: model.id, className: "SPR_imageModelRow", "data-model-id": model.id, "data-enabled": model.enabled },
+              h("div", { className: "SPR_imageModelIdentity" }, h("span", { className: "SPR_imageModelStatus", "data-state": !model.enabled || !enabled ? "disabled" : status?.testedAt ? "passed" : "untested", title: statusLabel, "aria-label": statusLabel }), h("span", { title: model.id }, model.name || model.id)),
+              h("div", { className: "SPR_imageModelActions" },
+                h(DescriptionTip, { id: "model-test-" + provider + connection?.id + encodeURIComponent(model.id), className: "SPR_btn SPR_iconBtn", label: T("生成测试（计费）"), text: T("生成测试（计费）"), disabled: busy !== null || !enabled || !model.enabled || (provider !== "custom" && !source[keyName + "Set"]), onClick: () => setConfirmation(model), icon: busy === model.id ? h("span", { className: "SPR_spinSm" }) : h(ProjectActionIcon, { name: "play" }) }),
+                h(DescriptionTip, { id: "model-edit-" + provider + connection?.id + encodeURIComponent(model.id), className: "SPR_btn SPR_iconBtn", label: T("编辑模型"), text: T("编辑模型"), disabled: busy !== null, onClick: () => setEditor({ model }), icon: h(ProjectActionIcon, { name: "rename" }) }),
+                h(DescriptionTip, { id: "model-delete-" + provider + connection?.id + encodeURIComponent(model.id), className: "SPR_btn SPR_iconBtn", label: T("删除模型"), text: T("删除模型"), disabled: busy !== null, onClick: () => setRemove(model), icon: h(ProjectActionIcon, { name: "delete" }) }),
+                h(SettingsEnableSwitch, { enabled: model.enabled, testId: "model-enabled-" + provider + "-" + model.id, onChange: value => action(() => editModel("update", model, { enabled: value })) })));
+          }) : h("div", { className: "SPR_connectionEmpty" }, h("span", null, T("暂无模型")), h("span", { className: "SPR_hint" }, T("点击添加模型，填写服务商提供的模型 ID")))),
+          provider === "ark" ? h("details", { className: "SPR_settingsAdvanced" }, h("summary", null, T("高级配置")), h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("部件重绘模型")), h("input", { className: "SPR_input", "data-testid": "cfg-redraw-model", defaultValue: config.arkRedrawModel || "", placeholder: T("跟生图模型相同"), onBlur: event => void action(() => apply({ arkRedrawModel: event.target.value.trim() })) }))) : null),
+        editor ? h(ImageModelEditor, { model: editor.model, provider, protocol, defaults, onSave: values => editModel(editor.model ? "update" : "create", editor.model, values), onClose: () => setEditor(null) }) : null,
+        remove ? h(AudioConfirm, { title: T("删除模型？"), text: remove.name || remove.id, confirmLabel: T("删除"), onConfirm: () => editModel("delete", remove), onClose: () => setRemove(null) }) : null,
+        confirmation ? h(AudioConfirm, { title: T("生成测试（计费）"), text: T("将使用 {n0} 生成一张测试图，服务商会计费。", { n0: confirmation.name || confirmation.id }), confirmLabel: T("确认测试"), onConfirm: () => test(confirmation), onClose: () => setConfirmation(null) }) : null,
+        h(NoticePopup, { notice, onClose: () => setNotice(null) }));
+    }
+
     function SettingsEnableSwitch({ enabled, onChange, testId }) {
       const [pending, setPending] = React.useState(null);
       const lock = React.useRef(false);
@@ -23374,7 +23501,7 @@
         } }), T("启用"));
     }
 
-    function SettingsGroup({ title, hint, badge, lead, children, collapsible, defaultOpen, testId, enabled, onEnabledChange }) {
+    function SettingsGroup({ title, hint, badge, lead, children, collapsible, defaultOpen, testId, enabled, onEnabledChange, actions }) {
       const [open, setOpen] = React.useState(defaultOpen !== false);
       React.useEffect(() => {
         if (defaultOpen !== undefined) setOpen(defaultOpen);
@@ -23405,6 +23532,7 @@
           { className: "SPR_settingsGroupHead" },
           h("h3", null, title, badge ? h("span", { className: "SPR_badge" }, badge) : null, hint ? h(DescriptionTip, { id: "settings-help-" + (testId || String(title).replace(/\s/g, "")), label: title, text: hint }) : null),
           onEnabledChange ? h(SettingsEnableSwitch, { enabled, onChange: onEnabledChange, testId: testId + "-enabled" }) : null,
+          actions,
           collapsible === true
             ? h(
                 "button",
@@ -23471,9 +23599,9 @@
       return h("section", { className: "SPR_settings SPR_settingsWorkspace" }, items.filter(item => item !== nav && !panels.includes(item)),
         h("nav", { className: "SPR_settingsSidebar", "aria-label": T("设置") },
           h("div", { ...nav?.props, className: "SPR_settingsNav", "aria-orientation": "vertical" }, categories.map(category => h(React.Fragment, { key: category.props.id }, category,
-            category.props.id === active ? h("div", { className: "SPR_settingsChildren" }, groups.map((group, index) => group.props.connections?.length ? h(React.Fragment, { key: index },
+            category.props.id === active ? h("div", { className: "SPR_settingsChildren" }, groups.map((group, index) => group.props.navHidden ? null : group.props.connections ? h(React.Fragment, { key: index },
               group.props.connections.map(entry => h("button", { key: entry.id, id: group.props.editingId === entry.id ? `${panel.props.id}-section-${index}-tab` : undefined, type: "button", className: "SPR_settingsSectionTab", "aria-current": index === selected && group.props.editingId === entry.id ? "page" : undefined, onClick: () => { setSections(value => ({ ...value, [active]: index })); group.props.onSelectConnection(entry.id); } }, entry.name, group.props.activeId === entry.id ? h("span", { className: "SPR_settingsSectionCurrent" }) : null)),
-              h("button", { type: "button", className: "SPR_settingsSectionTab SPR_settingsAddConnection", onClick: () => { setSections(value => ({ ...value, [active]: index })); group.props.onCreateConnection(); } }, h(TaskHeaderIcon, { name: "add" }), T("添加连接")))
+              h(SettingsConnectionAdd, { onCreate: () => { setSections(value => ({ ...value, [active]: index })); group.props.onCreateConnection(); }, onPreset: provider => { setSections(value => ({ ...value, [active]: provider === "ark" ? 0 : 1 })); group.props.onCreatePreset(provider); }, presets: group.props.presets }))
               : h("button", { key: index, id: `${panel.props.id}-section-${index}-tab`, type: "button", className: "SPR_settingsSectionTab", "aria-current": index === selected ? "page" : undefined, onClick: () => setSections(value => ({ ...value, [active]: index })) }, group.props.title, group.props.badge ? h("span", { className: "SPR_settingsSectionCurrent" }) : null))) : null)))),
         h("div", { className: "SPR_settingsContent" }, panels.map(item => item.type === SettingsSections ? React.cloneElement(item, { controlledSection: sections[item.props["aria-labelledby"]] ?? item.props.initialSection, hideNavigation: true }) : item)));
     }
@@ -23790,14 +23918,6 @@
       const connections = storedConfig?.customImageConnections ?? [];
       const edited = connections.find(entry => entry.id === editingConnectionId) || connections.find(entry => entry.id === storedConfig?.activeCustomImageConnectionId) || connections[0];
       const config = React.useMemo(() => edited ? { ...storedConfig, ...edited, customImageBlocker: storedConfig.imageModels?.find(route => route.connectionId === edited.id && route.model === edited.customModel)?.blocker ?? null } : storedConfig, [storedConfig, edited]);
-      const editDraft = connectionDrafts[edited?.id] ?? {};
-      const changeEditDraft = values => setConnectionDrafts(current => ({ ...current, [edited.id]: { ...current[edited.id], ...values } }));
-      const testModel = edited && edited.models.includes(editDraft.testModel) ? editDraft.testModel : edited?.customModel;
-      const testStatus = storedConfig?.imageModelTests?.find(route => route.connectionId === edited?.id && route.provider === "custom" && route.model === (testModel ?? storedConfig.customModel));
-      const customKey = edited ? editDraft.key ?? "" : legacyCustomKey;
-      const setCustomKey = value => edited ? changeEditDraft({ key: value }) : setLegacyCustomKey(value);
-      const workflowDraft = edited ? editDraft.workflow ?? null : legacyWorkflowDraft;
-      const setWorkflowDraft = value => edited ? changeEditDraft({ workflow: value }) : setLegacyWorkflowDraft(value);
 
       const load = React.useCallback(async () => {
         if (api === undefined) return;
@@ -23841,17 +23961,7 @@
         return h("section", { className: "SPR_settings" }, h("p", { className: "SPR_hint" }, T("正在载入配置…")));
       }
 
-      const saveConfiguration = values => {
-        if (!edited) return api.saveConfig(values);
-        const fields = {}, remaining = {};
-        for (const [key, value] of Object.entries(values)) {
-          if (key === "clearCustomApiKey") { if (value) fields["customApiKey"] = ""; }
-          else if (/^custom(Protocol|BaseUrl|ApiKey|Model|Size|NegativePrompt|Steps|CfgScale|Sampler|Denoising|Seed|Workflow|TimeoutMs)$/.test(key)) fields[key] = value;
-          else remaining[key] = value;
-        }
-        return api.saveConfig({ ...remaining, ...(Object.keys(fields).length ? { customConnection: { op: "update", id: edited.id, values: fields } } : {}) });
-      };
-      const patch = values => run(async () => { const next = await saveConfiguration(values); window.dispatchEvent(new Event("gmm-model-config")); return next; }, T("配置已保存"));
+      const patch = values => run(async () => { const next = await api.saveConfig(values); window.dispatchEvent(new Event("gmm-model-config")); return next; }, T("配置已保存"));
       const editConnection = async (op, values = undefined) => {
         const next = await api.saveConfig({ customConnection: { op, ...(op !== "create" ? { id: edited?.id } : {}), values } });
         setConfig(next);
@@ -23916,30 +24026,6 @@
        * 设置只管理连接；输入栏切换实际使用的生图后端与模型，各组配置分别保留。
        */
       const imageProvider = config.imageProvider === "toapis" ? "toapis" : config.imageProvider === "custom" ? "custom" : "ark";
-      const imageStatus = config.imageProviderBlocker
-        ? h("div", { className: "SPR_note", "data-kind": "error" }, T("还不能开跑：{n0}", { n0: config.imageProviderBlocker }))
-        : null;
-      const protocols = config.customProtocols ?? [];
-      const protocolInfo = protocols.find((entry) => entry.id === config.customProtocol);
-      const customProtocol = config.customProtocol ?? "openai";
-      const workflowNow = workflowDraft === null ? config.customWorkflow ?? "" : workflowDraft;
-      const workflowDirty = workflowDraft !== null && workflowDraft !== (config.customWorkflow ?? "");
-      /**
-       * 切换协议时顺手换地址：只有当**当前地址还停在另一个协议的默认值**时才换，
-       * 手动改过的地址一律不动（与 MiniMax 切「优云智算版」同一套判断）。
-       * 不这么做的话，用户从 OpenAI 切到 ComfyUI 会得到一个指向 api.openai.com 的
-       * ComfyUI 配置 —— 点测试才报「连不上」，中间没有任何提示。
-       */
-      const onProtocolChange = (nextProtocol) => {
-        const values: Record<string, unknown> = { customProtocol: nextProtocol };
-        const knownDefaults = protocols.map((entry) => entry.baseUrl);
-        const target = protocols.find((entry) => entry.id === nextProtocol);
-        if (target !== undefined && (config.customBaseUrl === "" || knownDefaults.includes(config.customBaseUrl))) {
-          values.customBaseUrl = target.baseUrl;
-        }
-        void patch(values);
-      };
-
       /**
        * 分类页签。**必须在渲染期构建**：模块级 `T()` 会在 locale 服务挂上之前求值，
        * 之后切英文也永远停在中文（`staticTextRebuilders` 只覆盖模块级文案表）。
@@ -24015,491 +24101,22 @@
                 if (!Array.isArray(next?.imagePromptTemplates)) throw new Error(T("提示词模板未保存成功，请重启DSH后重试。"));
                 setConfig(next); return next.imagePromptTemplates;
               } }) : h("p", { className: "SPR_hint" }, T("重启DSH以加载模板")))),
-        h(
-          SettingsSections,
-          {
-            className: "SPR_settingsPanel",
-            role: "tabpanel",
-            id: "cfg-panel-image",
-            initialSection: imageProvider === "custom" ? 2 : imageProvider === "toapis" ? 1 : 0,
-            "data-testid": "cfg-panel-image",
-            "aria-labelledby": "cfg-tab-image",
-            hidden: activeTab !== "image"
-          },
-        h(
-          SettingsGroup,
-          {
-            title: T("火山方舟（生图）"),
-            badge: imageProvider === "ark" && config.arkImageEnabled !== false ? T("当前使用") : null,
-            lead: imageProvider === "ark" ? imageStatus : null,
-            testId: "cfg-ark-group", enabled: config.arkImageEnabled,
-            onEnabledChange: value => patch({ arkImageEnabled: value })
-          },
-          h(
-            "div",
-            { className: "SPR_keyRow" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("API Key {n0}", { n0: config.arkApiKeySet ? T("（已配置 {n0}）", { n0: config.arkApiKeyHint }) : T("（未配置）") })),
-              h(ConfigKeyInput, {
-                api, keyName: "arkApiKey", isSet: config.arkApiKeySet, resetToken: config,
-                className: "SPR_input",
-                placeholder: config.arkApiKeySet ? T("留空表示不修改") : T("粘贴 ARK_API_KEY"),
-                value: arkKey,
-                onChange: (event) => setArkKey(event.target.value)
-              })
-            ),
-            h(Btn, { disabled: !arkKey.trim(), onClick: () => run(async () => { await api.saveConfig({ arkApiKey: arkKey }); setArkKey(""); }, T("火山方舟 Key 已保存")) }, T("保存 Key")),
-            h(Btn, { disabled: !config.arkApiKeySet, onClick: () => run(() => api.saveConfig({ clearArkApiKey: true }), T("已清除火山方舟 Key")) }, T("清除"))
-          ),
-          h(
-            "div",
-            { className: "SPR_fields" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("生图模型")),
-              h(
-                SettingsSelect,
-                {
-                  className: "SPR_input",
-                  value: config.arkModel,
-                  onChange: (event) => void patch({ arkModel: event.target.value })
-                },
-                (config.arkModels ?? []).map((model) =>
-                  h("option", { key: model.id, value: model.id }, T("{n0}（{n1}）", { n0: model.label, n1: model.id }))
-                ),
-                (config.arkModels ?? []).some((model) => model.id === config.arkModel)
-                  ? null
-                  : h("option", { value: config.arkModel }, T("自定义：{n0}", { n0: config.arkModel }))
-              )
-            ),
-            /**
-             * 部件重绘单独一个模型。
-             *
-             * 拆件与重绘对模型的要求不同：前者是「按提示词画一整张摊平图」，
-             * 后者是「原地改这一小块、保持轮廓」。默认跟随主模型，
-             * 需要时在这里单独指定。
-             */
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("部件重绘模型")),
-              h(
-                SettingsSelect,
-                {
-                  className: "SPR_input",
-                  "data-testid": "cfg-redraw-model",
-                  value: config.arkRedrawModel ?? "",
-                  onChange: (event) => void patch({ arkRedrawModel: event.target.value })
-                },
-                h("option", { value: "" }, T("跟生图模型相同")),
-                (config.arkModels ?? []).map((model) =>
-                  h("option", { key: model.id, value: model.id }, T("{n0}（{n1}）", { n0: model.label, n1: model.id }))
-                )
-              )
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("输出尺寸")),
-              h("input", {
-                className: "SPR_input",
-                value: config.arkSize,
-                onChange: (event) => void patch({ arkSize: event.target.value })
-              }),
-              h("span", { className: "SPR_fieldLabel" }, T("1K / 2K / 4K 由模型决定像素；要固定尺寸请直接填 宽x高"))
-            ),
-            h(
-              "label",
-              { className: "SPR_field SPR_settingsWide" },
-              h("span", { className: "SPR_fieldLabel" }, "Base URL"),
-              h("input", {
-                className: "SPR_input",
-                value: config.arkBaseUrl,
-                onChange: (event) => void patch({ arkBaseUrl: event.target.value })
-              })
-            )
-          ),
-          h(
-            "div",
-            { className: "SPR_toolbar" },
-            h(
-              BusyBtn,
-              {
-                busy: testing === "ark",
-                busyText: T("正在生成测试图…"),
-                disabled: testing !== null || !config.arkApiKeySet || config.arkImageEnabled === false,
-                onClick: () => setTestConfirmation({ run: async () => {
-                  setTesting("ark");
-                  await run(() => api.testArk(), (value) => T("连接正常：{n0} 返回 {n1} 字节图片", { n0: value.model, n1: value.bytes }));
-                  setTesting(null);
-                } })
-              },
-              T("生成测试（计费）")
-            )
-          )
-        ),
-
-
-        h(
-          SettingsGroup,
-          {
-            title: T("ToAPIs（图片）"),
-            hint: T("ToAPIs：图片和视频使用独立的异步协议；每次生成会计费。"),
-            badge: imageProvider === "toapis" && config.toapisImageEnabled !== false ? T("当前使用") : null,
-            lead: imageProvider === "toapis" ? imageStatus : null,
-            testId: "cfg-toapis", enabled: config.toapisImageEnabled,
-            onEnabledChange: value => patch({ toapisImageEnabled: value })
-          },
-          h(
-            "div",
-            { className: "SPR_fields" },
-            h(
-              "label",
-              { className: "SPR_field SPR_settingsWide" },
-              h("span", { className: "SPR_fieldLabel" }, "Base URL"),
-              h("input", {
-                className: "SPR_input",
-                value: config.toapisBaseUrl ?? "",
-                onChange: (event) => void patch({ toapisBaseUrl: event.target.value })
-              })
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("ToAPIs 图片模型")),
-              h("input", {
-                className: "SPR_input",
-                value: config.toapisImageModel ?? "",
-                onChange: (event) => void patch({ toapisImageModel: event.target.value })
-              })
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("ToAPIs 图片尺寸")),
-              h("input", {
-                className: "SPR_input",
-                value: config.toapisImageSize ?? "",
-                onChange: (event) => void patch({ toapisImageSize: event.target.value })
-              })
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("ToAPIs 图片质量")),
-              h("input", {
-                className: "SPR_input",
-                value: config.toapisImageQuality ?? "",
-                onChange: (event) => void patch({ toapisImageQuality: event.target.value })
-              })
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("ToAPIs 图片背景（GPT Image）")),
-              h(
-                SettingsSelect,
-                {
-                  className: "SPR_input",
-                  "data-testid": "cfg-toapis-background",
-                  value: config.toapisImageBackground ?? "auto",
-                  onChange: (event) => void patch({ toapisImageBackground: event.target.value })
-                },
-                h("option", { value: "auto" }, T("自动背景")),
-                h("option", { value: "transparent" }, T("原生透明背景")),
-                h("option", { value: "opaque" }, T("不透明背景"))
-              )
-            ),
-            h(NumField, {
-              label: T("超时（秒）"),
-              value: Math.round((config.toapisTimeoutMs ?? 600000) / 1000),
-              min: 10,
-              max: 3600,
-              onChange: (value) => void patch({ toapisTimeoutMs: value * 1000 })
-            })
-          ),
-          h("p", null, T("透明PNG无需绿幕抠像；MP4视频没有透明通道，视频抽帧仍需背景处理。")),
-          h("p", null, T("国内地址 https://toapis.cn/v1；国际地址 https://toapis.com/v1。")),
-          h(
-            "div",
-            { className: "SPR_keyRow" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("API Key")),
-              h(ConfigKeyInput, {
-                api, keyName: "toapisApiKey", isSet: config.toapisApiKeySet, resetToken: config,
-                className: "SPR_input",
-                value: toapisKey,
-                onChange: (event) => setToapisKey(event.target.value),
-                placeholder: config.toapisApiKeySet ? T("留空表示不修改") : "ToAPIs API Key"
-              })
-            ),
-            h(Btn, { disabled: !toapisKey.trim(), onClick: () => run(async () => { await api.saveConfig({ toapisApiKey: toapisKey }); setToapisKey(""); }, T("ToAPIs Key 已保存")) }, T("保存 Key")),
-            h(Btn, { disabled: !config.toapisApiKeySet, onClick: () => run(() => api.saveConfig({ clearToapisApiKey: true }), T("已清除 ToAPIs Key")) }, T("清除"))
-          ),
-          h("p", { className: "SPR_hint" }, config.toapisApiKeySet ? T("ToAPIs Key 已配置") : T("ToAPIs Key 未配置")),
-          h(BusyBtn, { busy: testing === "toapis", busyText: T("正在生成测试图…"), disabled: testing !== null || !config.toapisApiKeySet || config.toapisImageEnabled === false,
-            onClick: () => setTestConfirmation({ run: async () => { setTesting("toapis"); await run(() => api.testToapisImage({ confirmed: true }), value => T("连接正常：{n0} 返回 {n1} 字节图片", { n0: value.model, n1: value.bytes })); setTesting(null); } }) }, T("生成测试（计费）"))
-        ),
-
-        /**
-         * 自定义生图后端。
-         *
-         * 三种协议共用一套表单，只有「高级参数」和「工作流」按协议显示——
-         * 每个协议单独一块的话，用户切换协议时会看到完全换了一套界面，
-         * 反而不知道哪些是共通的。
-         */
-        h(
-          SettingsGroup,
-          {
-            title: T("自定义生图模型"),
-            hint: T("填「主机根地址」即可，具体端点由插件按协议拼；本地服务通常不需要 API Key。"),
-            badge: imageProvider === "custom" && edited?.id === storedConfig.activeCustomImageConnectionId && edited?.enabled !== false ? T("当前使用") : null,
-            lead: imageProvider === "custom" && edited?.id === storedConfig.activeCustomImageConnectionId ? imageStatus : null,
-            testId: "cfg-custom-group", connections, editingId: edited?.id, activeId: connections.find(entry => entry.id === storedConfig.activeCustomImageConnectionId)?.enabled === false ? null : storedConfig.activeCustomImageConnectionId,
+        h(SettingsSections, { className: "SPR_settingsPanel", role: "tabpanel", id: "cfg-panel-image", "data-testid": "cfg-panel-image", "aria-labelledby": "cfg-tab-image", hidden: activeTab !== "image",
+          initialSection: imageProvider === "custom" || !(config.imageConnectionPresets ?? []).includes(imageProvider) ? 2 : imageProvider === "toapis" ? 1 : 0 },
+          h(SettingsGroup, { title: T("火山方舟"), testId: "cfg-ark-group", navHidden: !(config.imageConnectionPresets ?? []).includes("ark"), enabled: config.arkImageEnabled, onEnabledChange: value => patch({ arkImageEnabled: value }) },
+            h(ImageConnectionForm, { api, config: storedConfig, provider: "ark", onUpdate: setConfig })),
+          h(SettingsGroup, { title: "ToAPIs", testId: "cfg-toapis", navHidden: !(config.imageConnectionPresets ?? []).includes("toapis"), enabled: config.toapisImageEnabled, onEnabledChange: value => patch({ toapisImageEnabled: value }) },
+            h(ImageConnectionForm, { api, config: storedConfig, provider: "toapis", onUpdate: setConfig })),
+          h(SettingsGroup, { title: edited?.name || T("生图连接"), testId: "cfg-custom-group", connections, editingId: edited?.id,
+            activeId: connections.find(entry => entry.id === storedConfig.activeCustomImageConnectionId)?.enabled === false ? null : storedConfig.activeCustomImageConnectionId,
             enabled: edited?.enabled, onEnabledChange: edited ? value => run(() => editConnection("update", { enabled: value }), T("配置已保存")) : undefined,
-            onSelectConnection: setEditingConnectionId,
-            onCreateConnection: () => void run(() => editConnection("create", { name: T("连接 {n0}", { n0: connections.length + 1 }) }), T("配置已保存"))
-          },
-          h("div", { className: "SPR_connectionToolbar" },
-            edited ? h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("连接名称")), h("input", { key: edited.id + ":name", className: "SPR_input", "aria-label": T("连接名称"), defaultValue: edited.name, onBlur: event => { if (event.target.value.trim() && event.target.value.trim() !== edited.name) void run(() => editConnection("update", { name: event.target.value.trim() }), T("配置已保存")); } })) : null,
-            !connections.length ? h(Btn, { onClick: () => void run(() => editConnection("create", { name: T("连接 {n0}", { n0: connections.length + 1 }) }), T("配置已保存")) }, T("添加连接")) : null,
-            edited ? h(React.Fragment, null,
-              h(Btn, { onClick: () => void run(() => editConnection("duplicate", { name: T("{n0} 副本", { n0: edited.name }) }), T("配置已保存")) }, T("复制")),
-              h(Btn, { onClick: () => setConnectionConfirmation(edited.id) }, T("删除连接"))) : null),
-          h(
-            "div",
-            { className: "SPR_fields" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("协议")),
-              h(
-                SettingsSelect,
-                {
-                  className: "SPR_input",
-                  "data-testid": "cfg-custom-protocol",
-                  value: customProtocol,
-                  onChange: (event) => onProtocolChange(event.target.value)
-                },
-                protocols.length > 0
-                  ? protocols.map((entry) => h("option", { key: entry.id, value: entry.id }, entry.label))
-                  : [
-                      h("option", { key: "openai", value: "openai" }, "OpenAI API"),
-                      h("option", { key: "comfyui", value: "comfyui" }, "ComfyUI API"),
-                      h("option", { key: "sdwebui", value: "sdwebui" }, "Stable Diffusion WebUI API")
-                    ]
-              )
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h(
-                "span",
-                { className: "SPR_fieldLabel" },
-                customProtocol === "sdwebui" ? T("模型名（SD WebUI 忽略，模型由服务端决定）") : edited ? T("可用模型（每行一个）") : T("模型名")
-              ),
-              h(edited ? "textarea" : "input", {
-                className: edited ? "SPR_area" : "SPR_input", rows: 3,
-                "data-testid": "cfg-custom-model",
-                value: edited ? editDraft.models ?? edited.models.join("\n") : config.customModel ?? "",
-                disabled: customProtocol === "sdwebui",
-                placeholder: customProtocol === "comfyui" ? T("可不填，由工作流决定") : "gpt-image-1",
-                onChange: event => edited ? changeEditDraft({ models: event.target.value }) : void patch({ customModel: event.target.value }),
-                onBlur: event => { if (edited && editDraft.models !== undefined) {
-                  const models = [...new Set(event.target.value.split(/[,，\n]/).map(value => value.trim()).filter(Boolean))];
-                  const submitted = event.target.value;
-                  void run(async () => {
-                    await editConnection("update", { models, customModel: models.includes(edited.customModel) ? edited.customModel : models[0] || "" });
-                    setConnectionDrafts(current => current[edited.id]?.models === submitted ? { ...current, [edited.id]: { ...current[edited.id], models: undefined } } : current);
-                  }, T("配置已保存"));
-                } }
-              })
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("输出尺寸（宽x高）")),
-              h("input", {
-                className: "SPR_input",
-                "data-testid": "cfg-custom-size",
-                value: config.customSize ?? "",
-                placeholder: "1024x1024",
-                onChange: (event) => void patch({ customSize: event.target.value })
-              })
-            ),
-            h(
-              "label",
-              { className: "SPR_field SPR_settingsWide" },
-              h("span", { className: "SPR_fieldLabel" }, "Base URL"),
-              h("input", {
-                className: "SPR_input",
-                "data-testid": "cfg-custom-base-url",
-                value: config.customBaseUrl ?? "",
-                placeholder: protocolInfo?.baseUrl ?? "",
-                onChange: (event) => void patch({ customBaseUrl: event.target.value })
-              })
-            ),
-          ),
-          h("p", { className: "SPR_hint" }, T("请求端点：{n0}", { n0: protocolInfo?.hint ?? "" })),
-          h(
-            "div",
-            { className: "SPR_keyRow" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("API Key {n0}", { n0: config.customApiKeySet ? T("（已配置 {n0}）", { n0: config.customApiKeyHint }) : T("（未配置，本地服务可以留空）") })),
-              h(ConfigKeyInput, {
-                api, keyName: "customApiKey", connectionId: edited?.id, isSet: config.customApiKeySet, resetToken: config,
-                className: "SPR_input",
-                placeholder: config.customApiKeySet ? T("留空表示不修改") : T("粘贴 API Key（A1111 的 user:pass 也认）"),
-                value: customKey,
-                onChange: (event) => setCustomKey(event.target.value)
-              })
-            ),
-            h(Btn, { disabled: !customKey.trim(), onClick: () => run(async () => { await saveConfiguration({ customApiKey: customKey }); setCustomKey(""); }, T("自定义后端 Key 已保存")) }, T("保存 Key")),
-            h(Btn, { disabled: !config.customApiKeySet, onClick: () => run(() => saveConfiguration({ clearCustomApiKey: true }), T("已清除自定义后端 Key")) }, T("清除"))
-          ),
-
-          /**
-           * 高级参数：OpenAI 协议不认这些（它只有 prompt / size / n），
-           * 所以那一档不显示，免得用户以为调了有用。
-           */
-          customProtocol === "sdwebui" || customProtocol === "comfyui"
-            ? h(
-                "div",
-                { className: "SPR_fields" },
-                h("label", { className: "SPR_field" },
-                  h("span", { className: "SPR_fieldLabel" }, T("负面提示词")),
-                  h("input", {
-                    className: "SPR_input",
-                    value: config.customNegativePrompt ?? "",
-                    placeholder: customProtocol === "comfyui" ? T("走 {{negative_prompt}} 占位符") : "",
-                    onChange: (event) => void patch({ customNegativePrompt: event.target.value })
-                  })
-                ),
-                h(NumField, {
-                  label: T("采样步数"),
-                  value: config.customSteps ?? 28,
-                  min: 1,
-                  max: 150,
-                  onChange: (value) => void patch({ customSteps: value })
-                }),
-                h(NumField, {
-                  label: T("CFG / 引导强度"),
-                  value: config.customCfgScale ?? 7,
-                  min: 0,
-                  max: 30,
-                  onChange: (value) => void patch({ customCfgScale: value })
-                }),
-                h("label", { className: "SPR_field" },
-                  h("span", { className: "SPR_fieldLabel" }, T("采样器")),
-                  h("input", {
-                    className: "SPR_input",
-                    value: config.customSampler ?? "",
-                    placeholder: "DPM++ 2M Karras",
-                    onChange: (event) => void patch({ customSampler: event.target.value })
-                  })
-                ),
-                customProtocol === "sdwebui"
-                  ? h(NumField, {
-                      label: T("图生图重绘强度（0~1）"),
-                      value: config.customDenoising ?? 0.65,
-                      min: 0,
-                      max: 1,
-                      step: 0.05,
-                      onChange: (value) => void patch({ customDenoising: value })
-                    })
-                  : null,
-                h(NumField, {
-                  label: T("随机种子（-1 = 每次随机）"),
-                  value: config.customSeed ?? -1,
-                  min: -1,
-                  max: 2147483647,
-                  onChange: (value) => void patch({ customSeed: value })
-                })
-              )
-            : null,
-
-          // 超时对所有协议都有效（云端 OpenAI 也可能很慢），所以放在条件块外面。
-          h(NumField, {
-            label: T("请求超时（毫秒，本地模型建议给足）"),
-            value: config.customTimeoutMs ?? 300000,
-            min: 10000,
-            max: 3600000,
-            onChange: (value) => void patch({ customTimeoutMs: value })
-          }),
-
-          /**
-           * ComfyUI 的工作流。必须整段粘贴 API 格式的 JSON —— 从界面导出的
-           * 「工作流」格式（带 nodes / links 的那份）不是 API 格式，提交会直接 400。
-           */
-          customProtocol === "comfyui"
-            ? h(
-                "div",
-                null,
-                h("p", { className: "SPR_hint" }, T("工作流（在 ComfyUI 里点「导出（API）」，把那份 JSON 整段粘贴）。可用占位符：{{prompt}} {{negative_prompt}} {{width}} {{height}} {{seed}} {{steps}} {{cfg}} {{sampler}} {{denoising}} {{model}} {{image}}；一个都不写就原样跑你保存的工作流。")),
-                h("textarea", {
-                  className: "SPR_area",
-                  "data-testid": "cfg-custom-workflow",
-                  placeholder: '{"3":{"class_type":"KSampler","inputs":{"seed":"{{seed}}","steps":"{{steps}}","cfg":"{{cfg}}","sampler_name":"{{sampler}}","denoise":"{{denoising}}","model":["4",0],"positive":["6",0],"negative":["7",0],"latent_image":["5",0]}},"6":{"class_type":"CLIPTextEncode","inputs":{"text":"{{prompt}}","clip":["4",1]}}}',
-                  value: workflowNow,
-                  onChange: (event) => setWorkflowDraft(event.target.value)
-                }),
-                h(
-                  "div",
-                  { className: "SPR_toolbar" },
-                  h(
-                    Btn,
-                    {
-                      disabled: !workflowDirty,
-                      onClick: () => run(async () => {
-                        await saveConfiguration({ customWorkflow: workflowNow });
-                        setWorkflowDraft(null);
-                      }, T("工作流已保存"))
-                    },
-                    workflowDirty ? T("保存工作流") : T("工作流已保存")
-                  ),
-                  h(
-                    Btn,
-                    {
-                      onClick: () => {
-                        setWorkflowDraft("");
-                        void patch({ customWorkflow: "" });
-                      }
-                    },
-                    T("清空")
-                  )
-                )
-              )
-            : null,
-
-          h(
-            "div",
-            { className: "SPR_toolbar SPR_connectionTestRow" },
-            edited && edited.models.length > 1 ? h(SettingsSelect, { "aria-label": T("测试模型"), value: testModel, disabled: testing !== null, onChange: event => changeEditDraft({ testModel: event.target.value }) }, edited.models.map(model => h("option", { key: model, value: model }, model))) : null,
-            h("span", { className: "SPR_connectionStatus", "data-state": testStatus?.testState || "untested" }, testStatus?.testState === "passed" ? T("测试通过") : testStatus?.testState === "failed" ? T("测试失败") : T("未测试")),
-            h(
-              BusyBtn,
-              {
-                busy: testing === "custom",
-                busyText: T("正在生成测试图…"),
-                disabled: testing !== null || config.customImageBlocker != null || edited?.enabled === false,
-                onClick: () => setTestConfirmation({ run: async () => {
-                  setTesting("custom");
-                  await run(() => api.testCustomImage(edited ? { connectionId: edited.id, model: testModel, confirmed: true } : undefined), (value) => T("连接正常：{n0} 返回 {n1} 字节图片", { n0: value.provider, n1: value.bytes }));
-                  setTesting(null);
-                } })
-              },
-              T("生成测试（计费）")
-            )
-          )
-        ),
-        ),
+            actions: edited ? h(ImageResultMenu, { label: T("更多") },
+              h(Btn, { role: "menuitem", onClick: () => void run(() => editConnection("duplicate", { name: T("{n0} 副本", { n0: edited.name }) }), T("配置已保存")) }, h(ProjectActionIcon, { name: "copy" }), T("复制连接")),
+              h(Btn, { role: "menuitem", onClick: () => setConnectionConfirmation(edited.id) }, h(ProjectActionIcon, { name: "delete" }), T("删除连接"))) : null,
+            onSelectConnection: setEditingConnectionId, presets: config.imageConnectionPresets ?? [],
+            onCreatePreset: provider => void run(() => api.saveConfig({ imageConnectionPresets: [...new Set([...(config.imageConnectionPresets ?? []), provider])], [provider === "ark" ? "arkImageEnabled" : "toapisImageEnabled"]: false }), T("配置已保存")),
+            onCreateConnection: () => void run(() => editConnection("create", { name: T("连接 {n0}", { n0: connections.length + 1 }) }), T("配置已保存")) },
+            connections.length ? connections.map(entry => h("div", { key: entry.id, hidden: entry.id !== edited?.id }, h(ImageConnectionForm, { api, config: storedConfig, provider: "custom", connection: entry, onUpdate: setConfig }))) : h(ImageConnectionForm, { api, config: storedConfig, provider: "custom", onUpdate: setConfig }))),
 
         h(
           SettingsSections,
@@ -25406,7 +25023,7 @@
         getConfig: () => call("getConfig"),
         revealConfigKey: (payload) => call("revealConfigKey", payload),
         saveConfig: (payload) => call("saveConfig", payload),
-        testArk: () => call("testArk"),
+        testArk: (payload) => call("testArk", payload),
         testCustomImage: (payload) => call("testCustomImage", payload),
         testToapisImage: (payload) => call("testToapisImage", payload),
         testPromptOptimizerModel: (payload) => call("testPromptOptimizerModel", payload),
@@ -25706,7 +25323,7 @@
      * 必须有守门的，否则「预览与导出错位」会以静默的方式回来。
      */
     bundleModule.exports.__test = { createVideoSubmitter, StudioPanel, JobSidebar, ImageTaskDialog, ImageResultsEmpty, readImageTaskPreferences, MotionModule, MotionAnimationPreview, IsoModule, ImageModule, SequenceModule, mergeDrafts, RigSemanticsPanel, MapModule, MusicModule, SfxModule, ISO_pointToCell, ISO_cellCenter, ISO_cellTopLeft, ISO_lineCells, MAP_pointToCell, MAP_cellAnchor, MAP_cellTopLeft, MAP_lineCells, usePendingTasks, LoadingOverlay, MediaBox, BusyBtn, BusyBadge, NumField, ZoomableImage, CSS, subscribeIntent, parseIntents, openStudioIntent, OPEN_QUERY_KEY, StudioGlyph, StudioGlyphIcon, SidebarToggleIcon, publishHiddenModules, publishModuleOrder, readLastStudioModule, rememberStudioModule, readLastSidebarCollapsed, rememberSidebarCollapsed, useHiddenModules, visibleModulesOf, normalizeHiddenKeys, ConfigSection, attachSessionBridge, openAssetChat, openMusicChat, buildAssetRequestPrompt, buildIsoAssetRequestPrompt, buildMusicRequestPrompt, buildComposeRequestPrompt, openIsoAssetChat, deriveAssetName, deriveMusicName, ASSET_FRAMES_MIN, ASSET_FRAMES_MAX };
-    Object.assign(bundleModule.exports.__test, { ImageModelPicker, AudioModule, AudioTimeline, AudioPlayer, AudioChoice, AudioPanel, AudioConfirm, MusicWorkspace, MusicSongResult, SfxWorkspace, musicConversationRounds, sfxConversationRounds, musicAssetUrl, musicDownloadUrl, writeAudioState });
+    Object.assign(bundleModule.exports.__test, { ImageModelEditor, ImageConnectionForm, ImageModelPicker, AudioModule, AudioTimeline, AudioPlayer, AudioChoice, AudioPanel, AudioConfirm, MusicWorkspace, MusicSongResult, SfxWorkspace, musicConversationRounds, sfxConversationRounds, musicAssetUrl, musicDownloadUrl, writeAudioState });
     bundleModule.exports.__test.NoticePopup = NoticePopup;
     bundleModule.exports.__test.imageFolderGroups = imageFolderGroups;
     bundleModule.exports.__test.ImageSidebarInfo = ImageSidebarInfo;

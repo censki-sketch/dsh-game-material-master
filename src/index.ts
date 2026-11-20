@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { appendJobLog } from "./jsonio.js";
-import { ARK_MODEL_PRESETS, CUSTOM_PROTOCOLS, CUSTOM_PROTOCOL_DEFAULTS, DEFAULT_CONFIG, ROW_ORDER_VERSION, MINIMAX_HOST_PRESETS, MINIMAX_MODEL_PRESETS, customConnectionConfig, loadConfig, maskConfig, migrateLegacyDataRoot, projectsRoot, imageJobsRoot, saveConfig } from "./config.js";
+import { ARK_MODEL_PRESETS, CUSTOM_PROTOCOLS, CUSTOM_PROTOCOL_DEFAULTS, DEFAULT_CONFIG, ROW_ORDER_VERSION, MINIMAX_HOST_PRESETS, MINIMAX_MODEL_PRESETS, builtinModelConfig, customConnectionConfig, loadConfig, maskConfig, migrateLegacyDataRoot, projectsRoot, imageJobsRoot, saveConfig } from "./config.js";
 import {
   DEFAULT_ROW_ORDER,
   DIRECTION_KEYS,
@@ -379,6 +379,7 @@ export class GameStudioGateway extends TypertRemoteService {
     const input = asRecord(payload);
     const patch: any = {};
     const directKeys = [
+      "imageConnectionPresets",
       "arkImageEnabled",
       "toapisImageEnabled",
       "allowPaidVideoGeneration",
@@ -476,6 +477,7 @@ export class GameStudioGateway extends TypertRemoteService {
         patch[key] = input[key];
     }
     if (input.customConnection !== undefined) patch.customConnection = asRecord(input.customConnection);
+    if (input.imageModelEdit !== undefined) patch.imageModelEdit = asRecord(input.imageModelEdit);
     if (input.imagePromptTemplates !== undefined) patch.imagePromptTemplates = validateImagePromptTemplates(input.imagePromptTemplates);
     if (typeof input.toapisApiKey === "string") patch.toapisApiKey = input.toapisApiKey.trim();
     if (input.clearToapisApiKey === true) patch.toapisApiKey = "";
@@ -513,8 +515,12 @@ export class GameStudioGateway extends TypertRemoteService {
     clearScoreDepsCache();
     return this.decorateConfig(saved);
   }
-  async testArk() {
-    const config = await loadConfig();
+  async testArk(input?) {
+    const current = await loadConfig();
+    if (input?.model && input.confirmed !== true) throw new Error("请确认测试会真实生成一张图片并计费。");
+    const config = input?.model ? builtinModelConfig(current, "ark", input.model) : current;
+    const blocker = imageProviderBlocker({ ...config, imageProvider: "ark" });
+    if (blocker) throw new Error(blocker);
     if (config.arkImageEnabled === false) throw new Error("所选生图连接已停用，请在设置中启用或选择其他模型。");
     if (config.arkApiKey.trim() === "")
       throw new Error("尚未配置火山方舟 API Key");
@@ -536,7 +542,8 @@ export class GameStudioGateway extends TypertRemoteService {
   }
   async testToapisImage(input) {
     if (input.confirmed !== true) throw new Error("请确认测试会真实生成一张图片并计费。");
-    const config = { ...await loadConfig(), imageProvider: "toapis" as const };
+    const current = await loadConfig();
+    const config = builtinModelConfig(current, "toapis", input.model || current.toapisImageModel);
     const blocker = imageProviderBlocker(config);
     if (blocker) throw new Error(blocker);
     return runModelTest(imageTestFingerprint(config, "toapis"), async () => {

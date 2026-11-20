@@ -305,8 +305,12 @@ async function main() {
 
   // 假接口配置仍需用户手动打开付费开关；工具本身不能开启。
   await studio.saveConfig({ allowPaidVideoGeneration: true, arkApiKey: "sk-verify-tools", minimaxApiKey: "mm-verify-tools" });
+  const keyOnly = await run("game_material_intake", { module: "sprite" });
+  check("只配置 Key 时仍要求手动添加模型", keyOnly.blockers.some(text => /模型/.test(text)));
+  await studio.saveConfig({ imageModelEdit: { provider: "ark", op: "create", values: { id: "verify-tools-ark", enabled: true } } });
+  await studio.saveConfig({ arkModel: "verify-tools-ark" });
   const withKey = await run("game_material_intake", { module: "sprite" });
-  check("配好 Key 后不再报 blocker", withKey.blockers.length === 0, withKey.blockers.join("；"));
+  check("配置 Key 和模型后不再报 blocker", withKey.blockers.length === 0, withKey.blockers.join("；"));
 
   const { projectId } = await studio.createProject({ name: "对话调用自检项目" });
   const withProject = await run("game_material_intake", { module: "sprite", id: projectId });

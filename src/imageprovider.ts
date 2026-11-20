@@ -14,7 +14,7 @@
 
 import { assertToapisReady, generateToapisImage } from "./toapis.js";
 import { generateImage, type ArkResult } from "./ark.js";
-import { CUSTOM_PROTOCOL_DEFAULTS, customConnectionConfig, loadConfig, type Config } from "./config.js";
+import { CUSTOM_PROTOCOL_DEFAULTS, builtinModelConfig, customConnectionConfig, loadConfig, type Config } from "./config.js";
 import { CustomImageError, generateCustomImage } from "./customimage.js";
 
 export interface ProviderImageRequest {
@@ -56,11 +56,11 @@ export function imageModelOf(config: Config): string {
 }
 
 export function imageModelRoutes(config: Config) {
-  const builtins = (["ark", "toapis"] as const).filter(provider => (provider === "ark" ? config.arkImageEnabled : config.toapisImageEnabled) !== false).map(provider => {
-    const route = { ...config, imageProvider: provider };
-    return { provider: provider as Config["imageProvider"], model: imageModelOf(route), blocker: imageProviderBlocker(route) ?? null, connectionId: undefined as string | undefined, name: "" };
-  });
-  const custom = config.customImageConnections.filter(entry => entry.enabled !== false).flatMap(entry => (entry.models.length ? entry.models : [entry.customModel]).map(model => ({ provider: "custom" as const, connectionId: entry.id, name: entry.name, model, blocker: customImageBlocker(customConnectionConfig(config, entry.id, model)) ?? null })));
+  const builtins = (["ark", "toapis"] as const).filter(provider => (provider === "ark" ? config.arkImageEnabled : config.toapisImageEnabled) !== false).flatMap(provider => (provider === "ark" ? config.arkImageModels : config.toapisImageModels).filter(model => model.enabled).map(model => {
+    const route = builtinModelConfig(config, provider, model.id);
+    return { provider: provider as Config["imageProvider"], model: model.id, label: model.name, blocker: imageProviderBlocker(route) ?? null, connectionId: undefined as string | undefined, name: "" };
+  }));
+  const custom = config.customImageConnections.filter(entry => entry.enabled !== false).flatMap(entry => [...entry.modelConfigs].sort((a,b) => Number(b.id === entry.customModel) - Number(a.id === entry.customModel)).filter(model => model.enabled).map(model => ({ provider: "custom" as const, connectionId: entry.id, name: entry.name, model: model.id, label: model.name, blocker: customImageBlocker(customConnectionConfig(config, entry.id, model.id)) ?? null })));
   return [...builtins, ...custom];
 }
 
@@ -78,13 +78,15 @@ export function imageWatermarkOf(config: Config): boolean {
 
 /** 当前请求超时。 */
 export function imageTimeoutOf(config: Config): number {
-  if (config.imageProvider === "toapis") return config.toapisTimeoutMs;
+  if (config.imageProvider === "toapis") return config.toapisImageModels.find(model => model.id === config.toapisImageModel)?.params.timeoutMs as number ?? config.toapisTimeoutMs;
   return isCustomProvider(config) ? config.customTimeoutMs : config.arkTimeoutMs;
 }
 
 /** 自定义后端自己的必填项检查（不看 `imageProvider`，供「测试连接」按钮用）。 */
 export function customImageBlocker(config: Config): string | undefined {
   if (config.customImageConnections.some(entry => entry.id === config.activeCustomImageConnectionId && entry.enabled === false)) return "所选生图连接已停用，请在设置中启用或选择其他模型。";
+  const connection = config.customImageConnections.find(entry => entry.id === config.activeCustomImageConnectionId);
+  if (connection && !connection.modelConfigs.some(model => model.id === config.customModel && model.enabled)) return "所选模型已停用或移除，请选择其他模型。";
   if (config.customBaseUrl.trim() === "") {
     return "尚未配置自定义生图服务的地址（设置 → 游戏素材大师 → 生图 → 自定义生图模型）";
   }
@@ -105,12 +107,14 @@ export function customImageBlocker(config: Config): string | undefined {
  */
 export function imageProviderBlocker(config: Config): string | undefined {
   if ((config.imageProvider === "ark" && config.arkImageEnabled === false) || (config.imageProvider === "toapis" && config.toapisImageEnabled === false)) return "所选生图连接已停用，请在设置中启用或选择其他模型。";
-  if (config.imageProvider === "toapis") {try {assertToapisReady(config);return undefined;} catch(error) {return String((error as Error).message);}}
+  if (config.imageProvider === "toapis") {try {assertToapisReady(config);} catch(error) {return String((error as Error).message);} return config.toapisImageModels.some(model => model.id === config.toapisImageModel && model.enabled) ? undefined : "所选模型已停用或移除，请选择其他模型。";}
   if (!isCustomProvider(config)) {
     if (config.arkApiKey.trim() === "") {
       return "尚未配置火山方舟 API Key（设置 → 游戏素材大师 → 生图 → 火山方舟）";
     }
     if (config.arkModel.trim() === "") return "尚未配置火山方舟的生图模型 ID";
+    const model = config.arkImageModels.find(item => item.id === config.arkModel);
+    if (model?.enabled === false || (!model && config.arkModel !== config.arkRedrawModel)) return "所选模型已停用或移除，请选择其他模型。";
     return undefined;
   }
   return customImageBlocker(config);
@@ -132,7 +136,9 @@ export function imageProviderSummary(config: Config): string {
 
 /** 调一次生图，自动按当前后端分发。 */
 export async function generateImageWithProvider(request: ProviderImageRequest, signal?: AbortSignal, configuration?: Config): Promise<ProviderImageResult> {
-  const config = configuration ?? await loadConfig();
+  let config = configuration ?? await loadConfig();
+  if (config.imageProvider !== "custom") config = builtinModelConfig(config, config.imageProvider, request.model?.trim() || imageModelOf(config));
+  else if (request.model?.trim()) config = customConnectionConfig(config, config.activeCustomImageConnectionId, request.model.trim());
   assertImageProviderReady(config);
   if (request.mask && !(config.imageProvider === "custom" && config.customProtocol === "openai")) throw new Error("当前生图后端不支持带遮罩的高清重绘");
   if (config.imageProvider === "toapis") return generateToapisImage(config, request, signal);
@@ -146,7 +152,7 @@ export async function generateImageWithProvider(request: ProviderImageRequest, s
         prompt: request.prompt,
         images: request.images,
         mask: request.mask,
-        quality: request.quality,
+        quality: request.quality ?? config.customQuality,
         size: request.size,
         timeoutMs: request.timeoutMs ?? config.customTimeoutMs,
         negativePrompt: config.customNegativePrompt,
@@ -191,6 +197,7 @@ export async function testCustomImage(configuration?: Config): Promise<{ ok: tru
     baseUrl: config.customBaseUrl,
     apiKey: config.customApiKey,
     model: config.customModel,
+    quality: config.customQuality,
     prompt: "一张纯绿色背景的空白测试图，画面中只有一个居中的小圆点",
     images: [],
     size: config.customSize,

@@ -7,13 +7,17 @@
 
 ## 设置导航与多连接生图（2026-11-20）
 
-`Config.customImageConnections` 保存具备宿主 UUID 的连接（name、models 及 CUSTOM_IMAGE_FIELDS），`activeCustomImageConnectionId` 选择生成连接。归一化时将活动连接投影到旧 `custom*` 字段，所有模块继续经过 `generateImageWithProvider`。旧版平铺配置迁移到 legacy 连接；显式空数组不重新迁移。删除最后一个连接时清除平铺凭据，避免旧调用方编辑时复活已删 Key。`saveConfig` 串行写入，以免并发更新丢字段；连接增删改复制通过 `customConnection` 操作，禁止直接透传含密钥数组。
+`Config.customImageConnections` 保留多连接的 UUID、凭据和连接默认值，新增 `modelConfigs`（`ImageModelDefinition[]`）；旧 `models: string[]` 继续提供兼容投影。内置协议分别使用 `arkImageModels` / `toapisImageModels`；`imageConnectionPresets` 控制设置左侧是否展示预设入口。新增连接为空模型列表、默认停用，模型由用户手动添加；旧模型及参数自动迁移，显式空数组不重新补模型；旧版未填模型名的 ComfyUI / SD WebUI 连接迁移为 `default` 本地条目，原工作流内容保留。
 
-生图启用状态分别由 `arkImageEnabled`、`toapisImageEnabled` 与每个连接的 `enabled` 控制。旧配置缺字段时保持启用，新增自定义连接默认停用；复制保留原状态。`imageModelRoutes` 仅列出启用连接，空目录不添加兜底项；`imageModelChoices` 尊重明确的空数组，触发器不再显示已停用的当前模型。停用后保留原选择但由统一分发与测试入口在请求前拦截，不暗中改用其他付费服务。ToAPIs 图片与视频开关独立。`SettingsEnableSwitch` 乐观更新视觉状态并等待保存，失败时恢复；模型目录的停用状态跨进程保留。动态目录变空时，菜单仍能通过 Escape 或点击外部关闭。
+`src/imagemodels.ts` 负责模型 ID、名称、启用状态与参数验证。`saveConfig.imageModelEdit` 串行执行新增、更新和删除，按连接拒绝重复 ID，校验参数类型、数值范围及协议能力；不能在模型参数中写入凭据或任意配置字段。模型 ID 改名同步当前选择，删除当前模型保留失效选择并阻止新请求，不静默切换。旧平铺字段仍兼容已有工具调用。配置继续由 `saveConfig` 串行落盘，凭据不进入直接透传白名单。
 
-普通配置视图对每个连接脱敏；`revealConfigKey` 仅客户端显式读取，并带 connectionId。测试 API 接受连接和模型，显式指定连接时强制 confirmed，测试不会改变全局选择。`imageModelRoutes` 提供唯一的模型目录与缺项状态；测试 fingerprint 包含连接 ID、地址、Key、模型、协议与工作流，不落盘明文。复制连接不继承测试通过记录。
+`customConnectionConfig` 与 `builtinModelConfig` 统一计算模型参数；自定义模型以连接默认值为基础，内置协议以默认参数为基础，随后叠加模型配置。切换模型不能继承上个模型的质量、尺寸或超时。所有生成仍经过 `generateImageWithProvider`，它同时拦截停用的连接与模型。`imageModelRoutes` 只列出启用项，保留 API ID 与显示名称；客户端尊重空目录，不补旧当前模型。ToAPIs 图片开关不影响视频或共享 Key；图片模型的超时仅在图片请求快照内覆盖，不改写视频共用的连接超时。
 
-`SettingsLayout` 将分类与连接合为左侧导航；各 `SettingsSections` 表单保留挂载，按类别记住子项。Key、模型列表、工作流草稿按连接隔离；模型列表失焦保存，异步完成只清除已提交的草稿，保留后续输入。设置页隐藏业务页签和右上按钮，标题左箭头回原模块，窄屏也保持同排。普通设置入口及重新进入均默认选择首个 image 分类；管理模板等定向入口仍显式指定目标分类。`SettingsSelect` 复用 `AudioChoice` / `ImageResultMenu`，设置内无原生 select；高级字段和说明默认收起。Ark、自定义、ToAPIs 生图测试与音效测试均先经过主题计费确认，元数据读取不会生成。
+普通配置视图对每个连接脱敏；`revealConfigKey` 仅客户端显式读取并带 connectionId。测试请求支持准确的连接和模型，不改变全局选择，客户端与 wire 均须透传模型 payload。测试 fingerprint 包含连接、协议、凭据、模型及有效参数；改名称或开关不作废证据，参数与凭据变化需重测。复制连接不继承测试记录。测试证据只存散列，不落盘明文凭据。
+
+`ImageConnectionForm` 复用连接表单和模型列表，所有自定义连接保持挂载，切换时只隐藏，避免丢失 Key 草稿。`ImageModelEditor` 使用主题弹窗、右上关闭图标、底部保存按钮与默认折叠的高级配置；模型编辑、添加、切换、开关、读取均不联网生成。删除与收费测试通过 `AudioConfirm` 二次确认，图标说明复用 `DescriptionTip` 主题浮层。协议切换仅在地址仍为已知默认值时更换地址，手动填写的地址保留。
+
+`SettingsLayout` 共用单层左侧导航。设置页隐藏业务页签，标题左箭头返回原模块；普通进入及重新进入默认 image 分类，定向模板入口仍进入 prompts。`SettingsSelect` 复用 `AudioChoice` / `ImageResultMenu`，展开态无原生 select；浅深主题、390/720/1280 宽度、编辑器高度边界、键盘与关闭行为均有浏览器回归。
 
 验证：`verify-model-tests.mjs` 使用真实网关与 wire、假图片服务验证多连接凭据隔离、路由、复制、删除、并发写入、重启和测试状态；`verify-settings-browser.mjs` 使用真实 Chromium、真实本地网关和假接口验证导航、连接草稿、模型选择、计费确认、浅深主题及窄屏边界。需要本地 React UMD fixtures 和 Playwright，环境变量与 `verify-audio-browser.mjs` 一致。不得使用真实 Key 或付费服务验证。宿主、wire 与客户端同时变更，使用方需完全退出 DSH（含托盘）后重开。
 

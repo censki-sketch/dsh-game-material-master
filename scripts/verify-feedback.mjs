@@ -1597,6 +1597,11 @@ section("功能管理（隐藏模块）");
   check("设置页组件已注册", typeof ConfigSection === "function", typeof ConfigSection);
   if (typeof ConfigSection === "function") {
     const featureConfig = {
+      imageConnectionPresets: ["ark", "toapis"],
+      arkImageModels: [{ id: "seedream", name: "Seedream", enabled: true, params: {} }],
+      toapisImageModels: [{ id: "gpt-image", name: "GPT", enabled: true, params: {} }],
+      activeCustomImageConnectionId: "test-custom",
+      customImageConnections: [{ id: "test-custom", name: "测试连接", enabled: true, customProtocol: "openai", customBaseUrl: "https://api.openai.com/v1", customModel: "gpt-image-1", models: ["gpt-image-1"], modelConfigs: [{ id: "gpt-image-1", name: "GPT Image", enabled: true, params: {} }] }],
       hiddenModules: ["rig"],
       imageProvider: "ark",
       customProtocol: "openai",
@@ -1723,13 +1728,13 @@ section("功能管理（隐藏模块）");
     check("生图设置只保留三个连接页签", imageSections.length === 3 && imageSections.every(node => textOf(node) !== "生图后端"));
     check("ToAPIs 独立设置组存在", collect(settings,node=>node.props?.["data-testid"] === "cfg-toapis").length === 1);
     check("ToAPIs API Key 使用密码框", collect(collect(settings,node=>node.props?.["data-testid"] === "cfg-toapis")[0],node=>node.props?.type === "password").length === 1);
-    check("缺 Key 时在当前连接页给出阻塞原因", collect(imagePanel, node => node.props?.className === "SPR_note").some(node => textOf(node).includes("还不能开跑")));
-    check("当前连接在设置页签中有标记", collect(imagePanel, node => node.props?.className === "SPR_settingsSectionCurrent" && node.props?.["aria-label"] === "当前使用").length === 1);
+    check("配置页不重复展示运行阻塞横幅", collect(imagePanel, node => node.props?.className === "SPR_note").length === 0);
+    check("配置编辑不重复提供当前后端选择器", collect(imagePanel, node => node.props?.["data-testid"] === "cfg-image-provider").length === 0);
 
     // 默认协议是 openai：协议下拉、地址、模型名、尺寸、测试按钮都要在。
     check("自定义那一组有协议下拉（三种协议由宿主给）", collect(settings, (node) => node.type === "div" && node.props?.["data-testid"] === "cfg-custom-protocol").length === 1);
-    check("自定义那一组有 Base URL 与模型名输入框", collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-base-url").length === 1 && collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-model").length === 1);
-    check("自定义那一组有输出尺寸输入框", collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-size").length === 1);
+    check("自定义连接展示地址与模型列表", collect(settings, node => node.props?.["data-testid"] === "cfg-custom-base-url").length === 1 && collect(settings, node => node.props?.["data-testid"] === "cfg-custom-models").length === 1);
+    check("连接页面不平铺模型尺寸参数", collect(settings, node => node.props?.["data-model-param"] === "size").length === 0);
     check("OpenAI 协议不显示 ComfyUI 的工作流文本框（调了也没用的控件不该出现）", collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-workflow").length === 0);
     check("自定义那一组也有自己的「测试连接」", textOf(settings).includes("生成测试（计费）"));
 
@@ -1752,58 +1757,22 @@ section("功能管理（隐藏模块）");
     check("ffmpeg 状态归到「功能与数据」", textOf(miscPanel).includes("ffmpeg"));
     check("数据路径也在「功能与数据」里", textOf(miscPanel).includes("所有项目"));
 
-    // 切到 ComfyUI：工作流文本框与保存按钮出现（UTF-8 JSON 不能每敲一个字就提交一次）。
-    const comfyConfig = {
-      ...featureConfig,
-      imageProvider: "custom",
-      customProtocol: "comfyui",
-      customBaseUrl: "http://127.0.0.1:8188",
-      customModel: "sdxl.safetensors",
-      customSize: "1024x1024",
-      customWorkflow: '{"1":{}}',
-      customProtocols: [
-        { id: "openai", label: "OpenAI API", baseUrl: "https://api.openai.com/v1", hint: "hint" },
-        { id: "comfyui", label: "ComfyUI API", baseUrl: "http://127.0.0.1:8188", hint: "hint" },
-        { id: "sdwebui", label: "Stable Diffusion WebUI API", baseUrl: "http://127.0.0.1:7860", hint: "hint" }
-      ],
-      imageProviderSummary: "自定义 · ComfyUI API · http://127.0.0.1:8188",
-      imageProviderBlocker: null,
-      customImageBlocker: null
-    };
-    const saved2 = [];
-    const api2 = {
-      getConfig: () => Promise.resolve(comfyConfig),
-      saveConfig: (payload) => {
-        saved2.push(payload);
-        return Promise.resolve({ ...comfyConfig, ...payload });
-      },
-      testArk: () => Promise.resolve({}),
-      testCustomImage: () => Promise.resolve({ provider: "自定义 · ComfyUI API", bytes: 1 }),
-      testMinimax: () => Promise.resolve({})
-    };
-    HOOK.slots = [0, comfyConfig, "", "", "", "", null, null, undefined, undefined, undefined, undefined, undefined, undefined, undefined, "image"];
-    HOOK.cursor = 0;
-    hookOverflow = false;
-    const comfySettings = ConfigSection({ api: api2 });
-    const workflowBox = collect(comfySettings, (node) => node.props?.["data-testid"] === "cfg-custom-workflow")[0];
-    check("切到 ComfyUI 后出现工作流文本框", workflowBox !== undefined);
-    check("工作流文本框里是已经存过的那份", workflowBox?.props?.value === '{"1":{}}', String(workflowBox?.props?.value).slice(0, 40));
-    const comfyImagePanel = collect(comfySettings, node => node.props?.["data-testid"] === "cfg-panel-image")[0];
-    check("生图设置默认打开当前自定义连接", collect(comfyImagePanel, node => node.props?.className === "SPR_settingsSectionTab" && node.props?.["aria-selected"] === true).some(node => textOf(node).includes("自定义生图模型")));
-    check("切到自定义后该卡展开", collect(comfySettings, (node) => node.props?.["data-testid"] === "cfg-custom-group")[0]?.props?.["data-open"] === "true");
-    check("非当前 Ark 表单仍可完整配置", collect(comfySettings, (node) => node.props?.["data-testid"] === "cfg-ark-group")[0]?.props?.["data-open"] === "true");
-    check("已就绪的连接不重复显示就绪横幅或阻塞信息", collect(comfyImagePanel, node => node.props?.className === "SPR_note").length === 0);
-    // NumField 是函数组件，`textOf` 展不开它，只能按 props.label 找。
-    check(
-      "ComfyUI 下显示采样步数 / CFG 等高级参数",
-      collect(comfySettings, (node) => node.props?.label === "采样步数").length === 1 &&
-        collect(comfySettings, (node) => node.props?.label === "CFG / 引导强度").length === 1
-    );
-    check("超时对所有协议都显示（不受协议条件块影响）", collect(comfySettings, (node) => node.props?.label === "请求超时（毫秒，本地模型建议给足）").length === 1);
-    check("协议说明里写出真实端点", textOf(comfySettings).includes("请求端点"));
-    // 每敲一个字都不发请求：草稿只在变化后由「保存工作流」提交。
+    // Model-specific controls live in the explicit editor, never on the connection form.
+    HOOK.slots = []; HOOK.cursor = 0;
+    const editorSaves = [];
+    const editorTree = bundle.__test.ImageModelEditor({ provider: "custom", protocol: "comfyui", model: { id: "sdxl", name: "SDXL", enabled: true, params: { workflow: '{"1":{}}' } }, defaults: {}, onSave: values => editorSaves.push(values), onClose() {} });
+    const workflowBox = collect(editorTree, node => node.props?.["data-testid"] === "image-model-workflow")[0];
+    check("ComfyUI 模型编辑器保留已保存的工作流", workflowBox?.props?.value === '{"1":{}}');
+    check("模型高级配置默认收起", collect(editorTree, node => node.type === "details").every(node => !node.props.open));
+    check("ComfyUI 编辑器提供采样步数和 CFG", collect(editorTree, node => node.props?.["data-model-param"] === "steps").length === 1 && collect(editorTree, node => node.props?.["data-model-param"] === "cfgScale").length === 1);
+    check("编辑器提供模型独立的请求超时", collect(editorTree, node => node.props?.["data-model-param"] === "timeoutMs").length === 1);
     workflowBox.props.onChange({ target: { value: '{"1":{"a":1}}' } });
-    check("改工作流不立刻写配置（大 JSON 每字符一次往返会卡）", saved2.length === 0, JSON.stringify(saved2));
+    check("编辑工作流不立刻保存或请求", editorSaves.length === 0);
+    HOOK.slots = []; HOOK.cursor = 0;
+    const openaiEditor = bundle.__test.ImageModelEditor({ provider: "custom", protocol: "openai", model: null, defaults: {}, onSave() {}, onClose() {} });
+    check("OpenAI 编辑器不展示工作流或采样参数", collect(openaiEditor, node => node.props?.["data-testid"] === "image-model-workflow" || node.props?.["data-model-param"] === "steps").length === 0);
+    check("OpenAI 编辑器支持图片质量", textOf(openaiEditor).includes("图片质量"));
+
   }
 
   // 收尾：把共享状态复位，免得影响后续断言。

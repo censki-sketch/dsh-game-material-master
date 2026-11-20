@@ -286,6 +286,7 @@ async function generateOpenAi(request: CustomImageRequest, context: SignalContex
   }
 
   const body: Record<string, unknown> = { model: request.model, prompt: request.prompt, n: 1 };
+  if (request.quality) body.quality = request.quality;
   if (size !== undefined) body.size = `${size.width}x${size.height}`;
   // 不主动写 response_format：`gpt-image-1` 固定回 b64_json，写了反而可能被拒；
   // 下面两种返回形态都处理了。

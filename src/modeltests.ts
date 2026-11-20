@@ -1,7 +1,7 @@
 /** Local evidence of explicit model tests. Never stores credentials or response content. */
 import { createHash, randomUUID } from "node:crypto";
 import { join } from "node:path";
-import { customConnectionConfig, dataRoot, type Config } from "./config.js";
+import { builtinModelConfig, customConnectionConfig, dataRoot, type Config } from "./config.js";
 import { imageModelRoutes } from "./imageprovider.js";
 import { readJson, writeJsonAtomic } from "./jsonio.js";
 
@@ -17,7 +17,8 @@ export function imageTestFingerprint(config: Config, provider: Config["imageProv
   const fields = provider === "ark" ? [config.arkBaseUrl, config.arkApiKey, config.arkModel]
     : provider === "toapis" ? [config.toapisBaseUrl, config.toapisApiKey, config.toapisImageModel]
     : [config.activeCustomImageConnectionId, config.customBaseUrl, config.customApiKey, config.customModel, config.customProtocol, config.customWorkflow];
-  return modelTestFingerprint(["image-v1", provider, fields]);
+  const definition = provider === "ark" ? config.arkImageModels.find(model => model.id === config.arkModel) : provider === "toapis" ? config.toapisImageModels.find(model => model.id === config.toapisImageModel) : config.customImageConnections.find(connection => connection.id === config.activeCustomImageConnectionId)?.modelConfigs.find(model => model.id === config.customModel);
+  return modelTestFingerprint(["image-v1", provider, fields, ...(definition && Object.keys(definition.params).length ? [definition.params] : [])]);
 }
 export async function modelTestStatus(fingerprint: string): Promise<number | null> {
   const record = await readJson<{ state: string; at: number }>(join(dataRoot(), "model-tests", fingerprint + ".json"));
@@ -42,7 +43,7 @@ export async function runModelTest<T>(fingerprint: string, action: () => Promise
 }
 export async function imageModelTests(config: Config) {
   return Promise.all(imageModelRoutes(config).map(async route => {
-    const selected = route.connectionId ? customConnectionConfig(config, route.connectionId, route.model) : config;
+    const selected = route.connectionId ? customConnectionConfig(config, route.connectionId, route.model) : builtinModelConfig(config, route.provider as "ark" | "toapis", route.model);
     const fingerprint = imageTestFingerprint(selected, route.provider);
     const record = await readJson<{ state: string; at: number }>(join(dataRoot(), "model-tests", fingerprint + ".json"));
     return { ...route, testedAt: record?.state === "passed" && Number.isFinite(record.at) ? record.at : null, testState: record?.state ?? "untested" };
