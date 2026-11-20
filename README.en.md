@@ -538,7 +538,7 @@ Reading settings or model lists and switching models never starts generation. **
 | Custom parameters | Model name, output size (width x height), negative prompt, steps / CFG / sampler, img2img denoising, seed, timeout |
 | ComfyUI workflow | Paste the whole JSON from "Export (API)"; placeholders `{{prompt}}` `{{width}}` `{{seed}}` `{{image}}` and friends are supported, and a workflow with none runs as-is |
 | Paid video protection | New MiniMax / ToAPIs requests are locked by default. Enabling still requires confirmation for each submission; local ComfyUI, imports and extraction remain available |
-| MiniMax API Key | Saves on blur or Enter, with inline reveal/clear. Test connection beside the title only validates the key for free. URL is under Advanced settings; help is in the info icon |
+| MiniMax API Key | API URL stays visible above the key. Saves on blur or Enter, with inline reveal/clear. Test connection beside the title only validates the key for free. Model menus show the name and muted parameter details on separate lines |
 | Video model | Defaults to `MiniMax-H3` (v2 protocol); Hailuo / I2V use v1; the UCloud version of H3 is selected explicitly |
 | Base URL | Host root, without `/v1` or `/v2`. `api.minimax.cn` in mainland China, `api.minimaxi.com` internationally |
 | Output size | Default for every image-generating module; accepts `1K` / `2K` / `4K` or `width x height`. An image task can switch its size source to Custom to affect only that task; tasks that follow the global value update with this setting |
@@ -571,7 +571,7 @@ plugin appends the protocol-specific endpoint. Choose a model and confirm "Gener
 ### Local ComfyUI (image-to-video)
 
 If you would rather not use MiniMax, or you want to run your own model, **image-to-video** can be
-routed to a local [ComfyUI](https://github.com/comfyanonymous/ComfyUI): enable it in "Settings → Video → Local ComfyUI",
+routed to a local [ComfyUI](https://github.com/comfyanonymous/ComfyUI): enable it in "Settings → Generate video → Local ComfyUI",
 set the address (default `http://127.0.0.1:8188`), paste a workflow JSON and click "Save workflow" — either the API format or the UI format the editor saves directly.
 Cookies, injection targets and size overrides are under Advanced settings.
 Image generation, keying, frame extraction and composition are unaffected — the same downstream
@@ -612,7 +612,7 @@ pipeline as MiniMax.
 Turn a module off under **Settings → Game Material Master → Feature management**; turn it back on any time.
 Existing project data is never deleted.
 
-Image generation comes first by default. Existing custom orders are preserved; Restore default order, on the same row to the right of the title, resets them. Sorting and visibility help is available from the icon beside Feature management. Settings categories are ordered Image, Video, Music, SFX, Prompt templates, Canvas & keying, then Features & data.
+Image generation comes first by default. Existing custom orders are preserved; Restore default order, on the same row to the right of the title, resets them. Hover or focus a feature row to rename it with the pencil icon (up to 32 characters), or restore its default name. Names update in feature tabs and quick menus without changing IDs, order, visibility or existing data. Name persistence changes host configuration: fully quit DSH, including its tray process, and reopen after updating. Sorting and visibility help is available from the title icon. Settings categories are ordered Image, Music, SFX, Generate video, Prompt templates, Canvas & keying, then Features & data.
 
 - **UI**: the module disappears from the workbench tabs and from the sidebar shortcut menu. If you were
   sitting on that module, the workbench falls back to the first visible one.

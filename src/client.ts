@@ -44,6 +44,10 @@
     /** 中文原文 → 英文译文。key 里可能带 `{nN}` 占位符。 */
 /* i18n-ignore-start */
     const EN: Record<string, string> = {
+      "重命名功能": "Rename feature",
+      "功能名称": "Feature name",
+      "恢复默认名称": "Restore default name",
+      "功能名称未保存成功，请重启DSH后重试。": "The feature name could not be saved. Restart DSH and try again.",
       "付费视频保护": "Paid video protection",
       "默认禁止 MiniMax / ToAPIs 新的付费请求。允许后，每次仍需确认模型、时长、分辨率和段数；不查询余额与实时价格。本地导入、抽帧和 ComfyUI 不受影响，保存配置不会生成视频。": "New paid MiniMax / ToAPIs requests are disabled by default. Enabling still requires confirmation of the model, duration, resolution and count for every submission. Balance and live prices are not checked. Local imports, frame extraction and ComfyUI remain available. Saving settings does not generate videos.",
       "允许付费生成": "Allow paid generation",
@@ -1256,7 +1260,6 @@
       "正在载入配置…": "Loading configuration…",
       "配置已保存": "Configuration saved",
       "生图": "Images",
-      "生视频": "Video",
       "画面与抠像": "Canvas & keying",
       "音乐": "Music",
       "音效": "Sound effects",
@@ -1283,7 +1286,7 @@
       "自定义：{n0}": "Custom: {n0}",
       "输出尺寸": "Output size",
       "视频提交正在确认或处理中，请勿重复点击": "A video submission is being confirmed or processed. Please do not click again.",
-      "付费视频已锁定，请先打开右上角「设置 → 生视频」，检查参数后手动开启": "Paid videos are locked. Open Settings → Video in the top-right corner, check the parameters, and enable submission manually.",
+      "付费视频已锁定，请先打开右上角「设置 → 生成视频」，检查参数后手动开启": "Paid videos are locked. Open Settings → Video in the top-right corner, check the parameters, and enable submission manually.",
       "另含4秒参考视频输入，服务商可能另计输入费用。": "Includes a 4-second reference video input, which the provider may bill separately.",
       "没有可提交的视频方向，请检查素材或已有任务": "No directions are available for video submission. Check your assets and existing tasks.",
       "即将提交付费视频：\n服务：{provider}\n模型：{model}\n每段：{duration}秒 / {resolution}\n请求数量：{count}段\n{input}\n实际价格以服务商为准；确认后可能立即扣费。是否提交？": "Submit paid videos:\nProvider: {provider}\nModel: {model}\nPer video: {duration}s / {resolution}\nRequests: {count} videos\n{input}\nThe provider determines the actual price. Confirmation may incur an immediate charge. Submit?",
@@ -3618,6 +3621,14 @@
     // 工具等于没藏——模型照样能调生成类方法，真实计费。
     const hiddenModulesState = { keys: [] as string[], listeners: new Set<(keys: string[]) => void>() };
     const moduleOrderState = { keys: MODULES.map(entry => entry.key), ready: false, listeners: new Set<(keys: string[]) => void>() };
+    const moduleNamesState = { names: {} as Record<string, string>, listeners: new Set<() => void>() };
+    function moduleTitle(entry, names = moduleNamesState.names) { return names?.[entry.key] || entry.title; }
+    function publishModuleNames(value) {
+      const next = Object.fromEntries(MODULES.flatMap(entry => typeof value?.[entry.key] === "string" && value[entry.key].trim() ? [[entry.key, value[entry.key].trim().slice(0, 32)]] : []));
+      if (JSON.stringify(next) === JSON.stringify(moduleNamesState.names)) return;
+      moduleNamesState.names = next;
+      for (const listener of [...moduleNamesState.listeners]) listener();
+    }
 
     const LAST_STUDIO_MODULE_KEY = "dsh-game-material-master:last-module";
     const SIDEBAR_COLLAPSED_KEY = "dsh-game-material-master:sidebar-collapsed";
@@ -3686,9 +3697,11 @@
     function useModuleOrder() {
       const [order, setOrder] = React.useState(moduleOrderState.keys);
       React.useEffect(() => {
+        const rename = () => setOrder([...moduleOrderState.keys]);
         moduleOrderState.listeners.add(setOrder);
+        moduleNamesState.listeners.add(rename);
         setOrder(moduleOrderState.keys);
-        return () => { moduleOrderState.listeners.delete(setOrder); };
+        return () => { moduleOrderState.listeners.delete(setOrder); moduleNamesState.listeners.delete(rename); };
       }, []);
       return order;
     }
@@ -3720,6 +3733,7 @@
         const config = await api.getConfig();
         publishHiddenModules(config?.hiddenModules);
         publishModuleOrder(config?.moduleOrder);
+        publishModuleNames(config?.moduleNames);
       } catch {
         // 配置读不到不是致命错误：界面照常，工具面仍然会拦。
         publishModuleOrder(moduleOrderState.keys);
@@ -3749,7 +3763,7 @@
 
     /** 可见的模块（页签、侧栏菜单都按它渲染）。 */
     function visibleModulesOf(hidden, order = moduleOrderState.keys) {
-      return normalizeModuleOrder(order).filter(key => !hidden.includes(key)).map(key => MODULES.find(entry => entry.key === key));
+      return normalizeModuleOrder(order).filter(key => !hidden.includes(key)).map(key => { const entry = MODULES.find(entry => entry.key === key); return { ...entry, title: moduleTitle(entry) }; });
     }
 
 
@@ -4489,7 +4503,7 @@
 @media(max-width:720px){.SPR_settingsWorkspace{grid-template-columns:140px minmax(0,1fr);gap:14px}.SPR_settingsWorkspace .SPR_settingsGroup{padding:16px}.SPR_settingsWorkspace .SPR_fields{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:440px){.SPR_settingsWorkspace{grid-template-columns:104px minmax(0,1fr);gap:8px}.SPR_settingsWorkspace .SPR_settingsGroup{padding:12px;border-radius:12px}.SPR_settingsWorkspace .SPR_settingsTab{font-size:12px;padding:9px 7px}.SPR_settingsChildren{margin-left:4px;padding-left:4px}.SPR_settingsChildren .SPR_settingsSectionTab{font-size:11px;padding:7px 5px}.SPR_settingsWorkspace .SPR_keyRow .SPR_field{flex-basis:100%;min-width:0}.SPR_settingsWorkspace .SPR_keyRow{flex-wrap:wrap}}
 /* 功能管理：一行一个模块，勾选框在左、说明在中间、状态在右。 */
-.SPR_featureList{display:flex;flex-direction:column;gap:6px;padding:5px 0;margin-bottom:10px}
+.SPR_featureList{display:flex;flex-direction:column;gap:6px;padding:5px 0;margin-bottom:10px;container-type:inline-size}
 .SPR_featureRow{position:relative;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1)}
 .SPR_featureRow[data-hidden=true]{opacity:.62}
 .SPR_featureToggle{display:flex;align-items:flex-start;gap:10px;min-width:0;flex:1;cursor:pointer}
@@ -4506,6 +4520,13 @@
 .SPR_featureCheck{margin:2px 0 0;width:15px;height:15px;flex:none;accent-color:var(--dsw-alias-state-business-primary);cursor:pointer}
 .SPR_featureText{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .SPR_featureTitle{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--dsw-alias-label-primary)}
+.SPR_featureTitle{overflow-wrap:anywhere}
+@container(max-width:440px){.SPR_featureRow{display:grid;grid-template-columns:18px minmax(0,1fr) 28px;gap:6px 8px}.SPR_featureRow>.SPR_featureDrag{grid-column:1;grid-row:1/3;width:18px}.SPR_featureRow>.SPR_featureToggle{grid-column:2/4;grid-row:1}.SPR_featureRow>.SPR_featureRename{grid-column:3;grid-row:2}.SPR_featureRow>.SPR_featureState{grid-column:2;grid-row:2;justify-self:start;margin-left:25px}.SPR_featureTitle{flex-wrap:wrap}}
+.SPR_featureRename.SPR_taskIconButton{flex:none;opacity:0}
+.SPR_featureRow:hover .SPR_featureRename,.SPR_featureRow:focus-within .SPR_featureRename{opacity:1}
+.SPR_featureRenameHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px}
+.SPR_featureRenameHead h3{margin:0}
+@media(hover:none){.SPR_featureRename.SPR_taskIconButton{opacity:1}}
 .SPR_featureHint{font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary)}
 .SPR_featureState{font-size:11px;line-height:18px;flex:none;padding:0 8px;border-radius:999px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-tertiary)}
 .SPR_keyRow{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
@@ -4898,6 +4919,9 @@
 .SPR_audioChoice .SPR_imageResultMore.SPR_btn{box-sizing:border-box;width:auto;max-width:100%;height:30px;padding:5px 8px;border-radius:8px}
 .SPR_audioChoice .SPR_chatVersionTrigger{min-width:0;max-width:100%;gap:6px;white-space:nowrap;font-size:12px}
 .SPR_audioChoiceLabel{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.SPR_choiceText{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1;white-space:normal}
+.SPR_choiceTitle{font-weight:500;overflow-wrap:anywhere}
+.SPR_choiceDescription{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}
 .SPR_audioChoice .SPR_chatVersionChevron{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px}
 .SPR_audioChoice .SPR_chatVersionTrigger>svg{flex:none}
 .SPR_audioFields .SPR_audioChoice,.SPR_audioFields .SPR_audioChoice>.SPR_imageResultActions{width:100%}
@@ -6535,7 +6559,7 @@
           const config = await call("getConfig");
           const backend = config.comfyVideo === true ? "comfy" : config.toapisVideo === true ? "toapis" : "minimax";
           if (backend === "comfy") return await call(method, payload);
-          if (config.allowPaidVideoGeneration !== true) throw new Error(T("付费视频已锁定，请先打开右上角「设置 → 生视频」，检查参数后手动开启"));
+          if (config.allowPaidVideoGeneration !== true) throw new Error(T("付费视频已锁定，请先打开右上角「设置 → 生成视频」，检查参数后手动开启"));
           let duration = backend === "toapis" ? config.toapisVideoDuration : config.minimaxDuration;
           let resolution = backend === "toapis" ? config.toapisVideoResolution : config.minimaxResolution;
           let count = 1;
@@ -15182,7 +15206,8 @@
       const selected = choices.find(choice => choice.id === value);
       return h("div", { className: "SPR_audioChoice" }, h(ImageResultMenu, { label, disabled, align: "start", icon: h("span", { className: "SPR_chatVersionTrigger" }, h("span", { className: "SPR_audioChoiceLabel" }, selected?.label ?? label), h("span", { className: "SPR_chatVersionChevron" }, h(TaskHeaderIcon, { name: "chevron" }))) },
         choices.map(choice => h("button", { key: choice.id, type: "button", className: "SPR_btn", role: "menuitemradio", "aria-checked": choice.id === value, onClick: () => onChange(choice.id) },
-          h("span", { className: "SPR_chatVersionCheck" }, choice.id === value ? h(TaskHeaderIcon, { name: "check" }) : null), choice.label))));
+          h("span", { className: "SPR_chatVersionCheck" }, choice.id === value ? h(TaskHeaderIcon, { name: "check" }) : null),
+          choice.description ? h("span", { className: "SPR_choiceText" }, h("span", { className: "SPR_choiceTitle" }, choice.label), h("span", { className: "SPR_choiceDescription" }, choice.description)) : choice.label))));
     }
     function AudioPanel({ title, children, onClose, canClose = () => true }) {
       const ref = React.useRef(null);
@@ -23532,17 +23557,18 @@
 
     /** Adapt existing option data to the shared theme menu; no native select is mounted. */
     function SettingsSelect({ children, value, onChange, disabled, ...props }) {
-      const options = [children].flat(Infinity).filter(Boolean).map(item => ({ id: item.props.value, label: [item.props.children ?? item.children].flat(Infinity).filter(value => value !== null && value !== undefined).join("") }));
+      const options = [children].flat(Infinity).filter(Boolean).map(item => ({ id: item.props.value, label: [item.props.children ?? item.children].flat(Infinity).filter(value => value !== null && value !== undefined).join(""), description: item.props.description }));
       return h("div", { className: "SPR_settingsSelect", "data-testid": props["data-testid"] }, h(AudioChoice, { label: props["aria-label"] || options.find(item => String(item.id) === String(value))?.label || T("选择模型"), value, choices: options, disabled, onChange: next => onChange?.({ target: { value: next } }) }));
     }
 
-    function FeatureOrderList({ title = T("功能管理"), hint, order, hidden, onToggle, onSaveOrder }) {
+    function FeatureOrderList({ title = T("功能管理"), hint, order, hidden, names, onRename, onToggle, onSaveOrder }) {
       const keys = normalizeModuleOrder(order);
       const available = Array.isArray(order);
       const [dragging, setDragging] = React.useState(null);
       const [target, setTarget] = React.useState(null);
       const [saving, setSaving] = React.useState(false);
       const [notice, setNotice] = React.useState(null);
+      const [renaming, setRenaming] = React.useState(null);
       const sourceRef = React.useRef(null);
       const saveLock = React.useRef(false);
       const handleRefs = React.useRef({});
@@ -23631,12 +23657,29 @@
             h("label", { className: "SPR_featureToggle" },
               h("input", { type: "checkbox", className: "SPR_featureCheck", "data-testid": `cfg-feature-${key}`, checked: !isHidden, disabled: saving, onChange: event => onToggle(key, event.target.checked) }),
               h("span", { className: "SPR_featureText" },
-                h("span", { className: "SPR_featureTitle" }, entry.title, entry.experimental === true ? h("span", { className: "SPR_expTag" }, T("实验性")) : null),
-                h("span", { className: "SPR_featureHint" }, entry.hint)),
-              h("span", { className: "SPR_featureState" }, isHidden ? T("已隐藏") : T("显示中"))));
+                h("span", { className: "SPR_featureTitle" }, moduleTitle(entry, names), entry.experimental === true ? h("span", { className: "SPR_expTag" }, T("实验性")) : null),
+                h("span", { className: "SPR_featureHint" }, entry.hint))),
+            h(DescriptionTip, { id: "feature-rename-" + key, label: T("重命名"), text: T("重命名"), className: "SPR_taskIconButton SPR_featureRename", disabled: saving || !onRename,
+              onClick: () => setRenaming(entry), icon: h(ProjectActionIcon, { name: "rename" }) }),
+            h("span", { className: "SPR_featureState" }, isHidden ? T("已隐藏") : T("显示中")));
         })),
         saving ? h("p", { className: "SPR_featureOrderNotice", role: "status" }, T("正在保存顺序…")) : null,
+        renaming ? h(FeatureRenameDialog, { key: renaming.key, entry: renaming, name: moduleTitle(renaming, names), onSave: name => onRename(renaming.key, name), onClose: () => setRenaming(null) }) : null,
         h(NoticePopup, { notice, onClose: () => setNotice(null) }));
+    }
+
+    function FeatureRenameDialog({ entry, name, onSave, onClose }) {
+      const [draft, setDraft] = React.useState(name), [saving, setSaving] = React.useState(false), [error, setError] = React.useState("");
+      const ref = React.useRef(null), input = React.useRef(null), lock = React.useRef(false);
+      React.useEffect(() => { const dialog = ref.current, previous = document.activeElement; dialog.showModal(); input.current?.focus(); input.current?.select(); return () => { if (dialog.open) dialog.close(); if (previous?.isConnected) (previous as HTMLElement).focus({ preventScroll: true }); }; }, []);
+      const close = () => { if (!lock.current) onClose(); };
+      const save = async value => { if (lock.current) return; lock.current = true; setSaving(true); setError(""); try { await onSave(value); onClose(); } catch (cause) { setError(msg(cause)); } finally { lock.current = false; setSaving(false); } };
+      return h("dialog", { ref, className: "SPR_projectRenameDialog", "data-testid": "feature-rename-dialog", "aria-label": T("重命名功能"), onCancel: event => { event.preventDefault(); close(); } },
+        h("form", { onSubmit: event => { event.preventDefault(); if (draft.trim()) void save(draft.trim()); } },
+          h("div", { className: "SPR_featureRenameHead" }, h("h3", null, T("重命名功能")), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("关闭"), disabled: saving, onClick: close }, h(TaskHeaderIcon, { name: "close" }))),
+          h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("功能名称")), h("input", { ref: input, className: "SPR_input", maxLength: 32, value: draft, disabled: saving, placeholder: entry.title, onChange: event => setDraft(event.target.value) })),
+          error ? h("p", { className: "SPR_taskDialogError", role: "alert" }, error) : null,
+          h("div", { className: "SPR_projectRenameActions" }, h(Btn, { disabled: saving, onClick: () => void save("") }, T("恢复默认名称")), h(Btn, { primary: true, type: "submit", busy: saving, disabled: saving || !draft.trim() }, T("保存")))));
     }
 
     function PromptTemplateManager(props) {
@@ -23918,6 +23961,7 @@
           // 每次读到配置就广播一次——包括保存后的重读。
           publishHiddenModules(next?.hiddenModules);
           publishModuleOrder(next?.moduleOrder);
+          publishModuleNames(next?.moduleNames);
         } catch (error) {
           setNotice({ kind: "error", text: msg(error) });
         }
@@ -24023,6 +24067,13 @@
         setConfig(persisted);
         publishModuleOrder(persisted.moduleOrder);
       };
+      const saveModuleName = async (key, name) => {
+        const names = { ...storedConfig.moduleNames };
+        if (name) names[key] = name; else delete names[key];
+        const next = await api.saveConfig({ moduleNames: names });
+        if ((next?.moduleNames?.[key] || "") !== name) throw new Error(T("功能名称未保存成功，请重启DSH后重试。"));
+        setConfig(next); publishModuleNames(next.moduleNames);
+      };
 
       /**
        * 功能管理：`hiddenModules` 的当前值（以宿主返回的为准）。
@@ -24076,9 +24127,9 @@
       // 正则比对骨骼角色表，这里写成 label 会被误认成多出来的角色。
       const settingsTabs = [
         { key: "image", text: T("生图") },
-        { key: "video", text: T("生视频") },
         { key: "music", text: T("音乐") },
         { key: "sfx", text: T("音效") },
+        { key: "video", text: T("生成视频") },
         { key: "prompts", text: T("提示词模板") },
         { key: "pipeline", text: T("画面与抠像") },
         { key: "misc", text: T("功能与数据") }
@@ -24183,13 +24234,14 @@
               h("div", { className: "SPR_videoPresetRow" },
                 h(Btn, { disabled: videoBackend === "minimax", onClick: () => run(() => saveVideoConfig({ comfyVideo: false, toapisVideo: false }), T("配置已保存")) }, videoBackend === "minimax" ? T("当前使用") : T("使用 MiniMax")),
                 h(Btn, { onClick: () => run(() => saveVideoConfig({ ...minimaxModelValues("MiniMax-H3-Lite"), minimaxDuration: 4, minimaxResolution: "480P", comfyVideo: false, toapisVideo: false }), T("配置已保存")) }, T("白模推荐参数"))),
+              videoTextField("minimaxBaseUrl", T("API 地址"), "https://api.minimaxi.com", usingCompshare),
               h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, "API Key", h("span", { className: "SPR_connectionStatus" }, config.minimaxApiKeySet ? T("已配置") : T("未配置"))),
                 h(ConfigKeyInput, { api, keyName: "minimaxApiKey", isSet: config.minimaxApiKeySet, resetToken: config.minimaxApiKeyHint, clearable: true, pendingSaveRef: minimaxKeyWrite,
                   "data-testid": "cfg-minimax-key", className: "SPR_input", placeholder: T("粘贴 MiniMax API Key"),
                   onSave: value => saveVideoConfig(value.trim() ? { minimaxApiKey: value } : { clearMinimaxApiKey: true }) })),
               h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("视频模型")),
                 h(SettingsSelect, { className: "SPR_input", "data-testid": "cfg-minimax-model", value: config.minimaxModel, onChange: event => onModelChange(event.target.value) },
-                  (config.minimaxModels ?? []).map(model => h("option", { key: model.id, value: model.id }, T("{n0}（{n1}）", { n0: model.label, n1: model.id }))),
+                  (config.minimaxModels ?? []).map(model => h("option", { key: model.id, value: model.id, description: model.label.replace(model.id, "").replace(/^[（(]|[）)]$/g, "").trim() }, model.id)),
                   (config.minimaxModels ?? []).some(model => model.id === config.minimaxModel) ? null : h("option", { value: config.minimaxModel }, T("自定义：{n0}", { n0: config.minimaxModel })))),
               h("div", { className: "SPR_serviceOutputFields" },
                 minimaxCaps.durations !== undefined
@@ -24201,9 +24253,7 @@
                 h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("分辨率")),
                   h(SettingsSelect, { className: "SPR_input", "data-testid": "cfg-minimax-resolution", value: config.minimaxResolution, onChange: event => run(() => saveVideoConfig({ minimaxResolution: event.target.value }), T("配置已保存")) },
                     minimaxCaps.resolutions.map(value => h("option", { key: value, value }, value))))),
-              h("details", { className: "SPR_settingsAdvanced", "data-testid": "cfg-minimax-advanced" }, h("summary", null, T("高级设置")),
-                h("div", { className: "SPR_videoAdvancedBody" }, videoTextField("minimaxBaseUrl", T("API 地址"), "https://api.minimaxi.com", usingCompshare),
-                  h("span", { className: "SPR_hint" }, T("当前协议：{n0}", { n0: minimaxCaps.protocol === "v2" ? T("v2（{n0}/v2/video_generation）", { n0: config.minimaxPathPrefix ?? "" }) : T("v1（{n0}/v1/video_generation）", { n0: config.minimaxPathPrefix ?? "" }) }))))),
+              h("span", { className: "SPR_choiceDescription" }, T("当前协议：{n0}", { n0: minimaxCaps.protocol === "v2" ? T("v2（{n0}/v2/video_generation）", { n0: config.minimaxPathPrefix ?? "" }) : T("v1（{n0}/v1/video_generation）", { n0: config.minimaxPathPrefix ?? "" }) }))),
           ),
           h(SettingsGroup, { title: T("ToAPIs（视频）"), testId: "cfg-toapis-video", badge: videoBackend === "toapis" ? T("当前使用") : null, enabled: config.toapisVideo === true,
             onEnabledChange: value => run(() => saveVideoConfig({ toapisVideo: value, ...(value ? { comfyVideo: false } : {}) }), T("配置已保存")),
@@ -24610,12 +24660,12 @@
           },
           h(
             FeatureOrderList,
-            { title: T("功能管理"), order: config.moduleOrder, hidden: hiddenNow, onToggle: toggleFeature, onSaveOrder: saveModuleOrder, hint: [
+            { title: T("功能管理"), order: config.moduleOrder, hidden: hiddenNow, names: config.moduleNames, onRename: saveModuleName, onToggle: toggleFeature, onSaveOrder: saveModuleOrder, hint: [
               T("拖动左侧手柄排序，自动保存并同步到功能栏与快捷菜单。"),
               T("隐藏不用的功能。隐藏后界面里不再出现它的页签与侧栏菜单项，对话里的 AI 也无法调用它（工具会直接报错）。随时可以再打开，已有的项目数据不会被删除。"),
               hiddenNow.length === 0 ? T("当前功能全部可见。") : T("已隐藏 {n0} 个功能：{n1}。隐藏的模块在对话里同样不可调用。", {
                   n0: hiddenNow.length,
-                  n1: MODULES.filter((entry) => hiddenNow.includes(entry.key)).map((entry) => entry.title).join("、")
+                  n1: MODULES.filter((entry) => hiddenNow.includes(entry.key)).map((entry) => moduleTitle(entry)).join("、")
                 })
             ].join(" ") }
         ),

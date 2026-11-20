@@ -282,6 +282,15 @@ async function main() {
   check("隐藏功能不会改变保存的顺序", JSON.stringify((await studio.getConfig()).moduleOrder) === JSON.stringify(expectedOrder));
   await studio.saveConfig({ hiddenModules: [], moduleOrder: [] });
   check("清空顺序可恢复默认排列", JSON.stringify((await studio.getConfig()).moduleOrder) === JSON.stringify(STUDIO_MODULES));
+  check("旧配置的功能名称默认没有覆盖", JSON.stringify(initial.moduleNames) === "{}");
+  const named = await studio.saveConfig({ moduleNames: { image: "  我的画室  ", sequence: "逐帧\n素材", rig: " ", removed: "无效", sfx: 123, music: "名".repeat(40) } });
+  check("功能名称只保存合法模块并清理空白和控制字符", named.moduleNames.image === "我的画室" && named.moduleNames.sequence === "逐帧 素材" && !named.moduleNames.rig && !named.moduleNames.removed && !named.moduleNames.sfx && named.moduleNames.music.length === 32);
+  named.moduleNames.image = "误改副本";
+  check("功能名称视图不共享宿主缓存", (await studio.getConfig()).moduleNames.image === "我的画室");
+  const stillNamed = await studio.saveConfig({ moduleOrder: ["sfx"], hiddenModules: ["rig"] });
+  check("排序和隐藏不覆盖功能名称", stillNamed.moduleNames.image === "我的画室" && stillNamed.moduleNames.sequence === "逐帧 素材");
+  await studio.saveConfig({ moduleNames: {}, moduleOrder: [], hiddenModules: [] });
+  check("可以恢复默认功能名称", JSON.stringify((await studio.getConfig()).moduleNames) === "{}");
 
   // ── 2b. 优云智算版 H3 是模型下拉里的独立选项（不由 Base URL 推断）─────
   const compshareId = initial.minimaxCompshareModelId;

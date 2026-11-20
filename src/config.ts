@@ -410,6 +410,8 @@ export interface Config {
   hiddenModules: string[];
   /** 界面功能顺序：全部合法模块各出现一次，隐藏不改变顺序。 */
   moduleOrder: string[];
+  /** 用户自定义的功能显示名称，key 仍使用稳定模块标识。 */
+  moduleNames: Record<string, string>;
 
   /** 并发请求数（生图 / 视频 / 抽帧各自受限）。 */
   concurrency: number;
@@ -537,6 +539,7 @@ export const DEFAULT_CONFIG: Config = {
   rowOrderVersion: ROW_ORDER_VERSION,
   hiddenModules: [],
   moduleOrder: [...STUDIO_MODULES],
+  moduleNames: {},
   concurrency: 3
 };
 
@@ -608,6 +611,15 @@ export function normalizeHiddenModules(value: unknown): string[] {
 export function normalizeModuleOrder(value: unknown): string[] {
   const wanted = Array.isArray(value) ? value : [];
   return [...new Set<string>([...wanted.filter((key): key is string => typeof key === "string" && (STUDIO_MODULES as readonly string[]).includes(key)), ...STUDIO_MODULES])];
+}
+
+export function normalizeModuleNames(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(STUDIO_MODULES.flatMap(key => {
+    const raw = Object.prototype.hasOwnProperty.call(value, key) ? (value as Record<string, unknown>)[key] : undefined;
+    const name = typeof raw === "string" ? raw.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 32) : "";
+    return name ? [[key, name]] : [];
+  }));
 }
 
 /** 把任意读入的 JSON 收敛成一份合法配置，缺项一律回落默认值。 */
@@ -745,6 +757,7 @@ export function normalizeConfig(input: unknown): Config {
     rowOrderVersion: ROW_ORDER_VERSION,
     hiddenModules: normalizeHiddenModules(raw.hiddenModules),
     moduleOrder: normalizeModuleOrder(raw.moduleOrder),
+    moduleNames: normalizeModuleNames(raw.moduleNames),
     concurrency: asInt(raw.concurrency, DEFAULT_CONFIG.concurrency, 1, 8)
   };
   const legacyModel = (id: string, mapping: Record<string, string>) => [{ id, params: Object.fromEntries(Object.entries(mapping).map(([param, key]) => [param, config[key]])) }];
@@ -800,7 +813,7 @@ export async function loadConfig(): Promise<Config> {
     const text = await readFile(configPath(), "utf8");
     cache = normalizeConfig(JSON.parse(text));
   } catch {
-    cache = { ...DEFAULT_CONFIG, rowOrder: [...DEFAULT_ROW_ORDER], hiddenModules: [], moduleOrder: [...STUDIO_MODULES] };
+    cache = { ...DEFAULT_CONFIG, rowOrder: [...DEFAULT_ROW_ORDER], hiddenModules: [], moduleOrder: [...STUDIO_MODULES], moduleNames: {} };
   }
   return cache;
 }
@@ -936,6 +949,7 @@ export function maskConfig(config: Config): ConfigView {
     // 复制一份再回传：界面改勾选后会把它当草稿改，共享同一个数组会互相写花。
     hiddenModules: [...config.hiddenModules],
     moduleOrder: [...config.moduleOrder],
+    moduleNames: { ...config.moduleNames },
     toapisApiKeySet: toapisApiKey.trim() !== "",
     toapisApiKeyHint: hintOf(toapisApiKey),
     arkApiKeySet: arkApiKey.trim() !== "",

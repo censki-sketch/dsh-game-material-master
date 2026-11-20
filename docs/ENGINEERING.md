@@ -7,7 +7,11 @@
 
 ## 设置导航与多连接生图（2026-11-20）
 
-生视频四页（付费保护、MiniMax、ToAPIs、本地 ComfyUI）统一使用主题开关与 `SPR_serviceSettings`。付费保护默认关闭，每次提交仍需确认；配置页仅保存参数，测试不生成视频。MiniMax Key 自动保存/回显/悬停清除，地址进入高级设置、取消原生 datalist；保留模型能力约束、优云智算网关联动与白模 4 秒 480P 推荐参数。ToAPIs 显示共用的生图连接状态，模型与分辨率采用失焦草稿保存。ComfyUI 地址和显式保存的工作流常显，放弃/恢复收进主题菜单，Cookie、超时、注入点、尺寸与种子默认折叠；Cookie 不增加原值读取接口，非空失焦保存、清除图标显式删除。视频配置通过串行队列写入，测试等待最新凭据及字段写入，ComfyUI 探测完整结果在连接详情中查看。`verify-settings-browser.mjs` 使用临时 DSH_HOME、真实网关与本地假服务验证四菜单、保护锁、后端互斥、模型联动、草稿、工作流显式保存和深浅色/窄屏展开菜单，禁止外网及付费提交。本次仅客户端，刷新即可。
+功能显示名称使用 `Config.moduleNames` 持久化，`normalizeModuleNames` 只保留合法模块，清理控制字符、空白和32字长度；空值恢复默认。`saveConfig.directKeys` 接受该字段（wire 的配置 schema 已为 JSON record），视图复制名称对象，排序/隐藏/旧配置均保留既有语义。客户端 `publishModuleNames` 通知功能顺序订阅者重渲染；功能栏、快捷菜单与功能管理都通过 `moduleTitle` 使用名称，稳定 key、深链接和工具标识保持不变。每行悬停/键盘聚焦显示铅笔，`FeatureRenameDialog` 支持保存、Esc取消和恢复默认，保存失败留在弹窗；窄卡将状态与操作移至下一行。该功能包含宿主改动，更新后须完全退出 DSH（含托盘）再打开。
+
+视频模型选择通过 `AudioChoice` 可选的 `description` 渲染第二行灰色小字，闭合态仅显示模型名称；其它普通选项不改变。MiniMax API 地址移至 Key 上方常显，保留失焦保存与优云智算固定地址。生成视频设置更名并移动至音效之后；ToAPIs 视频继续共用生图的地址、Key 与超时。浏览器验证涵盖取消/保存/恢复名称、重新挂载、功能栏同步、窄屏弹窗及模型菜单两行实际位置，宿主验证涵盖名称归一化、对象副本及排序/隐藏后保留。
+
+生成视频四页（付费保护、MiniMax、ToAPIs、本地 ComfyUI）统一使用主题开关与 `SPR_serviceSettings`。付费保护默认关闭，每次提交仍需确认；配置页仅保存参数，测试不生成视频。MiniMax Key 自动保存/回显/悬停清除，API 地址常显于 Key 上方，取消原生 datalist；保留模型能力约束、优云智算网关联动与白模 4 秒 480P 推荐参数。ToAPIs 显示共用的生图连接状态，模型与分辨率采用失焦草稿保存。ComfyUI 地址和显式保存的工作流常显，放弃/恢复收进主题菜单，Cookie、超时、注入点、尺寸与种子默认折叠；Cookie 不增加原值读取接口，非空失焦保存、清除图标显式删除。视频配置通过串行队列写入，测试等待最新凭据及字段写入，ComfyUI 探测完整结果在连接详情中查看。`verify-settings-browser.mjs` 使用临时 DSH_HOME、真实网关与本地假服务验证四菜单、保护锁、后端互斥、模型联动、草稿、工作流显式保存和深浅色/窄屏展开菜单，禁止外网及付费提交。视频页面的布局调整仅涉及客户端；本轮功能重命名涉及宿主，更新后仍须完全重启 DSH。
 
 音效设置 `cfg-sfx-service` 与音乐设置共用 `SPR_serviceSettings` / `SPR_serviceConnectionFields` / 输出行及说明样式。标题简化为「音效生成」，火山引擎、语音 Key 与方舟 Key 的区别、120 秒限制和费用说明移入标题提示。Key 复用 `ConfigKeyInput` 自动保存、回显和悬停清除（`clearSfxApiKey`），地址/模型使用本地草稿、失焦串行保存；其他设置刷新不覆盖草稿。计费测试位于标题右侧，保留确认弹窗与 loading，确认后等待 Key 与字段写入完成再调用 `testSfx`；开页面、取消和切换设置不提交测试。默认格式/采样率使用主题菜单，超时默认折叠，文档/控制台链接移入提示。本次仅客户端，刷新即可。
 
@@ -21,7 +25,7 @@
 
 默认参数页的 `SPR_projectDefaults` 仅定义局部布局：三个跟随主题的分组，单格尺寸成对排列，数值框统一36px，抠像背景色占整行，识别阈值与边缘参数分别对齐。按容器宽度减列，极窄时颜色值另起一行；长标签的说明由 `SettingsSubGroup.hint` 复用 `DescriptionTip`。字段仍由原 `NumField` 与 `KeyColorField(themed)` 保存，范围、默认值和回调不变。`本机依赖与数据` 的刷新按钮通过 `SettingsGroup.actions` 位于标题右侧，原刷新行为保持。设置页不渲染工作台侧栏遮罩，避免长表单滚动后被窄屏遮罩挡住。此调整仅客户端，刷新页面即可。
 
-设置分类顺序为 image、video、music、sfx、prompts、pipeline、misc，提示词模板与画面抠像位于功能数据之前。默认功能顺序由 `links.STUDIO_MODULES` 与经典脚本 `make_MODULES()` 同步定义，image 居首；缺少配置及恢复默认使用此顺序，已有用户顺序由 normalizeModuleOrder 保留。`FeatureOrderList` 复用 `SettingsGroup`，恢复按钮通过 actions 放在标题右侧同排，排序说明、隐藏规则与当前隐藏状态统一放入标题 `DescriptionTip`，不再生成底部使用说明折叠块；两层导航将该组件按设置分组处理。默认顺序涉及宿主常量，更新后须完全退出 DSH（含托盘）再打开。
+设置分类顺序为 image、music、sfx、video、prompts、pipeline、misc（生成视频位于音效与提示词模板之间），提示词模板与画面抠像位于功能数据之前。默认功能顺序由 `links.STUDIO_MODULES` 与经典脚本 `make_MODULES()` 同步定义，image 居首；缺少配置及恢复默认使用此顺序，已有用户顺序由 normalizeModuleOrder 保留。`FeatureOrderList` 复用 `SettingsGroup`，恢复按钮通过 actions 放在标题右侧同排，排序说明、隐藏规则与当前隐藏状态统一放入标题 `DescriptionTip`，不再生成底部使用说明折叠块；两层导航将该组件按设置分组处理。默认顺序涉及宿主常量，更新后须完全退出 DSH（含托盘）再打开。
 
 `Config.customImageConnections` 保留多连接的 UUID、凭据和连接默认值，新增 `modelConfigs`（`ImageModelDefinition[]`）；旧 `models: string[]` 继续提供兼容投影。内置协议分别使用 `arkImageModels` / `toapisImageModels`；`imageConnectionPresets` 控制设置左侧是否展示预设入口。新增连接为空模型列表、默认停用，模型由用户手动添加；旧模型及参数自动迁移，显式空数组不重新补模型；旧版未填模型名的 ComfyUI / SD WebUI 连接迁移为 `default` 本地条目，原工作流内容保留。
 

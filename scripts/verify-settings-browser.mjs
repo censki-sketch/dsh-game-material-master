@@ -79,7 +79,7 @@ try {
   await page.getByTestId('cfg-custom-group').waitFor({ state: 'visible' });
   check('settings hides business tabs and has a single title back arrow', await page.locator('.SPR_modules').count() === 0 && await page.getByTestId('studio-settings-back').count() === 1 && await page.locator('.SPR_head').getByRole('button', { name: '设置', exact: true }).count() === 0);
   check('one left navigation replaces stacked tab bars', await workspace.locator('.SPR_settingsNav').count() === 1 && await workspace.locator('.SPR_settingsSectionNav').count() === 0);
-  check('template and keying settings follow the generation categories', JSON.stringify(await workspace.getByRole('tab').evaluateAll(els => els.map(el => el.id))) === JSON.stringify(['image', 'video', 'music', 'sfx', 'prompts', 'pipeline', 'misc'].map(key => 'cfg-tab-' + key)));
+  check('Generate video is between SFX and prompt templates', JSON.stringify(await workspace.getByRole('tab').evaluateAll(els => els.map(el => el.id))) === JSON.stringify(['image', 'music', 'sfx', 'video', 'prompts', 'pipeline', 'misc'].map(key => 'cfg-tab-' + key)) && await page.getByTestId('cfg-tab-video').textContent() === '生成视频');
   await page.getByTestId('cfg-tab-misc').click();
   const featureGroup = page.getByTestId('cfg-features-group'); await featureGroup.waitFor();
   check('fresh configuration and feature list start with Image generation', (await invoke('getConfig')).moduleOrder[0] === 'image' && await featureGroup.locator('[data-feature]').first().getAttribute('data-feature') === 'image');
@@ -100,6 +100,29 @@ try {
   await until(async () => (await invoke('getConfig')).moduleOrder[0] === 'image');
   await featureGroup.locator('[data-feature=image]:first-child').waitFor();
   check('Restore default order puts Image generation first again', await featureGroup.locator('[data-feature]').first().getAttribute('data-feature') === 'image');
+  const imageFeature=featureGroup.locator('[data-feature=image]');
+  await imageFeature.hover(); await imageFeature.getByRole('button',{name:'重命名',exact:true}).click();
+  const renameFeature=page.getByTestId('feature-rename-dialog'), nameInput=renameFeature.getByRole('textbox',{name:'功能名称',exact:true});
+  const beforeName=calls.filter(c=>c.method==='saveConfig').length;
+  await nameInput.fill('未保存名称'); await page.keyboard.press('Escape');
+  check('feature rename cancellation leaves configuration intact',calls.filter(c=>c.method==='saveConfig').length===beforeName && !(await invoke('getConfig')).moduleNames.image);
+  await imageFeature.getByRole('button',{name:'重命名',exact:true}).click();
+  await nameInput.fill(''); check('feature rename rejects blank submissions',await renameFeature.getByRole('button',{name:'保存',exact:true}).isDisabled() && await nameInput.getAttribute('maxlength')==='32');
+  await nameInput.fill('我的画室'); await renameFeature.getByRole('button',{name:'保存',exact:true}).click();
+  await until(async()=>(await invoke('getConfig')).moduleNames.image==='我的画室'); await renameFeature.waitFor({state:'hidden'});
+  check('renaming changes only the feature display name',await imageFeature.locator('.SPR_featureTitle').textContent()==='我的画室' && (await invoke('getConfig')).moduleOrder[0]==='image' && !(await invoke('getConfig')).hiddenModules.includes('image'));
+  await page.getByTestId('studio-settings-back').click();
+  check('renamed feature appears in workbench tabs',await page.locator('.SPR_modules [data-module=image]').textContent()==='我的画室');
+  await page.locator('.SPR_head').getByRole('button',{name:'设置',exact:true}).click(); await page.getByTestId('cfg-tab-misc').click();
+  check('feature names survive reopening settings',await imageFeature.locator('.SPR_featureTitle').textContent()==='我的画室');
+  for(const width of [1280,390]) { await page.setViewportSize({width,height:900}); await imageFeature.hover(); await page.screenshot({path:'.verify/feature-rename-row-'+width+'.png',fullPage:true}); }
+  await imageFeature.getByRole('button',{name:'重命名',exact:true}).click();
+  check('rename dialog fits narrow screens',await renameFeature.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;}));
+  await page.screenshot({path:'.verify/feature-rename-dialog-390.png',fullPage:true});
+  await renameFeature.getByRole('button',{name:'恢复默认名称',exact:true}).click();
+  await until(async()=>!(await invoke('getConfig')).moduleNames.image); await renameFeature.waitFor({state:'hidden'});
+  check('restoring the default name preserves module settings',await imageFeature.locator('.SPR_featureTitle').textContent()==='图片生成' && requests.length===0);
+  await page.setViewportSize({width:1280,height:900});
   await page.screenshot({ path: '.verify/settings-features-light.png', fullPage: true });
   await page.locator('.SPR_settingsChildren').getByRole('button', { name: '本机依赖与数据', exact: true }).click();
   const localData = page.getByTestId('cfg-local-data'); await localData.waitFor();
@@ -717,13 +740,12 @@ try {
   await page.getByTestId('cfg-paid-video-enabled').click();
   await until(async()=>!(await invoke('getConfig')).allowPaidVideoGeneration);
   await videoNav.getByRole('button',{name:'MiniMax',exact:true}).click();
-  const minimaxKey=page.getByTestId('cfg-minimax-key'), minimaxAdvanced=page.getByTestId('cfg-minimax-advanced');
-  check('MiniMax opens without a request or native menus and hides advanced settings', requests.length===videoRequestStart && await minimax.locator('select,datalist').count()===0 && !await minimaxAdvanced.evaluate(el=>el.open));
+  const minimaxKey=page.getByTestId('cfg-minimax-key');
+  check('MiniMax URL is visible above its key without an advanced section', requests.length===videoRequestStart && await minimax.locator('select,datalist').count()===0 && await page.getByTestId('cfg-minimaxBaseUrl').isVisible() && await minimax.locator('.SPR_settingsAdvanced').count()===0 && await minimax.evaluate(el=>el.querySelector('[data-testid=cfg-minimaxBaseUrl]').getBoundingClientRect().bottom < el.querySelector('[data-testid=cfg-minimax-key]').getBoundingClientRect().top));
   await minimaxKey.fill('fake-minimax-one'); await minimaxKey.press('Enter');
   await until(async()=>(await invoke('revealConfigKey',{key:'minimaxApiKey'})).value==='fake-minimax-one');
   await minimax.getByRole('button',{name:'查看原 Key',exact:true}).click();
   check('MiniMax key supports original-value reveal', await minimaxKey.inputValue()==='fake-minimax-one' && await minimaxKey.getAttribute('type')==='text');
-  await minimaxAdvanced.locator('summary').click();
   await page.getByTestId('cfg-minimaxBaseUrl').fill('http://127.0.0.1:9322'); await minimax.locator('h3').click();
   await until(async()=>(await invoke('getConfig')).minimaxBaseUrl==='http://127.0.0.1:9322');
   await minimaxKey.fill('fake-minimax-two'); await minimax.getByRole('button',{name:'测试连接',exact:true}).click();
@@ -733,6 +755,8 @@ try {
   const models=(await invoke('getConfig')).minimaxModels;
   const hailuo=models.find(m=>m.id==='MiniMax-Hailuo-02'); assert.ok(hailuo);
   await minimax.getByTestId('cfg-minimax-model').getByRole('button').click();
+  check('MiniMax model options use names followed by muted detail rows',await page.getByRole('menuitemradio').first().evaluate(el=>{const title=el.querySelector('.SPR_choiceTitle'),detail=el.querySelector('.SPR_choiceDescription');return title.textContent==='MiniMax-H3-Lite'&&detail.textContent.includes('480P')&&detail.getBoundingClientRect().top>=title.getBoundingClientRect().bottom&&parseFloat(getComputedStyle(detail).fontSize)<parseFloat(getComputedStyle(title).fontSize);}));
+  await page.screenshot({path:'.verify/video-model-menu-details.png',fullPage:true});
   await page.getByRole('menuitemradio').filter({hasText:hailuo.id}).first().click();
   await until(async()=>(await invoke('getConfig')).minimaxModel===hailuo.id);
   await minimax.getByTestId('cfg-minimax-duration').getByRole('button').click();
@@ -747,7 +771,6 @@ try {
   await minimax.getByRole('button',{name:'白模推荐参数',exact:true}).click();
   await until(async()=>{const c=await invoke('getConfig');return c.minimaxModel==='MiniMax-H3-Lite'&&c.minimaxDuration===4&&c.minimaxResolution==='480P';});
   check('mannequin preset saves 4s 480P, restores the official gateway and keeps submission locked', !(await invoke('getConfig')).allowPaidVideoGeneration && (await invoke('getConfig')).minimaxBaseUrl===(await invoke('getConfig')).defaults.minimaxBaseUrl && minimaxRequests().length===1);
-  await minimaxAdvanced.locator('summary').click();
   await videoNav.getByRole('button',{name:'ToAPIs（视频）',exact:true}).click();
   await page.getByTestId('cfg-toapis-video-enabled').click();
   await until(async()=>{const c=await invoke('getConfig');return c.toapisVideo&&!c.comfyVideo;});
@@ -807,8 +830,8 @@ try {
         await videoNav.getByRole('button',{name,exact:true}).click();
         check(key+' video form fits '+width+(dark?' dark':' light'),await group.evaluate(el=>el.scrollWidth<=el.clientWidth+1&&el.getBoundingClientRect().right<=innerWidth));
         await page.screenshot({path:'.verify/video-settings-'+key+'-'+width+(dark?'-dark':'-light')+'.png',fullPage:true});
-        if(key==='minimax'||key==='comfy') {
-          const advanced=key==='minimax'?minimaxAdvanced:comfyAdvanced;
+        if(key==='comfy') {
+          const advanced=comfyAdvanced;
           await advanced.locator('summary').click();
           check(key+' expanded advanced fields fit '+width,await advanced.evaluate(el=>[el,...el.querySelectorAll('.SPR_field,.SPR_serviceOutputFields')].every(n=>n.scrollWidth<=n.clientWidth+1)));
           await page.screenshot({path:'.verify/video-settings-'+key+'-expanded-'+width+(dark?'-dark':'-light')+'.png',fullPage:true});
@@ -817,6 +840,7 @@ try {
         if(key==='minimax'||key==='toapis') {
           await group.getByTestId(key==='minimax'?'cfg-minimax-model':'cfg-toapis-video-ratio').getByRole('button').click();
           check(key+' video themed menu stays within viewport at '+width,await page.getByRole('menu').evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;}));
+          if(key==='minimax') await page.screenshot({path:'.verify/video-model-menu-'+width+(dark?'-dark':'-light')+'.png',fullPage:true});
           await page.keyboard.press('Escape');
         }
       }

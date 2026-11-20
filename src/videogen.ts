@@ -88,7 +88,7 @@ export function assertVideoBackendReady(config: Config): void {
 
 function assertPaidVideoEnabled(config: Pick<Config, "allowPaidVideoGeneration">): void {
   if (config.allowPaidVideoGeneration !== true) {
-    throw new Error("付费视频生成已锁定，请在右上角「设置 → 生视频」或「设置 → 游戏素材大师 → 生视频」手动开启；保存配置不会生成视频");
+    throw new Error("付费视频生成已锁定，请在右上角「设置 → 生成视频」或「设置 → 游戏素材大师 → 生成视频」手动开启；保存配置不会生成视频");
   }
 }
 
