@@ -87,6 +87,8 @@ try {
   await page.screenshot({ path: '.verify/settings-features-light.png', fullPage: true });
   await page.locator('.SPR_settingsChildren').getByRole('button', { name: '本机依赖与数据', exact: true }).click();
   const localData = page.getByTestId('cfg-local-data'); await localData.waitFor();
+  check('settings shows the plugin root rather than the eight-direction project folder', await localData.locator('.SPR_settingsPath').textContent() === join(home, 'game-material-master'));
+  check('data location distinguishes custom project folders from plugin storage', await localData.getByRole('heading', { name: '插件数据目录', exact: true }).isVisible() && await localData.getByText('用于配置、索引和默认位置的项目。素材位置以各项目文件夹为准。', { exact: true }).isVisible() && !(await localData.textContent()).includes('所有项目（源图'));
   for (const width of [1280, 720, 390]) {
     await page.setViewportSize({ width, height: 900 });
     check('local data title and Reload button share one row at ' + width + 'px', await localData.locator('.SPR_settingsGroupHead').evaluate(el => { const a = el.querySelector('h3').getBoundingClientRect(), b = el.querySelector(':scope > button').getBoundingClientRect(); return Math.abs(a.top + a.height / 2 - b.top - b.height / 2) < 2 && a.right < b.left && b.right <= innerWidth; }));

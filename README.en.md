@@ -509,6 +509,8 @@ installation tree.
 
 Local dependencies & data places Reload configuration to the right of its title. New-project defaults group canvas and frame extraction, keying, and pixelation and cropping into aligned fields, with color controls on one row. Narrow panels use fewer columns; group help is available beside each heading. Parameter ranges, defaults and save-on-blur behavior are unchanged.
 
+Plugin data directory shows the root for configuration, indexes and projects using the default location; check each project folder for its actual assets. This display fix includes host code: fully quit DSH, including its tray process, then reopen it after updating.
+
 **Settings → Game Material Master**:
 
 Settings opens the first category, Image, by default and uses a left navigation and right-hand forms, hiding the business tabs. The arrow beside the title returns to the previous module. Advanced parameters and longer help are collapsed initially; menus follow the theme.
@@ -659,6 +661,8 @@ Everything in the UI that you can click, change or approve is bilingual.
 - Duplicate submissions are blocked (both in the UI and in chat) so you don't burn money for nothing.
 
 ## Where the output goes
+
+These are the default directories. Image projects using a custom folder store references, generated images, keyed results and history in a project subdirectory there; the default `image-jobs/` keeps only that project's location index.
 
 ```
 <DSH_HOME>/game-material-master/

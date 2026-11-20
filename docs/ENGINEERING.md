@@ -7,6 +7,8 @@
 
 ## 设置导航与多连接生图（2026-11-20）
 
+`本机依赖与数据` 的「插件数据目录」读取配置视图新增的 `pluginDataRoot = config.dataRoot()`，显示配置、索引和默认项目的根目录，并注明素材位置以各项目文件夹为准。旧 `dataRoot = projectsRoot()` 与 `imageJobsRoot` 保留原语义，避免破坏八方向脚本及图片目录选择；不从客户端拼接或猜测根目录。旧宿主未返回新字段时不显示旧项目路径。此修正含宿主代码，更新后须完全退出 DSH（含托盘）再打开，不迁移任何数据。
+
 默认参数页的 `SPR_projectDefaults` 仅定义局部布局：三个跟随主题的分组，单格尺寸成对排列，数值框统一36px，抠像背景色占整行，识别阈值与边缘参数分别对齐。按容器宽度减列，极窄时颜色值另起一行；长标签的说明由 `SettingsSubGroup.hint` 复用 `DescriptionTip`。字段仍由原 `NumField` 与 `KeyColorField(themed)` 保存，范围、默认值和回调不变。`本机依赖与数据` 的刷新按钮通过 `SettingsGroup.actions` 位于标题右侧，原刷新行为保持。设置页不渲染工作台侧栏遮罩，避免长表单滚动后被窄屏遮罩挡住。此调整仅客户端，刷新页面即可。
 
 设置分类顺序为 image、video、music、sfx、prompts、pipeline、misc，提示词模板与画面抠像位于功能数据之前。默认功能顺序由 `links.STUDIO_MODULES` 与经典脚本 `make_MODULES()` 同步定义，image 居首；缺少配置及恢复默认使用此顺序，已有用户顺序由 normalizeModuleOrder 保留。`FeatureOrderList` 复用 `SettingsGroup`，恢复按钮通过 actions 放在标题右侧同排，排序说明、隐藏规则与当前隐藏状态统一放入标题 `DescriptionTip`，不再生成底部使用说明折叠块；两层导航将该组件按设置分组处理。默认顺序涉及宿主常量，更新后须完全退出 DSH（含托盘）再打开。

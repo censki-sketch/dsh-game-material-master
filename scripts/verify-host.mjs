@@ -242,6 +242,8 @@ async function main() {
   // ── 2. 配置 ────────────────────────────────────────────────────────────
   console.log("2) 配置读写与脱敏");
   const initial = await studio.getConfig();
+  check("插件数据目录指向配置和索引的根目录", initial.pluginDataRoot === join(HOME, "game-material-master"), initial.pluginDataRoot);
+  check("原 dataRoot 保留八方向项目目录以兼容现有调用", initial.dataRoot === join(initial.pluginDataRoot, "projects"), initial.dataRoot);
   // 默认模型是 5.0 Flash。**不要改回 4.0**：实测 4.0 会把 2:1 等距菱形画成近正方形
   // （比例 1.058）并且只输出 JPEG，地图地块模块依赖这个几何，用它必然量不出菱形。
   check("默认使用 Seedream 5.0 Flash", initial.arkModel === "doubao-seedream-5-0-flash-260915", initial.arkModel);
@@ -711,7 +713,6 @@ async function main() {
   const { patchProject } = await import("../lib/store.js");
   const { spawn } = await import("node:child_process");
   const { readFile, writeFile } = await import("node:fs/promises");
-  const { join } = await import("node:path");
   const projectRoot = join(HOME, "game-material-master", "projects", projectId);
 
   function ffmpeg(args) {

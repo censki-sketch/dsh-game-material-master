@@ -1314,8 +1314,8 @@
       "抠像下限": "Keying lower bound",
       "抠像上限": "Keying upper bound",
       "自动裁剪填充比例": "Auto-crop fill ratio",
-      "数据位置": "Data location",
-      "所有项目（源图、绿幕图、视频、序列帧、整图）都保存在：": "All projects (source images, chroma-key images, videos, sequence frames, sheets) are stored in:",
+      "插件数据目录": "Plugin data directory",
+      "用于配置、索引和默认位置的项目。素材位置以各项目文件夹为准。": "Stores configuration, indexes and projects using the default location. Check each project folder for its assets.",
       "已刷新": "Refreshed",
       "重新读取配置": "Reload configuration",
       "gameStudio 远程服务不可用，请确认插件已启用": "The gameStudio remote service is unavailable. Make sure the plugin is enabled.",
@@ -25050,13 +25050,9 @@
           h("p", null, config.ffmpeg?.ok === true ? T("ffmpeg 可用：{n0}", { n0: config.ffmpeg.version }) : T("ffmpeg 不可用：{n0}", { n0: config.ffmpeg?.error ?? T("未知") })),
           h(
             SettingsSubGroup,
-            { title: T("数据位置") },
-            h(
-              "p",
-              null,
-              T("所有项目（源图、绿幕图、视频、序列帧、整图）都保存在："),
-              h("code", { className: "SPR_settingsPath" }, config.dataRoot)
-            )
+            { title: T("插件数据目录") },
+            config.pluginDataRoot ? h("p", null, h("code", { className: "SPR_settingsPath" }, config.pluginDataRoot)) : null,
+            h("p", null, T("用于配置、索引和默认位置的项目。素材位置以各项目文件夹为准。"))
           )
         )
         )

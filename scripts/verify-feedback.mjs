@@ -1641,7 +1641,8 @@ section("功能管理（隐藏模块）");
       pixelSize: 0,
       fillRatio: 0.94,
       bottomMargin: 2,
-      dataRoot: "/tmp/dsh-gmm"
+      pluginDataRoot: "/tmp/dsh-gmm",
+      dataRoot: "/tmp/dsh-gmm/projects"
     };
 
     const saved = [];
@@ -1756,7 +1757,7 @@ section("功能管理（隐藏模块）");
     check("ToAPIs 视频单独成组", collect(settings, (node) => node.props?.["data-testid"] === "cfg-toapis-video").length === 1);
     const miscPanel = panels.find((node) => node.props["data-testid"] === "cfg-panel-misc");
     check("ffmpeg 状态归到「功能与数据」", textOf(miscPanel).includes("ffmpeg"));
-    check("数据路径也在「功能与数据」里", textOf(miscPanel).includes("所有项目"));
+    check("插件数据路径与项目素材位置在「功能与数据」里区分展示", byTag(miscPanel, "h4").some(node => textOf(node) === "插件数据目录") && textOf(miscPanel).includes("素材位置以各项目文件夹为准") && byClass(miscPanel, "SPR_settingsPath").some(node => textOf(node) === featureConfig.pluginDataRoot));
 
     // Model-specific controls live in the explicit editor, never on the connection form.
     HOOK.slots = []; HOOK.cursor = 0;

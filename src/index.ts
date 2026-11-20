@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { appendJobLog } from "./jsonio.js";
-import { ARK_MODEL_PRESETS, CUSTOM_PROTOCOLS, CUSTOM_PROTOCOL_DEFAULTS, DEFAULT_CONFIG, ROW_ORDER_VERSION, MINIMAX_HOST_PRESETS, MINIMAX_MODEL_PRESETS, builtinModelConfig, customConnectionConfig, loadConfig, maskConfig, migrateLegacyDataRoot, projectsRoot, imageJobsRoot, saveConfig } from "./config.js";
+import { ARK_MODEL_PRESETS, CUSTOM_PROTOCOLS, CUSTOM_PROTOCOL_DEFAULTS, DEFAULT_CONFIG, ROW_ORDER_VERSION, MINIMAX_HOST_PRESETS, MINIMAX_MODEL_PRESETS, builtinModelConfig, customConnectionConfig, dataRoot, loadConfig, maskConfig, migrateLegacyDataRoot, projectsRoot, imageJobsRoot, saveConfig } from "./config.js";
 import {
   DEFAULT_ROW_ORDER,
   DIRECTION_KEYS,
@@ -353,6 +353,7 @@ export class GameStudioGateway extends TypertRemoteService {
         return { key, label: direction?.label ?? key, refs: direction?.refs ?? [] };
       }),
       ffmpeg: this.ffmpegCache,
+      pluginDataRoot: dataRoot(),
       dataRoot: projectsRoot(),
       imageJobsRoot: imageJobsRoot()
     };
