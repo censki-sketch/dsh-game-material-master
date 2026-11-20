@@ -7,6 +7,8 @@
 
 ## 设置导航与多连接生图（2026-11-20）
 
+`ImageConnectionForm` 移除火山方舟专用的 `cfg-redraw-model` 输入框及其 `SPR_settingsAdvanced` 容器，清理对应词条与通用布局的标签匹配。模型编辑器内的高级配置保留，宿主 `arkRedrawModel` 兼容字段及骨骼部件重绘行为不变。本次仅客户端，刷新插件页面即可。
+
 `本机依赖与数据` 的「插件数据目录」读取配置视图新增的 `pluginDataRoot = config.dataRoot()`，显示配置、索引和默认项目的根目录，并注明素材位置以各项目文件夹为准。旧 `dataRoot = projectsRoot()` 与 `imageJobsRoot` 保留原语义，避免破坏八方向脚本及图片目录选择；不从客户端拼接或猜测根目录。旧宿主未返回新字段时不显示旧项目路径。此修正含宿主代码，更新后须完全退出 DSH（含托盘）再打开，不迁移任何数据。
 
 默认参数页的 `SPR_projectDefaults` 仅定义局部布局：三个跟随主题的分组，单格尺寸成对排列，数值框统一36px，抠像背景色占整行，识别阈值与边缘参数分别对齐。按容器宽度减列，极窄时颜色值另起一行；长标签的说明由 `SettingsSubGroup.hint` 复用 `DescriptionTip`。字段仍由原 `NumField` 与 `KeyColorField(themed)` 保存，范围、默认值和回调不变。`本机依赖与数据` 的刷新按钮通过 `SettingsGroup.actions` 位于标题右侧，原刷新行为保持。设置页不渲染工作台侧栏遮罩，避免长表单滚动后被窄屏遮罩挡住。此调整仅客户端，刷新页面即可。

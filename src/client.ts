@@ -1273,8 +1273,6 @@
       "留空表示不修改": "Leave blank to keep unchanged",
       "保存 Key": "Save key",
       "自定义：{n0}": "Custom: {n0}",
-      "部件重绘模型": "Part redraw model",
-      "跟生图模型相同": "Same as the generation model",
       "输出尺寸": "Output size",
       "MiniMax（图生视频）": "MiniMax (image-to-video)",
       "视频提交正在确认或处理中，请勿重复点击": "A video submission is being confirmed or processed. Please do not click again.",
@@ -23513,8 +23511,7 @@
                 h(DescriptionTip, { id: "model-edit-" + provider + connection?.id + encodeURIComponent(model.id), className: "SPR_btn SPR_iconBtn", label: T("编辑模型"), text: T("编辑模型"), disabled: busy !== null, onClick: () => setEditor({ model }), icon: h(ProjectActionIcon, { name: "rename" }) }),
                 h(DescriptionTip, { id: "model-delete-" + provider + connection?.id + encodeURIComponent(model.id), className: "SPR_btn SPR_iconBtn", label: T("删除模型"), text: T("删除模型"), disabled: busy !== null, onClick: () => setRemove(model), icon: h(ProjectActionIcon, { name: "delete" }) }),
                 h(SettingsEnableSwitch, { enabled: model.enabled, testId: "model-enabled-" + provider + "-" + model.id, onChange: value => action(() => editModel("update", model, { enabled: value })) })));
-          }) : h("div", { className: "SPR_connectionEmpty" }, h("span", null, T("暂无模型")), h("span", { className: "SPR_hint" }, T("点击添加模型，填写服务商提供的模型 ID")))),
-          provider === "ark" ? h("details", { className: "SPR_settingsAdvanced" }, h("summary", null, T("高级配置")), h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("部件重绘模型")), h("input", { className: "SPR_input", "data-testid": "cfg-redraw-model", defaultValue: config.arkRedrawModel || "", placeholder: T("跟生图模型相同"), onBlur: event => void action(() => apply({ arkRedrawModel: event.target.value.trim() })) }))) : null),
+          }) : h("div", { className: "SPR_connectionEmpty" }, h("span", null, T("暂无模型")), h("span", { className: "SPR_hint" }, T("点击添加模型，填写服务商提供的模型 ID"))))),
         editor ? h(ImageModelEditor, { model: editor.model, provider, protocol, defaults, onSave: values => editModel(editor.model ? "update" : "create", editor.model, values), onClose: () => setEditor(null) }) : null,
         remove ? h(AudioConfirm, { title: T("删除模型？"), text: remove.name || remove.id, confirmLabel: T("删除"), onConfirm: () => editModel("delete", remove), onClose: () => setRemove(null) }) : null,
         confirmation ? h(AudioConfirm, { title: T("生成测试（计费）"), text: T("将使用 {n0} 生成一张测试图，服务商会计费。", { n0: confirmation.name || confirmation.id }), confirmLabel: T("确认测试"), onConfirm: () => test(confirmation), onClose: () => setConfirmation(null) }) : null,
@@ -23546,7 +23543,7 @@
         if (Array.isArray(item)) return item.map(compact);
         if (item.type === "p" && (!item.props?.className || item.props.className === "SPR_hint")) { help.push(item); return null; }
         const label = item.props?.label || (item.type === "label" ? text([item.props.children ?? item.children].flat(Infinity)[0]) : "");
-        if (/超时|timeout|随机种子|random seed|CFG|引导强度|采样步数|sampling steps|部件重绘模型|redraw model|负面提示词|negative prompt|采样器|sampler/i.test(label)) { advanced.push(item); return null; }
+        if (/超时|timeout|随机种子|random seed|CFG|引导强度|采样步数|sampling steps|负面提示词|negative prompt|采样器|sampler/i.test(label)) { advanced.push(item); return null; }
         if (item.props?.className === "SPR_fields") return React.cloneElement(item, { children: [item.props.children ?? item.children].flat(Infinity).map(compact) });
         return item;
       };
