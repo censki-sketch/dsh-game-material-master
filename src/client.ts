@@ -3669,8 +3669,8 @@
     /** 六个功能模块。插件是「大师」，每个模块管一类素材。 */
     function make_MODULES() {
       return [
-      { key: "sprite", title: T("八方向图生成"), hint: T("一张设定图 → 8 方向 × 8 帧精灵图") },
       { key: "image", title: T("图片生成"), hint: T("按提示词出图，可带参考图，支持抠绿幕导出 PNG") },
+      { key: "sprite", title: T("八方向图生成"), hint: T("一张设定图 → 8 方向 × 8 帧精灵图") },
       { key: "sequence", title: T("序列帧生成"), hint: T("图/视频参考生成视频 → 抽帧 → 抠像 → 合成与播放预览") },
       { key: "rig", title: T("骨骼动画生成"), hint: T("拆件 → 装配定位 → 推骨骼与动画 → 打包 Spine 图集"), experimental: true },
       { key: "iso", title: T("45°地图编辑器"), hint: T("导入菱形地块 → 自动连接 → 画 45° 等距地图 → 导出 PNG") },
@@ -3912,7 +3912,7 @@
     // http(s) 链接加 target="_blank"，不拦就会真的新开一个标签页。
     // 只按 `dsh-gmm` 参数识别自己的链接，其它链接（含站外的）一律放行。
     const OPEN_QUERY_KEY = "dsh-gmm";
-    const OPEN_MODULES = new Set(["sprite", "image", "sequence", "rig", "iso", "map", "music", "sfx"]);
+    const OPEN_MODULES = new Set(["image", "sprite", "sequence", "rig", "iso", "map", "music", "sfx"]);
     /** `dialog` 允许的取值（宿主 `links.ts` 的 `OPEN_DIALOGS`，改一处要同步）。 */
     const OPEN_DIALOGS = new Set(["add"]);
     /** `shape` 允许的取值（宿主 `links.ts` 的 `OPEN_SHAPES`，改一处要同步）。 */
@@ -4651,8 +4651,6 @@
 .SPR_featureRow[data-drop]::after{content:"";position:absolute;left:0;right:0;height:3px;border-radius:2px;background:var(--dsw-alias-state-business-primary);pointer-events:none}
 .SPR_featureRow[data-drop=before]::after{top:-5px}
 .SPR_featureRow[data-drop=after]::after{bottom:-5px}
-.SPR_featureOrderToolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-.SPR_featureOrderToolbar .SPR_hint{margin:0}
 .SPR_featureOrderNotice[data-kind=error]{color:var(--dsw-alias-state-error-primary,#d84949)}
 .SPR_featureCheck{margin:2px 0 0;width:15px;height:15px;flex:none;accent-color:var(--dsw-alias-state-business-primary);cursor:pointer}
 .SPR_featureText{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
@@ -23577,7 +23575,7 @@
     function SettingsSections({ children, initialSection = 0, controlledSection, hideNavigation = false, showAll = false, ...panelProps }) {
       const [selected, setSelected] = React.useState(initialSection);
       const items = [children].flat(Infinity).filter(Boolean);
-      const groups = items.filter(item => item.type === SettingsGroup || item.type === SettingsSubGroup);
+      const groups = items.filter(item => item.type === SettingsGroup || item.type === SettingsSubGroup || item.type === FeatureOrderList);
       const notes = items.filter(item => item.type === "p");
       const active = Math.min(controlledSection ?? selected, Math.max(0, groups.length - 1));
       const sectionId = index => `${panelProps.id}-section-${index}`;
@@ -23608,7 +23606,7 @@
       const panels = items.filter(item => item.props?.role === "tabpanel"), categories = [nav?.props?.children ?? nav?.children].flat(Infinity).filter(Boolean);
       const active = categories.find(item => item.props["aria-selected"])?.props.id;
       const panel = panels.find(item => item.props["aria-labelledby"] === active);
-      const groups = panel?.type === SettingsSections ? [panel.props.children ?? panel.children].flat(Infinity).filter(item => item && (item.type === SettingsGroup || item.type === SettingsSubGroup)) : [];
+      const groups = panel?.type === SettingsSections ? [panel.props.children ?? panel.children].flat(Infinity).filter(item => item && (item.type === SettingsGroup || item.type === SettingsSubGroup || item.type === FeatureOrderList)) : [];
       const preferred = Math.min(sections[active] ?? panel?.props.initialSection ?? 0, Math.max(0, groups.length - 1));
       const selected = groups[preferred]?.props.navHidden ? Math.max(0, groups.findIndex(group => !group.props.navHidden)) : preferred;
       return h("section", { className: "SPR_settings SPR_settingsWorkspace" }, items.filter(item => item !== nav && !panels.includes(item)),
@@ -23627,7 +23625,7 @@
       return h("div", { className: "SPR_settingsSelect", "data-testid": props["data-testid"] }, h(AudioChoice, { label: props["aria-label"] || options.find(item => String(item.id) === String(value))?.label || T("选择模型"), value, choices: options, disabled, onChange: next => onChange?.({ target: { value: next } }) }));
     }
 
-    function FeatureOrderList({ order, hidden, onToggle, onSaveOrder }) {
+    function FeatureOrderList({ title = T("功能管理"), hint, order, hidden, onToggle, onSaveOrder }) {
       const keys = normalizeModuleOrder(order);
       const available = Array.isArray(order);
       const [dragging, setDragging] = React.useState(null);
@@ -23666,11 +23664,9 @@
         const last = rows[rows.length - 1];
         return last ? { key: last.dataset.feature, after: true } : null;
       };
-      return h(React.Fragment, null,
+      return h(SettingsGroup, { title, hint, testId: "cfg-features-group",
+        actions: h(Btn, { disabled: !available || saving || keys.every((key, i) => key === MODULES[i].key), onClick: () => void saveOrder(MODULES.map(entry => entry.key)) }, T("恢复默认顺序")) },
         !available ? h("p", { className: "SPR_featureOrderNotice", "data-kind": "error", role: "alert" }, T("DSH后台尚未加载排序功能，请完全退出DSH（包括托盘）后重新打开。")) : null,
-        h("div", { className: "SPR_featureOrderToolbar" },
-          h("p", { className: "SPR_hint" }, T("拖动左侧手柄排序，自动保存并同步到功能栏与快捷菜单。")),
-          h(Btn, { disabled: !available || saving || keys.every((key, i) => key === MODULES[i].key), onClick: () => void saveOrder(MODULES.map(entry => entry.key)) }, T("恢复默认顺序"))),
         h("div", {
           className: "SPR_featureList", "aria-busy": saving,
           onDragOver: event => {
@@ -23728,7 +23724,7 @@
                 h("span", { className: "SPR_featureHint" }, entry.hint)),
               h("span", { className: "SPR_featureState" }, isHidden ? T("已隐藏") : T("显示中"))));
         })),
-        saving ? h("p", { className: "SPR_hint", role: "status" }, T("正在保存顺序…")) : null,
+        saving ? h("p", { className: "SPR_featureOrderNotice", role: "status" }, T("正在保存顺序…")) : null,
         h(NoticePopup, { notice, onClose: () => setNotice(null) }));
     }
 
@@ -24107,11 +24103,11 @@
       // 正则比对骨骼角色表，这里写成 label 会被误认成多出来的角色。
       const settingsTabs = [
         { key: "image", text: T("生图") },
-        { key: "prompts", text: T("提示词模板") },
         { key: "video", text: T("生视频") },
-        { key: "pipeline", text: T("画面与抠像") },
         { key: "music", text: T("音乐") },
         { key: "sfx", text: T("音效") },
+        { key: "prompts", text: T("提示词模板") },
+        { key: "pipeline", text: T("画面与抠像") },
         { key: "misc", text: T("功能与数据") }
       ];
       const activeTab = settingsTabs.some((tab) => tab.key === settingsTab) ? settingsTab : "image";
@@ -25015,20 +25011,15 @@
             hidden: activeTab !== "misc"
           },
           h(
-            SettingsGroup,
-            { title: T("功能管理") },
-            h("p", null, T("隐藏不用的功能。隐藏后界面里不再出现它的页签与侧栏菜单项，对话里的 AI 也无法调用它（工具会直接报错）。随时可以再打开，已有的项目数据不会被删除。")),
-            h(FeatureOrderList, { order: config.moduleOrder, hidden: hiddenNow, onToggle: toggleFeature, onSaveOrder: saveModuleOrder }),
-          hiddenNow.length === 0
-            ? h("p", { className: "SPR_hint" }, T("当前功能全部可见。"))
-            : h(
-                "p",
-                { className: "SPR_hint" },
-                T("已隐藏 {n0} 个功能：{n1}。隐藏的模块在对话里同样不可调用。", {
+            FeatureOrderList,
+            { title: T("功能管理"), order: config.moduleOrder, hidden: hiddenNow, onToggle: toggleFeature, onSaveOrder: saveModuleOrder, hint: [
+              T("拖动左侧手柄排序，自动保存并同步到功能栏与快捷菜单。"),
+              T("隐藏不用的功能。隐藏后界面里不再出现它的页签与侧栏菜单项，对话里的 AI 也无法调用它（工具会直接报错）。随时可以再打开，已有的项目数据不会被删除。"),
+              hiddenNow.length === 0 ? T("当前功能全部可见。") : T("已隐藏 {n0} 个功能：{n1}。隐藏的模块在对话里同样不可调用。", {
                   n0: hiddenNow.length,
                   n1: MODULES.filter((entry) => hiddenNow.includes(entry.key)).map((entry) => entry.title).join("、")
                 })
-              )
+            ].join(" ") }
         ),
 
         h(

@@ -63,6 +63,29 @@ try {
   await page.getByTestId('cfg-custom-group').waitFor({ state: 'visible' });
   check('settings hides business tabs and has a single title back arrow', await page.locator('.SPR_modules').count() === 0 && await page.getByTestId('studio-settings-back').count() === 1 && await page.locator('.SPR_head').getByRole('button', { name: '设置', exact: true }).count() === 0);
   check('one left navigation replaces stacked tab bars', await workspace.locator('.SPR_settingsNav').count() === 1 && await workspace.locator('.SPR_settingsSectionNav').count() === 0);
+  check('template and keying settings follow the generation categories', JSON.stringify(await workspace.getByRole('tab').evaluateAll(els => els.map(el => el.id))) === JSON.stringify(['image', 'video', 'music', 'sfx', 'prompts', 'pipeline', 'misc'].map(key => 'cfg-tab-' + key)));
+  await page.getByTestId('cfg-tab-misc').click();
+  const featureGroup = page.getByTestId('cfg-features-group'); await featureGroup.waitFor();
+  check('fresh configuration and feature list start with Image generation', (await invoke('getConfig')).moduleOrder[0] === 'image' && await featureGroup.locator('[data-feature]').first().getAttribute('data-feature') === 'image');
+  check('feature help is collapsed into the title icon', await featureGroup.getByRole('button', { name: '查看功能管理说明', exact: true }).count() === 1 && await featureGroup.getByText('使用说明', { exact: true }).count() === 0 && await featureGroup.getByText('拖动左侧手柄排序，自动保存并同步到功能栏与快捷菜单。', { exact: true }).count() === 0);
+  for (const width of [1280, 720, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    check('feature title and Restore button share one row at ' + width + 'px', await featureGroup.locator('.SPR_settingsGroupHead').evaluate(el => { const a = el.querySelector('h3').getBoundingClientRect(), b = el.querySelector(':scope > button').getBoundingClientRect(); return Math.abs(a.top + a.height / 2 - b.top - b.height / 2) < 2 && a.right < b.left && b.right <= innerWidth; }));
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await featureGroup.getByRole('button', { name: '查看功能管理说明', exact: true }).click();
+  check('feature tooltip includes sorting and visibility instructions', await featureGroup.getByRole('tooltip').evaluate(el => el.textContent.includes('拖动左侧手柄排序') && el.textContent.includes('对话里的 AI 也无法调用它')));
+  await featureGroup.locator('h3').click();
+  await featureGroup.locator('[data-feature=image] .SPR_featureDrag').press('ArrowDown');
+  await until(async () => (await invoke('getConfig')).moduleOrder[0] === 'sprite');
+  await page.getByTestId('cfg-tab-image').click(); await page.getByTestId('cfg-tab-misc').click();
+  check('a saved manual order survives changing settings categories', await featureGroup.locator('[data-feature]').first().getAttribute('data-feature') === 'sprite');
+  await featureGroup.getByRole('button', { name: '恢复默认顺序', exact: true }).click();
+  await until(async () => (await invoke('getConfig')).moduleOrder[0] === 'image');
+  await featureGroup.locator('[data-feature=image]:first-child').waitFor();
+  check('Restore default order puts Image generation first again', await featureGroup.locator('[data-feature]').first().getAttribute('data-feature') === 'image');
+  await page.screenshot({ path: '.verify/settings-features-light.png', fullPage: true });
+  await page.getByTestId('cfg-tab-image').click();
   check('opening settings only reads metadata', requests.length === 0);
   check('forms contain no native select elements', await workspace.locator('select').count() === 0);
   const child = page.locator('.SPR_settingsChildren');

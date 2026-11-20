@@ -33,8 +33,8 @@ export const OPEN_QUERY_KEY = "dsh-gmm";
 /** 工作台在 `main` 槽里的 key，也是侧栏 `sidebar.panellist` 的 id。 */
 export const PANEL_KEY = "gameStudio";
 
-/** 八个模块的 key。 */
-export const STUDIO_MODULES = ["sprite", "image", "sequence", "rig", "iso", "map", "music", "sfx"] as const;
+/** 八个模块的 key，按默认显示顺序排列。 */
+export const STUDIO_MODULES = ["image", "sprite", "sequence", "rig", "iso", "map", "music", "sfx"] as const;
 export type StudioModule = (typeof STUDIO_MODULES)[number];
 
 /** 八方向图的四个阶段。 */

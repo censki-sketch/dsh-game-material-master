@@ -1683,7 +1683,8 @@ section("功能管理（隐藏模块）");
     // 隐藏 sprite → hiddenModules 按固定顺序排列。
     checkboxes.find((node) => node.props["data-testid"] === "cfg-feature-sprite").props.onChange({ target: { checked: false } });
     check("取消勾选后写回宿主", JSON.stringify(saved.at(-1)) === JSON.stringify({ hiddenModules: ["sprite", "rig"] }), JSON.stringify(saved.at(-1)));
-    check("设置页说明隐藏后 AI 也调不到", textOf(settings).includes("对话里的 AI 也无法调用它"));
+    const featureHelp = collect(settings, node => node.type?.name === "DescriptionTip" && node.props.label === "功能管理")[0];
+    check("功能管理说明收在标题感叹号中", featureHelp?.props.text.includes("对话里的 AI 也无法调用它") && featureHelp.props.text.includes("拖动左侧手柄排序") && !textOf(settings).includes("对话里的 AI 也无法调用它"));
 
     // 插入线画在两行之间，必须由列表接收事件；只给行绑定 drop 会显示能放但不保存。
     const FeatureOrderList = collect(settings, node => node.type?.name === "FeatureOrderList")[0]?.type;
@@ -1691,7 +1692,7 @@ section("功能管理（隐藏模块）");
       dataset: { feature: key }, getBoundingClientRect: () => ({ top: 100 + i * 62, height: 56 })
     }));
     for (const [label, source, y, expected] of [
-      ["行间插入线", "music", 159, ["sprite", "music", ...MODULE_KEYS.filter(key => !["sprite", "music"].includes(key))]],
+      ["行间插入线", "music", 159, ["image", "music", ...MODULE_KEYS.filter(key => !["image", "music"].includes(key))]],
       ["列表顶部留白", "sfx", 96, ["sfx", ...MODULE_KEYS.filter(key => key !== "sfx")]],
       ["列表底部留白", "sprite", 593, [...MODULE_KEYS.filter(key => key !== "sprite"), "sprite"]]
     ]) {

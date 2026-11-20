@@ -270,6 +270,7 @@ async function main() {
   check("可以全部恢复成可见", JSON.stringify((await studio.getConfig()).hiddenModules) === JSON.stringify([]));
   const { STUDIO_MODULES } = await import("../lib/links.js");
   check("缺少功能顺序时使用默认顺序", JSON.stringify(initial.moduleOrder) === JSON.stringify(STUDIO_MODULES));
+  check("图片生成默认排在第一位", initial.moduleOrder[0] === "image");
   const ordered = await studio.saveConfig({ moduleOrder: ["sfx", "image", "nope", "sfx"] });
   const expectedOrder = ["sfx", "image", ...STUDIO_MODULES.filter(key => !["sfx", "image"].includes(key))];
   check("功能顺序保留用户顺序并补齐合法模块", JSON.stringify(ordered.moduleOrder) === JSON.stringify(expectedOrder));

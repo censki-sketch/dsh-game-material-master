@@ -7,6 +7,8 @@
 
 ## 设置导航与多连接生图（2026-11-20）
 
+设置分类顺序为 image、video、music、sfx、prompts、pipeline、misc，提示词模板与画面抠像位于功能数据之前。默认功能顺序由 `links.STUDIO_MODULES` 与经典脚本 `make_MODULES()` 同步定义，image 居首；缺少配置及恢复默认使用此顺序，已有用户顺序由 normalizeModuleOrder 保留。`FeatureOrderList` 复用 `SettingsGroup`，恢复按钮通过 actions 放在标题右侧同排，排序说明、隐藏规则与当前隐藏状态统一放入标题 `DescriptionTip`，不再生成底部使用说明折叠块；两层导航将该组件按设置分组处理。默认顺序涉及宿主常量，更新后须完全退出 DSH（含托盘）再打开。
+
 `Config.customImageConnections` 保留多连接的 UUID、凭据和连接默认值，新增 `modelConfigs`（`ImageModelDefinition[]`）；旧 `models: string[]` 继续提供兼容投影。内置协议分别使用 `arkImageModels` / `toapisImageModels`；`imageConnectionPresets` 控制设置左侧是否展示预设入口。新增连接为空模型列表、默认停用，模型由用户手动添加；旧模型及参数自动迁移，显式空数组不重新补模型；旧版未填模型名的 ComfyUI / SD WebUI 连接迁移为 `default` 本地条目，原工作流内容保留。
 
 `src/imagemodels.ts` 负责模型 ID、名称、启用状态与参数验证。`saveConfig.imageModelEdit` 串行执行新增、更新和删除，按连接拒绝重复 ID，校验参数类型、数值范围及协议能力；不能在模型参数中写入凭据或任意配置字段。模型 ID 改名同步当前选择，删除当前模型保留失效选择并阻止新请求，不静默切换。旧平铺字段仍兼容已有工具调用。配置继续由 `saveConfig` 串行落盘，凭据不进入直接透传白名单。

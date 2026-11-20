@@ -602,6 +602,8 @@ pipeline as MiniMax.
 Turn a module off under **Settings → Game Material Master → Feature management**; turn it back on any time.
 Existing project data is never deleted.
 
+Image generation comes first by default. Existing custom orders are preserved; Restore default order, on the same row to the right of the title, resets them. Sorting and visibility help is available from the icon beside Feature management. Settings categories are ordered Image, Video, Music, SFX, Prompt templates, Canvas & keying, then Features & data.
+
 - **UI**: the module disappears from the workbench tabs and from the sidebar shortcut menu. If you were
   sitting on that module, the workbench falls back to the first visible one.
 - **Chat**: `game_material`'s `guide` / `call` / `status` / `intake` / `upload` / `wait` / `review` / `approve` all refuse,
