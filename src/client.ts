@@ -266,6 +266,8 @@
       "隐藏 Key": "Hide key",
       "正在读取 Key…": "Reading key…",
       "读取 Key 失败，请完全退出DSH（包括托盘）后重新打开。": "Could not read the key. Quit DSH completely, including the tray, then reopen it.",
+      "已保存的是遮罩字符，请重新粘贴原 Key。": "The saved value contains mask characters. Paste the original key again.",
+      "遮罩字符不能作为 Key 保存，请粘贴原 Key。": "Mask characters cannot be saved as a key. Paste the original key.",
       "不使用模板": "No template",
       "模板已更新，点击「同步更新」可采用新内容；当前仍使用已保存内容。": "This template has changed. Click Sync to use the new text; the saved text is still in use.",
       "同步更新": "Sync",
@@ -23442,11 +23444,9 @@
       const baseKey = provider === "custom" ? "customBaseUrl" : provider === "ark" ? "arkBaseUrl" : "toapisBaseUrl";
       const source = connection || config, modelKey = provider === "ark" ? "arkImageModels" : "toapisImageModels";
       const models = provider === "custom" ? connection?.modelConfigs ?? [] : config[modelKey] ?? [];
-      const [keyDraft, setKeyDraft] = React.useState(null), [editor, setEditor] = React.useState(null), [remove, setRemove] = React.useState(null), [confirmation, setConfirmation] = React.useState(null);
+      const [editor, setEditor] = React.useState(null), [remove, setRemove] = React.useState(null), [confirmation, setConfirmation] = React.useState(null);
       const [busy, setBusy] = React.useState(null), [notice, setNotice] = React.useState(null);
       const lock = React.useRef(false);
-      const keyEdit = React.useRef({ value: null, revision: 0, submitted: -1 });
-      const keyWrites = React.useRef(Promise.resolve());
       const enabled = provider === "custom" ? connection?.enabled !== false : config[provider === "ark" ? "arkImageEnabled" : "toapisImageEnabled"] !== false;
       const protocol = connection?.customProtocol || "openai";
       const apply = async values => {
@@ -23454,21 +23454,6 @@
         onUpdate(next); window.dispatchEvent(new Event("gmm-model-config")); return next;
       };
       const action = async fn => { try { await fn(); } catch (error) { setNotice({ kind: "error", text: msg(error) }); } };
-      const changeKey = value => { keyEdit.current.value = value; keyEdit.current.revision++; setKeyDraft(value); };
-      const commitKey = () => {
-        const { value, revision, submitted } = keyEdit.current;
-        if (value === null || revision === submitted) return;
-        keyEdit.current.submitted = revision;
-        // Keep writes ordered and never erase text entered while an older save is in flight.
-        const write = keyWrites.current.then(() => apply({ [keyName]: value }));
-        keyWrites.current = write.catch(() => {});
-        void write.then(() => {
-          if (keyEdit.current.revision === revision) { keyEdit.current.value = null; setKeyDraft(null); }
-        }).catch(error => {
-          if (keyEdit.current.revision === revision) keyEdit.current.submitted = -1;
-          setNotice({ kind: "error", text: msg(error) });
-        });
-      };
       const editModel = async (op, model, values = undefined) => {
         const next = await api.saveConfig({ imageModelEdit: { provider, connectionId: connection?.id, op, id: model?.id, values } });
         onUpdate(next); window.dispatchEvent(new Event("gmm-model-config"));
@@ -23492,7 +23477,7 @@
           h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, "Base URL"), h("input", { key: source[baseKey], className: "SPR_input", "data-testid": "cfg-" + provider + "-base-url", defaultValue: source[baseKey], onBlur: event => { if (event.target.value.trim() !== source[baseKey]) void action(() => apply({ [baseKey]: event.target.value.trim() })); } })),
           h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("API 格式")), provider === "custom" ? h(SettingsSelect, { "data-testid": "cfg-custom-protocol", value: protocol, onChange: event => { const protocols = config.customProtocols ?? [], target = protocols.find(item => item.id === event.target.value); void action(() => apply({ customProtocol: event.target.value, ...(target && (!source[baseKey] || protocols.some(item => item.baseUrl === source[baseKey])) ? { customBaseUrl: target.baseUrl } : {}) })); } },
             (config.customProtocols ?? [{ id: "openai", label: "OpenAI API" }, { id: "comfyui", label: "ComfyUI API" }, { id: "sdwebui", label: "Stable Diffusion WebUI API" }]).map(item => h("option", { key: item.id, value: item.id }, item.label))) : h("div", { className: "SPR_connectionProtocol" }, provider === "ark" ? "Seedream / images/generations" : "ToAPIs / images/generations")),
-          h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, "API Key"), h(ConfigKeyInput, { api, keyName, connectionId: connection?.id, isSet: source[keyName + "Set"], resetToken: source[keyName + "Hint"], className: "SPR_input", value: keyDraft ?? "", edited: keyDraft !== null, placeholder: T("粘贴 API Key"), onChange: event => changeKey(event.target.value), onCommit: commitKey, onClear: () => { changeKey(""); commitKey(); } })),
+          h("div", { className: "SPR_field" }, h("label", { className: "SPR_fieldLabel", htmlFor: "image-key-" + (connection?.id || provider) }, "API Key"), h(ConfigKeyInput, { api, keyName, connectionId: connection?.id, isSet: source[keyName + "Set"], resetToken: source[keyName + "Hint"], id: "image-key-" + (connection?.id || provider), className: "SPR_input", placeholder: T("粘贴 API Key"), onSave: value => apply({ [keyName]: value }), clearable: true })),
           h("div", { className: "SPR_imageModelListHead" }, h("span", null, T("模型列表")), h(Btn, { disabled: models.length >= 50, onClick: () => setEditor({ model: null }) }, h(TaskHeaderIcon, { name: "add" }), T("添加模型"))),
           h("div", { className: "SPR_imageModelList", "data-testid": "cfg-" + provider + "-models" }, models.length ? models.map(model => {
             const status = config.imageModelTests?.find(item => item.provider === provider && item.connectionId === connection?.id && item.model === model.id);
@@ -23846,57 +23831,101 @@
               h("button", { type: "submit", className: "SPR_btn SPR_projectDeleteConfirm", disabled: saving }, T("确认删除"))))) : null);
     }
 
-    /** Reveal only on demand; viewing never writes the saved secret into the edit draft. */
-    function ConfigKeyInput({ api, keyName, connectionId, isSet, resetToken, edited = false, onCommit = null, onClear = null, ...inputProps }) {
+    /** Saved values, edit drafts and visibility are separate; mask glyphs never enter input.value. */
+    function ConfigKeyInput({ api, keyName, connectionId, isSet, resetToken, onSave = null, clearable = false, ...inputProps }) {
       const [shown, setShown] = React.useState(false);
-      const [revealed, setRevealed] = React.useState(null);
-      const [editing, setEditing] = React.useState(false);
-      const [loading, setLoading] = React.useState(false);
+      const [saved, setSaved] = React.useState(null);
+      const [draft, setDraft] = React.useState(null);
+      const [loading, setLoading] = React.useState(!!onSave && !!isSet);
       const [error, setError] = React.useState("");
       const requestRef = React.useRef(0);
       const loadingRef = React.useRef(false);
-      const hide = () => { requestRef.current++; loadingRef.current = false; setShown(false); setRevealed(null); setEditing(false); setLoading(false); setError(""); };
-      React.useEffect(hide, [keyName, connectionId, isSet, resetToken]);
-      React.useEffect(() => { if (onCommit && !edited) hide(); }, [edited]);
-      React.useEffect(() => {
-        const onVisibility = () => { if (document.hidden) hide(); };
-        window.addEventListener("blur", hide);
-        document.addEventListener("visibilitychange", onVisibility);
-        return () => { requestRef.current++; window.removeEventListener("blur", hide); document.removeEventListener("visibilitychange", onVisibility); };
-      }, []);
-      const readSaved = async (show) => {
-        if (loadingRef.current) return;
-        if (!isSet) return;
-        const request = ++requestRef.current;
+      const editRef = React.useRef({ value: null, revision: 0, submitted: -1 });
+      const writesRef = React.useRef(Promise.resolve());
+      const pendingRef = React.useRef(0);
+      const mountedRef = React.useRef(true);
+      const acknowledgedRef = React.useRef(null);
+      const hide = () => setShown(false);
+      const readSaved = async (show = false) => {
+        if (loadingRef.current || !isSet) return;
+        const request = ++requestRef.current, revision = editRef.current.revision;
         loadingRef.current = true; setLoading(true); setError("");
         try {
           const result = await api.revealConfigKey({ key: keyName, ...(connectionId ? { connectionId } : {}) });
-          if (request !== requestRef.current) return;
-          if (typeof result?.value !== "string") throw new Error();
-          setRevealed(result.value); if (show) setShown(true);
-        } catch {
-          if (request === requestRef.current) setError(T("读取 Key 失败，请完全退出DSH（包括托盘）后重新打开。"));
+          if (!mountedRef.current || request !== requestRef.current || revision !== editRef.current.revision) return;
+          if (typeof result?.value !== "string") throw new Error(T("读取 Key 失败，请完全退出DSH（包括托盘）后重新打开。"));
+          if (/[•●⋅·…]/u.test(result.value) || /^\*+$/u.test(result.value.trim())) throw new Error(T("已保存的是遮罩字符，请重新粘贴原 Key。"));
+          setSaved(result.value); if (show) setShown(true);
+        } catch (cause) {
+          if (mountedRef.current && request === requestRef.current) setError(msg(cause));
         } finally {
-          if (request === requestRef.current) { loadingRef.current = false; setLoading(false); }
+          if (mountedRef.current && request === requestRef.current) { loadingRef.current = false; setLoading(false); }
         }
       };
+      React.useEffect(() => {
+        // A write's response may update the hint before its promise completes. It must not
+        // start a stale read or replace a newer draft with a masking placeholder.
+        if (pendingRef.current || editRef.current.value !== null) return;
+        const identity = keyName + ":" + (connectionId || "");
+        if (onSave && acknowledgedRef.current?.identity === identity && acknowledgedRef.current.isSet === !!isSet && acknowledgedRef.current.token === resetToken) return;
+        acknowledgedRef.current = { identity, isSet: !!isSet, token: resetToken };
+        requestRef.current++; loadingRef.current = false; setSaved(null); hide(); setLoading(false); setError("");
+        if (onSave && isSet) void readSaved();
+      }, [keyName, connectionId, isSet, resetToken]);
+      React.useEffect(() => {
+        mountedRef.current = true;
+        const onVisibility = () => { if (document.hidden) hide(); };
+        window.addEventListener("blur", hide);
+        document.addEventListener("visibilitychange", onVisibility);
+        return () => { mountedRef.current = false; requestRef.current++; window.removeEventListener("blur", hide); document.removeEventListener("visibilitychange", onVisibility); };
+      }, []);
+      const change = value => {
+        requestRef.current++; loadingRef.current = false; setLoading(false); setError("");
+        if (onSave) { editRef.current.value = value; editRef.current.revision++; setDraft(value); }
+        else { setSaved(null); inputProps.onChange?.({ target: { value } }); }
+      };
+      const commit = () => {
+        const { value, revision, submitted } = editRef.current;
+        if (!onSave || value === null || submitted === revision) return;
+        if (/[•●⋅·…]/u.test(value) || /^\*+$/u.test(value.trim())) { setError(T("遮罩字符不能作为 Key 保存，请粘贴原 Key。")); return; }
+        editRef.current.submitted = revision; pendingRef.current++;
+        const write = writesRef.current.then(() => onSave(value));
+        writesRef.current = write.catch(() => {});
+        void write.then(next => {
+          if (!mountedRef.current) return;
+          const source = connectionId ? next?.customImageConnections?.find(entry => entry.id === connectionId) : next;
+          if (source) acknowledgedRef.current = { identity: keyName + ":" + (connectionId || ""), isSet: !!source[keyName + "Set"], token: source[keyName + "Hint"] };
+          setSaved(value.trim());
+          if (editRef.current.revision === revision) { editRef.current.value = null; setDraft(null); }
+          setError("");
+        }).catch(cause => {
+          if (!mountedRef.current) return;
+          if (editRef.current.revision === revision) editRef.current.submitted = -1;
+          setError(msg(cause));
+        }).finally(() => { pendingRef.current--; });
+      };
+      const value = onSave ? draft !== null ? draft : saved ?? "" : inputProps.value || saved || "";
       const toggle = async () => {
-        if (shown) { setShown(false); return; }
-        if (inputProps.value || edited || revealed !== null) { setShown(true); return; }
+        if (shown) { hide(); return; }
+        if (value || (onSave && draft !== null)) { setShown(true); return; }
         await readSaved(true);
       };
       const label = loading ? T("正在读取 Key…") : shown ? T("隐藏 Key") : T("查看原 Key");
-      return h("div", { className: "SPR_secretField", onBlur: event => { if (!event.currentTarget.contains(event.relatedTarget)) { onCommit?.(); hide(); } } },
-        h("div", { className: "SPR_secretInputWrap", "data-clearable": onClear ? "true" : undefined },
-          h("input", { autoComplete: "off", spellCheck: false, ...inputProps, type: shown ? "text" : "password", value: edited ? inputProps.value : inputProps.value || ((shown || editing) && revealed !== null ? revealed : isSet && (!editing || (!onCommit && loading)) ? "••••••••" : ""),
-            onFocus: event => { setEditing(true); if (onCommit && !edited && !inputProps.value && revealed === null) void readSaved(false); inputProps.onFocus?.(event); },
+      return h("div", { className: "SPR_secretField", onBlur: event => { if (!event.currentTarget.contains(event.relatedTarget)) { commit(); hide(); } } },
+        h("div", { className: "SPR_secretInputWrap", "data-clearable": clearable ? "true" : undefined },
+          h("input", { autoComplete: "new-password", spellCheck: false, ...inputProps, "data-1p-ignore": "true", "data-lpignore": "true", type: shown ? "text" : "password", value,
+            // While reading, preserve the cursor and prevent edits against an unknown saved value.
+            readOnly: !!onSave && loading && draft === null && saved === null,
+            placeholder: loading ? T("正在读取 Key…") : !onSave && isSet && !value ? "••••••••" : inputProps.placeholder,
+            onFocus: event => { if (onSave && isSet && saved === null && draft === null && !loadingRef.current) void readSaved(); inputProps.onFocus?.(event); },
             onBlur: event => inputProps.onBlur?.(event),
-            onKeyDown: event => { if (onCommit && event.key === "Enter" && !event.nativeEvent?.isComposing) { event.preventDefault(); onCommit(); event.currentTarget.blur(); } inputProps.onKeyDown?.(event); },
-            onChange: event => { requestRef.current++; loadingRef.current = false; setLoading(false); setRevealed(null); setError(""); inputProps.onChange(event); } }),
-          h("button", { type: "button", className: "SPR_secretToggle", "aria-label": label, "aria-pressed": shown, "aria-busy": loading, disabled: inputProps.disabled || loading || (!isSet && !inputProps.value), onClick: () => void toggle() },
+            onPaste: event => { if (onSave && loading) { event.preventDefault(); change(event.clipboardData.getData("text")); } else inputProps.onPaste?.(event); },
+            onKeyDown: event => { if (onSave && event.key === "Enter" && !event.nativeEvent?.isComposing) { event.preventDefault(); commit(); event.currentTarget.blur(); } inputProps.onKeyDown?.(event); },
+            onChange: event => change(event.target.value) }),
+          h("button", { type: "button", className: "SPR_secretToggle", "aria-label": label, "aria-pressed": shown, "aria-busy": loading, disabled: inputProps.disabled || loading || (!isSet && !value), onClick: () => void toggle() },
             loading ? "…" : h("svg", { width: 17, height: 17, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
               h("path", { d: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" }), h("circle", { cx: 12, cy: 12, r: 3 }), shown ? h("path", { d: "M3 3l18 18" }) : null)),
-          onClear && (edited ? !!inputProps.value : isSet || !!inputProps.value) ? h("button", { type: "button", className: "SPR_secretClear", "aria-label": T("清除 Key"), disabled: inputProps.disabled, onMouseDown: event => event.preventDefault(), onClick: () => { hide(); onClear(); } }, h(TaskHeaderIcon, { name: "close" })) : null),
+          clearable && (value || (draft === null && isSet)) ? h("button", { type: "button", className: "SPR_secretClear", "aria-label": T("清除 Key"), disabled: inputProps.disabled, onMouseDown: event => event.preventDefault(), onClick: () => { hide(); change(""); commit(); } }, h(TaskHeaderIcon, { name: "close" })) : null),
         h(NoticePopup, { notice: error, onClose: () => setError("") }));
     }
 

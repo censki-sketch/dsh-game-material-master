@@ -15,7 +15,7 @@
 
 普通配置视图对每个连接脱敏；`revealConfigKey` 仅客户端显式读取并带 connectionId。测试请求支持准确的连接和模型，不改变全局选择，客户端与 wire 均须透传模型 payload。测试 fingerprint 包含连接、协议、凭据、模型及有效参数；改名称或开关不作废证据，参数与凭据变化需重测。复制连接不继承测试记录。测试证据只存散列，不落盘明文凭据。
 
-`ImageConnectionForm` 复用连接表单和模型列表，所有自定义连接保持挂载。生图 Key 编辑后失焦或 Enter 自动保存，内嵌清除图标在 hover 或自身 focus-visible 时显示；null 草稿与显式空串区分未编辑和清空，读取原 Key 不触发保存。写入队列及草稿 revision 防止较早响应抹掉后续输入；失败保留草稿，可再次失焦重试。`ConfigKeyInput` 聚焦时按连接读取可编辑原值，眼睛切换可见性，读请求 ticket 阻止迟到回包覆盖新输入；普通配置仍脱敏，读取期间不把掩码圆点作为编辑值。回显不再随无关配置对象更新而重置，失焦或窗口失去焦点时收回明文。`ImageModelEditor` 使用主题弹窗、右上关闭图标、底部保存按钮与默认折叠的高级配置；模型编辑、添加、切换、开关、读取均不联网生成。删除与收费测试通过 `AudioConfirm` 二次确认，图标说明复用 `DescriptionTip` 主题浮层。协议切换仅在地址仍为已知默认值时更换地址，手动填写的地址保留。
+`ImageConnectionForm` 复用连接表单和模型列表，所有自定义连接保持挂载。`ConfigKeyInput.onSave` 统一管理生图 Key 的原值、草稿、读取和串行写入；编辑后失焦或 Enter 自动保存，内嵌清除图标在 hover 或自身 focus-visible 时显示。组件加载时按连接读取原值，`input.value` 永远只包含原值或实际输入，密码显示仅靠 type=password；读取中只读，粘贴替换会作废读取，迟到回包不能覆盖草稿。保存响应确认对应凭据版本后保留原值，不再将固定圆点放回 value；眼睛只切 type，不重新读取、不改草稿或保存。null 草稿与显式空串区分未编辑和清空；写入队列与 revision 保留新输入，失败保留草稿，可再次失焦重试。失焦或窗口失焦收回可见明文，组件卸载后清除内存缓存。手动保存的其他 Key 仅在点击眼睛时读取，未读取状态的圆点是 placeholder，不进入 value。宿主 writeConfig 同时拦截平铺及连接增改复制操作中的纯星号、圆点和含圆点的部分遮罩，既有损坏值不自动清空，界面提示重新粘贴。`ImageModelEditor` 使用主题弹窗、右上关闭图标、底部保存按钮与默认折叠的高级配置；模型编辑、添加、切换、开关、读取均不联网生成。删除与收费测试通过 `AudioConfirm` 二次确认，图标说明复用 `DescriptionTip` 主题浮层。协议切换仅在地址仍为已知默认值时更换地址，手动填写的地址保留。
 
 `SettingsLayout` 共用单层左侧导航。设置页隐藏业务页签，标题左箭头返回原模块；普通进入及重新进入默认 image 分类，定向模板入口仍进入 prompts。`SettingsSelect` 复用 `AudioChoice` / `ImageResultMenu`，展开态无原生 select；浅深主题、390/720/1280 宽度、编辑器高度边界、键盘与关闭行为均有浏览器回归。
 
@@ -244,7 +244,7 @@ dsh plugin --profile web add /path/to/dsh-game-material-master
 | 本地 ComfyUI（图生视频） | 勾选后图生视频改走本机 ComfyUI（替代 MiniMax）：地址、超时、提示词 / 首帧注入点、宽高 / 时长 / 种子、API 格式工作流 JSON。「测试连接」只读 `/system_stats` 与 `/queue`，**免费**（对比火山方舟那个会真生一张图）；另有 `comfyCookies`，供藏在鉴权反代后面的 ComfyUI 用 |
 | 功能管理 | 逐个开关六个模块；关掉的模块界面不出现，对话工具面也拒绝（见下） |
 
-Key 只写入本机 `<DSH_HOME>/game-material-master/config.json`，常规配置视图始终脱敏（只给尾号）。`ConfigKeyInput` 在已配置且无编辑草稿时显示固定掩码；掩码不进入草稿，聚焦后可输入替换值，保存或失焦后恢复掩码。不会自动读取原Key。设置页眼睛图标通过 `revealConfigKey({key})` 单项读取原Key；该方法标记 `clientOnly`，不进入模型工具清单。查看不修改输入草稿或写入配置，失焦、切换配置或窗口失焦后清除显示的明文。
+Key 只写入本机 `<DSH_HOME>/game-material-master/config.json`，常规配置视图始终脱敏（只给尾号）。生图设置通过 `revealConfigKey({key,connectionId?})` 单项读取后缓存于密码框，眼睛切换明文；其他手动保存字段仍在点击眼睛时读取。该方法标记 `clientOnly`，不进入模型工具清单。读取与切换可见性不写配置，失焦或窗口失焦恢复密码显示；组件卸载清除缓存。遮罩只用于显示，绝不写入 input.value，宿主也拒绝将遮罩当 Key 落盘。
 
 图片生成的主提示词与优化弹窗共用 `PromptReferenceInput`，支持 `@图片N` 选择、高亮与光标位置插入；主输入保留失焦保存和 `mergeDrafts()`。参考图由 `ImageReferenceList` 逐行展示，单击打开原图 `<dialog>`，移除按钮独立；预览与选择引用只在客户端执行，不调用生成接口。组件按任务ID重建，切换任务不残留菜单或预览。
 

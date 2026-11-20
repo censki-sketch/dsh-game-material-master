@@ -37,6 +37,16 @@ try {
   await invoke("saveConfig", { imageProvider: "custom", customBaseUrl: "http://127.0.0.1/custom", customApiKey: "fake-custom-secret", customModel: "model-one", customSize: "1024x1024",
     arkBaseUrl: "http://127.0.0.1/ark", arkApiKey: "fake-ark-secret", arkModel: "ark-one", toapisBaseUrl: "http://127.0.0.1/v1", toapisApiKey: "fake-toapis-secret", toapisImageModel: "toapis-one" });
   let view = await invoke("getConfig"); check("configured keys do not count as passing tests", view.imageModelTests.every(model => model.testedAt === null) && requests.length === 0);
+  const keysBeforeMask = await readFile(configPath(), "utf8"), maskConnectionId = view.activeCustomImageConnectionId;
+  for (const key of ["arkApiKey", "toapisApiKey", "customApiKey", "minimaxApiKey", "musicApiKey", "sfxApiKey"]) {
+    await assert.rejects(invoke("saveConfig", { [key]: "••••••••" }), /遮罩/);
+    await assert.rejects(invoke("saveConfig", { [key]: "••••••edited" }), /遮罩/);
+    check(key + ": full and partially edited masks cannot overwrite saved credentials", await readFile(configPath(), "utf8") === keysBeforeMask);
+  }
+  for (const op of ["create", "update", "duplicate"]) {
+    await assert.rejects(invoke("saveConfig", { customConnection: { op, id: maskConnectionId, values: { customApiKey: "********" } } }), /遮罩/);
+    check(op + ": connection operations reject masked keys without changing disk", await readFile(configPath(), "utf8") === keysBeforeMask);
+  }
   check("all three configured image routes are available without tests or generation", view.imageModels.length === 3 && view.imageModels.every(model => model.blocker === null) && view.imageModels.some(model => model.provider === "custom" && model.model === "model-one") && requests.length === 0 && !JSON.stringify(view.imageModels).includes("fake-"));
   for (const [method, provider] of [["testArk", "ark"], ["testCustomImage", "custom"], ["testToapisImage", "toapis"]]) {
     await invoke(method, method === "testToapisImage" ? { confirmed: true } : undefined);
