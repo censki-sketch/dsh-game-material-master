@@ -334,6 +334,8 @@ flowchart LR
 
 **依赖**（设置 → 游戏素材大师 → 谱曲模式里有探测与路径输入）：
 
+设置页默认只显示就绪状态、Python / scoremill / ffmpeg 版本和 Python 路径，「重新检测」位于标题右侧。可选的 FluidSynth / SoundFont 路径收在「高级设置」，安装说明、费用和来源说明放在标题感叹号中；各依赖旁的感叹号可查看完整路径与错误。本次界面调整刷新页面即可。
+
 - `python3 -m pip install scoremill` —— 写 MIDI 必需；
 - `fluidsynth` + 一个 `.sf2`（默认找 `~/Library/Audio/SoundFonts/FluidR3_GM.sf2`）—— 更好的试听，可选；
 - `ffmpeg` —— 转 MP3 / 导出（已有音乐模块也需要它）。

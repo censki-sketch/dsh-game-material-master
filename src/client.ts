@@ -2249,7 +2249,6 @@
 
 
       "FluidSynth + SoundFont": "FluidSynth + SoundFont",
-      "内置简易音源": "built-in preview synth",
 
 
 
@@ -2278,21 +2277,24 @@
 
 
 
-      "谱曲模式在对话里先分析想法、给出方案，再用 scoremill 把方案写成 MIDI；宿主在本机渲染试听。谱曲、试听、导出全部免费；只有最后「交给 Suno」会消耗谱乐 AI 积分。": "Compose mode analyses the idea in the conversation, gives a plan, then writes the MIDI with scoremill; the host renders a local preview. Composing, auditioning, and exporting are free; only the final Suno handoff consumes Puyue AI credits.",
-      "依赖：Python 3 + scoremill（写 MIDI）、FluidSynth + SoundFont（更好的试听，可选）、ffmpeg（转 MP3/导出）。没有 FluidSynth 时插件会退回内置简易音源；没有 scoremill 时无法谱曲。": "Dependencies: Python 3 + scoremill (writes MIDI), FluidSynth + SoundFont (better preview, optional), ffmpeg (MP3/export). Without FluidSynth the plugin falls back to a built-in preview synth; without scoremill composing is unavailable.",
-      "正在检测谱曲依赖…": "Detecting compose dependencies…",
-      "谱曲依赖已就绪：试听使用 {n0}": "Compose dependencies ready: preview uses {n0}",
+      "已就绪": "Ready",
+      "依赖未就绪": "Dependencies missing",
+      "未检测": "Not checked",
+      "可用": "Available",
+      "可选": "Optional",
+      "内置音源": "Built-in synth",
+      "Python 路径": "Python path",
+      "FluidSynth 路径": "FluidSynth path",
+      "SoundFont 路径": "SoundFont path",
+      "留空自动探测": "Leave empty to auto-detect",
+      "本地谱曲、试听和导出免费；交给 Suno 才计费。需要 Python 3 和 scoremill，ffmpeg 用于音频导出。": "Local composition, preview and export are free; only the Suno handoff is billed. Requires Python 3 and scoremill; ffmpeg handles audio export.",
+      "可选音源组件，未配置时使用内置音源。": "Optional preview components. The built-in synth is used when they are not configured.",
       "Python": "Python",
-      "未找到": "Not found",
       "scoremill": "scoremill",
       "未安装": "Not installed",
       "FluidSynth": "FluidSynth",
-      "未找到（用内置音源）": "Not found (using built-in synth)",
       "SoundFont": "SoundFont",
       "ffmpeg": "ffmpeg",
-      "Python 路径（留空自动探测）": "Python path (leave empty to auto-detect)",
-      "FluidSynth 路径（留空自动探测）": "FluidSynth path (leave empty to auto-detect)",
-      "SoundFont 路径（留空自动探测）": "SoundFont path (leave empty to auto-detect)",
       "正在检测…": "Detecting…",
       "谱曲依赖已就绪": "Compose dependencies ready",
       "仍有依赖缺失": "Some dependencies are still missing",
@@ -4711,6 +4713,25 @@
 .SPR_settingsSub h4{margin:0;font-size:12px;font-weight:600;color:var(--dsw-alias-label-secondary)}
 .SPR_settingsWide{grid-column:1 / -1}
 .SPR_settingsPath{word-break:break-all}
+.SPR_scoreSettings{display:flex;flex-direction:column;gap:18px;container-type:inline-size}
+.SPR_scoreSummary{display:flex;align-items:center;gap:8px;min-width:0;font-size:12px;color:var(--dsw-alias-label-secondary)}
+.SPR_scoreSummary strong{color:var(--dsw-alias-label-primary);font-weight:500}
+.SPR_scoreDot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--dsw-alias-label-tertiary)}
+.SPR_scoreSummary[data-state=ready]>.SPR_scoreDot,.SPR_scoreDependencyValue[data-state=ready]>.SPR_scoreDot{background:var(--dsw-alias-state-success-primary,#22a06b)}
+.SPR_scoreSummary[data-state=error]>.SPR_scoreDot,.SPR_scoreDependencyValue[data-state=error]>.SPR_scoreDot{background:var(--dsw-alias-state-error-primary,#d85d55)}
+.SPR_scoreDependencies{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.SPR_scoreDependency{display:flex;align-items:center;gap:7px;min-width:0;padding:11px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;font-size:12px}
+.SPR_scoreDependencyName{flex:none;color:var(--dsw-alias-label-primary)}
+.SPR_scoreDependencyValue{display:flex;align-items:center;gap:6px;margin-left:auto;min-width:0;color:var(--dsw-alias-label-secondary)}
+.SPR_scoreDependencyValue>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_scoreDependency .SPR_descriptionButton{flex:none}
+.SPR_scoreSettings .SPR_field{margin:0;min-width:0}
+.SPR_scoreSettings .SPR_input{box-sizing:border-box;width:100%;height:36px;min-width:0}
+.SPR_scoreSettings .SPR_settingsAdvanced{margin:0}
+.SPR_scoreOptional{display:flex;flex-direction:column;gap:16px;padding-top:14px}
+.SPR_scoreOptional .SPR_scoreDependencies{grid-template-columns:repeat(2,minmax(0,1fr))}
+.SPR_scoreOptionalPaths{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@container(max-width:680px){.SPR_scoreDependencies{grid-template-columns:1fr}.SPR_scoreOptional .SPR_scoreDependencies,.SPR_scoreOptionalPaths{grid-template-columns:1fr}}
 .SPR_projectDefaults{container-type:inline-size}
 .SPR_projectDefaults .SPR_settingsSectionContent{display:flex;flex-direction:column;gap:16px}
 .SPR_projectDefaults .SPR_settingsSub{padding:16px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:color-mix(in srgb,var(--dsw-alias-label-secondary) 2%,transparent);gap:14px}
@@ -23949,6 +23970,16 @@
         h(NoticePopup, { notice: error, onClose: () => setError("") }));
     }
 
+    function ScoreDependency({ name, probe, optional = false }) {
+      const detail = [probe?.path, probe?.version, probe?.error, optional ? T("可选音源组件，未配置时使用内置音源。") : ""].filter(Boolean).join("\n");
+      return h("div", { className: "SPR_scoreDependency", role: "listitem" },
+        h("span", { className: "SPR_scoreDependencyName" }, name),
+        h("span", { className: "SPR_scoreDependencyValue", "data-state": !probe ? "pending" : probe.ok ? "ready" : optional ? "optional" : "error" },
+          h("span", { className: "SPR_scoreDot", "aria-hidden": "true" }),
+          h("span", null, !probe ? T("未检测") : probe.ok ? probe.version || T("可用") : optional ? T("可选") : T("未安装"))),
+        detail ? h(DescriptionTip, { id: "score-dep-" + name, label: name, text: detail }) : null);
+    }
+
     function ConfigSection(props) {
       useLocaleTick();
       const api = props?.api;
@@ -24129,6 +24160,7 @@
         { key: "misc", text: T("功能与数据") }
       ];
       const activeTab = settingsTabs.some((tab) => tab.key === settingsTab) ? settingsTab : "image";
+      const scoreStatus = config.musicScoreStatus;
       /** 视频三选一的展示态，不新增配置字段：两个开关互斥，谁都没开就是 MiniMax。 */
       const videoBackend = config.comfyVideo === true ? "comfy" : config.toapisVideo === true ? "toapis" : "minimax";
 
@@ -24819,86 +24851,48 @@
           SettingsGroup,
           {
             title: T("谱曲模式（本地 MIDI）"),
-            hint: T("谱曲模式在对话里先分析想法、给出方案，再用 scoremill 把方案写成 MIDI；宿主在本机渲染试听。谱曲、试听、导出全部免费；只有最后「交给 Suno」会消耗谱乐 AI 积分。")
+            testId: "cfg-music-score",
+            hint: [T("本地谱曲、试听和导出免费；交给 Suno 才计费。需要 Python 3 和 scoremill，ffmpeg 用于音频导出。"),
+              T("可选音源组件，未配置时使用内置音源。"), T("留空自动探测"),
+              T("安装提示：python3 -m pip install scoremill；macOS 可 brew install fluid-synth；SoundFont 放到 ~/Library/Audio/SoundFonts/FluidR3_GM.sf2。"),
+              T("谱曲模式参考：scoremill（MIT，https://github.com/CharlesCNorton/scoremill）与 Midra 的 prompt-to-code MIDI 思路；只吸收方法论，未打包其代码或音源。")].join("\n\n"),
+            actions: h(BusyBtn, {
+              busy: testing === "score", busyText: T("正在检测…"), disabled: testing !== null,
+              onClick: async () => {
+                setTesting("score");
+                try { await run(() => api.testMusicScore(), value => value?.ok === true ? T("谱曲依赖已就绪") : value?.blocker ?? T("仍有依赖缺失")); }
+                finally { setTesting(null); }
+              }
+            }, T("重新检测"))
           },
-          h("p", null, T("依赖：Python 3 + scoremill（写 MIDI）、FluidSynth + SoundFont（更好的试听，可选）、ffmpeg（转 MP3/导出）。没有 FluidSynth 时插件会退回内置简易音源；没有 scoremill 时无法谱曲。")),
-          config.musicScoreStatus === undefined || config.musicScoreStatus === null
-            ? h("p", { className: "SPR_hint" }, T("正在检测谱曲依赖…"))
-            : h(
-                React.Fragment,
-                null,
-                config.musicScoreStatus.blocker
-                  ? h("div", { className: "SPR_note", "data-kind": "error" }, config.musicScoreStatus.blocker)
-                  : h("div", { className: "SPR_note", "data-kind": "ok" }, T("谱曲依赖已就绪：试听使用 {n0}", { n0: config.musicScoreStatus.renderer === "fluidsynth" ? T("FluidSynth + SoundFont") : T("内置简易音源") })),
-                h(
-                  "div",
-                  { className: "SPR_fields" },
-                  h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("Python")), h("div", { className: "SPR_hint" }, config.musicScoreStatus.python?.ok ? `${config.musicScoreStatus.python.path ?? ""} ${config.musicScoreStatus.python.version ?? ""}` : config.musicScoreStatus.python?.error ?? T("未找到"))),
-                  h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("scoremill")), h("div", { className: "SPR_hint" }, config.musicScoreStatus.scoremill?.ok ? config.musicScoreStatus.scoremill.version ?? "OK" : config.musicScoreStatus.scoremill?.error ?? T("未安装"))),
-                  h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("FluidSynth")), h("div", { className: "SPR_hint" }, config.musicScoreStatus.fluidsynth?.ok ? `${config.musicScoreStatus.fluidsynth.path ?? ""} ${config.musicScoreStatus.fluidsynth.version ?? ""}` : T("未找到（用内置音源）"))),
-                  h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("SoundFont")), h("div", { className: "SPR_hint" }, config.musicScoreStatus.soundfont?.ok ? config.musicScoreStatus.soundfont.path ?? "OK" : T("未找到（用内置音源）"))),
-                  h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("ffmpeg")), h("div", { className: "SPR_hint" }, config.musicScoreStatus.ffmpeg?.ok ? `${config.musicScoreStatus.ffmpeg.path ?? ""} ${config.musicScoreStatus.ffmpeg.version ?? ""}` : config.musicScoreStatus.ffmpeg?.error ?? T("未找到"))),
-                  h(
-                    "label",
-                    { className: "SPR_field" },
-                    h("span", { className: "SPR_fieldLabel" }, T("Python 路径（留空自动探测）")),
-                    h("input", {
-                      className: "SPR_input",
-                      value: scorePaths?.python ?? config.musicPythonPath ?? "",
-                      placeholder: "/path/to/venv/bin/python3",
-                      onChange: (event) => setScorePaths({ ...(scorePaths ?? { python: "", fluidsynth: "", soundfont: "" }), python: event.target.value }),
-                      onBlur: () => void patch({ musicPythonPath: (scorePaths?.python ?? "").trim() })
-                    })
-                  ),
-                  h(
-                    "label",
-                    { className: "SPR_field" },
-                    h("span", { className: "SPR_fieldLabel" }, T("FluidSynth 路径（留空自动探测）")),
-                    h("input", {
-                      className: "SPR_input",
-                      value: scorePaths?.fluidsynth ?? config.musicFluidsynthPath ?? "",
-                      placeholder: "/opt/homebrew/bin/fluidsynth",
-                      onChange: (event) => setScorePaths({ ...(scorePaths ?? { python: "", fluidsynth: "", soundfont: "" }), fluidsynth: event.target.value }),
-                      onBlur: () => void patch({ musicFluidsynthPath: (scorePaths?.fluidsynth ?? "").trim() })
-                    })
-                  ),
-                  h(
-                    "label",
-                    { className: "SPR_field" },
-                    h("span", { className: "SPR_fieldLabel" }, T("SoundFont 路径（留空自动探测）")),
-                    h("input", {
-                      className: "SPR_input",
-                      value: scorePaths?.soundfont ?? config.musicSoundfontPath ?? "",
-                      placeholder: "~/Library/Audio/SoundFonts/FluidR3_GM.sf2",
-                      onChange: (event) => setScorePaths({ ...(scorePaths ?? { python: "", fluidsynth: "", soundfont: "" }), soundfont: event.target.value }),
-                      onBlur: () => void patch({ musicSoundfontPath: (scorePaths?.soundfont ?? "").trim() })
-                    })
-                  )
-                ),
-                Array.isArray(config.musicScoreStatus.warnings) && config.musicScoreStatus.warnings.length > 0
-                  ? h("div", { className: "SPR_hint" }, ...config.musicScoreStatus.warnings.map((warning) => h("div", null, warning)))
-                  : null
-              ),
-          h(
-            "div",
-            { className: "SPR_toolbar" },
-            h(
-              BusyBtn,
-              {
-                busy: testing === "score",
-                busyText: T("正在检测…"),
-                disabled: testing !== null,
-                onClick: async () => {
-                  setTesting("score");
-                  await run(() => api.testMusicScore(), (value) => (value?.ok === true ? T("谱曲依赖已就绪") : value?.blocker ?? T("仍有依赖缺失")));
-                  setTesting(null);
-                }
-              },
-              T("重新检测")
-            )
-          ),
-          h("p", { className: "SPR_hint" }, T("安装提示：python3 -m pip install scoremill；macOS 可 brew install fluid-synth；SoundFont 放到 ~/Library/Audio/SoundFonts/FluidR3_GM.sf2。")),
-          h("p", { className: "SPR_hint" }, T("谱曲模式参考：scoremill（MIT，https://github.com/CharlesCNorton/scoremill）与 Midra 的 prompt-to-code MIDI 思路；只吸收方法论，未打包其代码或音源。"))
+          h("div", { className: "SPR_scoreSettings" },
+            h("div", { className: "SPR_scoreSummary", "data-state": !scoreStatus ? "pending" : scoreStatus.blocker ? "error" : "ready", role: "status" },
+              h("span", { className: !scoreStatus ? "SPR_spinSm" : "SPR_scoreDot", "aria-hidden": "true" }),
+              h("strong", null, !scoreStatus ? T("正在检测…") : scoreStatus.blocker ? T("依赖未就绪") : T("已就绪")),
+              scoreStatus && !scoreStatus.blocker ? h("span", null, "· ", scoreStatus.renderer === "fluidsynth" ? T("FluidSynth + SoundFont") : T("内置音源")) : null,
+              scoreStatus?.blocker ? h(DescriptionTip, { id: "score-dependency-error", label: T("依赖未就绪"), text: scoreStatus.blocker }) : null),
+            h("div", { className: "SPR_scoreDependencies", role: "list" },
+              h(ScoreDependency, { name: T("Python"), probe: scoreStatus?.python }),
+              h(ScoreDependency, { name: T("scoremill"), probe: scoreStatus?.scoremill }),
+              h(ScoreDependency, { name: T("ffmpeg"), probe: scoreStatus?.ffmpeg })),
+            h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("Python 路径")),
+              h("input", { className: "SPR_input", "data-testid": "cfg-score-python", value: scorePaths?.python ?? config.musicPythonPath ?? "", placeholder: T("留空自动探测"),
+                onChange: event => setScorePaths({ ...(scorePaths ?? { python: "", fluidsynth: "", soundfont: "" }), python: event.target.value }),
+                onBlur: () => void patch({ musicPythonPath: (scorePaths?.python ?? config.musicPythonPath ?? "").trim() }) })),
+            h("details", { className: "SPR_settingsAdvanced", "data-testid": "cfg-score-advanced" }, h("summary", null, T("高级设置")),
+              h("div", { className: "SPR_scoreOptional" },
+                h("div", { className: "SPR_scoreDependencies", role: "list" },
+                  h(ScoreDependency, { name: T("FluidSynth"), probe: scoreStatus?.fluidsynth, optional: true }),
+                  h(ScoreDependency, { name: T("SoundFont"), probe: scoreStatus?.soundfont, optional: true })),
+                h("div", { className: "SPR_scoreOptionalPaths" },
+                  h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("FluidSynth 路径")),
+                    h("input", { className: "SPR_input", "data-testid": "cfg-score-fluidsynth", value: scorePaths?.fluidsynth ?? config.musicFluidsynthPath ?? "", placeholder: T("留空自动探测"),
+                      onChange: event => setScorePaths({ ...(scorePaths ?? { python: "", fluidsynth: "", soundfont: "" }), fluidsynth: event.target.value }),
+                      onBlur: () => void patch({ musicFluidsynthPath: (scorePaths?.fluidsynth ?? config.musicFluidsynthPath ?? "").trim() }) })),
+                  h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("SoundFont 路径")),
+                    h("input", { className: "SPR_input", "data-testid": "cfg-score-soundfont", value: scorePaths?.soundfont ?? config.musicSoundfontPath ?? "", placeholder: T("留空自动探测"),
+                      onChange: event => setScorePaths({ ...(scorePaths ?? { python: "", fluidsynth: "", soundfont: "" }), soundfont: event.target.value }),
+                      onBlur: () => void patch({ musicSoundfontPath: (scorePaths?.soundfont ?? config.musicSoundfontPath ?? "").trim() }) }))))))
         ),
         ),
 

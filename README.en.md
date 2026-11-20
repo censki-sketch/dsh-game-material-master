@@ -395,6 +395,8 @@ Instead:
 **Dependencies** (the plugin detects them and lets you set paths under Settings → Game Material Master →
 Compose mode):
 
+Settings shows a compact readiness status, Python / scoremill / ffmpeg versions and the Python path, with Detect again beside the title. Optional FluidSynth / SoundFont paths are under Advanced settings. The title's info icon contains installation, cost and attribution details; each dependency's info icon shows its full path and errors. Refresh the page for this UI update.
+
 - `python3 -m pip install scoremill` — required to write MIDI;
 - `fluidsynth` plus a `.sf2` (looks for `~/Library/Audio/SoundFonts/FluidR3_GM.sf2` by default) — optional,
   for a better preview;
