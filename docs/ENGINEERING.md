@@ -11,7 +11,7 @@
 
 普通配置视图对每个连接脱敏；`revealConfigKey` 仅客户端显式读取，并带 connectionId。测试 API 接受连接和模型，显式指定连接时强制 confirmed，测试不会改变全局选择。`imageModelRoutes` 提供唯一的模型目录与缺项状态；测试 fingerprint 包含连接 ID、地址、Key、模型、协议与工作流，不落盘明文。复制连接不继承测试通过记录。
 
-`SettingsLayout` 将分类与连接合为左侧导航；各 `SettingsSections` 表单保留挂载，按类别记住子项。Key、模型列表、工作流草稿按连接隔离；模型列表失焦保存，异步完成只清除已提交的草稿，保留后续输入。设置页隐藏业务页签和右上按钮，标题左箭头回原模块，窄屏也保持同排。`SettingsSelect` 复用 `AudioChoice` / `ImageResultMenu`，设置内无原生 select；高级字段和说明默认收起。Ark、自定义、ToAPIs 生图测试与音效测试均先经过主题计费确认，元数据读取不会生成。
+`SettingsLayout` 将分类与连接合为左侧导航；各 `SettingsSections` 表单保留挂载，按类别记住子项。Key、模型列表、工作流草稿按连接隔离；模型列表失焦保存，异步完成只清除已提交的草稿，保留后续输入。设置页隐藏业务页签和右上按钮，标题左箭头回原模块，窄屏也保持同排。普通设置入口及重新进入均默认选择首个 image 分类；管理模板等定向入口仍显式指定目标分类。`SettingsSelect` 复用 `AudioChoice` / `ImageResultMenu`，设置内无原生 select；高级字段和说明默认收起。Ark、自定义、ToAPIs 生图测试与音效测试均先经过主题计费确认，元数据读取不会生成。
 
 验证：`verify-model-tests.mjs` 使用真实网关与 wire、假图片服务验证多连接凭据隔离、路由、复制、删除、并发写入、重启和测试状态；`verify-settings-browser.mjs` 使用真实 Chromium、真实本地网关和假接口验证导航、连接草稿、模型选择、计费确认、浅深主题及窄屏边界。需要本地 React UMD fixtures 和 Playwright，环境变量与 `verify-audio-browser.mjs` 一致。不得使用真实 Key 或付费服务验证。宿主、wire 与客户端同时变更，使用方需完全退出 DSH（含托盘）后重开。
 

@@ -49,7 +49,14 @@ try {
     root.render(React.createElement(bundle.__test.StudioPanel, { api }));
   }, METHODS.map(item => item.method));
   await page.locator('.SPR_head').getByRole('button', { name: '设置', exact: true }).click();
-  await page.getByTestId('cfg-tab-image').click();
+  await page.getByTestId('cfg-panel-image').waitFor({ state: 'visible' });
+  check('opening settings defaults to the first category', await page.getByTestId('cfg-tab-image').getAttribute('aria-selected') === 'true');
+  await page.getByTestId('cfg-tab-video').click();
+  await page.getByTestId('cfg-panel-video').waitFor({ state: 'visible' });
+  await page.getByTestId('studio-settings-back').click();
+  await page.locator('.SPR_head').getByRole('button', { name: '设置', exact: true }).click();
+  await page.getByTestId('cfg-panel-image').waitFor({ state: 'visible' });
+  check('reopening settings returns to the first category after visiting video', await page.getByTestId('cfg-tab-image').getAttribute('aria-selected') === 'true');
   const workspace = page.locator('.SPR_settingsWorkspace'); await workspace.waitFor();
   await page.getByTestId('cfg-custom-group').waitFor({ state: 'visible' });
   check('settings hides business tabs and has a single title back arrow', await page.locator('.SPR_modules').count() === 0 && await page.getByTestId('studio-settings-back').count() === 1 && await page.locator('.SPR_head').getByRole('button', { name: '设置', exact: true }).count() === 0);

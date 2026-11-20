@@ -7259,7 +7259,7 @@
        */
       const loadedPrompts = React.useRef({ projectId: null, images: {}, video: "" });
       const moduleOrder = useModuleOrder();
-      const [settingsInitialTab, setSettingsInitialTab] = React.useState("video");
+      const [settingsInitialTab, setSettingsInitialTab] = React.useState("image");
       const settingsReturnModule = React.useRef(null);
       const [sidebarCollapsed, setSidebarCollapsed] = React.useState(readLastSidebarCollapsed);
       const visibleModules = visibleModulesOf(hidden, moduleOrder);
@@ -7588,7 +7588,7 @@
                 h(Btn, { onClick: createProject, primary: true }, T("新建项目"))
               )
             : null,
-          activeModule === "settings" ? null : h(Btn, { title: T("模型、接口与费用保护"), onClick: () => { setSettingsInitialTab("video"); setModule("settings"); } }, T("设置")))
+          activeModule === "settings" ? null : h(Btn, { title: T("模型、接口与费用保护"), onClick: () => { setSettingsInitialTab("image"); setModule("settings"); } }, T("设置")))
         ),
         activeModule === "settings" ? null : h(
           "div",

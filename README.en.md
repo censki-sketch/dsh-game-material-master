@@ -508,7 +508,7 @@ installation tree.
 
 **Settings → Game Material Master**:
 
-Settings uses a left navigation and right-hand forms, hiding the business tabs. The arrow beside the title returns to the previous module. Advanced parameters and longer help are collapsed initially; menus follow the theme.
+Settings opens the first category, Image, by default and uses a left navigation and right-hand forms, hiding the business tabs. The arrow beside the title returns to the previous module. Advanced parameters and longer help are collapsed initially; menus follow the theme.
 
 Under Image, add, name, duplicate or delete custom connections with separate URLs, keys, protocols and parameters. Enter one model per line. Choose a connection and model directly in the composer; identical model names display their connection name. Editing another connection does not switch the active image route, and switching forms retains unsaved key and workflow drafts. Legacy single-connection settings migrate automatically. Deletion requires confirmation; deleting the last connection clears its key and falls back to the Ark configuration.
 
