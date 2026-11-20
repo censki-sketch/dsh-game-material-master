@@ -52,21 +52,64 @@ try {
   const trigger = page.locator('.SPR_motionActionTrigger');
   const dialog = page.getByRole('dialog', { name: '动作预览', exact: true });
   const list = dialog.getByRole('listbox'), image = dialog.locator('.SPR_motionPreviewViewport img');
+  const canvas = dialog.locator('.SPR_motionTemplateStage canvas');
   const waitImage = () => page.waitForFunction(() => {
     const img = document.querySelector('.SPR_motionPreviewViewport img');
-    return img?.complete && img.naturalWidth > 0 && document.querySelector('.SPR_motionPreviewViewport').dataset.loading === 'false';
+    return img?.complete && img.naturalWidth > 0 && document.querySelector('.SPR_motionTemplateStage canvas') && document.querySelector('.SPR_motionPreviewViewport').dataset.loading === 'false';
   });
   await trigger.click(); await waitImage();
   await page.screenshot({ path: '.verify/motion-preview-structure.png' });
   check('preview and action list are two sibling columns', await dialog.locator('.SPR_motionActionLayout').evaluate(el =>
     el.children.length === 2 && el.children[0].classList.contains('SPR_motionActionList') && el.children[1].classList.contains('SPR_motionActionPreview')));
   check('preview is never nested inside the scroll list', await list.locator('.SPR_motionActionPreview').count() === 0);
-  check('the bundled PNG contains visible template pixels', await image.evaluate(img => {
-    const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
-    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  check('the bundled PNG draws one visible frame', await canvas.evaluate(canvas => {
+    const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
     return pixels.some((value, index) => index % 4 === 3 && value > 0);
   }));
+  check('only a single native-size frame is displayed', await canvas.evaluate(el => el.width === 126 && el.height === 132) && !await image.isVisible());
+  const previewCalls = calls.length;
+  await page.waitForFunction(() => Number(document.querySelector('.SPR_motionTemplateStage canvas').dataset.frame) > 2);
+  check('preview starts playing automatically', await dialog.locator('.SPR_motionTemplatePlayer').getAttribute('data-playing') === 'true');
+  check('playback loops through the animation', await page.evaluate(() => new Promise(resolve => {
+    const canvas = document.querySelector('.SPR_motionTemplateStage canvas'), deadline = performance.now() + 2500;
+    let previous = Number(canvas.dataset.frame);
+    const sample = () => {
+      const frame = Number(canvas.dataset.frame);
+      if (frame < previous) return resolve(true);
+      if (performance.now() > deadline) return resolve(false);
+      previous = frame; requestAnimationFrame(sample);
+    };
+    sample();
+  })));
+  await dialog.getByRole('button', { name: '暂停', exact: true }).click();
+  const paused = await canvas.getAttribute('data-frame'); await page.waitForTimeout(180);
+  check('pause holds the current frame', await canvas.getAttribute('data-frame') === paused);
+  check('paused canvas matches the exact atlas cell', await canvas.evaluate((canvas, spec) => {
+    const index = Number(canvas.dataset.frame), img = document.querySelector('.SPR_motionPreviewViewport img');
+    const expected = document.createElement('canvas'); expected.width = spec.width; expected.height = spec.height;
+    const ctx = expected.getContext('2d'); ctx.drawImage(img, index % 8 * spec.width, Math.floor(index / 8) * spec.height, spec.width, spec.height, 0, 0, spec.width, spec.height);
+    const a = ctx.getImageData(0, 0, spec.width, spec.height).data;
+    const b = canvas.getContext('2d').getImageData(0, 0, spec.width, spec.height).data;
+    return a.every((value, i) => value === b[i]);
+  }, catalog));
+  await dialog.getByRole('button', { name: '播放', exact: true }).focus(); await page.keyboard.press('Space');
+  await page.waitForFunction(frame => document.querySelector('.SPR_motionTemplateStage canvas').dataset.frame !== frame, paused);
+  check('keyboard play resumes from the paused position', await dialog.getByRole('button', { name: '暂停', exact: true }).count() === 1);
+  await dialog.getByRole('button', { name: '重播', exact: true }).click();
+  check('replay restarts the animation', Number(await canvas.getAttribute('data-frame')) < 5 && await dialog.locator('.SPR_motionTemplatePlayer').getAttribute('data-playing') === 'true');
+  check('playback controls make no additional API calls', calls.length === previewCalls);
+  for (const key of ['die1', 'fightidle']) {
+    const spec = catalog.actions.find(action => action.key === key);
+    await list.getByRole('option').nth(catalog.actions.indexOf(spec)).click(); await waitImage();
+    const measured = await canvas.evaluate(async canvas => {
+      const before = Number(canvas.dataset.frame), start = performance.now();
+      await new Promise(resolve => setTimeout(resolve, 350));
+      return { before, after: Number(canvas.dataset.frame), elapsed: performance.now() - start };
+    });
+    const moved = (measured.after - measured.before + spec.frames) % spec.frames;
+    const expected = measured.elapsed / spec.frameDurationsMs[0] % spec.frames;
+    check('playback uses the template frame duration for ' + key, Math.min(Math.abs(moved - expected), spec.frames - Math.abs(moved - expected)) < 3);
+  }
   check('close button uses the X icon', await dialog.getByRole('button', { name: '关闭', exact: true }).locator('svg path').getAttribute('d') === 'm6 6 12 12M6 18 18 6');
   const before = await dialog.locator('.SPR_motionActionPreview').boundingBox();
   await list.evaluate(el => { el.scrollTop = el.scrollHeight; });
@@ -95,11 +138,12 @@ try {
       const geometry = await dialog.evaluate(el => {
         const box = node => { const r = node.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }; };
         const list = el.querySelector('.SPR_motionActionList'), preview = el.querySelector('.SPR_motionActionPreview');
-        return { dialog: box(el), list: box(list), preview: box(preview), viewport: box(el.querySelector('.SPR_motionPreviewViewport')), img: box(el.querySelector('img')), footer: box(el.querySelector('.SPR_motionActionActions')), overflow: el.scrollHeight > el.clientHeight + 1 };
+        return { dialog: box(el), list: box(list), preview: box(preview), viewport: box(el.querySelector('.SPR_motionPreviewViewport')), img: box(el.querySelector('canvas')), controls: box(el.querySelector('.SPR_motionPlaybackControls')), footer: box(el.querySelector('.SPR_motionActionActions')), overflow: el.scrollHeight > el.clientHeight + 1 };
       });
       check('dialog and footer fit the viewport at ' + label, geometry.dialog.left >= 0 && geometry.dialog.right <= width && geometry.dialog.top >= 0 && geometry.dialog.bottom <= height && geometry.footer.bottom <= geometry.dialog.bottom && !geometry.overflow);
       check('preview follows the available dialog width at ' + label, width > 600 ? geometry.preview.left >= geometry.list.right : geometry.preview.top >= geometry.list.bottom);
       check('image stays visible and inside its viewport at ' + label, geometry.img.width > 60 && geometry.img.height > 40 && geometry.img.left >= geometry.viewport.left && geometry.img.right <= geometry.viewport.right + 1 && geometry.img.top >= geometry.viewport.top && geometry.img.bottom <= geometry.viewport.bottom + 1);
+      check('playback controls stay under the animation at ' + label, geometry.controls.top >= geometry.img.bottom && geometry.controls.bottom <= geometry.viewport.bottom);
       check('action list scrolls independently at ' + label, await list.evaluate(el => el.scrollHeight > el.clientHeight));
       await page.screenshot({ path: `.verify/motion-preview-${width}x${height}-${dark ? 'dark' : 'light'}.png` });
       await page.keyboard.press('Escape');
