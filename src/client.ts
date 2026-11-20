@@ -44,6 +44,7 @@
     /** 中文原文 → 英文译文。key 里可能带 `{nN}` 占位符。 */
 /* i18n-ignore-start */
     const EN: Record<string, string> = {
+      "启用": "Enabled",
       "测试失败": "Test failed",
       "测试通过": "Test passed",
       "未测试": "Untested",
@@ -4589,7 +4590,8 @@
 .SPR_settingsContent{min-width:0}
 .SPR_settingsWorkspace .SPR_settingsSections{display:block}
 .SPR_settingsWorkspace .SPR_settingsGroup{background:var(--dsw-alias-bg-layer-1);padding:22px;border-radius:16px}
-.SPR_settingsWorkspace .SPR_settingsGroupHead{align-items:center;margin-bottom:20px}
+.SPR_settingsWorkspace .SPR_settingsGroupHead{align-items:center;margin-bottom:20px;gap:12px}
+.SPR_settingsGroupHead .SPR_settingsEnable{margin-left:auto;flex:none}
 .SPR_settingsWorkspace .SPR_settingsGroupHead h3{display:flex;align-items:center;gap:8px;font-size:15px}
 .SPR_settingsWorkspace .SPR_settingsGroupHead .SPR_badge{display:none}
 .SPR_settingsWorkspace .SPR_settingsBody>.SPR_fields{margin-bottom:18px}
@@ -17776,7 +17778,7 @@
 
     /** Old host processes expose the current route even before they expose the full catalog. */
     function imageModelChoices(config) {
-      if (Array.isArray(config?.imageModels) && config.imageModels.length) return config.imageModels;
+      if (Array.isArray(config?.imageModels)) return config.imageModels;
       if (!config?.imageModel) return [];
       return [{ provider: config.imageProvider || "ark", model: config.imageModel, blocker: config.imageProviderBlocker }];
     }
@@ -17819,10 +17821,11 @@
       const defaultName = promptModels.find(model => model.provider === catalog?.provider && model.model === catalog?.model)?.name || catalog?.model;
       const promptName = selected ? (promptModels.find(model => model.provider === selected.provider && model.model === selected.model)?.name || selected.model) : catalog?.available ? defaultName : T("选择模型");
       const legacyCatalog = !loading && ((imageConfig && images && !Array.isArray(images.imageModels)) || (catalog && !Array.isArray(catalog.models)));
+      const imageName = imageModelChoices(images).some(model => model.provider === images?.imageProvider && model.model === images?.imageModel && (!model.connectionId || model.connectionId === images?.activeCustomImageConnectionId)) ? images.imageModel : T("选择模型");
       return h("div", { className: "SPR_chatModels" }, h(ImageResultMenu, { label: imageConfig ? T("切换模型") : T("提示词优化模型"), disabled: disabled || loading, onOpen: () => void load(),
         icon: h("span", { className: "SPR_chatModelTrigger" }, loading ? h("span", { className: "SPR_spinSm", "aria-hidden": "true" }) : null,
           imageConfig ? h(React.Fragment, null,
-            h("span", { "data-model-kind": "image", title: T("生图模型") + ": " + (images?.imageModel || T("选择模型")) }, images?.imageModel || T("选择模型")),
+            h("span", { "data-model-kind": "image", title: T("生图模型") + ": " + imageName }, imageName),
             h("span", { className: "SPR_chatModelSeparator", "aria-hidden": "true" }, "/")) : null,
           h("span", { "data-model-kind": "prompt", title: T("提示词优化模型") + ": " + promptName }, promptName),
           h("svg", { width: 12, height: 12, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", "aria-hidden": "true" }, h("path", { d: "m4 6 4 4 4-4" }))) },
@@ -17975,19 +17978,21 @@
         position();
         const observer = typeof ResizeObserver === "function" ? new ResizeObserver(position) : null;
         observer?.observe(menu);
-        const controls = items(); (focusLast.current ? controls.at(-1) : menu.querySelector('[aria-checked="true"]') || controls[0])?.focus({ preventScroll: true });
+        const controls = items(); ((focusLast.current ? controls.at(-1) : menu.querySelector('[aria-checked="true"]') || controls[0]) || menu).focus({ preventScroll: true });
         const onScroll = event => { if (!menu.contains(event.target)) position(); };
         // Keep dismissal in the same state flow as the trigger. Native auto
         // light-dismiss can race with React and consume the next opening click.
         const outside = event => { if (!menu.contains(event.target) && !triggerRef.current?.contains(event.target)) close(); };
+        const escape = event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(true); } };
         window.addEventListener("resize", position); document.addEventListener("scroll", onScroll, true);
         document.addEventListener("pointerdown", outside, true);
-        return () => { observer?.disconnect(); window.removeEventListener("resize", position); document.removeEventListener("scroll", onScroll, true); document.removeEventListener("pointerdown", outside, true); if (menu.matches(":popover-open")) menu.hidePopover(); };
+        document.addEventListener("keydown", escape);
+        return () => { observer?.disconnect(); window.removeEventListener("resize", position); document.removeEventListener("scroll", onScroll, true); document.removeEventListener("pointerdown", outside, true); document.removeEventListener("keydown", escape); if (menu.matches(":popover-open")) menu.hidePopover(); };
       }, [open, align]);
       return h("div", { className: "SPR_imageResultActions" },
         h("button", { type: "button", className: "SPR_btn SPR_imageResultMore", disabled, title: icon ? label : T("更多"), ref: triggerRef, "aria-label": label, "aria-haspopup": "menu", "aria-expanded": open,
           onClick: () => { focusLast.current = false; setOpen(value => !value); }, onKeyDown: event => { if (["ArrowDown", "ArrowUp"].includes(event.key)) { event.preventDefault(); focusLast.current = event.key === "ArrowUp"; if (open) { const controls = items(); (focusLast.current ? controls.at(-1) : controls[0])?.focus({ preventScroll: true }); } else setOpen(true); } } }, icon || h(ProjectActionIcon, { name: "more" })),
-        h("div", { ref: menuRef, className: "SPR_imageResultMenu", popover: "manual", role: "menu", "aria-label": label,
+        h("div", { ref: menuRef, className: "SPR_imageResultMenu", popover: "manual", role: "menu", tabIndex: -1, "aria-label": label,
           onToggle: event => { if (!event.currentTarget.matches(":popover-open")) setOpen(false); },
           onClick: event => { const item = event.target.closest("[role^=menuitem]"); if (item && !item.disabled) close(true); },
           onKeyDown: event => {
@@ -23357,7 +23362,19 @@
      * 都活在子组件里，条件卸载会在切页签 / 收卡片时把用户正在输入的内容打回原形。
      * `defaultOpen` 变化时跟着开合（切换当前后端），普通配置回包不会把它弹回去。
      */
-    function SettingsGroup({ title, hint, badge, lead, children, collapsible, defaultOpen, testId }) {
+    function SettingsEnableSwitch({ enabled, onChange, testId }) {
+      const [pending, setPending] = React.useState(null);
+      const lock = React.useRef(false);
+      return h("label", { className: "SPR_transparentToggle SPR_settingsEnable" }, h("input", { type: "checkbox", role: "switch", "aria-label": T("启用"), "data-testid": testId, checked: pending === null ? enabled !== false : pending, disabled: pending !== null,
+        onChange: async event => {
+          if (lock.current) return;
+          const value = event.target.checked;
+          lock.current = true; setPending(value);
+          try { await onChange(value); } finally { lock.current = false; setPending(null); }
+        } }), T("启用"));
+    }
+
+    function SettingsGroup({ title, hint, badge, lead, children, collapsible, defaultOpen, testId, enabled, onEnabledChange }) {
       const [open, setOpen] = React.useState(defaultOpen !== false);
       React.useEffect(() => {
         if (defaultOpen !== undefined) setOpen(defaultOpen);
@@ -23387,6 +23404,7 @@
           "div",
           { className: "SPR_settingsGroupHead" },
           h("h3", null, title, badge ? h("span", { className: "SPR_badge" }, badge) : null, hint ? h(DescriptionTip, { id: "settings-help-" + (testId || String(title).replace(/\s/g, "")), label: title, text: hint }) : null),
+          onEnabledChange ? h(SettingsEnableSwitch, { enabled, onChange: onEnabledChange, testId: testId + "-enabled" }) : null,
           collapsible === true
             ? h(
                 "button",
@@ -23833,7 +23851,7 @@
         }
         return api.saveConfig({ ...remaining, ...(Object.keys(fields).length ? { customConnection: { op: "update", id: edited.id, values: fields } } : {}) });
       };
-      const patch = values => run(() => saveConfiguration(values), T("配置已保存"));
+      const patch = values => run(async () => { const next = await saveConfiguration(values); window.dispatchEvent(new Event("gmm-model-config")); return next; }, T("配置已保存"));
       const editConnection = async (op, values = undefined) => {
         const next = await api.saveConfig({ customConnection: { op, ...(op !== "create" ? { id: edited?.id } : {}), values } });
         setConfig(next);
@@ -24012,9 +24030,10 @@
           SettingsGroup,
           {
             title: T("火山方舟（生图）"),
-            badge: imageProvider === "ark" ? T("当前使用") : null,
+            badge: imageProvider === "ark" && config.arkImageEnabled !== false ? T("当前使用") : null,
             lead: imageProvider === "ark" ? imageStatus : null,
-            testId: "cfg-ark-group"
+            testId: "cfg-ark-group", enabled: config.arkImageEnabled,
+            onEnabledChange: value => patch({ arkImageEnabled: value })
           },
           h(
             "div",
@@ -24111,7 +24130,7 @@
               {
                 busy: testing === "ark",
                 busyText: T("正在生成测试图…"),
-                disabled: testing !== null || !config.arkApiKeySet,
+                disabled: testing !== null || !config.arkApiKeySet || config.arkImageEnabled === false,
                 onClick: () => setTestConfirmation({ run: async () => {
                   setTesting("ark");
                   await run(() => api.testArk(), (value) => T("连接正常：{n0} 返回 {n1} 字节图片", { n0: value.model, n1: value.bytes }));
@@ -24129,9 +24148,10 @@
           {
             title: T("ToAPIs（图片）"),
             hint: T("ToAPIs：图片和视频使用独立的异步协议；每次生成会计费。"),
-            badge: imageProvider === "toapis" ? T("当前使用") : null,
+            badge: imageProvider === "toapis" && config.toapisImageEnabled !== false ? T("当前使用") : null,
             lead: imageProvider === "toapis" ? imageStatus : null,
-            testId: "cfg-toapis"
+            testId: "cfg-toapis", enabled: config.toapisImageEnabled,
+            onEnabledChange: value => patch({ toapisImageEnabled: value })
           },
           h(
             "div",
@@ -24222,7 +24242,7 @@
             h(Btn, { disabled: !config.toapisApiKeySet, onClick: () => run(() => api.saveConfig({ clearToapisApiKey: true }), T("已清除 ToAPIs Key")) }, T("清除"))
           ),
           h("p", { className: "SPR_hint" }, config.toapisApiKeySet ? T("ToAPIs Key 已配置") : T("ToAPIs Key 未配置")),
-          h(BusyBtn, { busy: testing === "toapis", busyText: T("正在生成测试图…"), disabled: testing !== null || !config.toapisApiKeySet,
+          h(BusyBtn, { busy: testing === "toapis", busyText: T("正在生成测试图…"), disabled: testing !== null || !config.toapisApiKeySet || config.toapisImageEnabled === false,
             onClick: () => setTestConfirmation({ run: async () => { setTesting("toapis"); await run(() => api.testToapisImage({ confirmed: true }), value => T("连接正常：{n0} 返回 {n1} 字节图片", { n0: value.model, n1: value.bytes })); setTesting(null); } }) }, T("生成测试（计费）"))
         ),
 
@@ -24238,9 +24258,10 @@
           {
             title: T("自定义生图模型"),
             hint: T("填「主机根地址」即可，具体端点由插件按协议拼；本地服务通常不需要 API Key。"),
-            badge: imageProvider === "custom" ? T("当前使用") : null,
-            lead: imageProvider === "custom" ? imageStatus : null,
-            testId: "cfg-custom-group", connections, editingId: edited?.id, activeId: storedConfig.activeCustomImageConnectionId,
+            badge: imageProvider === "custom" && edited?.id === storedConfig.activeCustomImageConnectionId && edited?.enabled !== false ? T("当前使用") : null,
+            lead: imageProvider === "custom" && edited?.id === storedConfig.activeCustomImageConnectionId ? imageStatus : null,
+            testId: "cfg-custom-group", connections, editingId: edited?.id, activeId: connections.find(entry => entry.id === storedConfig.activeCustomImageConnectionId)?.enabled === false ? null : storedConfig.activeCustomImageConnectionId,
+            enabled: edited?.enabled, onEnabledChange: edited ? value => run(() => editConnection("update", { enabled: value }), T("配置已保存")) : undefined,
             onSelectConnection: setEditingConnectionId,
             onCreateConnection: () => void run(() => editConnection("create", { name: T("连接 {n0}", { n0: connections.length + 1 }) }), T("配置已保存"))
           },
@@ -24467,7 +24488,7 @@
               {
                 busy: testing === "custom",
                 busyText: T("正在生成测试图…"),
-                disabled: testing !== null || config.customImageBlocker != null,
+                disabled: testing !== null || config.customImageBlocker != null || edited?.enabled === false,
                 onClick: () => setTestConfirmation({ run: async () => {
                   setTesting("custom");
                   await run(() => api.testCustomImage(edited ? { connectionId: edited.id, model: testModel, confirmed: true } : undefined), (value) => T("连接正常：{n0} 返回 {n1} 字节图片", { n0: value.provider, n1: value.bytes }));

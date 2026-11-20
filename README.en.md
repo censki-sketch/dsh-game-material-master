@@ -512,6 +512,8 @@ Settings opens the first category, Image, by default and uses a left navigation 
 
 Under Image, add, name, duplicate or delete custom connections with separate URLs, keys, protocols and parameters. Enter one model per line. Choose a connection and model directly in the composer; identical model names display their connection name. Editing another connection does not switch the active image route, and switching forms retains unsaved key and workflow drafts. Legacy single-connection settings migrate automatically. Deletion requires confirmation; deleting the last connection clears its key and falls back to the Ark configuration.
 
+Ark, ToAPIs and each custom connection have an Enabled switch in the card header. Disabling hides its image models from the composer and catalog while retaining editable URLs, keys and parameters. A disabled active connection blocks new generations and tests until you enable it or choose another model; no automatic provider switch occurs. Existing connections stay enabled for compatibility. New custom connections start disabled, and copies retain their source state. The ToAPIs image switch does not affect video configuration.
+
 Reading settings or model lists and switching models never starts generation. **Generate test (billed)** requires confirmation. Custom connections let you select the model to test; evidence is kept per connection and model and invalidated by credential, endpoint or protocol changes. MiniMax, ComfyUI video and music connection tests remain read-only. **This update changes host code: fully quit DSH, including its tray process, and reopen it.**
 
 ![Settings](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-10-settings.png)

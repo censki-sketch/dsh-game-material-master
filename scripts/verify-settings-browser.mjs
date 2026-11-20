@@ -25,7 +25,7 @@ const invoke = async (method, payload) => {
 await invoke('saveConfig', { imageProvider: 'custom', customApiKey: 'fake-local-one', customBaseUrl: 'http://127.0.0.1/one', customModel: 'model-one' });
 let config = await invoke('getConfig'), firstId = config.activeCustomImageConnectionId;
 await invoke('saveConfig', { customConnection: { op: 'update', id: firstId, values: { name: '网关 A', models: ['model-one', 'model-two'] } } });
-config = await invoke('saveConfig', { customConnection: { op: 'create', values: { name: '网关 B', customApiKey: 'fake-local-two', customBaseUrl: 'http://127.0.0.1/two', customModel: 'model-one' } } });
+config = await invoke('saveConfig', { customConnection: { op: 'create', values: { enabled: true, name: '网关 B', customApiKey: 'fake-local-two', customBaseUrl: 'http://127.0.0.1/two', customModel: 'model-one' } } });
 const secondId = config.customImageConnections.at(-1).id;
 const browser = await chromium.launch({ headless: true, ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}) });
 let checks = 0; const check = (name, value) => { assert.ok(value, name); console.log('✓ ' + name); checks++; };
@@ -64,6 +64,26 @@ try {
   check('opening settings only reads metadata', requests.length === 0);
   check('forms contain no native select elements', await workspace.locator('select').count() === 0);
   const child = page.locator('.SPR_settingsChildren');
+  await child.getByRole('button', { name: '火山方舟（生图）', exact: true }).click();
+  await page.getByTestId('cfg-ark-group-enabled').uncheck();
+  await page.waitForFunction(async () => !(await api.getConfig()).arkImageEnabled);
+  check('Ark enable switch persists and removes its model', !(await invoke('getConfig')).imageModels.some(r => r.provider === 'ark'));
+  await page.keyboard.press('Escape');
+  await child.getByRole('button', { name: 'ToAPIs（图片）', exact: true }).click();
+  await page.getByTestId('cfg-toapis-enabled').uncheck();
+  await page.waitForFunction(async () => !(await api.getConfig()).toapisImageEnabled);
+  check('ToAPIs image switch removes its model without changing video settings', !(await invoke('getConfig')).imageModels.some(r => r.provider === 'toapis') && (await invoke('getConfig')).toapisVideo === false);
+  await page.keyboard.press('Escape');
+  await child.getByRole('button', { name: '网关 B', exact: true }).click();
+  await page.getByTestId('cfg-custom-group-enabled').uncheck();
+  await page.waitForFunction(async () => !(await api.getConfig()).customImageConnections.find(c => c.name === '网关 B').enabled);
+  check('disabled custom form remains editable but cannot test', await page.getByTestId('cfg-custom-base-url').isEditable() && await page.getByTestId('cfg-custom-group').getByRole('button', { name: '生成测试（计费）', exact: true }).isDisabled());
+  await page.keyboard.press('Escape');
+  await page.getByTestId('cfg-custom-group-enabled').check();
+  await page.waitForFunction(async () => (await api.getConfig()).customImageConnections.find(c => c.name === '网关 B').enabled);
+  check('reenabling a connection is local and does not generate', requests.length === 0);
+  await page.keyboard.press('Escape');
+
   await child.getByRole('button', { name: '网关 B', exact: true }).click();
   const key = page.getByTestId('cfg-custom-group').locator('input[type=password]');
   await key.fill('unsaved-key-draft');
@@ -139,6 +159,19 @@ try {
   // Test the shared composer picker independently, using the real config and save path.
   await page.evaluate(async () => { window.root.render(React.createElement('div', { className: 'SPR_root' }, React.createElement(bundle.__test.ImageModelPicker, { api, jobId: 'settings-test', imageConfig: await api.getConfig() }))); });
   const picker = page.getByRole('button', { name: '切换模型', exact: true }); await picker.waitFor(); await page.waitForTimeout(100);
+  await invoke('saveConfig', { customConnection: { op: 'update', id: secondId, values: { enabled: false } } });
+  await picker.click();
+  await page.getByRole('menu', { name: '切换模型', exact: true }).waitFor();
+  await page.getByRole('menuitemradio').filter({ hasText: '网关 B' }).waitFor({ state: 'hidden' });
+  check('disabled providers and connections are hidden in the actual model menu', await page.getByRole('menuitemradio').filter({ hasText: '火山方舟' }).count() === 0 && await page.getByRole('menuitemradio').filter({ hasText: 'ToAPIs' }).count() === 0 && await page.getByRole('menuitemradio').filter({ hasText: '网关 B' }).count() === 0);
+  await page.keyboard.press('Escape');
+  await invoke('saveConfig', { customConnection: { op: 'update', id: firstId, values: { enabled: false } } });
+  await picker.click();
+  await page.getByText('暂无生图模型，请先配置生图后端。', { exact: true }).waitFor();
+  check('an empty catalog never restores the disabled current model', await picker.locator('[data-model-kind=image]').textContent() === '选择模型' && await page.getByRole('menuitemradio').count() === 0);
+  await page.keyboard.press('Escape');
+  check('Escape dismisses a model menu whose choices became empty', await picker.getAttribute('aria-expanded') === 'false');
+  await invoke('saveConfig', { customConnection: { op: 'update', id: secondId, values: { enabled: true } } });
   await picker.click();
   const choice = page.getByRole('menuitemradio').filter({ hasText: 'model-one' }).filter({ hasText: '网关 B' }); await choice.click();
   await page.waitForTimeout(150);

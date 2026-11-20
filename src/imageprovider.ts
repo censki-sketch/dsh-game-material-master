@@ -56,12 +56,12 @@ export function imageModelOf(config: Config): string {
 }
 
 export function imageModelRoutes(config: Config) {
-  const builtins = (["ark", "toapis"] as const).map(provider => {
+  const builtins = (["ark", "toapis"] as const).filter(provider => (provider === "ark" ? config.arkImageEnabled : config.toapisImageEnabled) !== false).map(provider => {
     const route = { ...config, imageProvider: provider };
     return { provider: provider as Config["imageProvider"], model: imageModelOf(route), blocker: imageProviderBlocker(route) ?? null, connectionId: undefined as string | undefined, name: "" };
   });
-  const custom = config.customImageConnections.flatMap(entry => (entry.models.length ? entry.models : [entry.customModel]).map(model => ({ provider: "custom" as const, connectionId: entry.id, name: entry.name, model, blocker: customImageBlocker(customConnectionConfig(config, entry.id, model)) ?? null })));
-  return [...builtins, ...(custom.length ? custom : [{ provider: "custom" as const, connectionId: undefined, name: "", model: config.customModel, blocker: customImageBlocker(config) ?? null }])];
+  const custom = config.customImageConnections.filter(entry => entry.enabled !== false).flatMap(entry => (entry.models.length ? entry.models : [entry.customModel]).map(model => ({ provider: "custom" as const, connectionId: entry.id, name: entry.name, model, blocker: customImageBlocker(customConnectionConfig(config, entry.id, model)) ?? null })));
+  return [...builtins, ...custom];
 }
 
 /** 当前输出尺寸。 */
@@ -84,6 +84,7 @@ export function imageTimeoutOf(config: Config): number {
 
 /** 自定义后端自己的必填项检查（不看 `imageProvider`，供「测试连接」按钮用）。 */
 export function customImageBlocker(config: Config): string | undefined {
+  if (config.customImageConnections.some(entry => entry.id === config.activeCustomImageConnectionId && entry.enabled === false)) return "所选生图连接已停用，请在设置中启用或选择其他模型。";
   if (config.customBaseUrl.trim() === "") {
     return "尚未配置自定义生图服务的地址（设置 → 游戏素材大师 → 生图 → 自定义生图模型）";
   }
@@ -103,6 +104,7 @@ export function customImageBlocker(config: Config): string | undefined {
  * 只说「未配置」会让人在设置页里来回找。
  */
 export function imageProviderBlocker(config: Config): string | undefined {
+  if ((config.imageProvider === "ark" && config.arkImageEnabled === false) || (config.imageProvider === "toapis" && config.toapisImageEnabled === false)) return "所选生图连接已停用，请在设置中启用或选择其他模型。";
   if (config.imageProvider === "toapis") {try {assertToapisReady(config);return undefined;} catch(error) {return String((error as Error).message);}}
   if (!isCustomProvider(config)) {
     if (config.arkApiKey.trim() === "") {

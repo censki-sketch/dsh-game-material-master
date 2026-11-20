@@ -9,6 +9,8 @@
 
 `Config.customImageConnections` 保存具备宿主 UUID 的连接（name、models 及 CUSTOM_IMAGE_FIELDS），`activeCustomImageConnectionId` 选择生成连接。归一化时将活动连接投影到旧 `custom*` 字段，所有模块继续经过 `generateImageWithProvider`。旧版平铺配置迁移到 legacy 连接；显式空数组不重新迁移。删除最后一个连接时清除平铺凭据，避免旧调用方编辑时复活已删 Key。`saveConfig` 串行写入，以免并发更新丢字段；连接增删改复制通过 `customConnection` 操作，禁止直接透传含密钥数组。
 
+生图启用状态分别由 `arkImageEnabled`、`toapisImageEnabled` 与每个连接的 `enabled` 控制。旧配置缺字段时保持启用，新增自定义连接默认停用；复制保留原状态。`imageModelRoutes` 仅列出启用连接，空目录不添加兜底项；`imageModelChoices` 尊重明确的空数组，触发器不再显示已停用的当前模型。停用后保留原选择但由统一分发与测试入口在请求前拦截，不暗中改用其他付费服务。ToAPIs 图片与视频开关独立。`SettingsEnableSwitch` 乐观更新视觉状态并等待保存，失败时恢复；模型目录的停用状态跨进程保留。动态目录变空时，菜单仍能通过 Escape 或点击外部关闭。
+
 普通配置视图对每个连接脱敏；`revealConfigKey` 仅客户端显式读取，并带 connectionId。测试 API 接受连接和模型，显式指定连接时强制 confirmed，测试不会改变全局选择。`imageModelRoutes` 提供唯一的模型目录与缺项状态；测试 fingerprint 包含连接 ID、地址、Key、模型、协议与工作流，不落盘明文。复制连接不继承测试通过记录。
 
 `SettingsLayout` 将分类与连接合为左侧导航；各 `SettingsSections` 表单保留挂载，按类别记住子项。Key、模型列表、工作流草稿按连接隔离；模型列表失焦保存，异步完成只清除已提交的草稿，保留后续输入。设置页隐藏业务页签和右上按钮，标题左箭头回原模块，窄屏也保持同排。普通设置入口及重新进入均默认选择首个 image 分类；管理模板等定向入口仍显式指定目标分类。`SettingsSelect` 复用 `AudioChoice` / `ImageResultMenu`，设置内无原生 select；高级字段和说明默认收起。Ark、自定义、ToAPIs 生图测试与音效测试均先经过主题计费确认，元数据读取不会生成。

@@ -162,8 +162,10 @@ export const CUSTOM_PROTOCOL_DEFAULTS: Record<CustomProtocol, { baseUrl: string;
 };
 
 export const CUSTOM_IMAGE_FIELDS = ["customProtocol", "customBaseUrl", "customApiKey", "customModel", "customSize", "customNegativePrompt", "customSteps", "customCfgScale", "customSampler", "customDenoising", "customSeed", "customWorkflow", "customTimeoutMs"] as const;
-export type CustomImageConnection = Pick<Config, typeof CUSTOM_IMAGE_FIELDS[number]> & { id: string; name: string; models: string[] };
+export type CustomImageConnection = Pick<Config, typeof CUSTOM_IMAGE_FIELDS[number]> & { id: string; name: string; models: string[]; enabled: boolean };
 export interface Config {
+  arkImageEnabled: boolean;
+  toapisImageEnabled: boolean;
   customImageConnections: CustomImageConnection[];
   activeCustomImageConnectionId: string;
   imagePromptTemplates: ImagePromptTemplate[];
@@ -408,6 +410,8 @@ export interface Config {
 }
 
 export const DEFAULT_CONFIG: Config = {
+  arkImageEnabled: true,
+  toapisImageEnabled: true,
   imagePromptTemplates: normalizeImagePromptTemplates(undefined),
   toapisBaseUrl: "https://toapis.cn/v1",
   toapisApiKey: "",
@@ -621,6 +625,8 @@ export function normalizeConfig(input: unknown): Config {
   const comfyWorkflow = comfyWorkflowRaw.trim() === "" ? DEFAULT_CONFIG.comfyWorkflow : comfyWorkflowRaw;
 
   const config: Config = {
+    arkImageEnabled: asBool(raw.arkImageEnabled, DEFAULT_CONFIG.arkImageEnabled),
+    toapisImageEnabled: asBool(raw.toapisImageEnabled, DEFAULT_CONFIG.toapisImageEnabled),
     imagePromptTemplates: normalizeImagePromptTemplates(raw.imagePromptTemplates),
     toapisBaseUrl: asString(raw.toapisBaseUrl, DEFAULT_CONFIG.toapisBaseUrl).trim(),
     toapisApiKey: asString(raw.toapisApiKey, DEFAULT_CONFIG.toapisApiKey).trim(),
@@ -734,7 +740,7 @@ export function normalizeConfig(input: unknown): Config {
   const seen = new Set<string>();
   config.customImageConnections = entries.filter(entry => entry && typeof entry.id === "string" && /^[a-zA-Z0-9_-]{1,80}$/.test(entry.id) && !seen.has(entry.id) && seen.add(entry.id)).map(entry => {
     const normalized = normalizeConfig({ ...entry, customImageConnections: [] });
-    return { id: entry.id, name: asString(entry.name, "Custom").trim().slice(0, 80) || "Custom",
+    return { id: entry.id, name: asString(entry.name, "Custom").trim().slice(0, 80) || "Custom", enabled: entry.enabled !== false,
       models: [...new Set([normalized.customModel, ...(Array.isArray(entry.models) ? entry.models : [])].filter(value => typeof value === "string" && value.trim()).map(value => value.trim().slice(0, 300)))].slice(0, 50),
       ...Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, normalized[key]])) } as CustomImageConnection;
   });
@@ -783,7 +789,8 @@ async function writeConfig(patch: ConfigPatch): Promise<Config> {
     const source = op === "create" ? undefined : connections.find(entry => entry.id === id);
     if (op !== "create" && !source) throw new Error("所选生图连接已删除，请重新选择。");
     const clean: any = {};
-    for (const key of [...CUSTOM_IMAGE_FIELDS, "name", "models"] as const) if (values[key] !== undefined) clean[key] = values[key];
+    for (const key of [...CUSTOM_IMAGE_FIELDS, "name", "models", "enabled"] as const) if (values[key] !== undefined) clean[key] = values[key];
+    if (clean.enabled !== undefined && typeof clean.enabled !== "boolean") throw new Error("启用状态必须是布尔值");
     for (const key of [...CUSTOM_IMAGE_FIELDS, "name"] as const) {
       if (clean[key] === undefined) continue;
       const valid = key !== "name" && typeof DEFAULT_CONFIG[key] === "number" ? typeof clean[key] === "number" && Number.isFinite(clean[key]) : typeof clean[key] === "string";
@@ -793,7 +800,7 @@ async function writeConfig(patch: ConfigPatch): Promise<Config> {
     if (clean.models !== undefined && (!Array.isArray(clean.models) || clean.models.length > 50 || clean.models.some(value => typeof value !== "string" || !value.trim() || value.length > 300))) throw new Error("模型列表格式不正确");
     if (typeof clean.customApiKey === "string") clean.customApiKey = clean.customApiKey.trim();
     if (op === "create" || op === "duplicate") {
-      const created = { ...(source ?? Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, DEFAULT_CONFIG[key]]))), models: source?.models ?? [], ...clean, id: randomUUID(), name: clean.name || (source ? source.name + " copy" : "Custom") } as CustomImageConnection;
+      const created = { ...(source ?? Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, DEFAULT_CONFIG[key]]))), enabled: source?.enabled ?? false, models: source?.models ?? [], ...clean, id: randomUUID(), name: clean.name || (source ? source.name + " copy" : "Custom") } as CustomImageConnection;
       connections.push(created); if (!activeId) activeId = created.id;
     } else if (op === "delete") {
       connections = connections.filter(entry => entry.id !== id);
@@ -802,7 +809,7 @@ async function writeConfig(patch: ConfigPatch): Promise<Config> {
   }
   const customPatch = Object.fromEntries(CUSTOM_IMAGE_FIELDS.filter(key => fields[key] !== undefined).map(key => [key, fields[key]]));
   if (Object.keys(customPatch).length) {
-    if (!connections.length) { connections.push({ id: "legacy", name: "Custom", models: [], ...Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, current[key]])) } as CustomImageConnection); activeId = "legacy"; }
+    if (!connections.length) { connections.push({ id: "legacy", name: "Custom", enabled: true, models: [], ...Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, current[key]])) } as CustomImageConnection); activeId = "legacy"; }
     connections = connections.map(entry => entry.id === activeId ? { ...entry, ...customPatch } : entry);
   }
   if (fields.activeCustomImageConnectionId !== undefined && activeId && !connections.some(entry => entry.id === activeId)) throw new Error("所选生图连接已删除，请重新选择。");
