@@ -7,6 +7,8 @@
 
 ## 设置导航与多连接生图（2026-11-20）
 
+音乐服务设置 `cfg-music-service` 移除重复的缺 Key 横幅与外置保存/清除按钮；`ConfigKeyInput` 复用失焦/Enter 保存、原 Key 回显、悬停清除及错误弹窗，通过 `clearMusicApiKey` 显式清除。凭据 Hint 作为重读标识，其他配置更新不会清空输入框。API 地址改为失焦保存，和 Key 写入共用串行队列，标题右侧「测试连接」等待已有写入完成后才读取历史。地址与默认模型在宽卡中并排，窄卡改为单列；超时默认折叠，费用、来源致谢及文档/控制台链接放入标题说明。未配置 Key 仅在字段旁标记，连接测试保留 loading 与弹窗结果。本次仅客户端，刷新页面即可。
+
 谱曲设置 `cfg-music-score` 以紧凑摘要展示检测状态与当前试听音源；`ScoreDependency` 统一展示版本、状态点及完整路径/错误的 `DescriptionTip`。Python 路径常显，可选 FluidSynth/SoundFont 路径位于默认闭合的高级设置，保留失焦保存与原 `testMusicScore` 检测入口；检测按钮通过 `SettingsGroup.actions` 位于标题右侧。安装方式、费用、可选音源回退和 scoremill MIT 来源合并到标题说明，取消重复的横幅、警告段落与使用说明折叠块。布局按容器宽度调整，长路径与版本不撑开卡片。本次仅客户端，刷新页面即可。
 
 `ImageConnectionForm` 移除火山方舟专用的 `cfg-redraw-model` 输入框及其 `SPR_settingsAdvanced` 容器，清理对应词条与通用布局的标签匹配。模型编辑器内的高级配置保留，宿主 `arkRedrawModel` 兼容字段及骨骼部件重绘行为不变。本次仅客户端，刷新插件页面即可。

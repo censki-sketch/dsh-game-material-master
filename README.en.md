@@ -544,7 +544,7 @@ Reading settings or model lists and switching models never starts generation. **
 | Key background color | Pure green `#00FF00` by default; switch to magenta / blue / white / black when the character wears green. "Green screen / #00FF00" in generated prompts is replaced accordingly, and every keying entry can pick its own color |
 | Default parameters | Cell width and height, frame count, pixel block size, keying threshold, and so on |
 | Local ComfyUI (image-to-video) | Routes image-to-video through a local **ComfyUI** instead of MiniMax; "Test connection" is read-only and free |
-| Music generation (Puyue AI) | Puyue AI API key, base URL, default music model and timeouts; "Test connection" reads one page of history and does not generate anything (no generation credits). Generation is billed by platform credits; the plugin does not collect payment |
+| Music generation (Puyue AI) | Key saves on blur or Enter, with inline reveal and clear. API URL and default model share a row; timeouts are under Advanced settings. Test connection beside the title only reads history. Help and documentation links are in the info icon; generation uses platform credits |
 | Sound effects (Volcengine Seed-Audio) | Speech console API key (not the Ark key), base URL, default model `seed-audio-1.0`, default format / sample rate and timeout; "Generate test (billed)" generates one short sound effect after confirmation (small charge) |
 | Feature management | Per-module switches: a disabled module disappears from the UI **and the agent cannot call it either** (see below) |
 

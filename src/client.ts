@@ -2182,14 +2182,16 @@
 
 
       "音乐生成（谱乐 AI）": "Music generation (Puyue AI)",
-      "「音乐生成编辑」用谱乐 AI 的开放 API。Key 只保存在本机配置文件里，界面始终脱敏显示；生成按平台积分计费，插件不代收。目前只支持谱乐 AI（YourMusic）。": "Music Generation & Editing uses the Puyue AI Open API. The key is stored only in the local config file and is always masked in the UI; generation is billed by platform credits and the plugin does not collect payment. Currently only Puyue AI (YourMusic) is supported.",
+      "目前只支持谱乐 AI。生成按平台积分计费；测试连接只读取历史，不生成音乐。Key 保存在本机，失焦或按 Enter 自动保存。": "Currently only Puyue AI is supported. Generation uses platform credits. Testing only reads history and does not generate music. The key is stored locally and saved on blur or Enter.",
+      "已配置": "Configured",
+      "API 文档": "API docs",
+      "控制台": "Console",
       "API Key": "API Key",
       "已配置 {n0}（留空表示不修改）": "Configured {n0} (leave blank to keep)",
       "粘贴谱乐 AI API Key（sk-live-…）": "Paste the Puyue AI API key (sk-live-...)",
-      "音乐 API Key 已保存": "Music API key saved",
-      "已清除音乐 API Key": "Music API key cleared",
       "清除 Key": "Clear key",
       "测试连接": "Test connection",
+      "正在测试…": "Testing…",
       "API 地址": "API base URL",
       "默认音乐模型": "Default music model",
       "请求超时（毫秒）": "Request timeout (ms)",
@@ -4728,6 +4730,16 @@
 .SPR_scoreSettings .SPR_field{margin:0;min-width:0}
 .SPR_scoreSettings .SPR_input{box-sizing:border-box;width:100%;height:36px;min-width:0}
 .SPR_scoreSettings .SPR_settingsAdvanced{margin:0}
+.SPR_musicSettings{display:flex;flex-direction:column;gap:18px;min-width:0;container-type:inline-size}
+.SPR_musicSettings .SPR_field{margin:0;min-width:0}
+.SPR_musicSettings .SPR_fieldLabel{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.SPR_musicSettings .SPR_input{box-sizing:border-box;width:100%;height:36px;min-width:0}
+.SPR_musicFields{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
+.SPR_musicSettings .SPR_settingsAdvanced{margin:0}
+.SPR_musicSettings .SPR_settingsAdvanced>.SPR_fields{margin-top:14px}
+.SPR_musicHelp{display:flex;flex-direction:column;gap:12px}
+.SPR_musicLinks{display:flex;flex-wrap:wrap;gap:14px}
+@container(max-width:580px){.SPR_musicFields{grid-template-columns:minmax(0,1fr)}}
 .SPR_scoreOptional{display:flex;flex-direction:column;gap:16px;padding-top:14px}
 .SPR_scoreOptional .SPR_scoreDependencies{grid-template-columns:repeat(2,minmax(0,1fr))}
 .SPR_scoreOptionalPaths{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
@@ -23873,7 +23885,7 @@
     }
 
     /** Saved values, edit drafts and visibility are separate; mask glyphs never enter input.value. */
-    function ConfigKeyInput({ api, keyName, connectionId, isSet, resetToken, onSave = null, clearable = false, ...inputProps }) {
+    function ConfigKeyInput({ api, keyName, connectionId, isSet, resetToken, onSave = null, pendingSaveRef = null, clearable = false, ...inputProps }) {
       const [shown, setShown] = React.useState(false);
       const [saved, setSaved] = React.useState(null);
       const [draft, setDraft] = React.useState(null);
@@ -23932,6 +23944,8 @@
         editRef.current.submitted = revision; pendingRef.current++;
         const write = writesRef.current.then(() => onSave(value));
         writesRef.current = write.catch(() => {});
+        // Expose the queued write immediately, including time spent waiting for an earlier save.
+        if (pendingSaveRef) pendingSaveRef.current = write;
         void write.then(next => {
           if (!mountedRef.current) return;
           const source = connectionId ? next?.customImageConnections?.find(entry => entry.id === connectionId) : next;
@@ -24004,8 +24018,8 @@
       const [comfyProbe, setComfyProbe] = React.useState(null);
       // Cookie 也是凭据：已配置时输入框留空 = 不修改，点「保存 Cookie」才覆盖。
       const [comfyCookie, setComfyCookie] = React.useState("");
-      // 谱乐 AI 的 Key 同样：留空 = 不修改，点「保存 Key」才覆盖。
-      const [musicKey, setMusicKey] = React.useState("");
+      // 复用原音乐草稿槽位，保留后续 Hook 的位置；地址失焦保存。
+      const [musicBaseDraft, setMusicBaseDraft] = React.useState(null);
       /**
        * 谱曲依赖路径草稿：逐键 patch 会在每次心跳里 spawn 一次 Python/FluidSynth
        * 探测，所以留成草稿，失焦才保存。
@@ -24024,6 +24038,8 @@
       const [connectionDrafts, setConnectionDrafts] = React.useState({});
       const [connectionConfirmation, setConnectionConfirmation] = React.useState(null);
       const [testConfirmation, setTestConfirmation] = React.useState(null);
+      const musicWrites = React.useRef(Promise.resolve());
+      const musicKeyWrite = React.useRef(Promise.resolve());
       const connections = storedConfig?.customImageConnections ?? [];
       const edited = connections.find(entry => entry.id === editingConnectionId) || connections.find(entry => entry.id === storedConfig?.activeCustomImageConnectionId) || connections[0];
       const config = React.useMemo(() => edited ? { ...storedConfig, ...edited, customImageBlocker: storedConfig.imageModels?.find(route => route.connectionId === edited.id && route.model === edited.customModel)?.blocker ?? null } : storedConfig, [storedConfig, edited]);
@@ -24071,6 +24087,11 @@
       }
 
       const patch = values => run(async () => { const next = await api.saveConfig(values); window.dispatchEvent(new Event("gmm-model-config")); return next; }, T("配置已保存"));
+      const saveMusicConfig = values => {
+        const write = musicWrites.current.catch(() => {}).then(() => api.saveConfig(values));
+        musicWrites.current = write;
+        return write.then(next => { setConfig(next); return next; });
+      };
       const editConnection = async (op, values = undefined) => {
         const next = await api.saveConfig({ customConnection: { op, ...(op !== "create" ? { id: edited?.id } : {}), values } });
         setConfig(next);
@@ -24769,43 +24790,58 @@
             SettingsGroup,
             {
               title: T("音乐生成（谱乐 AI）"),
-              hint: T("「音乐生成编辑」用谱乐 AI 的开放 API。Key 只保存在本机配置文件里，界面始终脱敏显示；生成按平台积分计费，插件不代收。目前只支持谱乐 AI（YourMusic）。")
+              testId: "cfg-music-service",
+              hint: h("div", { className: "SPR_musicHelp" },
+                h("span", null, T("目前只支持谱乐 AI。生成按平台积分计费；测试连接只读取历史，不生成音乐。Key 保存在本机，失焦或按 Enter 自动保存。")),
+                h("span", null, T("音乐创作技巧来源：bitwize-music-studio/claude-ai-music-skills（CC0-1.0），已提炼为插件内置指南；原仓库版权归其作者所有，特此致谢。")),
+                h("div", { className: "SPR_musicLinks" },
+                  config.musicDocsUrl ? h("a", { className: "SPR_link", href: config.musicDocsUrl, target: "_blank", rel: "noreferrer" }, T("API 文档")) : null,
+                  config.musicConsoleUrl ? h("a", { className: "SPR_link", href: config.musicConsoleUrl, target: "_blank", rel: "noreferrer" }, T("控制台")) : null)),
+              actions: h(BusyBtn, { busy: testing === "music", busyText: T("正在测试…"), disabled: testing !== null || config.musicApiKeySet !== true,
+                onClick: async () => {
+                  setTesting("music");
+                  try { await run(async () => { await musicKeyWrite.current; await musicWrites.current; return api.testMusic(); }, value => value.warning ?? T("连接正常：{n0}", { n0: value.message ?? "" })); }
+                  finally { setTesting(null); }
+                }
+              }, T("测试连接"))
             },
-          config.musicBlocker !== null && config.musicBlocker !== undefined
-            ? h("div", { className: "SPR_note", "data-kind": "error" }, config.musicBlocker)
-            : null,
+          h("div", { className: "SPR_musicSettings" },
           h(
             "div",
-            { className: "SPR_keyRow" },
+            { className: "SPR_field" },
             h(
               "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("API Key")),
+              { className: "SPR_fieldLabel", htmlFor: "cfg-music-key-input" }, T("API Key"),
+              h("span", { className: "SPR_connectionStatus" }, config.musicApiKeySet ? T("已配置") : T("未配置"))),
               h(ConfigKeyInput, {
-                api, keyName: "musicApiKey", isSet: config.musicApiKeySet, resetToken: config,
+                api, keyName: "musicApiKey", isSet: config.musicApiKeySet, resetToken: config.musicApiKeyHint,
+                id: "cfg-music-key-input",
                 className: "SPR_input",
-                autoComplete: "off",
                 "data-testid": "cfg-music-key",
-                placeholder: config.musicApiKeySet ? T("已配置 {n0}（留空表示不修改）", { n0: config.musicApiKeyHint }) : T("粘贴谱乐 AI API Key（sk-live-…）"),
-                value: musicKey,
-                onChange: (event) => setMusicKey(event.target.value)
+                placeholder: T("粘贴谱乐 AI API Key（sk-live-…）"),
+                onSave: value => saveMusicConfig(value.trim() ? { musicApiKey: value } : { clearMusicApiKey: true }),
+                pendingSaveRef: musicKeyWrite,
+                clearable: true
               })
-            ),
-            h(Btn, { primary: true, disabled: musicKey.trim() === "", onClick: () => void run(async () => { await api.saveConfig({ musicApiKey: musicKey }); setMusicKey(""); }, T("音乐 API Key 已保存")) }, T("保存 Key")),
-            h(Btn, { disabled: config.musicApiKeySet !== true, onClick: () => void run(() => api.saveConfig({ clearMusicApiKey: true }), T("已清除音乐 API Key")) }, T("清除 Key")),
-            h(Btn, { onClick: () => void run(() => api.testMusic(), (value) => value.warning ?? T("连接正常：{n0}", { n0: value.message ?? "" })) }, T("测试连接"))
           ),
           h(
             "div",
-            { className: "SPR_fields" },
+            { className: "SPR_musicFields" },
             h(
               "label",
-              { className: "SPR_field SPR_settingsWide" },
+              { className: "SPR_field" },
               h("span", { className: "SPR_fieldLabel" }, T("API 地址")),
               h("input", {
                 className: "SPR_input",
-                value: config.musicBaseUrl ?? "",
-                onChange: (event) => void patch({ musicBaseUrl: event.target.value }),
+                "data-testid": "cfg-music-url",
+                value: musicBaseDraft ?? config.musicBaseUrl ?? "",
+                onChange: event => setMusicBaseDraft(event.target.value),
+                onBlur: () => {
+                  if (musicBaseDraft === null) return;
+                  const value = musicBaseDraft;
+                  if (value.trim() === config.musicBaseUrl) { setMusicBaseDraft(null); return; }
+                  void run(async () => { await saveMusicConfig({ musicBaseUrl: value.trim() }); setMusicBaseDraft(current => current === value ? null : current); }, T("配置已保存"));
+                },
                 placeholder: "https://api.yourmusic.fun"
               })
             ),
@@ -24815,12 +24851,15 @@
               h("span", { className: "SPR_fieldLabel" }, T("默认音乐模型")),
               h(
                 SettingsSelect,
-                { className: "SPR_input", value: config.musicModel ?? "chirp-v6", onChange: (event) => void patch({ musicModel: event.target.value }) },
+                { className: "SPR_input", "data-testid": "cfg-music-model", value: config.musicModel ?? "chirp-v6", onChange: (event) => void patch({ musicModel: event.target.value }) },
                 MUSIC_ENGINES.flatMap((engine) =>
                   engine.models.map((model) => h("option", { key: `${engine.id}:${model.id}`, value: model.id }, `${engine.label} · ${model.label}`))
                 )
               )
-            ),
+            )
+          ),
+          h("details", { className: "SPR_settingsAdvanced", "data-testid": "cfg-music-advanced" }, h("summary", null, T("高级设置")),
+            h("div", { className: "SPR_fields" },
             h(NumField, {
               label: T("请求超时（毫秒）"),
               value: config.musicTimeoutMs,
@@ -24835,16 +24874,7 @@
               max: 3600000,
               onChange: (value) => void patch({ musicPollTimeoutMs: value })
             })
-          ),
-          h(
-            "p",
-            { className: "SPR_hint" },
-            T("文档："),
-            config.musicDocsUrl ? h("a", { className: "SPR_link", href: config.musicDocsUrl, target: "_blank", rel: "noreferrer" }, config.musicDocsUrl) : null,
-            T(" · 控制台："),
-            config.musicConsoleUrl ? h("a", { className: "SPR_link", href: config.musicConsoleUrl, target: "_blank", rel: "noreferrer" }, config.musicConsoleUrl) : null
-          ),
-          h("p", { className: "SPR_hint" }, T("音乐创作技巧来源：bitwize-music-studio/claude-ai-music-skills（CC0-1.0），已提炼为插件内置指南；原仓库版权归其作者所有，特此致谢。"))
+          )))
         ),
 
         h(

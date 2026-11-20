@@ -10,9 +10,14 @@ const { encodePng } = await import('../lib/png.js');
 const { apply } = await import('../lib/index.js');
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const png = encodePng(Buffer.from([25, 150, 250, 255]), 1, 1), requests = [], calls = [];
+let musicTestFailure = false;
 globalThis.fetch = async (url, options = {}) => {
   const address = new URL(String(url)); assert.equal(address.hostname, '127.0.0.1', 'No external API allowed');
-  requests.push({ url: address.pathname, body: options.body });
+  requests.push({ url: address.pathname, origin: address.origin, body: options.body, method: options.method || 'GET', authorization: new Headers(options.headers).get('authorization') });
+  if (address.pathname.endsWith('/music/generations/history')) {
+    await new Promise(resolve => setTimeout(resolve, 150));
+    return new Response(JSON.stringify(musicTestFailure ? { message: 'Music fixture: invalid key' } : { data: [], total: 0 }), { status: musicTestFailure ? 401 : 200, headers: { 'Content-Type': 'application/json' } });
+  }
   return new Response(JSON.stringify({ data: [{ b64_json: png.toString('base64') }] }), { headers: { 'Content-Type': 'application/json' } });
 };
 const ctx = new Context(); for (const key of ['typert', 'webServer', 'tools']) ctx.provide(key, { register: () => () => {} });
@@ -529,6 +534,87 @@ try {
   const choice = page.getByRole('menuitemradio').filter({ hasText: 'model-one' }).filter({ hasText: '网关 B' }); await choice.click();
   await page.waitForTimeout(150);
   check('composer switches same-named models by connection', (await invoke('getConfig')).activeCustomImageConnectionId === secondId);
+  // Music settings: use the actual credential gateway and a loopback-only history response.
+  await invoke('saveConfig', { musicBaseUrl: 'http://127.0.0.1:9310' });
+  await page.evaluate(() => { window.root.render(React.createElement(bundle.__test.StudioPanel, { api })); });
+  await page.locator('.SPR_head').getByRole('button', { name: '设置', exact: true }).click();
+  await page.getByTestId('cfg-tab-music').click();
+  const music = page.getByTestId('cfg-music-service'), musicKey = music.getByTestId('cfg-music-key');
+  const musicAdvanced = music.getByTestId('cfg-music-advanced');
+  const musicTest = () => music.getByRole('button', { name: '测试连接', exact: true });
+  const musicRequests = () => requests.filter(r => r.url.includes('/music/generations/'));
+  check('music opens without connection requests or a missing-key warning banner', musicRequests().length === 0 && await music.locator('.SPR_note').count() === 0 && await music.getByText('未配置', { exact: true }).isVisible());
+  check('music test is in the header and disabled until a key is configured', await music.locator('.SPR_settingsGroupHead').getByRole('button', { name: '测试连接', exact: true }).isDisabled());
+  check('music has no external Save/Clear buttons or separate usage section', await music.getByRole('button', { name: '保存 Key', exact: true }).count() === 0 && await music.getByRole('button', { name: '清除 Key', exact: true }).count() === 0 && await music.locator('.SPR_settingsHelp').count() === 0);
+  check('music timeouts start collapsed in one advanced section', await musicAdvanced.count() === 1 && !await musicAdvanced.getAttribute('open') && await musicAdvanced.locator('input').count() === 2);
+  await music.getByRole('button', { name: '查看音乐生成（谱乐 AI）说明', exact: true }).click();
+  const musicHelp = page.getByRole('tooltip');
+  check('music help retains billing, save behavior, attribution and service links', (await musicHelp.textContent()).includes('失焦或按 Enter') && (await musicHelp.textContent()).includes('CC0-1.0') && await musicHelp.getByRole('link', { name: 'API 文档', exact: true }).count() === 1 && await musicHelp.getByRole('link', { name: '控制台', exact: true }).count() === 1);
+  await page.keyboard.press('Escape');
+  const musicWritesBefore = calls.filter(c => c.method === 'saveConfig' && c.payload.musicApiKey !== undefined).length;
+  await musicKey.fill('fake-music-one');
+  check('music does not write keys on every keystroke', calls.filter(c => c.method === 'saveConfig' && c.payload.musicApiKey !== undefined).length === musicWritesBefore);
+  await music.locator('h3').click();
+  await until(async () => (await invoke('revealConfigKey', { key: 'musicApiKey' })).value === 'fake-music-one');
+  await until(async () => await musicTest().isEnabled());
+  check('music saves a key on blur and displays the saved masked value', await musicKey.inputValue() === 'fake-music-one' && await musicKey.getAttribute('type') === 'password' && await music.getByText('已配置', { exact: true }).isVisible());
+  await music.getByRole('button', { name: '查看原 Key', exact: true }).click();
+  check('music eye reveals the exact saved value', await musicKey.inputValue() === 'fake-music-one' && await musicKey.getAttribute('type') === 'text');
+  const modelPicker = music.getByTestId('cfg-music-model').getByRole('button');
+  await modelPicker.click();
+  await page.getByRole('menuitemradio').filter({ hasText: 'mureka-9.5' }).click();
+  await until(async () => (await invoke('getConfig')).musicModel === 'mureka-9.5');
+  check('music model selection persists without clearing or replacing its key', await musicKey.inputValue() === 'fake-music-one' && (await invoke('revealConfigKey', { key: 'musicApiKey' })).value === 'fake-music-one');
+  await musicKey.fill('fake-music-two'); await musicKey.press('Enter');
+  await until(async () => (await invoke('revealConfigKey', { key: 'musicApiKey' })).value === 'fake-music-two');
+  await musicKey.fill('fake-music-three'); await musicTest().click();
+  await music.getByRole('button', { name: '正在测试…', exact: true }).waitFor();
+  check('music test has disabled busy feedback', await music.getByRole('button', { name: '正在测试…', exact: true }).isDisabled());
+  await until(async () => await musicTest().isEnabled());
+  check('testing waits for the just-blurred key and only reads history', musicRequests().length === 1 && musicRequests()[0].authorization === 'Bearer fake-music-three' && musicRequests()[0].method === 'GET');
+  const musicUrl = music.getByTestId('cfg-music-url');
+  const musicUrlWrites = calls.filter(c => c.method === 'saveConfig' && c.payload.musicBaseUrl !== undefined).length;
+  await musicUrl.fill('http://127.0.0.1:9311');
+  check('music URL editing stays local until blur', calls.filter(c => c.method === 'saveConfig' && c.payload.musicBaseUrl !== undefined).length === musicUrlWrites);
+  await musicTest().click();
+  await until(async () => musicRequests().length === 2 && await musicTest().isEnabled());
+  check('testing waits for the just-blurred API address', musicRequests()[1].origin === 'http://127.0.0.1:9311');
+  musicTestFailure = true; await musicTest().click();
+  await page.getByText(/Music fixture: invalid key/).waitFor();
+  check('music connection errors use the existing popup and release the busy state', await musicTest().isEnabled() && await music.locator('.SPR_note').count() === 0);
+  musicTestFailure = false;
+  await page.getByTestId('studio-settings-back').click();
+  await page.locator('.SPR_head').getByRole('button', { name: '设置', exact: true }).click();
+  await page.getByTestId('cfg-tab-music').click();
+  await until(async () => await musicKey.inputValue() === 'fake-music-three');
+  check('reopening music restores the saved masked key without testing', await musicKey.getAttribute('type') === 'password' && musicRequests().length === 3);
+  const writesBeforeMusicLayout = calls.filter(c => c.method === 'saveConfig').length;
+  for (const dark of [false, true]) {
+    await page.evaluate(dark => document.documentElement.style.cssText = dark ? '--dsw-alias-label-primary:#eee;--dsw-alias-label-secondary:#aaa;--dsw-alias-label-tertiary:#777;--dsw-alias-bg-layer-1:#18181c;--dsw-alias-bg-layer-2:#242428;--dsw-alias-bg-layer-3:#333;--dsw-alias-border-l1:#333;--dsw-alias-border-l2:#414147;--dsw-alias-state-business-primary:#8ca6ff;--dsw-alias-interactive-bg-hover-solid:#333' : '', dark);
+    for (const width of [1280, 720, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      check('music header and fields fit at ' + width + (dark ? ' dark' : ' light'), await music.evaluate(el => { const head = el.querySelector('.SPR_settingsGroupHead'), title = head.querySelector('h3').getBoundingClientRect(), button = head.querySelector(':scope > button').getBoundingClientRect(); return el.scrollWidth <= el.clientWidth + 1 && button.right <= innerWidth && title.right <= button.left && Math.abs(title.top + title.height / 2 - button.top - button.height / 2) < 2; }));
+      check('music address and model adapt to the panel at ' + width, await music.locator('.SPR_musicFields').evaluate((el, width) => { const [a,b] = [...el.children].map(child => child.getBoundingClientRect()); return width === 1280 ? Math.abs(a.top-b.top) < 2 : b.top >= a.bottom; }, width));
+      await page.screenshot({ path: '.verify/music-settings-' + width + (dark ? '-dark' : '-light') + '.png', fullPage: true });
+      await modelPicker.click();
+      check('music model menu stays within ' + width + 'px', await page.getByRole('menu').evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }));
+      await page.keyboard.press('Escape');
+    }
+  }
+  check('resizing, viewing and dismissing model choices never saves music configuration', calls.filter(c => c.method === 'saveConfig').length === writesBeforeMusicLayout);
+  await musicAdvanced.locator('summary').click();
+  await musicAdvanced.getByLabel('请求超时（毫秒）', { exact: true }).fill('45000');
+  await music.locator('h3').click();
+  await until(async () => (await invoke('getConfig')).musicTimeoutMs === 45000);
+  check('music advanced timeout still persists and fits narrow layout', await music.evaluate(el => el.scrollWidth <= el.clientWidth + 1));
+  await musicKey.hover();
+  const clearMusic = music.getByRole('button', { name: '清除 Key', exact: true });
+  await until(async () => await clearMusic.evaluate(el => getComputedStyle(el).opacity) === '1');
+  check('music inline clear appears on hover', await clearMusic.evaluate(el => getComputedStyle(el).opacity === '1'));
+  await clearMusic.click();
+  await until(async () => !(await invoke('getConfig')).musicApiKeySet && await musicTest().isDisabled());
+  check('music inline clear removes the stored key and disables testing', (await invoke('revealConfigKey', { key: 'musicApiKey' })).value === '' && await musicTest().isDisabled());
+  check('music validation never submits a generation', musicRequests().length === 3 && musicRequests().every(r => r.method === 'GET' && r.url.endsWith('/music/generations/history')));
   check('all validation stayed local without UI runtime errors', outbound.length === 0 && errors.length === 0);
   console.log(`Passed ${checks} browser settings checks. Screenshots in .verify/settings-*.png. No paid calls.`);
 } finally {
