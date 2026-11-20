@@ -157,6 +157,26 @@ try {
   await suno.getByRole('button', { name: '确认', exact: true }).click(); await page.waitForTimeout(100);
   await suno.getByText('Suno 判定这段参考音频有版权，需要走付费版权上传通道（会扣积分）。继续？', { exact: true }).waitFor();
   check('版权上传需独立二次确认', await page.evaluate(() => calls.filter(c => c.method === 'submitMusicScoreToSuno').length === 1)); await page.keyboard.press('Escape');
+  await newTask().click();
+  const choiceLayout = () => page.evaluate(() => {
+    const input = document.querySelector('.SPR_audioInput'), send = input.querySelector('.SPR_chatGenerate').getBoundingClientRect();
+    const buttons = [...input.querySelectorAll('.SPR_audioChoice .SPR_imageResultMore')];
+    return buttons.length === 4 && buttons.every(button => {
+      const text = button.querySelector('.SPR_audioChoiceLabel'), arrow = button.querySelector('.SPR_chatVersionChevron'), bounds = button.getBoundingClientRect(), a = arrow.getBoundingClientRect();
+      return text.scrollWidth <= text.clientWidth + 1 && a.left >= bounds.left && a.right <= bounds.right && a.width >= 12;
+    }) && buttons.at(-1).getBoundingClientRect().right + 4 <= send.left && send.right <= input.getBoundingClientRect().right;
+  });
+  check('音乐选择器文字与箭头完整显示且不碰发送按钮', await choiceLayout());
+  const review = page.getByRole('button', { name: '审核模式', exact: true }), arrow = review.locator('.SPR_chatVersionChevron');
+  const closedArrow = await arrow.boundingBox(); await review.click(); await page.getByRole('menuitemradio', { name: '自动审核', exact: true }).waitFor(); await page.waitForTimeout(180);
+  const openArrow = await arrow.boundingBox();
+  check('审核箭头在原位旋转', Math.abs(openArrow.x - closedArrow.x) < 1 && Math.abs(openArrow.y - closedArrow.y) < 1);
+  await page.getByRole('menuitemradio', { name: '人工审核', exact: true }).click();
+  check('审核模式可直接切换并保持完整文字', await review.textContent() === '人工审核');
+  await page.setViewportSize({ width: 360, height: 720 }); await page.locator('.SPR_root').evaluate(el => el.dataset.sidebarCollapsed = 'true'); await page.locator('.SPR_side').waitFor({ state: 'hidden' });
+  check('窄屏审核与发送同排且文字未截断', await choiceLayout());
+  await page.screenshot({ path: '.verify/audio-controls-narrow.png' });
+  await page.setViewportSize({ width: 1280, height: 900 }); await page.locator('.SPR_root').evaluate(el => el.dataset.sidebarCollapsed = 'false');
   await page.setViewportSize({ width: 1280, height: 900 }); await page.screenshot({path: '.verify/audio-workspace-light.png'});
   await page.setViewportSize({ width: 640, height: 720 }); await page.locator('.SPR_root').evaluate(el => el.dataset.sidebarCollapsed = 'true'); await page.locator('.SPR_side').waitFor({ state: 'hidden' }); await page.getByRole('button', { name: '生成参数', exact: true }).click();
   const narrow = await page.getByRole('dialog', { name: '生成参数', exact: true }).boundingBox();

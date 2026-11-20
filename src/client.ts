@@ -183,7 +183,8 @@
       "移除文件夹？": "Remove folder?",
       "仅从当前侧栏移除此文件夹及其项目入口，不删除本地图片、历史记录或文件夹。之后可通过「打开文件夹」重新添加。": "Removes this folder and its project entries from the sidebar. Local images, history and folders are kept. Use Open folder to add them again.",
       "确认移除": "Confirm removal",
-      "新建项目将在点击生成后出现在这里。": "New projects appear here when you click Generate.",
+      "暂无项目": "No projects yet",
+      "生成后会显示在这里。": "Your projects will appear here after generation.",
       "图片 {n0}": "Image {n0}",
       "选择文件夹旁的新建图标开始一个项目。": "Use the new-project icon beside a folder to get started.",
       "已有项目的文件保存在此处。": "Existing project files are stored here.",
@@ -4899,16 +4900,21 @@
 .SPR_audioChat .SPR_chatRoundActions{flex-wrap:wrap}
 .SPR_audioChat .SPR_chatRoundTime{margin-left:auto}
 .SPR_audioChat .SPR_chatComposer{padding-bottom:22px}
+.SPR_chatErrorCard{display:flex;align-items:flex-start;gap:10px;box-sizing:border-box;max-height:min(160px,24dvh);overflow:auto;margin-bottom:10px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-error-primary,#df4f57) 25%,var(--dsw-alias-border-l2));border-radius:14px;background:color-mix(in srgb,var(--dsw-alias-state-error-primary,#df4f57) 4%,var(--dsw-alias-bg-layer-1));color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+.SPR_chatErrorCard>svg{flex:none;width:17px;height:17px;margin-top:2px;color:var(--dsw-alias-state-error-primary,#df4f57)}
+.SPR_chatErrorCard>p{min-width:0;margin:0;white-space:pre-wrap}
 .SPR_audioFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;min-width:0}
 .SPR_audioFields>.SPR_musicCheck,.SPR_audioFields>.SPR_hint,.SPR_audioWide{grid-column:1/-1}
 .SPR_audioFields pre{max-height:240px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
 .SPR_audioFields .SPR_field{min-width:0;margin:0;gap:7px}
 .SPR_audioChoice{display:inline-flex;min-width:0;max-width:100%}
-.SPR_audioChoice .SPR_imageResultMore{width:auto;max-width:100%;min-height:30px;padding:5px 8px;border-radius:8px}
-.SPR_audioChoice .SPR_chatVersionTrigger{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.SPR_audioChoice .SPR_imageResultMore.SPR_btn{box-sizing:border-box;width:auto;max-width:100%;height:30px;padding:5px 8px;border-radius:8px}
+.SPR_audioChoice .SPR_chatVersionTrigger{min-width:0;max-width:100%;gap:6px;white-space:nowrap;font-size:12px}
+.SPR_audioChoiceLabel{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.SPR_audioChoice .SPR_chatVersionChevron{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px}
 .SPR_audioChoice .SPR_chatVersionTrigger>svg{flex:none}
-.SPR_audioFields .SPR_audioChoice{width:100%}
-.SPR_audioFields .SPR_imageResultMore{width:100%;justify-content:space-between;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1)}
+.SPR_audioFields .SPR_audioChoice,.SPR_audioFields .SPR_audioChoice>.SPR_imageResultActions{width:100%}
+.SPR_audioFields .SPR_audioChoice .SPR_imageResultMore.SPR_btn{width:100%;justify-content:space-between;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1)}
 .SPR_audioPanel.SPR_projectRenameDialog{box-sizing:border-box;width:min(680px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100dvh - 48px);overflow:auto;padding:20px;border-radius:18px}
 .SPR_audioPanel>.SPR_chatRequestHead{position:sticky;top:-20px;z-index:2;background:var(--dsw-alias-bg-layer-1);padding:0 0 14px;margin:0 0 8px;display:flex;align-items:center;justify-content:space-between}
 .SPR_audioPanel>.SPR_chatRequestHead h3{margin:0;font-size:15px;font-weight:600}
@@ -4917,7 +4923,10 @@
 .SPR_audioPanel p{line-height:1.7}
 .SPR_audioInput .SPR_audioPrompt{display:block;box-sizing:border-box;width:100%;border:0;background:transparent;box-shadow:none;resize:vertical;min-height:68px;max-height:220px;padding:7px 5px;font:13px/1.7 system-ui;color:var(--dsw-alias-label-primary)}
 .SPR_audioInput .SPR_audioPrompt:focus{outline:none;box-shadow:none}
-.SPR_audioInput .SPR_chatComposerBottom{overflow-x:auto;scrollbar-width:thin;padding-top:5px}
+.SPR_audioInput .SPR_chatComposerBottom{padding-top:5px}
+.SPR_audioInput .SPR_chatComposerBottom>.SPR_audioComposerOptions{display:flex;align-items:center;gap:2px;flex:1 1 0;min-width:0;overflow-x:auto;scrollbar-width:thin}
+.SPR_audioComposerOptions>.SPR_audioChoice{flex:none}
+.SPR_audioComposerActions{display:flex;align-items:center;gap:7px;flex:none;margin-left:auto}
 .SPR_audioInput .SPR_chatGenerate{display:grid;place-items:center;flex:none;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-1);cursor:pointer}
 .SPR_audioInput .SPR_chatGenerate:disabled{opacity:.35;cursor:default}
 .SPR_audioInput .SPR_chatGenerate:hover:not(:disabled){opacity:.8}
@@ -4954,7 +4963,7 @@
 .SPR_audioUndo{position:absolute;bottom:18px;left:18px;z-index:8;display:flex;align-items:center;gap:10px;padding:9px 12px;max-width:calc(100% - 60px);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 6px 24px #0002;font-size:12px}
 .SPR_audioGuideLink{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);border:0;background:transparent;color:var(--dsw-alias-label-tertiary);font-size:10px;cursor:pointer;padding:2px 6px}
 .SPR_audioGuideLink:hover{color:var(--dsw-alias-label-primary)}
-@container (max-width:560px){.SPR_audioPlayer{gap:9px;padding:10px;grid-template-columns:34px minmax(0,1fr)}.SPR_audioPlay{width:34px;height:34px}.SPR_audioTime{grid-column:2;justify-self:end}.SPR_audioModel{max-width:90px}.SPR_audioChoice .SPR_imageResultMore{padding:4px}.SPR_audioChat .SPR_chatRoundActions .SPR_btn{padding:5px 8px}}
+@container (max-width:560px){.SPR_audioPlayer{gap:9px;padding:10px;grid-template-columns:34px minmax(0,1fr)}.SPR_audioPlay{width:34px;height:34px}.SPR_audioTime{grid-column:2;justify-self:end}.SPR_audioModel{max-width:90px}.SPR_audioInput .SPR_audioChoice .SPR_imageResultMore.SPR_btn{padding:4px}.SPR_audioChat .SPR_chatRoundActions .SPR_btn{padding:5px 8px}}
 @media (max-width:520px){.SPR_audioFields{grid-template-columns:minmax(0,1fr)}.SPR_audioPanel.SPR_projectRenameDialog{padding:16px}.SPR_audioRef>.SPR_taskIconButton{opacity:1}.SPR_audioPanel .SPR_musicGrid2{grid-template-columns:minmax(0,1fr)}}
 
 /* ── 45° 地图编辑器（模块五 · iso）────────────────────────────────────── */
@@ -5191,7 +5200,7 @@
 .SPR_taskGroupTitle[draggable=true]{cursor:grab}
 .SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskList{display:flex;flex-direction:column;gap:2px}
 .SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskList[hidden]{display:none}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx])[data-archive-empty=true]>.SPR_taskList:not([hidden]){flex:1;justify-content:center;min-height:140px}
+.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]):is([data-archive-empty=true],[data-list-empty=true])>.SPR_taskList:not([hidden]){flex:1;justify-content:center;min-height:140px}
 .SPR_taskPinned{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
 .SPR_taskArchiveLink{display:flex;align-items:center;gap:8px;flex:none;width:100%;margin-top:auto;padding:8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;text-align:left;cursor:pointer}
 .SPR_taskArchiveLink svg{width:16px;height:16px;flex:none}
@@ -10671,6 +10680,7 @@
       const folderGroups = preferences ? imageFolderGroups(items, preferences) : [];
       const visibleItems = preferences ? folderGroups.flatMap(folder => folder.entries) : items;
       const archiveView = preferences?.showArchived === true;
+      const projectEmpty = !!preferences && !archiveView && !visibleItems.length && !folderGroups.length;
       const pinnedProjectIds = new Set(preferences?.pinnedProjects ?? []);
       const unreadProjectIds = new Set(preferences?.unreadProjects ?? []);
       const visibleIds = new Set(visibleItems.map(item => item.id));
@@ -10739,7 +10749,7 @@
       const archivedCount = folderGroups.reduce((count, group) => count + group.allEntries.filter(item => preferences.archivedProjects?.includes(item.id)).length, 0);
       return h(
         "div",
-        { className: "SPR_side", "data-kind": storageKey, "data-archive-empty": archiveView && !visibleItems.length ? "true" : undefined },
+        { className: "SPR_side", "data-kind": storageKey, "data-archive-empty": archiveView && !visibleItems.length ? "true" : undefined, "data-list-empty": projectEmpty ? "true" : undefined },
         context && visibleIds.has(context.item.id) ? h(ImageProjectContextMenu, { key: context.item.id, context, pinned: pinnedProjectIds.has(context.item.id), archived: archiveView, unread: unreadProjectIds.has(context.item.id),
           onClose: () => setContext(null), onRename: setRenameTarget, onPin: onProjectPin, onArchive: onProjectArchive, onDelete: onProjectDelete, onNotice,
           onUnread: item => onPreferences({ unreadProjects: unreadProjectIds.has(item.id) ? (preferences.unreadProjects ?? []).filter(id => id !== item.id) : [...(preferences.unreadProjects ?? []), item.id] }) }) : null,
@@ -10757,8 +10767,9 @@
             h("button", { type: "button", className: "SPR_taskIconButton", title: onOpenFolder ? T("打开文件夹") : T("新建任务"), "aria-label": onOpenFolder ? T("打开文件夹") : T("新建任务"), onClick: onOpenFolder || onCreate }, h(TaskHeaderIcon, { name: onOpenFolder ? "folderAdd" : "compose" })))),
         h("div", { className: "SPR_taskList", id: "task-list-" + storageKey, hidden: collapsed },
           archiveView && !visibleItems.length ? h("div", { className: "SPR_archiveEmpty", "data-testid": "image-archive-empty", role: "status" }, h(ProjectActionIcon, { name: "archive" }), h("p", null, T("没有归档聊天")), h("span", null, T("归档后可在这里查看和恢复。")))
-            : visibleItems.length === 0 && !folderGroups.length ? h("p", { className: "SPR_hint" }, preferences ? T("新建项目将在点击生成后出现在这里。") : T("点击标题右侧的 + 新建任务。")) : null,
-          archiveView && !visibleItems.length ? null : renderGroups(regular),
+            : projectEmpty ? h("div", { className: "SPR_archiveEmpty SPR_projectEmpty", role: "status" }, h(TaskHeaderIcon, { name: "chat" }), h("p", null, T("暂无项目")), h("span", null, T("生成后会显示在这里。")))
+            : visibleItems.length === 0 && !folderGroups.length ? h("p", { className: "SPR_hint" }, T("点击标题右侧的 + 新建任务。")) : null,
+          archiveView && !visibleItems.length || projectEmpty ? null : renderGroups(regular),
           items.length === 0 && createInSidebar ? h(Btn, { onClick: onCreate, primary: true }, T("新建")) : null),
         preferences ? h("button", { type: "button", className: "SPR_taskArchiveLink", "data-testid": "image-archive-link", onClick: () => onPreferences({ showArchived: !preferences.showArchived }) },
           h(ProjectActionIcon, { name: "archive" }), preferences.showArchived ? T("返回未归档聊天") : T("{n0}（{n1}）", { n0: T("已归档聊天"), n1: archivedCount })) : null
@@ -15176,7 +15187,7 @@
     }
     function AudioChoice({ label, value, choices, onChange, disabled = false }) {
       const selected = choices.find(choice => choice.id === value);
-      return h("div", { className: "SPR_audioChoice" }, h(ImageResultMenu, { label, disabled, align: "start", icon: h("span", { className: "SPR_chatVersionTrigger" }, selected?.label ?? label, h(TaskHeaderIcon, { name: "chevron" })) },
+      return h("div", { className: "SPR_audioChoice" }, h(ImageResultMenu, { label, disabled, align: "start", icon: h("span", { className: "SPR_chatVersionTrigger" }, h("span", { className: "SPR_audioChoiceLabel" }, selected?.label ?? label), h("span", { className: "SPR_chatVersionChevron" }, h(TaskHeaderIcon, { name: "chevron" }))) },
         choices.map(choice => h("button", { key: choice.id, type: "button", className: "SPR_btn", role: "menuitemradio", "aria-checked": choice.id === value, onClick: () => onChange(choice.id) },
           h("span", { className: "SPR_chatVersionCheck" }, choice.id === value ? h(TaskHeaderIcon, { name: "check" }) : null), choice.label))));
     }
@@ -15222,7 +15233,7 @@
             onChange: event => { const value = Number(event.target.value); ref.current.currentTime = value; setPosition(value); } })),
         h("span", { className: "SPR_audioTime" }, musicFmtTime(position), " / ", musicFmtTime(duration)), error ? h("span", { className: "SPR_audioPlaybackError", role: "status" }, error) : null);
     }
-    function AudioTimeline({ module, job, rounds, composer, renderResult, panels, emptyTitle, onReuse, onRegenerate, busy }) {
+    function AudioTimeline({ module, job, rounds, composer, blocker, renderResult, panels, emptyTitle, onReuse, onRegenerate, busy }) {
       const key = module + "-view:" + (job?.id || "draft");
       const [view, setView] = useAudioStored(key, { follow: true, top: 0, favorites: [] });
       const [panel, setPanel] = React.useState(null), [confirm, setConfirm] = React.useState(null), [hovered, setHovered] = React.useState(null), [active, setActive] = React.useState(null);
@@ -15252,7 +15263,8 @@
           h("details", { className: "SPR_chatLocatorMobile" }, h("summary", { "aria-label": T("定位历史记录") }, h(TaskHeaderIcon, { name: "list" })), h("div", null, rounds.map((round, i) => h("button", { key: round.id, type: "button", onClick: event => { locate(round.id); event.currentTarget.closest("details").open = false; } }, T("第 {n0} 轮", { n0: i + 1 }), " · ", round.prompt?.slice(0, 24))))),
           h("div", { className: "SPR_chatLocatorTicks" }, rounds.map((round, i) => h("button", { key: round.id, type: "button", "data-status": round.status, "data-active": active === round.id, "data-bookmarked": (round.files ?? []).some(file => (view.favorites ?? []).includes(file)), "aria-label": T("定位第 {n0} 轮", { n0: i + 1 }), onClick: () => locate(round.id), onPointerEnter: event => { const r = event.currentTarget.getBoundingClientRect(); setHovered({ ...round, x: r.left, y: r.top }); }, onPointerLeave: () => setHovered(null), onFocus: event => { const r = event.currentTarget.getBoundingClientRect(); setHovered({ ...round, x: r.left, y: r.top }); }, onBlur: () => setHovered(null) }, h("span"))))),
         hovered ? h("div", { ref: tip, className: "SPR_chatLocatorPreview", popover: "manual", role: "tooltip" }, h("p", null, hovered.prompt), h("span", null, new Date(hovered.createdAt).toLocaleString())) : null,
-        h("div", { className: "SPR_chatComposer" }, !follow.current && rounds.length ? h(Btn, { className: "SPR_chatLatest SPR_btn", onClick: () => { follow.current = true; restore(); persist({ follow: true }); } }, h(ImageChatIcon, { name: "down" }), T("回到最新")) : null, composer),
+        h("div", { className: "SPR_chatComposer" }, !follow.current && rounds.length ? h(Btn, { className: "SPR_chatLatest SPR_btn", onClick: () => { follow.current = true; restore(); persist({ follow: true }); } }, h(ImageChatIcon, { name: "down" }), T("回到最新")) : null,
+          blocker ? h("div", { className: "SPR_chatErrorCard", role: "alert" }, h("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", "aria-hidden": true }, h("circle", { cx: 12, cy: 12, r: 9 }), h("path", { d: "M12 7v6m0 4v.01" })), h("p", null, blocker)) : null, composer),
         panel ? h(AudioPanel, { key: panel, title: panels.find(item => item.id === panel)?.title, onClose: () => setPanel(null) }, panels.find(item => item.id === panel)?.content) : null,
         confirm ? h(AudioConfirm, { title: confirm.regenerate ? T("重新生成") : T("复用本轮"), text: confirm.regenerate ? T("重新生成会再次计费，确认提交这一轮的请求？") : T("将替换输入框中的描述和参数，不会自动生成。"), onClose: () => setConfirm(null), onConfirm: () => confirm.regenerate ? onRegenerate(confirm.round) : onReuse(confirm.round) }) : null);
     }
@@ -15340,6 +15352,7 @@
       }, [job?.updatedAt, pendingVersionId]);
       const update = patch => setDraft(value => ({ ...value, ...patch }));
       const workflow = job?.workflow || draft.workflow, compose = workflow === "compose", busy = creating || job?.busy === true;
+      const blocker = compose ? config?.musicScoreStatus?.blocker : job?.blocker ?? config?.musicBlocker;
       const selectedSong = (job?.songs ?? []).find(song => song.id === selectedSongId) || null;
       const refresh = async () => { const target = targetRef.current; if (target) onUpdate(await api.getMusicJob({ jobId: target.id })); };
       const withApi = async (run, setBusy = undefined) => { setBusy?.(true); try { await run(); } catch (error) { setNotice({ kind: "error", text: msg(error) }); } finally { setBusy?.(false); } };
@@ -15422,11 +15435,12 @@
       const composer = h("div", { className: "SPR_chatInputCard SPR_audioInput" },
         h("textarea", { className: "SPR_area SPR_audioPrompt", rows: 3, "data-testid": compose ? "music-compose-prompt" : draft.kind === "lyrics" ? "music-lyrics" : "music-prompt", "aria-label": T("提示词"), value: !compose && draft.kind === "lyrics" ? draft.lyrics : draft.prompt, placeholder: compose ? T("描述曲风、情绪与段落…") : draft.kind === "lyrics" ? T("粘贴完整歌词…") : T("描述你想创作的音乐…"), onChange: event => update(!compose && draft.kind === "lyrics" ? { lyrics: event.target.value } : { prompt: event.target.value }) }),
         h("div", { className: "SPR_chatComposerBottom" },
+          h("div", { className: "SPR_audioComposerOptions" },
           h(AudioChoice, { label: T("创作模式"), value: workflow, disabled: !!job || busy, choices: [{ id: "generate", label: T("AI 音乐") }, { id: "compose", label: T("本地谱曲") }], onChange: value => update({ workflow: value, instrumental: value === "compose" ? true : draft.instrumental }) }),
           !compose ? h(AudioChoice, { label: T("输入方式"), value: draft.kind, choices: [{ id: "prompt", label: T("灵感") }, { id: "lyrics", label: T("歌词") }], onChange: value => update({ kind: value }) }) : null,
-          !compose ? h(AudioChoice, { label: T("引擎偏好"), value: draft.preferredEngine, choices: [{ id: "", label: T("自动") }, ...MUSIC_ENGINES], onChange: value => update({ preferredEngine: value }) }) : null,
-          h("span", { className: "SPR_spacer" }), h(AudioChoice, { label: T("审核模式"), value: draft.reviewMode, choices: [{ id: "auto", label: T("自动审核") }, { id: "manual", label: T("人工审核") }], onChange: value => update({ reviewMode: value }) }),
-          h("button", { type: "button", className: "SPR_chatGenerate", "data-testid": "music-submit", "aria-label": T("发送并打开 DSH 对话"), disabled: busy || !(compose || draft.kind === "prompt" ? draft.prompt : draft.lyrics).trim(), onClick: () => void submit() }, creating ? h("span", { className: "SPR_spinSm" }) : h(ImageChatIcon, { name: "send" }))));
+          !compose ? h(AudioChoice, { label: T("引擎偏好"), value: draft.preferredEngine, choices: [{ id: "", label: T("自动") }, ...MUSIC_ENGINES], onChange: value => update({ preferredEngine: value }) }) : null),
+          h("div", { className: "SPR_audioComposerActions" }, h(AudioChoice, { label: T("审核模式"), value: draft.reviewMode, choices: [{ id: "auto", label: T("自动审核") }, { id: "manual", label: T("人工审核") }], onChange: value => update({ reviewMode: value }) }),
+          h("button", { type: "button", className: "SPR_chatGenerate", "data-testid": "music-submit", "aria-label": T("发送并打开 DSH 对话"), disabled: busy || !!blocker || !(compose || draft.kind === "prompt" ? draft.prompt : draft.lyrics).trim(), onClick: () => void submit() }, creating ? h("span", { className: "SPR_spinSm" }) : h(ImageChatIcon, { name: "send" })))));
       const rounds = musicConversationRounds(job);
       const scoreResult = (composition, favorite) => h("section", { className: "SPR_audioResult", key: composition.id, "data-testid": "music-score-" + composition.id },
         h(AudioPlayer, { src: musicAssetUrl(job, composition.audioFile, composition.audioUrl), label: composition.label || composition.title || job.name, duration: composition.midi?.duration, loadPeaks: () => api.musicPeaks({ jobId: job.id, scoreId: composition.id, buckets: 96 }) }),
@@ -15497,7 +15511,7 @@
       };
       const composition = (job?.compositions || []).find(entry => entry.id === panel);
       return h(React.Fragment, null, h(NoticePopup, { notice, onClose: () => setNotice(null) }),
-        h(AudioTimeline, { module: "music", job, rounds, busy, composer, emptyTitle: T("想创作什么音乐？"), onReuse: round => { const { conversationId, ...source } = round.request; update(source); },
+        h(AudioTimeline, { module: "music", job, rounds, busy, composer, blocker, emptyTitle: T("想创作什么音乐？"), onReuse: round => { const { conversationId, ...source } = round.request; update(source); },
           panels: [{ id: "parameters", title: T("生成参数"), content: parameters }, { id: "assets", title: T("项目素材"), icon: "folder", content: assets }],
           renderResult: (round, favorite) => h("div", { className: "SPR_audioResults" }, round.compositions.map(entry => scoreResult(entry, favorite)), round.songs.map(song => h(MusicSongResult, { key: song.id, job, song, favorite, onEdit: edit, onExport: exportNow, onSave: saveVersion, onDelete: deleteVersion, onApprove: approveSong })),
             round.status === "waiting" && round.sessionId ? h(Btn, { onClick: () => void withApi(() => uiWorkspaceService?.openSession(round.sessionId)) }, T("前往 DSH 对话")) : null) }),
@@ -15653,8 +15667,8 @@
           h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("添加参考素材"), title: T("添加参考素材"), disabled: busy, onClick: () => filesRef.current.click() }, uploading ? h("span", { className: "SPR_spinSm" }) : h(TaskHeaderIcon, { name: "add" })),
           h("span", { className: "SPR_audioModel" }, config?.sfxModel || "seed-audio-1.0"), h("span", { className: "SPR_spacer" }), h(DescriptionTip, { id: "sfx-billing-tip", label: T("音效生成说明"), text: T("参考图与参考音频不能同时使用。时长写在描述里，最长120秒；每次生成会计费。") }),
           h("button", { type: "button", className: "SPR_chatGenerate", "data-testid": "sfx-generate", "aria-label": busy ? T("停止生成") : T("生成（计费）"), disabled: busy ? !job?.busy || working : !!blocker || !draft.prompt.trim(),
-            onClick: async () => { if (job?.busy) { try { await api.cancelSfxGeneration({ jobId: job.id }); onUpdate(await api.getSfxJob({ jobId: job.id })); } catch (error) { setNotice({ kind: "error", text: msg(error) }); } } else void submit(null); } }, h(ImageChatIcon, { name: busy ? "stop" : "send" }))), blocker ? h("p", { className: "SPR_taskDialogError" }, blocker) : null);
-      return h(React.Fragment, null, h(NoticePopup, { notice, onClose: () => setNotice(null) }), h(AudioTimeline, { key: job?.id || "new", module: "sfx", job, rounds, busy, composer, emptyTitle: T("想创作什么声音？"), onReuse: reuse, onRegenerate: round => submit(round),
+            onClick: async () => { if (job?.busy) { try { await api.cancelSfxGeneration({ jobId: job.id }); onUpdate(await api.getSfxJob({ jobId: job.id })); } catch (error) { setNotice({ kind: "error", text: msg(error) }); } } else void submit(null); } }, h(ImageChatIcon, { name: busy ? "stop" : "send" }))));
+      return h(React.Fragment, null, h(NoticePopup, { notice, onClose: () => setNotice(null) }), h(AudioTimeline, { key: job?.id || "new", module: "sfx", job, rounds, busy, composer, blocker, emptyTitle: T("想创作什么声音？"), onReuse: reuse, onRegenerate: round => submit(round),
           panels: [{ id: "parameters", title: T("生成参数"), content: parameters }, ...(job ? [{ id: "assets", title: T("项目素材"), icon: "folder", content: h("div", { className: "SPR_audioFields" },
             h("div", { className: "SPR_toolbar SPR_audioWide" }, h(Btn, { disabled: busy || !job.takes?.length, onClick: async () => { try { const result = await api.exportSfx({ jobId: job.id, zip: true }); setNotice({ kind: "ok", text: T("已导出：{n0}", { n0: result.path || result.file }) }); } catch (error) { setNotice({ kind: "error", text: msg(error) }); } } }, T("导出全部（zip）")), h(Btn, { onClick: async () => { try { await api.revealSfxJob({ jobId: job.id }); } catch (error) { setNotice({ kind: "error", text: msg(error) }); } } }, T("打开任务目录"))),
             ...rounds.flatMap(round => round.takes).map(take => h("div", { key: take.id }, h(AudioPlayer, { src: musicAssetUrl(job, take.file, take.url), label: take.id, duration: take.duration }), h("a", { className: "SPR_btn", href: musicDownloadUrl(job, take.file, take.url), download: `${job.name}-${take.id}.${take.format}` }, T("下载")))), !job.takes?.length ? h("p", { className: "SPR_empty SPR_audioWide" }, T("暂无素材")) : null) }] : [])],
