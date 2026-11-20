@@ -2,6 +2,10 @@ English | [中文](README.md)
 
 # Game Material Master
 
+Image results offer **Send to** for eight-direction animation, sequence frames, top-down maps, and 45° maps. Select an existing or new destination; it owns an independent copy of the selected original or keyed version. Map transfers open the asset properties dialog before import. Transfers are local and do not invoke generation.
+
+White-model and sequence workflows use a conversation layout with references and settings in a dialog. One submission is one round, with video, raw frames, keyed frames, strips, and optional redraws as versions. Local extraction, keying, and composition run automatically by default and can also run individually. HD redraw remains an explicit paid action. Eight-direction animation still needs character and four-column/two-row appearance references; existing projects can supply them. Automatic extraction uses planned ranges, which remain adjustable after reviewing the actual motion. Legacy outputs are retained. **Fully quit DSH, including its tray process, after updating: a browser refresh alone leaves the old backend and produces API 404 errors.**
+
 > **Community white-model workflow · 0.12.0-motion.1 (preview)**
 >
 > Public fork of [universe-st/dsh-game-material-master](https://github.com/universe-st/dsh-game-material-master), retaining its MIT license. Adds an in-plugin workflow: character and actions → reference and prompt → video range review and extraction → optional frame redraw → per-action export. One 4-second 480P video contains eight directions and 2 actions by default (3 maximum, experimental). Installation and local processing are free; image/video API use is billed to your own provider account.
@@ -149,6 +153,8 @@ and move on automatically, or stop at every step and wait for your go-ahead.
 ---
 
 ## ① Eight-direction sprite sheet
+
+The sprite and sequence workspaces share the project sidebar, top stage navigation, and centered content. The sidebar reuses the image workspace's styles and rows, including collapsible groups, sorting, pinning, unread markers, and archive/undo. Advanced settings and logs start collapsed, uploads and empty states use less space, and project creation uses a themed dialog. Stage changes retain edits. Generation, billing consent, frame extraction, keying, review, and export keep their existing behavior. Refresh the plugin page to see this client-only update.
 
 The new default **white-model workflow** stays inside the DSH plugin: import character and eight-direction appearance references → choose 2 actions (3 maximum, experimental) → prepare a local 4-second reference → edit the prompt → generate one 480P video containing all eight directions → review actual action ranges → extract frames → optionally redraw selected frames → export each action as transparent PNGs, an eight-row sheet and timing JSON. Prompts work with templates, manual editing, or an optional local / third-party text model.
 

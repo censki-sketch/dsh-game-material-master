@@ -33,7 +33,7 @@ for (const method of ["listIsoProjects", "createIsoProject", "getIsoProject", "s
   check(`注册了 ${method}`, names.has(method));
 }
 check("不再注册 tile 方法", ![...names].some((method) => /^(list|create|get|save|delete|run|set|cancel|reveal)Tile/.test(method)));
-check("模块顺序为 sprite,image,sequence,rig,iso,map,music,sfx", LINKS.STUDIO_MODULES.join(",") === "sprite,image,sequence,rig,iso,map,music,sfx", LINKS.STUDIO_MODULES.join(","));
+check("模块顺序为 image,sprite,sequence,rig,iso,map,music,sfx", LINKS.STUDIO_MODULES.join(",") === "image,sprite,sequence,rig,iso,map,music,sfx", LINKS.STUDIO_MODULES.join(","));
 check("阶段为 assets,paint,export", LINKS.ISO_STAGES.join(",") === "assets,paint,export", LINKS.ISO_STAGES.join(","));
 const isoIntent = LINKS.parseIntentQuery("dsh-gmm=1&module=iso&job=gabc1234&stage=assets&dialog=add&asset=ai/x.png&shape=ground&frames=2&scale=4&cols=2&rows=2&keyed=1");
 check("深链接放行 module=iso", isoIntent?.module === "iso");

@@ -347,9 +347,9 @@ const api = new Proxy(
  * 本地却什么都看不出来。数字变了就说明 Hook 顺序改了，必须同步这里的槽位。
  */
 const EXPECTED_HOOKS = {
-  StudioPanel: 26,
+  StudioPanel: 27,
   ImageModule: 25,
-  SequenceModule: 17
+  SequenceModule: 21
 };
 
 /**
@@ -376,7 +376,7 @@ const EXPECTED_HOOKS = {
 function renderStage(project, stage, tasks, hidden = [], workflow = "classic", module = "sprite") {
   HOOK.slots = [];
   HOOK.slots[0] = 0;
-  HOOK.slots[1] = ["p1"];
+  HOOK.slots[1] = [{ id: project?.id || "p1", name: project?.name || "测试项目", imageReady: 8, videoReady: 8, framesReady: 8 }];
   HOOK.slots[2] = "p1";
   HOOK.slots[3] = project;
   HOOK.slots[4] = stage;
@@ -1046,12 +1046,15 @@ section("图片项目侧栏与创建弹窗");
   check("顶栏操作收进悬停操作容器", byClass(tree, "SPR_taskHeadActions").length === 1);
   HOOK.slots = []; HOOK.cursor = 0;
   let selectedDirectory;
-  const grouped = bundle.__test.JobSidebar({ title: "项目", items: [{...makeImageJob(),saveDirectory:"C:/素材"}], activeId:"i1",storageKey:"image",preferences:{...preferences,layout:"grouped"},onPreferences:()=>{},onCreate:directory=>{selectedDirectory=directory;},renderMeta:()=>"" });
+  const grouped = bundle.__test.JobSidebar({ title: "项目", items: [{...makeImageJob(),saveDirectory:"C:/素材"}], activeId:"i1",storageKey:"image",preferences:{...preferences,layout:"grouped"},onPreferences:()=>{},onCreate:directory=>{selectedDirectory=directory;},onEditFolder:()=>{},onRevealFolder:()=>{},onArchiveFolder:()=>{},onRemoveFolder:()=>{},renderMeta:()=>"" });
   const folderCreate=byTag(grouped,"button").find(node=>node.props["aria-label"]==="在此文件夹新建项目");
   folderCreate?.props.onClick();
   check("目录行有更多和在当前文件夹新建入口", !!folderCreate&&selectedDirectory==="C:/素材"&&byTag(grouped,"button").some(node=>node.props["aria-label"]==="文件夹「素材」的更多操作"));
   const folderMenu = byTag(grouped, "div").find(node => node.props.className?.split(" ").includes("SPR_taskFolderMenu"));
   check("文件夹更多菜单内容与顺序和参考一致", byTag(folderMenu, "button").map(node => textOf(node)).join("/") === "置顶/编辑/在资源管理器中打开/归档聊天/移除项目" && byTag(folderMenu, "div").filter(node => node.props.role === "separator").length === 3, byTag(folderMenu, "button").map(node => textOf(node)).join("/") + " separators=" + byTag(folderMenu, "div").filter(node => node.props.role === "separator").length);
+  const fixedFolder = bundle.__test.JobSidebar({ title:"项目",items:[makeImageJob()],storageKey:"sprite-motion",preferences:{...preferences,layout:"grouped"},onPreferences:()=>{},onCreate:()=>{},onArchiveFolder:()=>{} });
+  const fixedMenu = byTag(fixedFolder,"div").find(node=>node.props.className?.split(" ").includes("SPR_taskFolderMenu"));
+  check("固定目录工作流不展示没有对应方法的文件操作",byTag(fixedMenu,"button").map(node=>textOf(node)).join("/")==="置顶/归档聊天");
   check("空文件夹不会渲染占位内容撑大分组间距", !byClass(grouped, "SPR_taskGroupEmpty").length);
   check("列表折叠与全局侧栏使用独立控件", byClass(tree, "SPR_taskSideTitle").some(node => node.props["aria-controls"] === "task-list-image"));
   const linkedPreferences = { ...preferences, layout: "grouped", folders: { "C:/素材": { name: "角色素材", directories: ["C:/素材", "D:/道具"] } } };
@@ -1175,11 +1178,15 @@ if (typeof ImageModule === "function") {
     const repeated = build({ ...fixture, rounds: [], items: [], history: [original, { ...original, id: "repeat", batchId: "separate-generation", item: { ...original.item, versionId: "repeat", file: "out/repeat.png" } }] });
     check("相同描述的两次真实生成仍保留为两轮", repeated.length === 2);
     const materials = bundle.__test.imageConversationMaterials;
+    const materialGroups = bundle.__test.imageConversationMaterialGroups;
     const refs = [{ file: "refs/a.png", name: "参考.png" }];
     const cutout2 = { ...cutout, id: "cut2", createdAt: 6, item: { ...cutout.item, versionId: "cut2", keyedFile: "keyed/a2.png" } };
     const rich = { ...fixture, refs, history: [original, second, cutout, cutout2], items: [cutout2.item] };
     const assets = materials(rich, build(rich));
     check("素材按文件去重，保留参考图、两张原图和两次抠图", assets.length === 5 && new Set(assets.map(asset => asset.file)).size === 5);
+    const groupedAssets = materialGroups(assets);
+    check("项目素材按参考图与生成轮次分组", groupedAssets.map(group => group.title).join(" / ") === "参考图 / 第 1 轮");
+    check("每个素材分组保留组内数量", groupedAssets.every(group => group.items.length > 0));
     check("素材显示真实类型与对应轮次张数", assets.find(asset => asset.file === "out/a.png")?.kind === "original" && assets.find(asset => asset.file === "out/b.png")?.imageNumber === 2 && assets.find(asset => asset.file === "keyed/a.png")?.roundNumber === 1 && assets.find(asset => asset.file === "refs/a.png")?.kind === "reference");
     check("两次抠图拥有独立版本编号", assets.find(asset => asset.file === "keyed/a.png")?.label === "抠图版本 1" && assets.find(asset => asset.file === "keyed/a2.png")?.label === "抠图版本 2");
     const auto = { ...original, item: { ...original.item, keyedFile: "keyed/auto.png" } };
@@ -1952,10 +1959,10 @@ section("白模动作流程：五阶段、费用确认与选择反馈");
   const button = (tree,label) => byTag(tree,'button').find(n=>textOf(n)===label);
   check('白模组件可从构建产物加载',typeof MotionModule==='function');
   const first=renderMotion(0);
-  check('导航含五个阶段',byTag(first,'nav').some(n=>byTag(n,'button').length===5));
-  check('默认选择两动作，最多三动作',byTag(first,'select').some(n=>n.props.value===2 && modeOptions(n).includes(3) && !modeOptions(n).includes(4)));
+  check('素材参数导航只保留角色与参考两页',byTag(first,'nav').some(n=>byTag(n,'button').length===2));
+  check('默认选择两动作，最多三动作',collect(first,n=>n.type?.name==='SettingsSelect').some(n=>n.props.value===2 && modeOptions(n).includes(3) && !modeOptions(n).includes(4)));
   check('已有八方向项目提供免费导入',Boolean(button(first,'导入已有角色和八方向图（免费）')));
-  check('两种角色参考输入存在',byTag(first,'input').filter(n=>n.props.type==='file').length===2);
+  check('两种角色参考和本地视频输入存在',byTag(first,'input').filter(n=>n.props.type==='file').length===3);
   const second=renderMotion(1);
   check('未确认费用时不能生成视频',button(second,'生成八方向多动作视频')?.props.disabled===true);
   check('已确认且有参考时允许提交',button(renderMotion(1,{}, {11:true}),'生成八方向多动作视频')?.props.disabled===false);

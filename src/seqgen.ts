@@ -86,6 +86,7 @@ export interface SequenceSheetState {
 }
 
 export interface SequenceJob {
+  workflowParent?: string;
   id: string;
   name: string;
   createdAt: number;
@@ -237,7 +238,7 @@ export async function listSequenceJobs(): Promise<SequenceJobSummary[]> {
   const out: SequenceJobSummary[] = [];
   for (const id of entries) {
     const job = await readSequenceJob(id);
-    if (job === undefined) continue;
+    if (job === undefined || job.workflowParent) continue;
     out.push(summarizeSequenceJob(job));
   }
   out.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -277,6 +278,7 @@ function normalizeSequenceJob(raw: any): SequenceJob {
     Array.isArray(value) ? value.map(ref).filter((r): r is SequenceRef => r !== undefined) : [];
 
   return {
+    workflowParent: typeof raw?.workflowParent === "string" ? raw.workflowParent : undefined,
     id: String(raw?.id ?? ""),
     name: typeof raw?.name === "string" && raw.name.trim() !== "" ? raw.name : "未命名序列帧任务",
     createdAt: Number(raw?.createdAt) || Date.now(),

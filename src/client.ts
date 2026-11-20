@@ -44,6 +44,86 @@
     /** 中文原文 → 英文译文。key 里可能带 `{nN}` 占位符。 */
 /* i18n-ignore-start */
     const EN: Record<string, string> = {
+      "流转到": "Send to",
+      "目标项目": "Destination project",
+      "下一步确认素材尺寸与属性。": "Confirm asset size and properties next.",
+      "继续": "Continue",
+      "视频": "Video",
+      "原始帧": "Raw frames",
+      "抠图版": "Keyed frames",
+      "高清重绘": "HD redraw",
+      "合成条图": "Sprite strip",
+      "素材包": "Asset package",
+      "旧版结果": "Legacy results",
+      "导入已有视频": "Imported video",
+      "结果版本": "Result version",
+      "还没有结果": "No results yet",
+      "单独执行": "Run a step",
+      "执行详情": "Execution details",
+      "按预设动作分段抽帧，可在单独执行中调整范围。": "Frames use the planned motion ranges. Adjust them with Run a step.",
+      "先检查视频中的实际动作，再调整抽帧范围。": "Check the actual motion in the video, then adjust the extraction ranges.",
+      "重新抽帧与抠像": "Extract and key again",
+      "重绘会调用生图服务并计费。": "Redraw calls the image service and incurs charges.",
+      "选择重绘范围": "Redraw range",
+      "先重绘第一帧": "Try the first frame",
+      "重绘全部帧": "Redraw all frames",
+      "开始重绘": "Start redraw",
+      "确认高清重绘": "Confirm HD redraw",
+      "本次将提交 {n0} 张图片，请核对生图服务的费用。": "This submits {n0} images. Check the image service pricing.",
+      "本次提交 1 段视频：{n0} · {n1}秒 · {n2}。实际费用以服务商为准。": "Submit one video: {n0}, {n1}s, {n2}. Your provider determines the actual cost.",
+      "添加素材，描述动作，结果会保留在每一轮中。": "Add a reference and describe the motion. Results stay in each round.",
+      "添加素材与参数": "Add references and settings",
+      "轮次定位": "Jump to round",
+      "动作提示词": "Motion prompt",
+      "描述角色动作…": "Describe the character motion...",
+      "素材与参数": "References and settings",
+      "角色图已就绪": "Character ready",
+      "添加角色图": "Add character",
+      "参考图已就绪": "Reference ready",
+      "自动处理": "Auto process",
+      "执行方式": "Execution mode",
+      "生成新视频": "Generate video",
+      "处理已有视频（本地）": "Process existing video locally",
+      "完成": "Done",
+      "确认生成视频": "Confirm video generation",
+      "动画预览": "Animation preview",
+      "手动选择帧": "Select frames",
+      "插件后台尚未更新，请完全退出 DSH（包括托盘）后重新打开。": "The plugin backend needs a restart. Fully quit DSH, including the tray process, then reopen it.",
+      "操作阶段": "Workflow stages",
+      "八方向工作流": "Eight-direction workflow",
+      "开始制作八方向素材": "Create eight-direction assets",
+      "选择已有项目，或新建项目上传角色设定图。": "Choose a project or create one and upload your character reference.",
+      "把角色设定图拖到这里": "Drop a character reference here",
+      "开始制作角色动作": "Create character animations",
+      "上传角色外观，选择动作，逐步生成八方向动画素材。": "Upload your character, choose motions, and create eight-direction animations.",
+      "上传角色细节参考图": "Upload character reference",
+      "上传八方向外观图": "Upload eight-direction reference",
+      "选择动作": "Choose motion",
+      "动作预览": "Motion preview",
+      "预览方向": "Preview direction",
+      "加载预览…": "Loading preview...",
+      "预览失败": "Preview failed",
+      "预览图片无法加载": "The preview image could not be loaded",
+      "内置动作预览，不会调用生成模型": "Built-in motion preview; no generation model is called",
+      "选择这个动作": "Use this motion",
+      "选择一个动作查看预览": "Choose a motion to preview",
+      "{n0} 项": "{n0} items",
+      "筛选动作": "Filter motions",
+      "选择方向": "Choose direction",
+      "参考素材": "References",
+      "提取序列帧": "Extract frames",
+      "抠像与合成": "Keying & composition",
+      "验收": "Review",
+      "更多操作": "More actions",
+      "开始制作序列帧": "Create animation frames",
+      "添加参考素材，生成视频后提取、抠像并合成动画。": "Add references, generate a video, then extract, key and compose animation frames.",
+      "参考模式": "Reference mode",
+      "生成参数与附加提示词": "Generation settings & extra prompt",
+      "还没有生成视频": "No video yet",
+      "填写动作描述，确认参数后生成视频。": "Describe the motion and check the settings to generate a video.",
+      "抽帧参数": "Frame extraction settings",
+      "视频就绪后，按设定张数提取动画帧。": "Once the video is ready, extract the selected number of animation frames.",
+      "高级抠像参数": "Advanced keying settings",
       "重命名功能": "Rename feature",
       "功能名称": "Feature name",
       "恢复默认名称": "Restore default name",
@@ -227,6 +307,7 @@
       "文件夹「{n0}」的更多操作": "More actions for folder '{n0}'",
       "文件夹操作": "Folder actions",
       "{n0} 个项目 · {n1} 张 · 抠像 {n2}": "{n0} projects \u00b7 {n1} images \u00b7 {n2} keyed",
+      "{n0} 个项目": "{n0} projects",
       "最近更新：{n0}": "Last updated: {n0}",
       "创建时间：{n0}": "Created: {n0}",
       "编辑项目": "Edit project",
@@ -452,18 +533,17 @@
       "复制失败": "Copy failed",
       "新建项目": "New project",
       "实验性": "Experimental",
-      "项目（{n0}）": "Projects ({n0})",
-      "还没有项目，点右上角「新建项目」开始。": "No projects yet. Click \"New project\" in the top right to start.",
+
+
       "图 {n0}/8 · 视频 {n1}/8 · 帧 {n2}/8{n3}": "Images {n0}/8 · Videos {n1}/8 · Frames {n2}/8{n3}",
       " · 整图✓": " · Sheet ✓",
       "关闭": "Close",
       "正在载入…": "Loading…",
-      "请选择或新建一个项目": "Select or create a project",
-      "上传角色的原始设定图。第一步的正面绿幕图会以它为唯一参考。": "Upload the character's original sheet. The first stage's front chroma-key image uses it as its only reference.",
-      "尚未上传源图": "No source image uploaded yet",
+
+
       "正在上传…": "Uploading…",
-      "把图片拖到这里，或": "Drag the image here, or",
-      "选择源图": "Choose source image",
+
+
       "更换源图": "Replace source image",
       "刷新状态": "Refresh status",
       "在访达中打开项目目录": "Open the project directory in Finder",
@@ -785,7 +865,7 @@
       "已新建序列帧任务": "Sequence frames job created",
       "视频生成中…（H3 通常 1~6 分钟，可以离开本页）": "Generating video… (H3 usually takes 1-6 minutes; you can leave this page)",
       "正在抠像并合成条图…": "Keying and composing strip…",
-      "序列帧任务": "Sequence frames jobs",
+
       "{n0} {n1} {n2}": "{n0} {n1} {n2}",
       "视频✓": "Video✓",
       "视频·": "Video·",
@@ -793,8 +873,8 @@
       "帧·": "Frames·",
       "合成✓": "Compose✓",
       "合成·": "Compose·",
-      "请选择或新建一个序列帧任务": "Select or create a sequence frames job",
-      "① 视频输入": "① Video input",
+
+
       "平台规定两种模式互斥：首尾帧模式以一张图作为起始画面；多模态参考模式用参考图+参考视频来约束风格与动作。": "The platform does not allow these two modes at once: first/last frame mode uses one image as the opening frame; multimodal reference mode uses reference images plus reference videos to constrain style and motion.",
       "首尾帧模式（上传首帧图）": "First/last frame mode (upload a first frame)",
       "多模态参考模式（参考图 / 参考视频）": "Multimodal reference mode (reference images / reference videos)",
@@ -806,24 +886,23 @@
       "参考视频（{n0}/3，每段 2~15 秒，单文件 ≤ 40MB）": "Reference videos ({n0}/3, 2-15 s each, ≤ 40MB per file)",
       "移除 {n0}": "Remove {n0}",
       "把参考视频拖到这里": "Drag reference videos here",
-      "② 提示词与参数": "② Prompt and parameters",
+
       "视频模型": "Video model",
       "时长（秒，{n0}~{n1}）": "Duration (s, {n0}-{n1})",
       "分辨率": "Resolution",
       "正在提交视频任务…": "Submitting video job…",
-      "已提交视频任务，可离开本页": "Video job submitted; you can leave this page",
       "重新生成视频": "Regenerate video",
       "正在查询远端进度…": "Checking remote progress…",
       "已清空视频与帧": "Video and frames cleared",
       "H3 768P 按 0.5 元/秒刊例计费": "H3 768P is billed at the list price of ¥0.5/second",
       "状态：{n0} {n1} {n2}": "Status: {n0} {n1} {n2}",
-      "③ 序列帧提取": "③ Sequence frame extraction",
+
       "提取张数": "Frames to extract",
       "已开始抽帧": "Frame extraction started",
       "按当前张数抽帧（{n0} 张）": "Extract with the current count ({n0} frames)",
       "参数已变，需重抽": "Parameters changed; extract again",
       "视频时长 {n0} 秒 · {n1} 帧": "Video duration {n0} s · {n1} frames",
-      "④ 绿幕抠像与合成": "④ Chroma keying and composition",
+
       "正在重新抠像…": "Re-keying…",
       "已开始重新抠像": "Re-keying started",
       "重新抠像": "Re-key",
@@ -837,7 +916,7 @@
       "序列帧条图": "Sequence frames strip",
       "第 {n0} 帧": "Frame {n0}",
       "第 {n0} / {n1} 帧（点「×」/ 背景 / Esc 关闭）": "Frame {n0} / {n1} (click \"×\" / the backdrop / Esc to close)",
-      "⑤ 验收": "⑤ Acceptance",
+
       "三步各自打「通过」。对话里的 agent 读写同一份标记：选「每一步人工审核」时，它会等你通过才继续。": "Approve each of the three steps. The agent in the conversation reads and writes the same flags: with \"manual review at every step\" selected, it waits for your approval before continuing.",
       "① 生成视频": "① Generate video",
       "② 抽帧 + 抠像": "② Frame extraction + keying",
@@ -1158,7 +1237,7 @@
       "已新建骨骼动画任务": "Skeletal animation job created",
       "删除任务「{n0}」？产物文件会一并删除。": "Delete job \"{n0}\"? Its output files will be deleted as well.",
       "新的任务名": "New job name",
-      "新序列帧任务的名字": "Name for the new sequence job",
+
       "新骨骼动画任务的名字": "Name for the new skeletal animation job",
       "已重命名": "Renamed",
       "已上传参考图：{n0}": "Reference image uploaded: {n0}",
@@ -2262,8 +2341,7 @@
       "导出素材": "Export assets",
       "白模角色动画": "Template character animation",
       "新建白模任务": "New motion job",
-      "白模决定动作，角色图决定外观。4秒选2种动作，最多3种；3动作仍为实验性。": "Templates guide motion; character images guide appearance. Choose two actions in four seconds, up to three. Three-action generation is experimental.",
-      "新建或选择白模任务开始。": "Create or select a motion job to begin.",
+
       "任务处理中…": "Processing job...",
       "任务名称": "Job name",
       "角色外观说明": "Character appearance",
@@ -3184,9 +3262,16 @@
     const codec = (symbol) => ({ mode: "strict", typeSymbol: symbol, create: () => ({ parse: (value) => value }) });
 
     const REMOTE_METHODS = [
+      ["transferAsset", true],
+      ["getAssetTransfer", true],
+      ["getWorkflowConversation", true],
+      ["submitWorkflowRound", true],
+      ["runWorkflowRoundStep", true],
+      ["reuseWorkflowRound", true],
       ["listMotionJobs", false],
       ["createMotionJob", true],
       ["getMotionJob", true],
+      ["getMotionTemplatePreview", true],
       ["saveMotionJob", true],
       ["uploadMotionAsset", true],
       ["runMotionStep", true],
@@ -4927,6 +5012,40 @@
 .SPR_audioFields .SPR_audioChoice,.SPR_audioFields .SPR_audioChoice>.SPR_imageResultActions{width:100%}
 .SPR_audioFields .SPR_audioChoice .SPR_imageResultMore.SPR_btn{width:100%;justify-content:space-between;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1)}
 .SPR_audioPanel.SPR_projectRenameDialog{box-sizing:border-box;width:min(680px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100dvh - 48px);overflow:auto;padding:20px;border-radius:18px}
+.SPR_motionActionTrigger{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;max-width:100%;height:32px;padding:5px 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:none}
+.SPR_motionActionTrigger:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_motionActionTriggerText{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_motionActionTrigger>svg{width:14px;height:14px;flex:none}
+.SPR_motionActionDialog.SPR_projectRenameDialog{width:min(760px,calc(100vw - 32px));max-width:calc(100vw - 32px);height:min(620px,calc(100dvh - 32px));max-height:calc(100dvh - 32px);padding:20px;overflow:hidden}
+.SPR_motionActionDialog[open]{display:flex;flex-direction:column}
+.SPR_motionActionDialog>.SPR_chatRequestHead{position:static;flex:none}
+.SPR_motionActionHint{margin:0 0 14px}
+.SPR_motionActionLayout{display:grid;grid-template-columns:minmax(190px,.72fr) minmax(0,1.28fr);grid-template-rows:minmax(0,1fr);gap:16px;flex:1;min-height:0}
+.SPR_motionActionList{display:flex;flex-direction:column;gap:4px;min-height:0;overflow:auto;overscroll-behavior:contain;padding:4px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-2)}
+.SPR_motionActionOption{display:grid;grid-template-columns:18px minmax(0,1fr);align-items:center;gap:6px;flex:none;width:100%;padding:8px 9px;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;cursor:pointer}
+.SPR_motionActionOption:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}
+.SPR_motionActionOption[aria-selected=true]{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-state-business-primary)}
+.SPR_motionActionOptionCheck{display:flex;align-items:center;justify-content:center;width:16px;height:16px}
+.SPR_motionActionOptionCheck>svg{width:14px;height:14px}
+.SPR_motionActionOptionText{display:flex;flex-direction:column;min-width:0;gap:2px}
+.SPR_motionActionOptionText strong{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_motionActionOptionText small{font-size:11px;color:var(--dsw-alias-label-secondary)}
+.SPR_motionActionPreview{display:grid;grid-template-rows:minmax(0,1fr) auto auto;gap:10px;min-width:0;min-height:0}
+.SPR_motionPreviewViewport{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;padding:12px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:repeating-conic-gradient(var(--dsw-alias-bg-layer-2) 0 25%,var(--dsw-alias-bg-layer-1) 0 50%) 50%/20px 20px;color:var(--dsw-alias-label-secondary);text-align:center;overflow:hidden}
+.SPR_motionPreviewViewport img{display:block;min-width:0;min-height:0;max-width:100%;max-height:100%;image-rendering:pixelated;object-fit:contain}
+.SPR_motionPreviewViewport[data-loading=true]{opacity:.72}
+.SPR_motionPreviewMeta{display:flex;align-items:baseline;justify-content:space-between;gap:10px;min-width:0}
+.SPR_motionPreviewMeta strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.SPR_motionPreviewMeta span{flex:none;color:var(--dsw-alias-label-secondary);font-size:11px}
+.SPR_motionDirectionPicker{display:flex;flex-direction:column;gap:6px}
+.SPR_motionDirectionGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.SPR_motionDirectionGrid>.SPR_btn{min-width:0;padding:5px 4px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-bg-layer-1);font-size:11px;white-space:nowrap}
+.SPR_motionDirectionGrid>.SPR_btn[data-active=true]{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-state-business-primary)}
+.SPR_motionActionDialog>.SPR_motionActionActions{flex:none;justify-content:flex-end;margin-top:16px}
+@media(max-width:600px){
+  .SPR_motionActionDialog.SPR_projectRenameDialog{padding:16px}
+  .SPR_motionActionLayout{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(96px,.7fr) minmax(0,1.3fr);gap:12px}
+}
 .SPR_audioPanel>.SPR_chatRequestHead{position:sticky;top:-20px;z-index:2;background:var(--dsw-alias-bg-layer-1);padding:0 0 14px;margin:0 0 8px;display:flex;align-items:center;justify-content:space-between}
 .SPR_audioPanel>.SPR_chatRequestHead h3{margin:0;font-size:15px;font-weight:600}
 .SPR_audioPanel>.SPR_chatRequestHead .SPR_taskIconButton{position:static}
@@ -4971,7 +5090,7 @@
 .SPR_audioRef>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
 .SPR_audioRef>.SPR_taskIconButton{opacity:0;flex:none}
 .SPR_audioRef:hover>.SPR_taskIconButton,.SPR_audioRef:focus-within>.SPR_taskIconButton{opacity:1}
-.SPR_audioUndo{position:absolute;bottom:18px;left:18px;z-index:8;display:flex;align-items:center;gap:10px;padding:9px 12px;max-width:calc(100% - 60px);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 6px 24px #0002;font-size:12px}
+.SPR_audioUndo{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:8;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:9px 12px;max-width:calc(100% - 32px);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 6px 24px #0002;font-size:12px}
 .SPR_audioGuideLink{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);border:0;background:transparent;color:var(--dsw-alias-label-tertiary);font-size:10px;cursor:pointer;padding:2px 6px}
 .SPR_audioGuideLink:hover{color:var(--dsw-alias-label-primary)}
 @container (max-width:560px){.SPR_audioPlayer{gap:9px;padding:10px;grid-template-columns:34px minmax(0,1fr)}.SPR_audioPlay{width:34px;height:34px}.SPR_audioTime{grid-column:2;justify-self:end}.SPR_audioModel{max-width:90px}.SPR_audioInput .SPR_audioChoice .SPR_imageResultMore.SPR_btn{padding:4px}.SPR_audioChat .SPR_chatRoundActions .SPR_btn{padding:5px 8px}}
@@ -5189,29 +5308,29 @@
 .SPR_taskDialogError{color:var(--dsw-alias-state-error-primary,#d84949);font-size:13px;line-height:20px;overflow-wrap:anywhere}
 
 
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]){gap:4px}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskSideHead,.SPR_taskPinnedHead{display:flex;align-items:center;min-height:28px;padding:0 0 0 2px;margin:0;gap:0;color:var(--dsw-alias-label-tertiary)}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskSideTitle{flex:none;font-size:13px;gap:1px}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskSideTitle:hover{background:transparent;color:var(--dsw-alias-label-primary)}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskIconButton:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskSideTitle svg{width:14px;height:14px}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_projItem{box-sizing:border-box;min-height:30px;border:0;border-radius:8px;padding:6px 10px;background:transparent;box-shadow:none}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_projItem:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_projItem[data-active=true]{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_projName{font-weight:400;font-size:13px}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_projMeta{font-size:11px;margin-top:2px}
+.SPR_side.SPR_jobSidebar{gap:4px}
+.SPR_side.SPR_jobSidebar .SPR_taskSideHead,.SPR_taskPinnedHead{display:flex;align-items:center;min-height:28px;padding:0 0 0 2px;margin:0;gap:0;color:var(--dsw-alias-label-tertiary)}
+.SPR_side.SPR_jobSidebar .SPR_taskSideTitle{flex:none;font-size:13px;gap:1px}
+.SPR_side.SPR_jobSidebar .SPR_taskSideTitle:hover{background:transparent;color:var(--dsw-alias-label-primary)}
+.SPR_side.SPR_jobSidebar .SPR_taskIconButton:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
+.SPR_side.SPR_jobSidebar .SPR_taskSideTitle svg{width:14px;height:14px}
+.SPR_side.SPR_jobSidebar .SPR_projItem{box-sizing:border-box;min-height:30px;border:0;border-radius:8px;padding:6px 10px;background:transparent;box-shadow:none}
+.SPR_side.SPR_jobSidebar .SPR_projItem:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
+.SPR_side.SPR_jobSidebar .SPR_projItem[data-active=true]{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
+.SPR_side.SPR_jobSidebar .SPR_projName{font-weight:400;font-size:13px}
+.SPR_side.SPR_jobSidebar .SPR_projMeta{font-size:11px;margin-top:2px}
 .SPR_taskGroup{display:flex;flex-direction:column;gap:3px;min-width:0}
 .SPR_taskGroup+.SPR_taskGroup{margin-top:16px}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskGroup+.SPR_taskGroup{margin-top:2px}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskGroup{gap:2px}
+.SPR_side.SPR_jobSidebar .SPR_taskGroup+.SPR_taskGroup{margin-top:2px}
+.SPR_side.SPR_jobSidebar .SPR_taskGroup{gap:2px}
 .SPR_taskGroup[data-folder-drop]{position:relative}
 .SPR_taskGroup[data-folder-drop]::after{content:"";position:absolute;left:6px;right:6px;height:2px;border-radius:2px;background:var(--dsw-alias-state-business-primary);pointer-events:none;z-index:1}
 .SPR_taskGroup[data-folder-drop=before]::after{top:-2px}
 .SPR_taskGroup[data-folder-drop=after]::after{bottom:-2px}
 .SPR_taskGroupTitle[draggable=true]{cursor:grab}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskList{display:flex;flex-direction:column;gap:2px}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskList[hidden]{display:none}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]):is([data-archive-empty=true],[data-list-empty=true])>.SPR_taskList:not([hidden]){flex:1;justify-content:center;min-height:140px}
+.SPR_side.SPR_jobSidebar .SPR_taskList{display:flex;flex-direction:column;gap:2px}
+.SPR_side.SPR_jobSidebar .SPR_taskList[hidden]{display:none}
+.SPR_side.SPR_jobSidebar:is([data-archive-empty=true],[data-list-empty=true])>.SPR_taskList:not([hidden]){flex:1;justify-content:center;min-height:140px}
 .SPR_taskPinned{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
 .SPR_taskArchiveLink{display:flex;align-items:center;gap:8px;flex:none;width:100%;margin-top:auto;padding:8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;text-align:left;cursor:pointer}
 .SPR_taskArchiveLink svg{width:16px;height:16px;flex:none}
@@ -5220,9 +5339,9 @@
 .SPR_taskGroupTitle span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .SPR_taskGroupTitle svg{flex:none;width:13px;height:13px}
 .SPR_taskHeadActions{display:flex;align-items:center;flex:none}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskHeadActions{margin-left:auto}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskHeadActions{opacity:0;pointer-events:none;transition:opacity .12s}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskSideHead:hover .SPR_taskHeadActions,.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskSideHead:has(:focus-visible) .SPR_taskHeadActions,.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskHeadActions:has([aria-expanded=true]){opacity:1;pointer-events:auto}
+.SPR_side.SPR_jobSidebar .SPR_taskHeadActions{margin-left:auto}
+.SPR_side.SPR_jobSidebar .SPR_taskHeadActions{opacity:0;pointer-events:none;transition:opacity .12s}
+.SPR_side.SPR_jobSidebar .SPR_taskSideHead:hover .SPR_taskHeadActions,.SPR_side.SPR_jobSidebar .SPR_taskSideHead:has(:focus-visible) .SPR_taskHeadActions,.SPR_side.SPR_jobSidebar .SPR_taskHeadActions:has([aria-expanded=true]){opacity:1;pointer-events:auto}
 .SPR_taskGroupTitle{padding:0 3px 0 8px;gap:4px;min-height:30px;border-radius:8px;font-size:13px;color:var(--dsw-alias-label-secondary)}
 .SPR_taskGroupTitle:hover,.SPR_taskGroupTitle:has(:focus-visible),.SPR_taskGroupTitle[data-menu-open=true]{background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,var(--dsw-alias-bg-layer-1))}
 .SPR_taskGroupTitle>.SPR_sidebarInfoRoot{flex:1;min-width:0}
@@ -5233,7 +5352,7 @@
 .SPR_taskFolderToggleIcon svg{display:block;width:16px;height:16px}
 .SPR_taskGroupItems[hidden]{display:none}
 .SPR_taskGroupItems{display:flex;flex-direction:column;gap:3px;min-width:0}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskGroup:has(.SPR_taskGroupTitle) .SPR_projectRow .SPR_projItem{padding-left:34px}
+.SPR_side.SPR_jobSidebar .SPR_taskGroup:has(.SPR_taskGroupTitle) .SPR_projectRow .SPR_projItem{padding-left:34px}
 .SPR_taskGroupEmpty{padding:8px 12px 8px 34px;margin:0;font-size:12px;color:var(--dsw-alias-label-tertiary)}
 .SPR_taskFolderLabel>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .SPR_taskFolderLabel>svg{width:16px;height:16px}
@@ -5254,7 +5373,7 @@
 .SPR_taskGroupTitle .SPR_taskFolderMenu .SPR_projectMenuSeparator{margin:4px 8px}
 .SPR_sidebarInfoRoot{min-width:0}
 .SPR_sidebarInfoRoot>.SPR_projItem{width:100%}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_projectRow .SPR_projItem{padding-right:62px}
+.SPR_side.SPR_jobSidebar .SPR_projectRow .SPR_projItem{padding-right:62px}
 .SPR_imageProjectActions{position:absolute;right:4px;top:calc(50% - 12px);display:flex;align-items:center;gap:2px;opacity:0;pointer-events:none;transition:opacity .12s}
 .SPR_projectRow:hover .SPR_imageProjectActions,.SPR_projectRow:has(:focus-visible) .SPR_imageProjectActions{opacity:1;pointer-events:auto}
 .SPR_imageProjectActions .SPR_taskIconButton{width:24px;height:24px;border-radius:6px}
@@ -5330,10 +5449,10 @@
 .SPR_projectRow{position:relative;flex:none;min-width:0}
 .SPR_projectRow>.SPR_projItem{padding-right:40px}
 .SPR_projectMoreInline{position:absolute;right:5px;top:6px}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_projectMoreInline{top:calc(50% - 14px)}
+.SPR_side.SPR_jobSidebar .SPR_projectMoreInline{top:calc(50% - 14px)}
 .SPR_projectMoreInline .SPR_projectMoreButton{width:28px;height:28px;opacity:0;transition:opacity .12s}
 .SPR_projectRow:hover .SPR_projectMoreButton,.SPR_projectRow:focus-within .SPR_projectMoreButton,.SPR_projectRow[data-active=true] .SPR_projectMoreButton{opacity:1}
-.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_projectRow:not(:hover):not(:has(:focus-visible)) .SPR_projectMoreButton[aria-expanded=false]{opacity:0;pointer-events:none}
+.SPR_side.SPR_jobSidebar .SPR_projectRow:not(:hover):not(:has(:focus-visible)) .SPR_projectMoreButton[aria-expanded=false]{opacity:0;pointer-events:none}
 .SPR_projectMenu{position:fixed;z-index:90;width:196px;box-sizing:border-box;padding:6px;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 8px 28px rgba(0,0,0,.14);color:var(--dsw-alias-label-primary)}
 .SPR_projectMenu button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer;font:inherit;text-align:left;line-height:20px}
 .SPR_projectMenu button:hover,.SPR_projectMenu button:focus-visible{background:var(--dsw-alias-interactive-bg-hover-solid)}
@@ -5367,7 +5486,7 @@
 .SPR_templateDeleteDialog::backdrop{background:rgba(0,0,0,.35)}
 @media(hover:none){.SPR_projectMoreInline .SPR_projectMoreButton{opacity:1}}
 @media(hover:none){.SPR_imageProjectActions{opacity:1;pointer-events:auto}}
-@media(hover:none){.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskHeadActions,.SPR_taskFolderActions,.SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_projectRow:not(:hover):not(:has(:focus-visible)) .SPR_projectMoreButton[aria-expanded=false]{opacity:1;pointer-events:auto}}
+@media(hover:none){.SPR_side.SPR_jobSidebar .SPR_taskHeadActions,.SPR_taskFolderActions,.SPR_side.SPR_jobSidebar .SPR_projectRow:not(:hover):not(:has(:focus-visible)) .SPR_projectMoreButton[aria-expanded=false]{opacity:1;pointer-events:auto}}
 .SPR_root>.SPR_modules{display:flex;flex-wrap:nowrap;gap:20px;padding:0 22px;overflow-x:auto;align-items:stretch;background:transparent;scrollbar-width:thin}
 .SPR_root>.SPR_modules>.SPR_module{position:relative;display:inline-flex;flex-direction:row;align-items:center;flex:none;gap:6px;min-height:44px;padding:10px 2px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--dsw-alias-label-secondary);box-shadow:none;white-space:nowrap;transition:color .12s,border-color .12s}
 .SPR_root>.SPR_modules>.SPR_module:hover{background:transparent;color:var(--dsw-alias-label-primary)}
@@ -5684,7 +5803,7 @@
 .SPR_imageResultPreview>.SPR_thumb{display:block}
 .SPR_imageResultActions{display:flex;justify-content:flex-end;flex:none}
 .SPR_imageResultMore.SPR_btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);box-shadow:none}
-.SPR_imageResultMenu{position:fixed;inset:auto;box-sizing:border-box;width:192px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);margin:0;padding:5px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:0 8px 28px rgba(0,0,0,.16);overflow:auto}
+.SPR_imageResultMenu{position:fixed;inset:auto;box-sizing:border-box;width:192px;max-width:calc(100vw - 16px);max-height:min(520px,calc(100dvh - 32px));margin:0;padding:5px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);box-shadow:0 8px 28px rgba(0,0,0,.16);overflow:auto}
 .SPR_imageResultMenu:popover-open{display:flex;flex-direction:column;gap:2px}
 .SPR_imageResultMenu>.SPR_btn{display:flex;align-items:center;gap:6px;width:100%;box-sizing:border-box;justify-content:flex-start;margin:0;padding:7px 10px;border:0;border-radius:6px;background:transparent;color:inherit;box-shadow:none;font:12px/20px system-ui;text-decoration:none;white-space:nowrap}
 .SPR_imageResultMenu>.SPR_btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-solid)}
@@ -5910,7 +6029,13 @@
 .SPR_chatPanel .SPR_imageExistingUpload .SPR_uploadAdd{flex:none}
 .SPR_chatPanel .SPR_imageKeyingActions>.SPR_btn{width:100%;min-height:38px;margin:0;border-radius:10px;box-shadow:none;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-1);border-color:transparent}
 .SPR_chatPanel .SPR_imageKeyingActions>.SPR_btn:hover:not(:disabled){opacity:.86;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-1)}
-.SPR_chatMaterials{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.SPR_chatMaterials{display:block}
+.SPR_chatMaterialGroups{display:flex;flex-direction:column;gap:18px}
+.SPR_chatMaterialGroup{display:flex;flex-direction:column;gap:8px}
+.SPR_chatMaterialGroupHead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px;color:var(--dsw-alias-label-secondary);font-size:12px}
+.SPR_chatMaterialGroupHead strong{font-weight:600;color:var(--dsw-alias-label-primary)}
+.SPR_chatMaterialGroupHead span{font-size:11px;color:var(--dsw-alias-label-tertiary)}
+.SPR_chatMaterialGroupItems{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .SPR_chatMaterials:has(.SPR_chatMaterialsEmpty){display:flex;min-height:calc(100dvh - 210px)}
 .SPR_chatMaterialsEmpty{flex:1}
 .SPR_chatMaterial{min-width:0;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:8px}
@@ -5927,6 +6052,7 @@
 .SPR_chatRequestHead>.SPR_taskIconButton{margin:-4px -4px -4px 0}
 .SPR_chatRequestDialog pre{font:12px/1.8 system-ui;white-space:pre-wrap;overflow-wrap:anywhere;max-height:50dvh;overflow:auto}
 @container(max-width:600px){
+  .SPR_chatMaterialGroupItems{grid-template-columns:minmax(0,1fr)}
   .SPR_chatTop{padding:6px 12px}
   .SPR_chatMessages{padding:12px 20px 24px 12px}
   .SPR_chatComposer{padding:6px 10px 10px}
@@ -5947,6 +6073,148 @@
   .SPR_chatComposerBottom .SPR_reviewModeBar{font-size:10px}
   .SPR_chatResponse .SPR_imageResultPreview>.SPR_thumb{height:clamp(180px,38vh,340px)}
 }
+/* Staged asset workflows share the image workspace's quiet chrome. */
+.SPR_workflow{min-width:0;overflow:hidden}
+.SPR_workflowMain.SPR_main{padding:0 0 28px;min-height:0;container-type:inline-size;scrollbar-gutter:stable}
+.SPR_workflowHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px 8px;min-height:36px}
+.SPR_workflowHeading{display:flex;align-items:center;gap:8px;min-width:0}
+.SPR_workflowHeading h3{margin:0;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_workflowHeaderActions{display:flex;align-items:center;gap:8px;flex:none}
+.SPR_workflowModes{display:flex;flex:none;gap:4px;padding:8px 20px;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.SPR_workflowModes>.SPR_btn{border:0;background:transparent;box-shadow:none;color:var(--dsw-alias-label-secondary);border-radius:8px;padding:7px 12px;font-size:12px}
+.SPR_workflowModes>.SPR_btn[data-on=true]{background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary)}
+.SPR_workflowTabs{display:flex;align-items:stretch;gap:22px;overflow-x:auto;padding:0 24px;margin:0 0 20px;border-bottom:1px solid var(--dsw-alias-border-l2);scrollbar-width:thin}
+.SPR_workflowTab{display:flex;align-items:center;gap:7px;flex:none;padding:12px 0 11px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.SPR_workflowTab:hover{color:var(--dsw-alias-label-primary)}
+.SPR_workflowTab[aria-selected=true]{border-bottom-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-label-primary);font-weight:600}
+.SPR_workflowTab:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:-3px;border-radius:5px}
+.SPR_workflowStep{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:var(--dsw-alias-bg-layer-3);font-size:10px;color:var(--dsw-alias-label-tertiary);flex:none}
+.SPR_workflowStep>svg{width:12px;height:12px}
+.SPR_workflowTab[aria-selected=true]>.SPR_workflowStep{background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 12%,transparent);color:var(--dsw-alias-state-business-primary)}
+.SPR_workflowStep[data-done=true]{color:var(--dsw-alias-state-success-primary,#38a169)}
+.SPR_workflowMain>.SPR_card,.SPR_workflowMain>.SPR_workflowPanel,.SPR_workflowMain>.SPR_workflowFold,.SPR_workflowMain>.SPR_workflowFooter,.SPR_workflowMain>.SPR_workflowStatus{box-sizing:border-box;width:calc(100% - 48px);max-width:960px;margin:0 auto 16px}
+.SPR_workflowPanel{padding:20px;border:1px solid var(--dsw-alias-border-l2);border-radius:16px;background:var(--dsw-alias-bg-layer-1)}
+.SPR_workflowPanel[hidden]{display:none!important}
+.SPR_workflowPanel>h4{font-size:14px;margin:0 0 16px}
+.SPR_workflow .SPR_card{padding:20px;border-radius:16px;background:var(--dsw-alias-bg-layer-1);box-shadow:none}
+.SPR_workflow .SPR_cardHead{margin-bottom:14px}
+.SPR_workflow .SPR_cardHead h3{font-size:14px}
+.SPR_workflow .SPR_fields{grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:14px}
+.SPR_workflow .SPR_field{min-width:0;margin-bottom:12px}
+.SPR_workflow .SPR_fieldLabel{font-size:11px;line-height:1.6;color:var(--dsw-alias-label-secondary)}
+.SPR_workflow .SPR_input,.SPR_workflow .SPR_area{box-sizing:border-box;max-width:100%;border-radius:9px;font:inherit;font-size:12px;line-height:1.6}
+.SPR_workflow .SPR_area{min-height:100px}
+.SPR_workflow .SPR_hint{font-size:11px;line-height:1.7}
+.SPR_workflow .SPR_toolbar{gap:8px;min-width:0;flex-wrap:wrap}
+.SPR_workflow .SPR_toolbar>.SPR_field{flex:1 1 120px}
+.SPR_workflow .SPR_toolbar>.SPR_settingsSelect{max-width:100%;min-width:0;flex:0 1 260px}
+.SPR_workflow .SPR_settingsSelect .SPR_imageResultMore{width:100%;min-height:36px;border:1px solid var(--dsw-alias-border-l2);background:transparent;border-radius:9px}
+.SPR_workflow .SPR_settingsSelect .SPR_chatVersionTrigger{width:100%;justify-content:space-between}
+.SPR_workflow .SPR_btn{border-radius:8px;font-size:12px;box-shadow:none}
+.SPR_workflow .SPR_uploadDrop{min-height:76px;box-sizing:border-box;border-radius:12px;margin:8px 0 12px;display:flex;align-items:center;justify-content:center;gap:10px}
+.SPR_workflow .SPR_uploadAdd{width:20px;height:20px;flex:none}
+.SPR_workflowUploadGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:14px 0}
+.SPR_workflowAsset{min-width:0;padding:12px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px}
+.SPR_workflowAsset>img{display:block;max-width:100%;height:150px;object-fit:contain;margin:0 auto 10px}
+.SPR_workflowSource{display:flex;align-items:center;gap:14px}
+.SPR_workflowSource>img{width:76px;height:76px;object-fit:contain;border-radius:10px;flex:none}
+.SPR_workflowSource>div{flex:1;min-width:0}
+.SPR_workflowSource .SPR_uploadDrop{margin:0;min-height:64px}
+.SPR_workflowSourceName{display:block;font-size:11px;color:var(--dsw-alias-label-tertiary);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.SPR_workflowFold{border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:transparent;margin:14px 0}
+.SPR_workflowFold>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;list-style:none;cursor:pointer;font-size:12px;color:var(--dsw-alias-label-secondary)}
+.SPR_workflowFold>summary::-webkit-details-marker{display:none}
+.SPR_workflowFold>summary>svg{width:14px;height:14px;transition:transform .15s}
+.SPR_workflowFold[open]>summary>svg{transform:rotate(180deg)}
+.SPR_workflowFoldBody{padding:2px 14px 14px;min-width:0}
+.SPR_workflowFoldBody>.SPR_log,.SPR_workflowFoldBody>.SPR_card{margin:0;padding:0;border:0;box-shadow:none}
+.SPR_workflowEmpty{box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;min-height:280px;padding:32px 20px;color:var(--dsw-alias-label-tertiary)}
+.SPR_workflowEmpty h3{font-size:16px;font-weight:500;margin:0;color:var(--dsw-alias-label-primary)}
+.SPR_workflowEmpty p{font-size:12px;line-height:1.8;margin:0;max-width:340px}
+.SPR_workflowStatus{font-size:12px;line-height:1.8;padding:12px 14px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-2)}
+.SPR_workflowStatus[role=alert]{color:var(--dsw-alias-state-error-primary,#d45454);border-color:currentColor}
+.SPR_workflowCheck{display:flex;align-items:flex-start;gap:8px;margin:12px 0;font-size:12px;line-height:1.7}
+.SPR_workflowCheck>input{margin:4px 0 0;accent-color:var(--dsw-alias-state-business-primary)}
+.SPR_workflow .SPR_video,.SPR_workflowPanel>video{display:block;width:100%;max-width:100%;max-height:min(48vh,460px);object-fit:contain;background:var(--dsw-alias-bg-layer-2);border-radius:12px;margin:12px auto 18px}
+.SPR_workflowFrames{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin:16px 0}
+.SPR_workflowFrame{min-width:0;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;padding:8px;font-size:11px;cursor:pointer;overflow:hidden}
+.SPR_workflowFrame:has(input:checked){border-color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 6%,transparent)}
+.SPR_workflowFrame>img,.SPR_workflowAnimation>img{display:block;max-width:100%;object-fit:contain;background-color:var(--dsw-alias-bg-layer-2);background-image:conic-gradient(var(--dsw-alias-bg-layer-3) 25%,transparent 0 50%,var(--dsw-alias-bg-layer-3) 0 75%,transparent 0);background-size:16px 16px;border-radius:8px;margin:8px auto}
+.SPR_workflowFrame>img{width:100%;aspect-ratio:1}
+.SPR_workflowAnimation{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 0 18px}
+.SPR_workflowAnimation>img{width:256px;height:256px}
+.SPR_workflowAnimation>label{font-size:11px;color:var(--dsw-alias-label-secondary)}
+.SPR_workflowVideoBody{display:flex;flex-direction:column}
+.SPR_workflowVideoBody>.SPR_cardHead{order:-2}
+.SPR_workflowVideoResult{order:-1;margin-bottom:16px}
+.SPR_workflowPrompt{padding:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:16px;background:var(--dsw-alias-bg-layer-1)}
+.SPR_workflowPrompt>.SPR_area{border:0;box-shadow:none;resize:vertical;background:transparent;padding:4px;min-height:100px}
+.SPR_workflowPrompt .SPR_workflowFold{margin:8px 0;border:0;border-radius:8px;background:var(--dsw-alias-bg-layer-2)}
+.SPR_workflowPrompt .SPR_workflowFold>summary{padding:9px 10px}
+.SPR_workflow .SPR_player{display:flex;justify-content:center;max-width:100%;overflow:auto;background:var(--dsw-alias-bg-layer-2);border-radius:12px;margin:12px 0}
+.SPR_workflow .SPR_canvasPlayer{max-width:100%;object-fit:contain}
+.SPR_workflow .SPR_frames{display:flex;gap:8px;overflow-x:auto;padding:10px 0;flex-wrap:nowrap;max-width:100%}
+.SPR_workflow .SPR_frame{flex:none;width:84px;height:84px;object-fit:contain;border-radius:9px}
+.SPR_workflow .SPR_grid{grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr))}
+.SPR_workflowFooter{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px}
+.SPR_workflow .SPR_sourcePreview{max-width:100%}
+@container(max-width:600px){.SPR_workflowHeader{padding:12px 14px 6px;flex-wrap:wrap}.SPR_workflowHeaderActions{gap:5px}.SPR_workflowTabs{padding:0 14px;gap:16px;margin-bottom:14px}.SPR_workflowMain>.SPR_card,.SPR_workflowMain>.SPR_workflowPanel,.SPR_workflowMain>.SPR_workflowFold,.SPR_workflowMain>.SPR_workflowFooter,.SPR_workflowMain>.SPR_workflowStatus{width:calc(100% - 24px)}.SPR_workflowPanel,.SPR_workflow .SPR_card{padding:14px}.SPR_workflowUploadGrid{grid-template-columns:minmax(0,1fr)}.SPR_workflowPrompt{padding:10px}.SPR_workflow .SPR_toolbar>.SPR_settingsSelect{flex:1 1 160px}}
+@media(prefers-reduced-motion:reduce){.SPR_workflowFold>summary>svg{transition:none}}
+.SPR_workflowMain:has(.SPR_flowChat){display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
+.SPR_flowChat{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;width:100%;overflow:hidden}
+.SPR_flowScroll{overflow:auto;overscroll-behavior:contain;flex:1;min-height:0;padding:24px max(28px,calc((100% - 820px)/2)) 36px;scroll-behavior:smooth;scrollbar-gutter:stable}
+.SPR_flowScroll[data-empty=true]{display:flex;overflow:hidden;scrollbar-gutter:auto;padding-top:0;padding-bottom:0}
+.SPR_flowScroll[data-empty=true]>.SPR_workflowEmpty{flex:1;min-height:0;max-width:540px;margin:0 auto;padding:0;gap:10px}
+.SPR_flowRound{margin-bottom:32px;scroll-margin-top:20px}
+.SPR_flowRoundHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0;font-size:12px;color:var(--dsw-alias-label-secondary)}
+.SPR_flowVersion{max-width:200px}
+.SPR_flowMedia{position:relative;border-radius:14px;overflow:hidden;background:var(--dsw-alias-bg-layer-2)}
+.SPR_flowMedia .SPR_imagePreviewBtn{width:100%}
+.SPR_flowMedia img{display:block;max-width:100%;width:auto;height:auto;max-height:420px;object-fit:contain;margin:auto;background-image:conic-gradient(var(--dsw-alias-bg-layer-3) 25%,transparent 0 50%,var(--dsw-alias-bg-layer-3) 0 75%,transparent 0);background-size:16px 16px}
+.SPR_flowVideo{display:block;width:100%;max-height:420px;border-radius:14px;background:var(--dsw-alias-bg-layer-2)}
+.SPR_flowMediaNav{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;font-size:12px;color:var(--dsw-alias-label-secondary)}
+.SPR_flowThumbnails{display:flex;gap:6px;overflow-x:auto;padding:10px 0}
+.SPR_flowThumbnails>button{border:1px solid transparent;border-radius:8px;padding:3px;background:var(--dsw-alias-bg-layer-2);cursor:pointer;flex:none}
+.SPR_flowThumbnails>button[aria-pressed=true]{border-color:var(--dsw-alias-state-business-primary)}
+.SPR_flowThumbnails img{display:block;width:48px;height:48px;object-fit:contain}
+.SPR_flowActions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px}
+.SPR_flowActions .SPR_chatRoundTime{margin-left:auto}
+.SPR_flowTransferLabel{display:inline-flex;align-items:center;gap:6px}
+.SPR_flowTransferLabel>svg{width:14px;height:14px;transform:rotate(45deg)}
+.SPR_flowDetails{font:11px/1.6 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto}
+.SPR_flowComposer{flex:none;box-sizing:border-box;width:calc(100% - 56px);max-width:820px;margin:0 auto 20px;padding:12px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 4px 20px #00000008}
+.SPR_flowInput{display:block;box-sizing:border-box;width:100%;min-height:76px;max-height:200px;border:0;outline:none;resize:vertical;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;line-height:1.7;padding:2px 4px}
+.SPR_flowInput::placeholder{color:var(--dsw-alias-label-tertiary)}
+.SPR_flowComposer:focus-within{border-color:var(--dsw-alias-label-tertiary)}
+.SPR_flowComposerError{box-sizing:border-box;flex:none;width:calc(100% - 56px);max-width:820px;margin:0 auto 10px}
+.SPR_flowError{display:flex;align-items:flex-start;gap:10px;box-sizing:border-box;padding:13px 15px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-error-primary,#f34a4a) 48%,transparent);border-radius:12px;background:color-mix(in srgb,var(--dsw-alias-state-error-primary,#f34a4a) 3%,transparent);color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:400;line-height:1.8;overflow-wrap:anywhere;margin:8px 0}
+.SPR_flowError>svg{flex:none;margin-top:3px;color:var(--dsw-alias-state-error-primary,#f34a4a)}
+.SPR_flowComposerError>.SPR_flowError{margin:0}
+.SPR_flowComposerBar{display:flex;align-items:center;gap:8px;min-height:34px}
+.SPR_flowSource{font-size:11px;color:var(--dsw-alias-label-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.SPR_flowAuto{display:flex;align-items:center;white-space:nowrap;gap:5px;font-size:12px;color:var(--dsw-alias-label-secondary)}
+.SPR_flowAuto input{accent-color:var(--dsw-alias-state-business-primary)}
+.SPR_flowSend{display:grid;place-items:center;flex:none;width:34px;height:34px;border:0;border-radius:50%;color:var(--dsw-alias-bg-layer-1);background:var(--dsw-alias-label-primary);cursor:pointer}
+.SPR_flowSend:disabled{opacity:.45;cursor:default}
+.SPR_flowSend:focus-visible,.SPR_flowLocator button:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:3px}
+.SPR_flowProcessing{display:flex;align-items:center;gap:8px;margin:12px 0;color:var(--dsw-alias-label-secondary);font-size:12px}
+.SPR_flowFilters{display:flex;gap:8px;margin-bottom:10px}
+.SPR_flowFilters>*{flex:1;min-width:0}
+.SPR_flowLocator{position:absolute;right:6px;top:44px;display:flex;flex-direction:column;gap:5px;max-height:55%;overflow:auto}
+.SPR_flowLocator button{border:0;border-radius:5px;font-size:10px;width:20px;height:20px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer}
+.SPR_flowLocator button:hover{background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary)}
+.SPR_audioPanel:has(.SPR_flowConfiguration){width:min(960px,calc(100vw - 32px));max-width:960px}
+.SPR_flowConfiguration{max-height:66vh;overflow:auto;padding:8px 4px}
+.SPR_flowConfiguration .SPR_workflowPanel{border:0;padding:16px 4px}
+.SPR_flowConfiguration .SPR_workflowVideoResult,.SPR_flowConfiguration .SPR_workflowPrompt>.SPR_toolbar,.SPR_flowConfiguration [data-workflow-stage=frames]>.SPR_toolbar,.SPR_flowConfiguration [data-workflow-stage=frames]>.SPR_player,.SPR_flowConfiguration [data-workflow-stage=frames]>.SPR_workflowEmpty,.SPR_flowConfiguration [data-workflow-stage=keying]>.SPR_toolbar,.SPR_flowConfiguration [data-workflow-stage=keying]>.SPR_player,.SPR_flowConfiguration [data-workflow-stage=keying]>.SPR_frames{display:none}
+.SPR_flowConfiguration [data-workflow-stage=frames]>.SPR_workflowFold,.SPR_flowConfiguration [data-workflow-stage=keying]>.SPR_workflowFold{margin:0}
+.SPR_flowConfiguration [data-workflow-stage=frames]>.SPR_cardHead,.SPR_flowConfiguration [data-workflow-stage=keying]>.SPR_cardHead{display:none}
+.SPR_flowSelection{max-height:240px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;padding:8px 0}
+.SPR_flowSelection label{font-size:10px;color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:5px;cursor:pointer}
+.SPR_flowSelection label:has(input:checked){border-color:var(--dsw-alias-state-business-primary)}
+.SPR_flowSelection img{display:block;width:100%;height:54px;object-fit:contain}
+.SPR_flowRanges{display:grid;grid-template-columns:1.3fr repeat(3,1fr);align-items:center;gap:8px;font-size:11px}
+@container(max-width:600px){.SPR_flowScroll{padding:14px 26px 24px 14px}.SPR_flowComposer,.SPR_flowComposerError{width:calc(100% - 24px)}.SPR_flowComposer{margin-bottom:12px}.SPR_flowActions{gap:5px}.SPR_flowRoundHead{gap:6px}.SPR_flowSource{max-width:120px}.SPR_flowMedia img,.SPR_flowVideo{max-height:340px}}
 `;
 
     // ── 小工具 ───────────────────────────────────────────────────────────
@@ -6188,7 +6456,7 @@
       React.useEffect(() => {
         const dialog = dialogRef.current, trigger = document.activeElement as HTMLElement;
         dialog?.showModal(); cancelRef.current?.focus();
-        return () => { if (dialog?.open) dialog.close(); const restore = trigger?.isConnected ? trigger : document.querySelector<HTMLElement>(".SPR_side:is([data-kind=image],[data-kind=music],[data-kind=sfx]) .SPR_taskSideTitle"); restore?.focus({ preventScroll: true }); };
+        return () => { if (dialog?.open) dialog.close(); const restore = trigger?.isConnected ? trigger : document.querySelector<HTMLElement>(".SPR_side.SPR_jobSidebar .SPR_taskSideTitle"); restore?.focus({ preventScroll: true }); };
       }, []);
       const close = () => { if (!submitLock.current) onClose(); };
       const submit = async event => {
@@ -6311,7 +6579,7 @@
             h(ProjectActionIcon, { name: "copy" }), h("span", null, T("复制")), h("span", { className: "SPR_projectSubmenuArrow", "aria-hidden": "true" }, "›")),
           h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
           action(archived ? "unarchive" : "archive", archived ? T("取消归档") : T("归档"), onArchive),
-          action("delete", T("永久删除"), onDelete, true)),
+          onDelete ? action("delete", T("永久删除"), onDelete, true) : null),
         copyOpen ? h("div", { className: "SPR_projectMenu SPR_imageCopyMenu", role: "menu", "aria-label": T("复制") },
           [[T("复制名称"), context.item.name], [T("复制 ID"), context.item.id], [T("复制路径"), context.item.dir]].map(([label, value]) =>
             h("button", { key: label, type: "button", role: "menuitem", disabled: !value, onClick: () => void copy(value) }, h("span", null, label)))) : null);
@@ -6833,7 +7101,7 @@
      * 与对话里的 `game_material({action:'reviewMode'})` 写的是同一份数据（存在项目 / 任务上），
      * 所以用户在界面上改了、会话里的 agent 也会按新值走，反之亦然。
      */
-    function ReviewModeBar({ api, module, id, mode, onChanged, compact }) {
+    function ReviewModeBar({ api, module, id, mode, onChanged, compact, themed = false }) {
       const [busy, setBusy] = React.useState(false);
       const [error, setError] = React.useState("");
       const change = async (next) => {
@@ -6855,7 +7123,7 @@
         { className: compact ? "SPR_imageReview" : "SPR_toolbar" },
         h("span", { className: "SPR_refRow" }, T("审核模式")),
         h(
-          "select",
+          themed ? SettingsSelect : "select",
           {
             className: "SPR_input",
             style: { width: compact ? 180 : 210 },
@@ -7194,6 +7462,227 @@
     }
 
     // ── 主体工作台 ───────────────────────────────────────────────────────
+    function publishWorkflowIntent(intent) {
+      pendingIntent = intent;
+      for (const listener of [...intentListeners]) listener(intent);
+    }
+    function requestWorkflowSend(module, jobId) {
+      window.dispatchEvent(new CustomEvent("gmm-workflow-send", { detail: { module, jobId } }));
+    }
+    function workflowStored(key, value = undefined) {
+      try {
+        const name = "dsh-game-material-master:workflow:" + key;
+        if (value !== undefined) { window.localStorage.setItem(name, JSON.stringify(value)); return value; }
+        return JSON.parse(window.localStorage.getItem(name) || "null");
+      } catch { return null; }
+    }
+    function AssetTransferButton({ api, source, name }) {
+      const [target, setTarget] = React.useState(null), [items, setItems] = React.useState([]), [targetId, setTargetId] = React.useState("");
+      const [busy, setBusy] = React.useState(false), [error, setError] = React.useState("");
+      const config = useGlobalConfig(api), ticket = React.useRef(0), lock = React.useRef(false);
+      const targets = [{ key: "sprite", title: T("八方向图生成") }, { key: "sequence", title: T("序列帧生成") }, { key: "map", title: T("俯视地图编辑器") }, { key: "iso", title: T("45°地图编辑器") }].filter(item => !(config?.hiddenModules || []).includes(item.key));
+      React.useEffect(() => {
+        if (!target) return;
+        const current = ++ticket.current; setItems([]); setTargetId(""); setError(""); setBusy(true);
+        const load = target === "sprite" ? api.listMotionJobs() : target === "sequence" ? api.listSequenceJobs() : target === "map" ? api.listMapProjects() : api.listIsoProjects();
+        void load.then(value => { if (ticket.current === current) setItems(value.jobs || value.projects || []); }).catch(failure => { if (ticket.current === current) setError(msg(failure)); }).finally(() => { if (ticket.current === current) setBusy(false); });
+        return () => { ++ticket.current; };
+      }, [target, api]);
+      return h(React.Fragment, null,
+        h(ImageResultMenu, { label: T("流转到"), icon: h("span", { className: "SPR_flowTransferLabel" }, h(ImageChatIcon, { name: "send" }), T("流转到")) }, targets.map(item => h(Btn, { key: item.key, role: "menuitem", onClick: () => setTarget(item.key) }, item.title))),
+        target ? h(AudioPanel, { title: T("流转到") + " · " + targets.find(item => item.key === target)?.title, onClose: () => { if (!lock.current) setTarget(null); }, canClose: () => !lock.current },
+          h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("目标项目")), h(SettingsSelect, { className: "SPR_input", "aria-label": T("目标项目"), value: targetId, disabled: busy, onChange: event => setTargetId(event.target.value) }, h("option", { value: "" }, T("新建项目")), items.map(item => h("option", { key: item.id, value: item.id }, item.name)))),
+          ["map", "iso"].includes(target) ? h("p", { className: "SPR_hint" }, T("下一步确认素材尺寸与属性。")) : null,
+          error ? h(WorkflowError, { error }) : null,
+          h("div", { className: "SPR_projectRenameActions" }, h(Btn, { disabled: busy, onClick: () => setTarget(null) }, T("取消")), h(BusyBtn, { primary: true, busy, onClick: async () => {
+            if (lock.current) return; lock.current = true; setBusy(true); setError("");
+            try { const result = await api.transferAsset({ source, target, ...(targetId ? { targetId } : {}), name: String(name || T("新建项目")).slice(0, 80) }); setTarget(null); publishWorkflowIntent(result); }
+            catch (failure) { setError(msg(failure)); } finally { lock.current = false; setBusy(false); }
+          } }, T("继续")))) : null);
+    }
+    function workflowVersionName(kind) {
+      return ({ prepare: T("正在准备白模…"), submit: T("正在提交视频…"), extract: T("提取序列帧"), video: T("视频"), raw: T("原始帧"), keyed: T("抠图版"), redraw: T("高清重绘"), sheet: T("合成条图"), export: T("素材包") })[kind] || kind;
+    }
+    function workflowErrorMessage(error) {
+      const text = typeof error === "string" ? error : msg(error);
+      if (/HTTP[ :]*404/i.test(text) && /gameStudio\/(?:getWorkflowConversation|submitWorkflowRound|runWorkflowRoundStep|reuseWorkflowRound|transferAsset|getAssetTransfer)/i.test(text)) return T("插件后台尚未更新，请完全退出 DSH（包括托盘）后重新打开。");
+      return text.replace(/<(!doctype|html)[\s\S]*/i, "").trim().slice(0, 800);
+    }
+    function WorkflowError({ error }) {
+      if (!error) return null;
+      return h("div", { className: "SPR_flowError", role: "alert" }, h("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, "aria-hidden": "true" }, h("circle", { cx: 12, cy: 12, r: 9 }), h("path", { d: "M12 7v6m0 3h.01", strokeLinecap: "round" })), h("span", null, workflowErrorMessage(error)));
+    }
+    function WorkflowRound({ api, module, jobId, round, number, busy, onRefresh, onReuse }) {
+      const job = round.job || {}, base = round.assetBase || "";
+      const [version, setVersion] = React.useState(""), [index, setIndex] = React.useState(0), [tools, setTools] = React.useState(false), [error, setError] = React.useState("");
+      const [ranges, setRanges] = React.useState(job.ranges || []), [targets, setTargets] = React.useState([]), [confirmRedraw, setConfirmRedraw] = React.useState(false), [working, setWorking] = React.useState(false);
+      const [direction, setDirection] = React.useState("front"), [action, setAction] = React.useState("");
+      const [processingSettings, setProcessingSettings] = React.useState(job.settings || {}), [processingKeying, setProcessingKeying] = React.useState(job.keying || {});
+      const [targetMode, setTargetMode] = React.useState("one"), [redrawAgain, setRedrawAgain] = React.useState(false);
+      const redrawTargets = module !== "sprite" ? [] : targetMode === "all" ? (job.frames || []).map(f => f.id) : targetMode === "one" ? [job.frames?.[0]?.id].filter(Boolean) : targets;
+      const redrawCount = redrawTargets.filter(id => redrawAgain || job.frames?.find(f => f.id === id)?.redraw?.status !== "ready").length;
+      const localSettings = Object.fromEntries(["frameCount", "longEdge", "cellWidth", "cellHeight", "pixelSize", "cropInset"].filter(key => processingSettings[key] !== undefined).map(key => [key, processingSettings[key]]));
+      const lock = React.useRef(false);
+      const versions = [...(job.video?.file && !round.versions?.some(v => v.kind === "video") ? [{ id: "video", kind: "video", files: [job.video.file] }] : []), ...(round.versions || [])];
+      if (!round.versions?.length) {
+        const raw = module === "sprite" ? (job.frames || []).map(f => f.target) : job.frames?.files || [];
+        const keyed = module === "sprite" ? (job.frames || []).map(f => f.keyed) : job.frames?.keyed || [];
+        if (raw.length) versions.push({ id: "raw", kind: "raw", files: raw, frames: module === "sprite" ? job.frames : undefined });
+        if (keyed.length) versions.push({ id: "keyed", kind: "keyed", files: keyed, frames: module === "sprite" ? job.frames : undefined });
+        if (job.sheet?.file) versions.push({ id: "sheet", kind: "sheet", files: [job.sheet.file] });
+      }
+      const selected = versions.find(v => v.id === version) || versions.filter(v => v.kind !== "export").at(-1) || versions.at(-1);
+      const filtered = selected?.frames?.length ? selected.frames.map((f, i) => ({ ...f, file: selected.files[i] })).filter(f => f.direction === direction && (!action || f.action === action)) : null;
+      const files = filtered ? filtered.map(f => f.file).filter(Boolean) : selected?.files || [];
+      const current = Math.min(index, Math.max(0, files.length - 1)), file = files[current];
+      const act = async (step, extra = {}) => {
+        if (lock.current) return; lock.current = true; setWorking(true); setError("");
+        try { await api.runWorkflowRoundStep({ module, jobId, roundId: round.id, step, ...extra }); await onRefresh(); }
+        catch (failure) { setError(msg(failure)); } finally { lock.current = false; setWorking(false); }
+      };
+      const disabled = busy || working;
+      const refs = module === "sprite" ? [round.request?.character, round.request?.directions].filter(Boolean) : [round.request?.refs?.firstFrame?.file, round.request?.refs?.lastFrame?.file, ...(round.request?.refs?.referenceImages || []).map(ref => ref.file)].filter(Boolean);
+      return h("article", { className: "SPR_chatRound SPR_flowRound", id: "workflow-round-" + round.id, "data-round-id": round.id },
+        h("div", { className: "SPR_chatUser" }, refs.length ? h("div", { className: "SPR_chatAttachments" }, refs.map(file => h(ImageResultPreview, { key: file, src: base + file, alt: T("参考素材"), label: T("参考素材") }))) : null, h("p", { className: "SPR_chatPrompt" }, round.legacy ? T("旧版结果") : round.prompt || T("导入已有视频")),
+          h("div", { className: "SPR_chatRequestMeta" }, round.request?.segments ? round.request.segments.map(s => (job.templates || []).find(t => t.key === s.action)?.name || s.action).join(" · ") : round.request?.settings ? `${round.request.settings.duration}s · ${round.request.settings.resolution}` : null)),
+        h("div", { className: "SPR_chatResponse" },
+          h("div", { className: "SPR_flowRoundHead" }, h("span", null, T("第 {n0} 轮", { n0: number })),
+            versions.length ? h(SettingsSelect, { className: "SPR_flowVersion", "aria-label": T("结果版本"), value: selected?.id || "", onChange: e => { setVersion(e.target.value); setIndex(0); } }, versions.map((v, i) => h("option", { key: v.id, value: v.id }, workflowVersionName(v.kind) + ((versions.filter(other => other.kind === v.kind).length > 1) ? " · " + (i + 1) : "")))) : null),
+          round.status === "running" ? h("div", { className: "SPR_flowProcessing", role: "status" }, h("span", { className: "SPR_spinSm" }), T("任务处理中…"), " · ", workflowVersionName(round.stage)) : null,
+          round.error ? h(WorkflowError, { error: round.error }) : null,
+          filtered ? h("div", { className: "SPR_flowFilters" }, h(SettingsSelect, { "aria-label": T("筛选动作"), className: "SPR_input", value: action, onChange: e => { setAction(e.target.value); setIndex(0); } }, h("option", { value: "" }, T("全部动作")), (job.ranges || []).map(s => h("option", { key: s.action, value: s.action }, (job.templates || []).find(t => t.key === s.action)?.name || s.action))), h(SettingsSelect, { "aria-label": T("选择方向"), className: "SPR_input", value: direction, onChange: e => { setDirection(e.target.value); setIndex(0); } }, ["back", "upRight", "right", "downRight", "front", "downLeft", "left", "upLeft"].map(d => h("option", { key: d, value: d }, d)))) : null,
+          file ? selected.kind === "video" ? h("video", { className: "SPR_flowVideo", src: base + file, controls: true, muted: true, loop: true }) : selected.kind === "export" ? h("a", { className: "SPR_btn", href: base + file + "?download=1", download: true }, T("下载素材包")) : h("div", { className: "SPR_flowMedia" }, h(ImageResultPreview, { src: base + file, label: workflowVersionName(selected.kind), alt: workflowVersionName(selected.kind) }), files.length > 1 ? h("div", { className: "SPR_flowMediaNav" }, h(Btn, { "aria-label": T("上一张"), onClick: () => setIndex((current - 1 + files.length) % files.length) }, "‹"), h("span", null, `${current + 1} / ${files.length}`), h(Btn, { "aria-label": T("下一张"), onClick: () => setIndex((current + 1) % files.length) }, "›")) : null) : round.status !== "running" ? h("p", { className: "SPR_hint" }, T("还没有结果")) : null,
+          files.length > 1 && selected?.kind !== "video" ? h("div", { className: "SPR_flowThumbnails" }, files.map((f, i) => h("button", { type: "button", key: f, "aria-label": T("第 {n0} 帧", { n0: i + 1 }), "aria-pressed": i === current, onClick: () => setIndex(i) }, h("img", { src: base + f, alt: "" })))) : null,
+          files.length > 1 && ["raw", "keyed", "redraw"].includes(selected?.kind) ? h(WorkflowFold, { title: T("动画预览") }, h(SequencePlayer, { urls: files.map(f => base + f), active: true })) : null,
+          h("div", { className: "SPR_flowActions" },
+            !round.legacy ? h(Btn, { disabled, onClick: () => setTools(true) }, T("单独执行")) : null,
+            round.request ? h(Btn, { disabled, onClick: async () => { try { await api.reuseWorkflowRound({ module, jobId, roundId: round.id }); await onReuse(round.request); } catch (failure) { setError(msg(failure)); } } }, T("复用本轮")) : null,
+            file && !["video", "export"].includes(selected.kind) ? h(AssetTransferButton, { api, source: { module, jobId: round.childId, file }, name: job.name }) : null,
+            file && selected.kind !== "export" ? h("a", { className: "SPR_taskIconButton", href: base + file + "?download=1", download: true, "aria-label": T("下载"), title: T("下载") }, h(ImageChatIcon, { name: "down" })) : null,
+            h("time", { className: "SPR_chatRoundTime" }, new Date(round.createdAt).toLocaleString())),
+          error && !tools ? h(WorkflowError, { error }) : null,
+          h("details", { className: "SPR_chatProgress" }, h("summary", null, T("执行详情")), round.automatic && module === "sprite" ? h("p", { className: "SPR_hint" }, T("按预设动作分段抽帧，可在单独执行中调整范围。")) : null, h("pre", { className: "SPR_flowDetails" }, JSON.stringify(round.request || {}, null, 2)), h(JobLogPanel, { job }))),
+        tools ? h(AudioPanel, { title: T("单独执行"), onClose: () => setTools(false), canClose: () => !lock.current },
+          error ? h(WorkflowError, { error }) : null,
+          module === "sprite" ? h(React.Fragment, null,
+            h("p", { className: "SPR_hint" }, T("先检查视频中的实际动作，再调整抽帧范围。")),
+            ranges.map((s, i) => h("div", { key: s.action, className: "SPR_flowRanges" }, h("span", null, s.action), ...["start", "end", "frameCount"].map(k => h("label", { key: k, className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, k === "start" ? T("开始秒") : k === "end" ? T("结束秒") : T("抽帧数量")), h("input", { type: "number", className: "SPR_input", min: 0, step: k === "frameCount" ? 1 : .01, value: s[k], onChange: e => setRanges(current => current.map((value, j) => j === i ? { ...value, [k]: Number(e.target.value) } : value)) }))))),
+            h("div", { className: "SPR_flowActions" }, h(Btn, { disabled: disabled || !job.video?.file, onClick: () => void act("extract", { ranges }) }, T("重新抽帧与抠像")), h(Btn, { disabled: disabled || !job.frames?.length, onClick: () => void act("export") }, T("打包全部动作"))),
+            h(WorkflowFold, { title: T("逐帧高清重绘") },
+              h("p", { className: "SPR_hint" }, T("重绘会调用生图服务并计费。")),
+              h(SettingsSelect, { className: "SPR_input", "aria-label": T("选择重绘范围"), value: targetMode, onChange: e => setTargetMode(e.target.value) }, h("option", { value: "one" }, T("先重绘第一帧")), h("option", { value: "all" }, T("重绘全部帧")), h("option", { value: "custom" }, T("手动选择帧"))),
+              targetMode === "custom" ? h("div", { className: "SPR_flowSelection" }, (job.frames || []).map(f => h("label", { key: f.id }, h("input", { type: "checkbox", checked: targets.includes(f.id), disabled, onChange: e => setTargets(current => e.target.checked ? [...current, f.id] : current.filter(id => id !== f.id)) }), `${f.direction} · ${f.index + 1}`, h("img", { src: base + (f.redraw?.file || f.keyed), alt: f.id })))) : null,
+              h("label", { className: "SPR_workflowCheck" }, h("input", { type: "checkbox", checked: redrawAgain, disabled, onChange: e => setRedrawAgain(e.target.checked) }), T("明确重新生成选中帧（会再次计费）")),
+              h("p", { className: "SPR_hint" }, T("本次新增图片调用：{n0}张。", { n0: redrawCount })),
+              h(Btn, { disabled: disabled || !redrawCount, onClick: () => setConfirmRedraw(true) }, T("开始重绘")),
+              h(Btn, { disabled: disabled || !job.frames?.length || !job.frames.every(f => f.redraw?.status === "ready"), onClick: () => void act("export", { useRedraw: true }) }, T("导出高清重绘版（要求全部帧完成）"))))
+          : h(React.Fragment, null, h("div", { className: "SPR_fields" }, [["frameCount", T("提取张数"), 1, 64], ["longEdge", T("抽帧工作尺寸（长边 px）"), 128, 2048], ["cellWidth", T("单格宽（px）"), 16, 2048], ["cellHeight", T("单格高（px）"), 16, 2048]].map(([key, label, min, max]) => h(NumField, { key, label, value: processingSettings[key], min, max, onChange: value => setProcessingSettings(current => ({ ...current, [key]: value })) }))),
+            h(WorkflowFold, { title: T("高级抠像参数") }, h(KeyingFields, { themed: true, draft: processingKeying, fallbackColor: "#00FF00", onChange: patch => setProcessingKeying(current => ({ ...current, ...patch })) })),
+            h("div", { className: "SPR_flowActions" }, h(Btn, { disabled: disabled || !job.video?.file, onClick: () => void act("extract", { settings: localSettings, keying: processingKeying }) }, T("提取序列帧")), h(Btn, { disabled: disabled || !job.frames?.raw, onClick: () => void act("keyed", { keying: processingKeying }) }, T("抠像与合成")), h(Btn, { disabled: disabled || !job.frames?.raw, onClick: () => void act("sheet", { settings: localSettings, keying: processingKeying }) }, T("合成条图")))),
+          h(Btn, { disabled, onClick: () => void act("poll") }, T("查询已提交任务（不重新生成）"))) : null,
+        confirmRedraw ? h(AudioConfirm, { title: T("确认高清重绘"), text: T("本次将提交 {n0} 张图片，请核对生图服务的费用。", { n0: redrawCount }), onClose: () => setConfirmRedraw(false), onConfirm: async () => { await act("redraw", { targets: redrawTargets, confirmed: true, regenerate: redrawAgain }); } }) : null);
+    }
+    function WorkflowConversation({ api, module, job, prompt, onPrompt, onSave, onConsumed, onReuse, children }) {
+      const [conversation, setConversation] = React.useState(null), [drawer, setDrawer] = React.useState(false), [automatic, setAutomatic] = React.useState(true), [localOnly, setLocalOnly] = React.useState(false);
+      const [submitting, setSubmitting] = React.useState(false), [error, setError] = React.useState(""), [confirmation, setConfirmation] = React.useState(null);
+      const unavailable = React.useRef(false);
+      const restoredScroll = React.useRef(false), followUntil = React.useRef(0);
+      const requestId = React.useRef(null), lock = React.useRef(false), selected = React.useRef(job.id), scroll = React.useRef(null), loadTicket = React.useRef(0);
+      selected.current = job.id;
+      const refresh = React.useCallback(async () => {
+        if (unavailable.current) return;
+        const id = job.id, ticket = ++loadTicket.current;
+        let next;
+        try { next = await api.getWorkflowConversation({ module, jobId: id }); }
+        catch (failure) { if (/HTTP[ :]*404/i.test(msg(failure)) && /gameStudio\/getWorkflowConversation/i.test(msg(failure))) unavailable.current = true; throw failure; }
+        if (selected.current === id && ticket === loadTicket.current) setConversation(next);
+      }, [api, module, job.id]);
+      React.useEffect(() => { setConversation(null); void refresh().catch(failure => setError(msg(failure))); const timer = setInterval(() => void refresh().catch(failure => setError(msg(failure))), 3000); return () => clearInterval(timer); }, [refresh]);
+      const rounds = conversation?.rounds || [], busy = submitting || rounds.some(r => r.status === "running");
+      const send = async () => {
+        if (lock.current) return; lock.current = true; setSubmitting(true); setError("");
+        const submittedPrompt = prompt;
+        requestId.current ||= (typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+        try {
+          await onSave(localOnly);
+          await api.submitWorkflowRound({ module, jobId: job.id, requestId: requestId.current, automatic, localOnly, confirmed: true });
+          requestId.current = null; onConsumed(submittedPrompt); await refresh();
+          followUntil.current = Date.now() + 1200;
+          requestAnimationFrame(() => scroll.current?.scrollTo({ top: scroll.current.scrollHeight, behavior: "smooth" }));
+        } catch (failure) { setError(msg(failure)); } finally { lock.current = false; setSubmitting(false); }
+      };
+      const askSend = async () => {
+        if (busy || unavailable.current) return; setError("");
+        if (localOnly) { await send(); return; }
+        try {
+          const cfg = await api.getConfig();
+          const duration = module === "sprite" ? 4 : cfg.toapisVideo ? cfg.toapisVideoDuration : job.settings?.duration || cfg.minimaxDuration;
+          const resolution = module === "sprite" ? "480P" : cfg.toapisVideo ? cfg.toapisVideoResolution : job.settings?.resolution || cfg.minimaxResolution;
+          setConfirmation(T("本次提交 1 段视频：{n0} · {n1}秒 · {n2}。实际费用以服务商为准。", { n0: cfg.toapisVideo ? cfg.toapisVideoModel : cfg.minimaxModel, n1: duration, n2: resolution }) + (module === "sprite" ? " " + T("另含4秒参考视频输入，服务商可能另计输入费用。") : ""));
+        } catch (failure) { setError(msg(failure)); }
+      };
+      const sendFromEditor = React.useRef(askSend); sendFromEditor.current = askSend;
+      React.useEffect(() => {
+        if (!conversation || restoredScroll.current || !scroll.current) return;
+        restoredScroll.current = true;
+        const saved = workflowStored("scroll:" + module + ":" + job.id);
+        scroll.current.scrollTop = !conversation.rounds?.length ? 0 : typeof saved === "number" ? saved : scroll.current.scrollHeight;
+      }, [conversation, module, job.id]);
+      React.useEffect(() => {
+        const send = event => { if (event.detail?.module === module && event.detail?.jobId === job.id) { setDrawer(false); void sendFromEditor.current(); } };
+        window.addEventListener("gmm-workflow-send", send); return () => window.removeEventListener("gmm-workflow-send", send);
+      }, [module, job.id]);
+      return h("div", { className: "SPR_flowChat", "data-testid": "workflow-conversation" },
+        h("div", { className: "SPR_flowScroll", "data-empty": rounds.length === 0, ref: scroll, onScroll: e => workflowStored("scroll:" + module + ":" + job.id, e.currentTarget.scrollTop), onWheel: () => { followUntil.current = 0; }, onLoadCapture: () => { if (Date.now() < followUntil.current && scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight; } }, rounds.length ? rounds.map((round, i) => h(WorkflowRound, { key: round.id, api, module, jobId: job.id, round, number: i + 1, busy, onRefresh: refresh, onReuse })) : h(WorkflowEmpty, { title: module === "sprite" ? T("开始制作角色动作") : T("开始制作序列帧"), text: T("添加素材，描述动作，结果会保留在每一轮中。") }, h(Btn, { onClick: () => setDrawer(true) }, T("添加素材与参数")))),
+        rounds.length > 1 ? h("nav", { className: "SPR_flowLocator", "aria-label": T("轮次定位") }, rounds.map((r, i) => h("button", { type: "button", key: r.id, title: T("第 {n0} 轮", { n0: i + 1 }), "aria-label": T("第 {n0} 轮", { n0: i + 1 }), onClick: () => document.getElementById("workflow-round-" + r.id)?.scrollIntoView({ behavior: "smooth", block: "start" }) }, i + 1))) : null,
+        error ? h("div", { className: "SPR_flowComposerError" }, h(WorkflowError, { error })) : null,
+        h("div", { className: "SPR_flowComposer" },
+          h("textarea", { className: "SPR_flowInput", "aria-label": T("动作提示词"), placeholder: T("描述角色动作…"), rows: 3, value: prompt, onChange: e => { requestId.current = null; onPrompt(e.target.value); }, onKeyDown: e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); void askSend(); } } }),
+          h("div", { className: "SPR_flowComposerBar" }, h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("素材与参数"), title: T("素材与参数"), onClick: () => setDrawer(true) }, h(ImageChatIcon, { name: "plus" })),
+            h("span", { className: "SPR_flowSource" }, module === "sprite" ? (job.character ? T("角色图已就绪") : T("添加角色图")) : (job.refs?.firstFrame || job.refs?.referenceImages?.length ? T("参考图已就绪") : T("添加参考素材"))),
+            h("label", { className: "SPR_flowAuto" }, h("input", { type: "checkbox", checked: automatic, disabled: busy, onChange: e => setAutomatic(e.target.checked) }), T("自动处理")),
+            h(ImageResultMenu, { label: T("执行方式"), icon: h(ImageChatIcon, { name: "parameters" }) }, h(Btn, { role: "menuitemradio", "aria-checked": !localOnly, disabled: busy, onClick: () => setLocalOnly(false) }, T("生成新视频")), h(Btn, { role: "menuitemradio", "aria-checked": localOnly, disabled: busy || !job.video?.file, onClick: () => setLocalOnly(true) }, T("处理已有视频（本地）"))),
+            h("button", { type: "button", className: "SPR_flowSend", disabled: busy || unavailable.current, "aria-label": localOnly ? T("处理已有视频（本地）") : T("生成新视频"), title: localOnly ? T("处理已有视频（本地）") : T("生成新视频"), onClick: () => void askSend() }, busy ? h("span", { className: "SPR_spinSm" }) : h(ImageChatIcon, { name: "send" })))),
+        drawer ? h(AudioPanel, { title: T("素材与参数"), onClose: () => setDrawer(false) }, h("div", { className: "SPR_flowConfiguration SPR_workflow" }, children), h("div", { className: "SPR_projectRenameActions" }, h(Btn, { primary: true, onClick: async () => { try { await onSave(); setDrawer(false); } catch (failure) { setError(msg(failure)); } } }, T("完成")))) : null,
+        confirmation ? h(AudioConfirm, { title: T("确认生成视频"), text: confirmation, onClose: () => setConfirmation(null), onConfirm: send }) : null);
+    }
+    /** Shared presentation for the staged sprite and sequence workflows. */
+    function WorkflowTabs({ id, items, value, onChange }) {
+      return h("nav", { className: "SPR_workflowTabs", role: "tablist", "aria-label": T("操作阶段"), onKeyDown: event => {
+        const index = items.findIndex(item => String(item.key) === event.target.dataset.stage);
+        if (index < 0) return;
+        const next = event.key === "ArrowRight" ? (index + 1) % items.length : event.key === "ArrowLeft" ? (index - 1 + items.length) % items.length : event.key === "Home" ? 0 : event.key === "End" ? items.length - 1 : -1;
+        if (next < 0) return;
+        event.preventDefault(); onChange(items[next].key);
+        const tab = event.currentTarget.querySelector(`[data-stage="${items[next].key}"]`); tab?.focus({ preventScroll: true }); tab?.scrollIntoView({ block: "nearest", inline: "nearest" });
+      } }, items.map((item, index) => h("button", { type: "button", key: item.key, id: id + "-tab-" + item.key, className: "SPR_workflowTab", role: "tab", "data-stage": String(item.key), "aria-selected": value === item.key, tabIndex: value === item.key ? 0 : -1, onClick: () => onChange(item.key) },
+        h("span", { className: "SPR_workflowStep", "data-done": item.done ? "true" : undefined, "aria-label": item.done ? T("已完成") : undefined }, item.done ? h(TaskHeaderIcon, { name: "check" }) : index + 1), item.title.replace(/^[①-⑳]\s*/u, ""))));
+    }
+    function WorkflowHeader({ title, children }) {
+      return h("div", { className: "SPR_workflowHeader" }, h("div", { className: "SPR_workflowHeading" }, h("h3", null, title)), h("div", { className: "SPR_workflowHeaderActions" }, children));
+    }
+    function WorkflowEmpty({ title, text, children }) {
+      return h("div", { className: "SPR_workflowEmpty", role: "status" }, h("span", { className: "SPR_imageResultEmptyIcon", "aria-hidden": "true" }, h(TaskHeaderIcon, { name: "chat" })), h("h3", null, title), h("p", null, text), children);
+    }
+    function WorkflowFold({ title, children }) {
+      return h("details", { className: "SPR_workflowFold" }, h("summary", null, title, h(TaskHeaderIcon, { name: "chevron" })), h("div", { className: "SPR_workflowFoldBody" }, children));
+    }
+    function WorkflowTaskDialog({ title, initialName, description, onSubmit, onClose }) {
+      const [name, setName] = React.useState(initialName || ""), [busy, setBusy] = React.useState(false), [error, setError] = React.useState("");
+      const lock = React.useRef(false);
+      const save = async event => {
+        event.preventDefault(); if (lock.current || initialName !== undefined && !name.trim()) return;
+        lock.current = true; setBusy(true); setError("");
+        try { await onSubmit(name.trim()); onClose(); } catch (failure) { setError(msg(failure)); }
+        finally { lock.current = false; setBusy(false); }
+      };
+      return h(AudioPanel, { title, onClose, canClose: () => !lock.current }, h("form", { onSubmit: save },
+        description ? h("p", { className: "SPR_hint" }, description) : null,
+        initialName !== undefined ? h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("任务名称")), h("input", { className: "SPR_input", autoFocus: true, maxLength: 120, value: name, disabled: busy, onChange: event => setName(event.target.value) })) : null,
+        error ? h("p", { className: "SPR_taskDialogError", role: "alert" }, error) : null,
+        h("div", { className: "SPR_projectRenameActions" }, h(Btn, { disabled: busy, onClick: onClose }, T("取消")), h(BusyBtn, { type: "submit", primary: initialName !== undefined, danger: initialName === undefined, busy, disabled: initialName !== undefined && !name.trim(), busyText: T("正在保存…") }, initialName !== undefined ? T("新建") : T("确认删除")))));
+    }
+
     function StudioPanel(props) {
       const localeTick = useLocaleTick();
       const api = props?.api;
@@ -7394,19 +7883,7 @@
         [api, projectId, loadProject]
       );
 
-      const createProject = async () => {
-        const name = askNewName(T("新项目的名字"), T("角色 {n0}", { n0: new Date().toLocaleString("zh-CN", { hour12: false }) }));
-        if (name === null) return;
-        await withApi(
-          async () => {
-            const created = await api.createProject({ name });
-            await refreshProjects();
-            setProjectId(created.projectId);
-          },
-          { notice: T("已创建新项目") }
-        );
-      };
-
+      const createProject = () => setWorkflowDialog(true);
       const deleteProjectEntry = async (target) => {
         await api.deleteProject({ projectId: target.id });
         const list = await refreshProjects();
@@ -7514,6 +7991,8 @@
           { key: KEY_EXPORT_IMAGES, label: T("正在打包全部图片…") }
         );
 
+      const [workflowDialog, setWorkflowDialog] = React.useState(false);
+
       if (api === undefined) {
         return h("div", { className: "SPR_root" }, h("p", { className: "SPR_empty" }, T("正在挂载游戏素材大师…")));
       }
@@ -7596,6 +8075,9 @@
           "data-testid": "studio-sidebar-backdrop",
           onClick: collapseSidebar
         }),
+        workflowDialog ? h(WorkflowTaskDialog, { title: T("新建项目"), initialName: T("角色 {n0}", { n0: new Date().toLocaleString("zh-CN", { hour12: false }) }), onClose: () => setWorkflowDialog(false), onSubmit: async name => {
+          const created = await api.createProject({ name }); await refreshProjects(); setProjectId(created.projectId); setNotice({ kind: "ok", text: T("已创建新项目") });
+        } }) : null,
         h("div", { className: "SPR_modulePanel", id: "studio-module-panel", role: activeModule !== null && activeModule !== "settings" ? "tabpanel" : undefined, "aria-labelledby": activeModule !== null && activeModule !== "settings" ? `studio-tab-${activeModule}` : undefined },
         activeModule === "settings" ? h("div", { className: "SPR_moduleBody", "data-testid": "studio-settings-panel" }, h(ConfigSection, { api, initialTab: settingsInitialTab })) : null,
         activeModule === null
@@ -7605,7 +8087,7 @@
               h("p", { className: "SPR_empty" }, modulePreferencesReady ? T("所有功能都已被隐藏。请到「设置 → 游戏素材大师 → 功能管理」里打开至少一个。") : T("正在载入配置…"))
             )
           : null,
-        activeModule === "sprite" ? h("div", { className: "SPR_toolbar", style: { padding: "10px 16px" } },
+        activeModule === "sprite" ? h("div", { className: "SPR_workflowModes", "aria-label": T("八方向工作流") },
           h(Btn, { on: spriteWorkflow === "motion", onClick: () => setSpriteWorkflow("motion") }, T("白模动作流程")),
           h(Btn, { on: spriteWorkflow === "classic", onClick: () => setSpriteWorkflow("classic") }, T("原有八方向流程"))
         ) : null,
@@ -7613,140 +8095,36 @@
         activeModule === "sprite" && spriteWorkflow === "classic"
           ? h(
           "div",
-          { className: "SPR_body" },
+          { className: "SPR_body SPR_workflow", "data-testid": "sprite-classic-workflow" },
+          h(WorkflowSidebar, { api, module: "sprite-classic", jobs: projects, activeId: projectId, onSelect: setProjectId, onCreate: createProject, onNotice: setNotice,
+            onRename: renameProjectEntry, onDelete: deleteProjectEntry,
+            onRefresh: refreshProjects,
+            deleteDescription: item => T("删除任务「{n0}」？产物文件会一并删除。", { n0: item.name }),
+            describe: summary => T("图 {n0}/8 · 视频 {n1}/8 · 帧 {n2}/8{n3}", { n0: summary.imageReady ?? 0, n1: summary.videoReady ?? 0, n2: summary.framesReady ?? 0, n3: summary.sheetReady ? T(" · 整图✓") : "" }) }),
           h(
             "div",
-            { className: "SPR_side" },
-            h("div", { className: "SPR_sideTitle" }, T("项目（{n0}）", { n0: projects.length })),
-            projects.length === 0
-              ? h("p", { className: "SPR_hint" }, T("还没有项目，点右上角「新建项目」开始。"))
-              : projects.map((summary) =>
-                  h(
-                    "div",
-                    {
-                      key: summary.id,
-                      className: "SPR_projectRow",
-                      "data-active": summary.id === projectId ? "true" : "false"
-                    },
-                    h("button", { type: "button", className: "SPR_projItem", "data-active": summary.id === projectId ? "true" : "false", onClick: () => setProjectId(summary.id) },
-                    h("span", { className: "SPR_projNameRow" },
-                      h("span", { className: "SPR_projName" }, summary.name)
-                    ),
-                    h(
-                      "span",
-                      { className: "SPR_projMeta" },
-                      T("图 {n0}/8 · 视频 {n1}/8 · 帧 {n2}/8{n3}", { n0: summary.imageReady, n1: summary.videoReady, n2: summary.framesReady, n3: summary.sheetReady ? T(" · 整图✓") : "" })
-                    )),
-                    h(ProjectActionsMenu, { project: summary, inline: true, onRename: renameProjectEntry, onDelete: deleteProjectEntry, onNotice: setNotice })
-                  )
-                )
-          ),
-          h(
-            "div",
-            { className: "SPR_main" },
+            { className: "SPR_main SPR_workflowMain" },
             h(NoticePopup, { notice, onClose: () => setNotice(null) }),
             project === null
-              ? h("p", { className: "SPR_empty" }, loading ? T("正在载入…") : T("请选择或新建一个项目"))
+              ? h(WorkflowEmpty, { title: loading ? T("正在载入…") : T("开始制作八方向素材"), text: T("选择已有项目，或新建项目上传角色设定图。") }, h(Btn, { primary: true, onClick: createProject }, T("新建项目")))
               : h(
                   React.Fragment,
                   null,
-                  // 审核模式：与对话里的 game_material({action:'reviewMode'}) 是同一份数据。
-                  h(ReviewModeBar, { api, module: "sprite", id: project.id, mode: project.reviewMode, onChanged: () => void loadProject(project.id) }),
-                  h(
-                    "div",
-                    { className: "SPR_steps" },
-                    STAGES.map((item, index) =>
-                      h(
-                        "button",
-                        {
-                          key: item.key,
-                          type: "button",
-                          className: "SPR_step",
-                          "data-active": item.key === stage ? "true" : "false",
-                          onClick: () => setStage(item.key)
-                        },
-                        h("span", {
-                          className: "SPR_stepDot",
-                          style: {
-                            background: stageDone(project, item.key)
-                              ? "var(--dsw-alias-state-success-primary)"
-                              : "var(--dsw-alias-label-tertiary)"
-                          }
-                        }),
-                        item.title
-                      )
-                    )
-                  ),
-                  h(
-                    "div",
-                    { className: "SPR_card" },
-                    h("div", { className: "SPR_cardHead" }, h("h3", null, T("源图"))),
-                    h("p", { className: "SPR_hint" }, T("上传角色的原始设定图。第一步的正面绿幕图会以它为唯一参考。")),
-                    h(
-                      "div",
-                      { className: "SPR_sourceRow" },
-                      project.source !== null
-                        ? h("img", {
-                            className: "SPR_sourcePreview",
-                            src: assetUrl(project, project.source.file, project.updatedAt),
-                            alt: T("源图")
-                          })
-                        : h("div", { className: "SPR_thumbEmpty", style: { width: 132, height: 132, flex: "none" } }, T("尚未上传源图")),
-                      h(
-                        "div",
-                        { style: { flex: 1, minWidth: 240 } },
-                        h(
-                          "div",
-                          {
-                            className: "SPR_drop",
-                            "data-over": dropOver ? "true" : "false",
-                            onDragOver: (event) => {
-                              event.preventDefault();
-                              setDropOver(true);
-                            },
-                            onDragLeave: () => setDropOver(false),
-                            onDrop: (event) => {
-                              event.preventDefault();
-                              setDropOver(false);
-                              const file = event.dataTransfer?.files?.[0];
-                              void uploadSource(file);
-                            }
-                          },
-                          sourceBusy ? T("正在上传…") : T("把图片拖到这里，或")
-                        ),
-                        h(
-                          "div",
-                          { className: "SPR_toolbar" },
-                          h(
-                            Btn,
-                            { onClick: () => fileInputRef.current?.click(), disabled: sourceBusy, primary: project.source === null },
-                            project.source === null ? T("选择源图") : T("更换源图")
-                          ),
-                          project.source !== null
-                            ? h("span", { className: "SPR_refRow" }, project.source.name)
-                            : null
-                        ),
-                        h("input", {
-                          ref: fileInputRef,
-                          type: "file",
-                          accept: "image/*",
-                          style: { display: "none" },
-                          onChange: (event) => {
-                            const file = event.target.files?.[0];
-                            void uploadSource(file);
-                            event.target.value = "";
-                          }
-                        })
-                      )
-                    )
-                  ),
+                  h(WorkflowHeader, { title: project.name },
+                    h(ReviewModeBar, { api, module: "sprite", id: project.id, mode: project.reviewMode, compact: true, themed: true, onChanged: () => void loadProject(project.id) })),
+                  h(WorkflowTabs, { id: "sprite-classic", items: STAGES.map(item => ({ ...item, done: stageDone(project, item.key) })), value: stage, onChange: setStage }),
+                  h("div", { className: "SPR_card" },
+                    h("div", { className: "SPR_workflowSource" },
+                      project.source ? h("img", { src: assetUrl(project, project.source.file, project.updatedAt), alt: T("源图") }) : null,
+                      h("div", null, h(UploadBox, { label: project.source ? T("更换源图") : T("把角色设定图拖到这里"), accept: "image/*", busy: sourceBusy, onFiles: files => void uploadSource(files[0]) }),
+                        project.source ? h("span", { className: "SPR_workflowSourceName" }, project.source.name) : null))),
                   h(
                     "div",
                     { className: "SPR_card" },
                     h("div", { className: "SPR_cardHead" }, h("h3", null, activeStage.title)),
                     // 阶段①的说明跟着生成方式走：转圈截帧不是「八个方向各生成一次」，
                     // 沿用逐方向生图那句话会让人以为走错了页面。
-                    h("p", { className: "SPR_hint" }, stageHint(project, stage, activeStage)),
+                    h(DescriptionTip, { id: "sprite-stage-help", label: activeStage.title, text: stageHint(project, stage, activeStage) }),
                     stage === "images"
                       ? renderImageStage({
                           project,
@@ -7793,10 +8171,10 @@
                       : null,
                     stage === "preview" ? h(WalkPreview, { project, tasks }) : null
                   ),
-                  renderLog(project),
+                  h(WorkflowFold, { title: T("运行日志") }, renderLog(project)),
                   h(
                     "div",
-                    { className: "SPR_toolbar" },
+                    { className: "SPR_workflowFooter" },
                     h(Btn, { onClick: () => void loadProject(project.id) }, T("刷新状态")),
                     // 中间图片（绿幕图 / 转圈候选帧与条带 / 各方向原始帧与抠像帧 / 整图）
                     // 一次打成一个 zip：转圈模式的候选帧一抽就是 32~64 张，一张一个链接
@@ -7833,13 +8211,98 @@
       );
     }
 
+    /**
+     * Theme-styled motion picker. The native select was too tall for the
+     * built-in catalog, so the list now scrolls inside a bounded dialog and
+     * each action can be checked before it is committed to the segment.
+     */
+    function MotionActionPicker({ api, action, templates, disabled = false, onChange }) {
+      const [open, setOpen] = React.useState(false);
+      const [draftAction, setDraftAction] = React.useState(action);
+      const [direction, setDirection] = React.useState("front");
+      const [preview, setPreview] = React.useState(null);
+      const [previewSrc, setPreviewSrc] = React.useState("");
+      const [loading, setLoading] = React.useState(false);
+      const [error, setError] = React.useState("");
+      const requestId = React.useRef(0);
+      const selected = templates.find(item => item.key === action);
+      const pending = templates.find(item => item.key === draftAction) || selected || templates[0];
+      const openPicker = () => {
+        setDraftAction(action);
+        setDirection("front");
+        setPreview(null);
+        setError("");
+        setOpen(true);
+      };
+      React.useEffect(() => {
+        if (!open || !pending?.key || !api?.getMotionTemplatePreview) return;
+        const id = ++requestId.current;
+        setLoading(true); setPreview(null); setError("");
+        void api.getMotionTemplatePreview({ action: pending.key, direction }).then(value => {
+          if (id === requestId.current) setPreview(value);
+        }).catch(failure => {
+          if (id === requestId.current) { setPreview(null); setError(msg(failure) || T("预览失败")); }
+        }).finally(() => { if (id === requestId.current) setLoading(false); });
+        return () => { requestId.current++; };
+      }, [api, open, pending?.key, direction]);
+      React.useEffect(() => {
+        const source = preview?.image;
+        if (typeof source !== "string" || source === "") { setPreviewSrc(""); return; }
+        // Some embedded hosts disallow data: images in their CSP. Convert the
+        // local preview to a blob URL so the dialog remains visible there too.
+        if (!source.startsWith("data:") || typeof URL === "undefined" || typeof URL.createObjectURL !== "function" || typeof atob !== "function") {
+          setPreviewSrc(source); return;
+        }
+        try {
+          const comma = source.indexOf(","), bytes = atob(source.slice(comma + 1)), buffer = new Uint8Array(bytes.length);
+          for (let i = 0; i < bytes.length; i++) buffer[i] = bytes.charCodeAt(i);
+          const url = URL.createObjectURL(new Blob([buffer], { type: "image/png" }));
+          setPreviewSrc(url);
+          return () => URL.revokeObjectURL(url);
+        } catch {
+          setPreviewSrc(source);
+        }
+      }, [preview?.image]);
+      const commit = () => { if (!pending?.key) return; onChange(pending.key); setOpen(false); };
+      // Keep the list and preview explicit siblings: nesting the preview in
+      // templates.map's parent makes it scroll inside the left-hand list.
+      const actionList = h("div", { className: "SPR_motionActionList", role: "listbox", "aria-label": T("选择动作") },
+        templates.map(item => h("button", { key: item.key, type: "button", className: "SPR_motionActionOption", role: "option", "aria-selected": item.key === draftAction,
+          onClick: () => setDraftAction(item.key) },
+          h("span", { className: "SPR_motionActionOptionCheck" }, item.key === draftAction ? h(TaskHeaderIcon, { name: "check" }) : null),
+          h("span", { className: "SPR_motionActionOptionText" },
+            h("strong", null, item.name), h("small", null, item.originalName + " · " + item.frames + T("帧"))))));
+      const actionPreview = h("div", { className: "SPR_motionActionPreview" },
+        h("div", { className: "SPR_motionPreviewViewport", "data-loading": loading, "data-empty": !preview },
+          previewSrc ? h("img", { src: previewSrc, alt: pending?.name || T("动作预览"), onError: () => { setPreviewSrc(""); setError(T("预览图片无法加载")); } }) : loading ? h("span", null, T("加载预览…")) : error ? h("span", { role: "alert" }, error) : h("span", null, T("选择一个动作查看预览"))),
+        h("div", { className: "SPR_motionPreviewMeta" },
+          h("strong", null, pending ? `${pending.name} / ${pending.originalName}` : T("选择动作")),
+          preview ? h("span", null, `${preview.frames} ${T("帧")} · ${preview.width}×${preview.height}`) : null),
+        h("div", { className: "SPR_motionDirectionPicker" },
+          h("span", { className: "SPR_fieldLabel" }, T("预览方向")),
+          h("div", { className: "SPR_motionDirectionGrid" },
+            DIRECTION_KEYS.map(key => h("button", { key, type: "button", className: "SPR_btn", "data-active": direction === key, "aria-pressed": direction === key, onClick: () => setDirection(key) }, LABEL_OF[key]?.split(" · ")[0] || key)))));
+      return h(React.Fragment, null,
+        h("button", { type: "button", className: "SPR_btn SPR_motionActionTrigger", disabled: disabled || !templates.length, "aria-haspopup": "dialog", "aria-expanded": open,
+          onClick: openPicker },
+          h("span", { className: "SPR_motionActionTriggerText" }, selected ? `${selected.name} / ${selected.originalName}` : T("选择动作")),
+          h(TaskHeaderIcon, { name: "chevron" })),
+        open ? h(AudioPanel, { title: T("动作预览"), className: "SPR_motionActionDialog", onClose: () => setOpen(false) },
+          h("p", { className: "SPR_hint SPR_motionActionHint" }, T("内置动作预览，不会调用生成模型")),
+          h("div", { className: "SPR_motionActionLayout" }, actionList, actionPreview),
+          h("div", { className: "SPR_projectRenameActions SPR_motionActionActions" },
+            h(Btn, { onClick: () => setOpen(false) }, T("取消")),
+            h(Btn, { primary: true, disabled: !pending?.key, onClick: commit }, T("选择这个动作")))) : null
+      );
+    }
+
     /** White-model workflow; persisted jobs and editable drafts stay separate. */
     function MotionModule({ api }) {
       useLocaleTick();
       const [jobs, setJobs] = React.useState([]);
       const [sourceProjects, setSourceProjects] = React.useState([]);
       const [sourceProjectId, setSourceProjectId] = React.useState("");
-      const [jobId, setJobId] = React.useState(null);
+      const [jobId, setJobId] = React.useState(() => pendingIntent?.module === "sprite" && pendingIntent.jobId?.startsWith("w") ? pendingIntent.jobId : workflowStored("selection:sprite"));
       const [job, setJob] = React.useState(null);
       const [step, setStep] = React.useState(0);
       const [draft, setDraft] = React.useState(null);
@@ -7863,7 +8326,7 @@
         const value = await api.getMotionJob({ jobId: id });
         if (selectedId.current !== id) return;
         const next = toDraft(value), prior = previous.current;
-        setDraft(current => mergeDrafts(current, prior.draft, next, force || prior.id !== id));
+        setDraft(current => force || prior.id !== id ? workflowStored("draft:sprite:" + id) || next : mergeDrafts(current, prior.draft, next, false));
         previous.current = { id, draft: next }; setJob(value);
         return value;
       }, [api]);
@@ -7873,7 +8336,7 @@
         void Promise.all([api.listMotionJobs(), api.motionSettings({}), api.listProjects()]).then(([list, cfg, source]) => {
           if (!alive) return; setJobs(list.jobs || []); setSettings(cfg);
           setSourceProjects(source.projects || []);
-          if (!selectedId.current && list.jobs?.length) setJobId(list.jobs[0].id);
+          if (!list.jobs?.some(item => item.id === selectedId.current)) setJobId(list.jobs?.[0]?.id || null);
         }).catch(error => { if (alive) setNotice(msg(error)); });
         return () => { alive = false; };
       }, [api]);
@@ -7884,6 +8347,7 @@
         setJob(null); setDraft(null); setSelected([]); setVideoConsent(false); setRedrawConsent(false); setRegenerate(false); setUseRedraw(false);
         if (jobId) void load(jobId, true).catch(error => setNotice(msg(error)));
       }, [jobId, load]);
+      React.useEffect(() => { if (jobId) workflowStored("selection:sprite", jobId); if (draft && previous.current.id === jobId) workflowStored("draft:sprite:" + jobId, draft); }, [jobId, draft]);
       React.useEffect(() => {
         setSelected([]); setRedrawConsent(false);
       }, [job?.frames?.[0]?.target, job?.costs?.imageRate, job?.imageModel]);
@@ -7913,7 +8377,7 @@
       const asset = (relative) => job?.assetBase && relative ? job.assetBase + relative.split("/").map(encodeURIComponent).join("/") : undefined;
       const field = (label, control) => h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, label), control);
       const text = (value, onChange, type = "text") => h("input", { className: "SPR_input", type, value, disabled: busy, onChange: e => onChange(e.target.value) });
-      const check = (label, value, onChange) => h("label", { style: { display: "block", margin: "10px 0" } }, h("input", { type: "checkbox", checked: value, disabled: busy, onChange: e => onChange(e.target.checked) }), " ", label);
+      const check = (label, value, onChange) => h("label", { className: "SPR_workflowCheck" }, h("input", { type: "checkbox", checked: value, disabled: busy, onChange: e => onChange(e.target.checked) }), " ", label);
       const stages = [T("角色与动作"), T("参考与提示词"), T("视频分段与抽帧"), T("逐帧高清重绘"), T("导出素材")];
       const templates = job?.templates || [];
       const actionName = (key) => templates.find(a => a.key === key)?.name || key;
@@ -7925,44 +8389,52 @@
         update("segments", segments);
       };
       const video = job?.video;
-      return h("div", { className: "SPR_body", "data-testid": "motion-workflow" },
-        h("aside", { className: "SPR_side" },
-          h(Btn, { primary: true, disabled: busy, onClick: () => void run(T("正在新建…"), async () => { const result = await api.createMotionJob({ name: T("白模角色动画") }); setJobId(result.jobId); setStep(0); }) }, T("新建白模任务")),
-          jobs.map(item => h("button", { key: item.id, className: "SPR_projItem", type: "button", "data-active": item.id === jobId ? "true" : "false", onClick: () => setJobId(item.id) }, item.name))
-        ),
-        h("div", { className: "SPR_main", style: { minWidth: 0, padding: 16, flex: 1 } },
-          h("p", { className: "SPR_hint" }, T("白模决定动作，角色图决定外观。4秒选2种动作，最多3种；3动作仍为实验性。")),
+      const create = () => { if (!busy) void run(T("正在新建…"), async () => { const result = await api.createMotionJob({ name: T("白模角色动画") }); setJobId(result.jobId); setStep(0); }); };
+      const complete = [!!job?.character && !!job?.directions, !!job?.prepared, !!job?.frames?.length, !!job?.frames?.length && job.frames.every(frame => frame.redraw?.status === "ready"), !!job?.archive];
+      return h("div", { className: "SPR_body SPR_workflow", "data-testid": "motion-workflow" },
+        h(WorkflowSidebar, { api, module: "sprite-motion", jobs, activeId: jobId, onSelect: setJobId, onCreate: create, onNotice: setNotice,
+          onRename: async (item, name) => { await api.saveMotionJob({ jobId: item.id, name }); if (selectedId.current === item.id) await load(item.id); }, onRefresh: refreshList }),
+        h("div", { className: "SPR_main SPR_workflowMain" },
+          h(WorkflowHeader, { title: job?.name || T("白模动作流程") }),
           h(NoticePopup, { notice, onClose: () => setNotice(null) }),
-          !job || !draft ? h("p", { className: "SPR_empty" }, T("新建或选择白模任务开始。")) : h(React.Fragment, null,
-            h("nav", { className: "SPR_toolbar" }, stages.map((label, i) => h(Btn, { key: i, on: step === i, onClick: () => setStep(i) }, `${i + 1}. ${label}`))),
-            busy ? h("p", { role: "status", "aria-live": "polite" }, T("任务处理中…"), " ", job.operation || "", " ", job.progress || "") : null,
+          !job || !draft ? h(WorkflowEmpty, { title: T("开始制作角色动作"), text: T("上传角色外观，选择动作，逐步生成八方向动画素材。") }, h(Btn, { primary: true, disabled: busy, onClick: create }, T("新建白模任务"))) : h(WorkflowConversation, { key: job.id, api, module: "sprite", job, prompt: draft.prompt, onPrompt: value => update("prompt", value), onSave: localOnly => localOnly === true ? api.saveMotionJob({ jobId, name: draft.name }) : saveDraft(),
+            onConsumed: value => setDraft(current => current.prompt === value ? { ...current, prompt: "" } : current),
+            onReuse: async request => { await load(job.id); setDraft(current => ({ ...current, prompt: request.prompt || "", description: request.description || "", segments: request.segments || current.segments })); } },
+            h(WorkflowTabs, { id: "motion", items: stages.slice(0, 2).map((title, key) => ({ key, title, done: complete[key] })), value: step, onChange: setStep }),
+            busy ? h("p", { className: "SPR_workflowStatus", role: "status", "aria-live": "polite" }, T("任务处理中…"), " ", job.operation || "", " ", job.progress || "") : null,
             job.active ? h(Btn, { onClick: () => { void api.runMotionStep({ jobId, step: "cancel" }).catch(error => setNotice(msg(error))); } }, T("停止后续处理（已提交请求可能计费）")) : null,
-            job.error ? h("p", { role: "alert", style: { color: "#c44" } }, job.error) : null,
-            step === 0 ? h("section", null,
+            job.error ? h("p", { className: "SPR_workflowStatus", role: "alert" }, job.error) : null,
+            step === 0 ? h("section", { className: "SPR_workflowPanel", role: "tabpanel", "aria-labelledby": "motion-tab-0" },
+              h("h4", null, stages[0]),
               field(T("任务名称"), text(draft.name, value => update("name", value))),
               h("div", { className: "SPR_toolbar" },
-                h("select", { className: "SPR_input", value: sourceProjectId, onChange: e => setSourceProjectId(e.target.value) }, h("option", { value: "" }, T("选择已有八方向项目")), sourceProjects.map(p => h("option", { key: p.id, value: p.id }, p.name))),
+                h(SettingsSelect, { className: "SPR_input", "aria-label": T("选择已有八方向项目"), value: sourceProjectId, onChange: e => setSourceProjectId(e.target.value) }, h("option", { value: "" }, T("选择已有八方向项目")), sourceProjects.map(p => h("option", { key: p.id, value: p.id }, p.name))),
                 h(Btn, { disabled: busy || !sourceProjectId, onClick: () => void run(T("正在导入素材…"), () => api.uploadMotionAsset({ jobId, kind: "project", data: sourceProjectId })) }, T("导入已有角色和八方向图（免费）"))),
               field(T("角色外观说明"), h("textarea", { className: "SPR_input", rows: 3, value: draft.description, disabled: busy, onChange: e => update("description", e.target.value) })),
-              field(T("角色细节参考图"), h("input", { type: "file", accept: "image/png,image/jpeg,image/webp", disabled: busy, onChange: e => upload("character", e.target.files?.[0]) })),
-              job.character ? h("img", { src: asset(job.character), alt: T("角色细节参考图"), style: { maxHeight: 160 } }) : null,
-              field(T("八方向外观图（四列两行）"), h("input", { type: "file", accept: "image/png,image/jpeg,image/webp", disabled: busy, onChange: e => upload("directions", e.target.files?.[0]) })),
-              h("p", { className: "SPR_hint" }, T("上排北、东北、东、东南；下排南、西南、西、西北。可使用原有流程生成的方向图。")),
-              job.directions ? h("img", { src: asset(job.directions), alt: T("八方向外观图（四列两行）"), style: { maxWidth: "100%", maxHeight: 240 } }) : null,
-              field(T("动作数量"), h("select", { className: "SPR_input", value: draft.segments.length, disabled: busy, onChange: e => changeCount(Number(e.target.value)) }, h("option", { value: 2 }, T("2种动作（推荐）")), h("option", { value: 3 }, T("3种动作（实验性）")))),
+              h("div", { className: "SPR_workflowUploadGrid" },
+                h("div", { className: "SPR_workflowAsset" }, field(T("角色细节参考图"), null),
+                  job.character ? h("img", { src: asset(job.character), alt: T("角色细节参考图") }) : null,
+                  h(UploadBox, { label: T("上传角色细节参考图"), accept: "image/png,image/jpeg,image/webp", busy, onFiles: files => upload("character", files[0]) })),
+                h("div", { className: "SPR_workflowAsset" }, field(T("八方向外观图（四列两行）"), null),
+                  job.directions ? h("img", { src: asset(job.directions), alt: T("八方向外观图（四列两行）") }) : null,
+                  h(UploadBox, { label: T("上传八方向外观图"), accept: "image/png,image/jpeg,image/webp", busy, onFiles: files => upload("directions", files[0]) }),
+                  h(DescriptionTip, { id: "motion-directions-help", label: T("八方向外观图（四列两行）"), text: T("上排北、东北、东、东南；下排南、西南、西、西北。可使用原有流程生成的方向图。") }))),
+              h(WorkflowFold, { title: T("导入已有视频") }, h(UploadBox, { label: T("或导入已有八方向视频"), accept: "video/mp4,video/webm", busy, onFiles: files => upload("video", files[0]) })),
+              field(T("动作数量"), h(SettingsSelect, { className: "SPR_input", "aria-label": T("动作数量"), value: draft.segments.length, disabled: busy, onChange: e => changeCount(Number(e.target.value)) }, h("option", { value: 2 }, T("2种动作（推荐）")), h("option", { value: 3 }, T("3种动作（实验性）")))),
               draft.segments.map((seg, i) => h("div", { key: i, className: "SPR_toolbar" },
-                h("select", { className: "SPR_input", value: seg.action, disabled: busy, onChange: e => update("segments", draft.segments.map((s, j) => j === i ? { ...s, action: e.target.value } : s)) }, templates.map(a => h("option", { key: a.key, value: a.key }, `${a.name} / ${a.originalName}`))),
+                h(MotionActionPicker, { api, action: seg.action, templates, disabled: busy, onChange: value => update("segments", draft.segments.map((s, j) => j === i ? { ...s, action: value } : s)) }),
                 h("span", null, `${seg.start}–${seg.end}s`))),
               h(BusyBtn, { busy, busyText: T("正在保存…"), onClick: () => void run(T("正在保存…"), async () => { await saveDraft(); setStep(1); }) }, T("保存并继续"))
             ) : null,
-            step === 1 ? h("section", null,
+            step === 1 ? h("section", { className: "SPR_workflowPanel", role: "tabpanel", "aria-labelledby": "motion-tab-1" },
+              h("h4", null, stages[1]),
               h(BusyBtn, { busy, busyText: T("正在准备白模…"), onClick: () => void run(T("正在准备白模…"), async () => { await saveDraft(); await operate("prepare"); }) }, T("准备白模参考（本地免费）")),
-              job.prepared ? h("video", { src: asset(job.prepared.video), controls: true, loop: true, muted: true, style: { width: "100%", maxWidth: 864 } }) : null,
+              job.prepared ? h("video", { src: asset(job.prepared.video), controls: true, loop: true, muted: true, className: "SPR_video" }) : null,
               field(T("生成提示词（可编辑）"), h("textarea", { className: "SPR_input", value: draft.prompt, rows: 9, disabled: busy, onChange: e => update("prompt", e.target.value) })),
               h("div", { className: "SPR_toolbar" },
                 h(Btn, { disabled: busy, onClick: () => void run(T("正在整理提示词…"), async () => { await saveDraft(); await operate("prompt"); }) }, T("按当前动作重建提示词")),
                 h(Btn, { disabled: busy || !settings?.model, onClick: () => void run(T("正在整理提示词…"), async () => { await saveDraft(); await operate("prompt", { useModel: true }); }) }, T("使用文字模型整理角色描述"))),
-              h("details", null, h("summary", null, T("文字模型与费用设置（可选）")),
+              h(WorkflowFold, { title: T("文字模型与费用设置（可选）") },
                 settings ? h("div", null,
                   field(T("文字模型Base URL"), text(settings.baseUrl, value => setSettings({ ...settings, baseUrl: value }))),
                   field(T("文字模型名称"), text(settings.model, value => setSettings({ ...settings, model: value }))),
@@ -7975,33 +8447,35 @@
               h("p", { className: "SPR_hint" }, T("需要MiniMax-H3-Lite参考视频后端。角色图和白模视频会发送至你配置的服务。")),
               check(T("确认本次视频调用及费用"), videoConsent, setVideoConsent),
               video ? check(T("明确重新生成（会再次计费）"), regenerate, setRegenerate) : null,
-              h(BusyBtn, { busy, busyText: T("正在提交视频…"), disabled: !videoConsent || !job.prepared || (!!video && !regenerate), onClick: () => void run(T("正在提交视频…"), async () => { await saveDraft(); await operate("video", { confirmed: videoConsent, regenerate }); setVideoConsent(false); setStep(2); }) }, T("生成八方向多动作视频"))
+              h(BusyBtn, { busy, busyText: T("正在提交视频…"), disabled: !videoConsent || !job.prepared || (!!video && !regenerate), onClick: () => requestWorkflowSend("sprite", jobId) }, T("生成八方向多动作视频"))
             ) : null,
-            step === 2 ? h("section", null,
+            step === 2 ? h("section", { className: "SPR_workflowPanel", role: "tabpanel", "aria-labelledby": "motion-tab-2" },
+              h("h4", null, stages[2]),
               h("p", { className: "SPR_hint" }, T("先观看实际动作，调整每段起止时间。模型可能延迟切换，预定边界不代表正确动作。")),
               video ? h("p", null, T("视频状态"), ": ", video.status, video.error ? " · " + video.error : "") : null,
-              video?.file ? h("video", { src: asset(video.file), controls: true, muted: true, loop: true, style: { width: "100%", maxWidth: 864 } }) : null,
+              video?.file ? h("video", { src: asset(video.file), controls: true, muted: true, loop: true, className: "SPR_video" }) : null,
               h(Btn, { disabled: busy || !video?.taskId, onClick: () => void run(T("正在查询视频…"), () => operate("poll")) }, T("查询已提交任务（不重新生成）")),
-              field(T("或导入已有八方向视频"), h("input", { type: "file", accept: "video/mp4,video/webm", disabled: busy, onChange: e => upload("video", e.target.files?.[0]) })),
+              h(UploadBox, { label: T("或导入已有八方向视频"), accept: "video/mp4,video/webm", busy, onFiles: files => upload("video", files[0]) }),
               draft.ranges.map((seg, i) => h("div", { key: seg.action, className: "SPR_toolbar" },
                 h("strong", null, actionName(seg.action)),
                 ...["start", "end", "frameCount"].map(key => field(key === "start" ? T("开始秒") : key === "end" ? T("结束秒") : T("抽帧数量"), h("input", { type: "number", className: "SPR_input", min: key === "frameCount" ? 4 : 0, max: key === "frameCount" ? 24 : video?.duration || 4, step: key === "frameCount" ? 1 : .01, value: seg[key], disabled: busy, onChange: e => setDraft(current => ({ ...current, rangesConfirmed: false, ranges: current.ranges.map((s, j) => j === i ? { ...s, [key]: Number(e.target.value) } : s) })) }))))),
               check(T("已观看并确认这些动作范围"), draft.rangesConfirmed, value => setDraft(current => ({ ...current, rangesConfirmed: value }))),
               h(BusyBtn, { busy, busyText: T("正在裁切抽帧…"), disabled: !draft.rangesConfirmed || video?.status !== "ready", onClick: () => void run(T("正在裁切抽帧…"), async () => { await api.saveMotionJob({ jobId, ranges: draft.ranges, rangesConfirmed: true }); await operate("extract"); setStep(3); }) }, T("按动作抽取八方向帧"))
             ) : null,
-            step === 3 ? h("section", null,
+            step === 3 ? h("section", { className: "SPR_workflowPanel", role: "tabpanel", "aria-labelledby": "motion-tab-3" },
+              h("h4", null, stages[3]),
               h("p", { className: "SPR_hint" }, T("先选择一帧试重绘，再补其余帧。原图和回图保留；动作、轮廓与画风仍需检查。")),
               h(MotionAnimationPreview, { frames, asset, ranges: job.ranges }),
               h("div", { className: "SPR_toolbar" },
-                h("select", { className: "SPR_input", value: actionFilter, onChange: e => setActionFilter(e.target.value) }, h("option", { value: "" }, T("全部动作")), job.ranges.map(s => h("option", { key: s.action, value: s.action }, actionName(s.action)))),
-                h("select", { className: "SPR_input", value: directionFilter, onChange: e => setDirectionFilter(e.target.value) }, ["back", "upRight", "right", "downRight", "front", "downLeft", "left", "upLeft"].map(key => h("option", { key, value: key }, key))),
+                h(SettingsSelect, { className: "SPR_input", "aria-label": T("筛选动作"), value: actionFilter, onChange: e => setActionFilter(e.target.value) }, h("option", { value: "" }, T("全部动作")), job.ranges.map(s => h("option", { key: s.action, value: s.action }, actionName(s.action)))),
+                h(SettingsSelect, { className: "SPR_input", "aria-label": T("选择方向"), value: directionFilter, onChange: e => setDirectionFilter(e.target.value) }, ["back", "upRight", "right", "downRight", "front", "downLeft", "left", "upLeft"].map(key => h("option", { key, value: key }, key))),
                 h(Btn, { disabled: busy, onClick: () => selectFrames(frames.map(f => f.id)) }, T("选择当前可见帧")),
                 h(Btn, { disabled: busy, onClick: () => selectFrames(job.frames.filter(f => f.redraw?.status !== "ready").map(f => f.id)) }, T("选择全部未完成帧")),
                 h(Btn, { disabled: busy, onClick: () => selectFrames([]) }, T("清空选择"))),
-              h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 8 } }, frames.map(f => h("label", { key: f.id, style: { border: "1px solid #8885", padding: 6 } },
+              h("div", { className: "SPR_workflowFrames" }, frames.map(f => h("label", { key: f.id, className: "SPR_workflowFrame" },
                 h("input", { type: "checkbox", checked: selected.includes(f.id), disabled: busy, onChange: e => { setSelected(current => e.target.checked ? [...current, f.id] : current.filter(id => id !== f.id)); setRedrawConsent(false); } }),
                 ` ${f.index + 1} · ${actionName(f.action)}`,
-                h("img", { src: asset(f.redraw?.file || f.keyed), alt: f.id, style: { width: "100%", display: "block", background: "#27364b" } }),
+                h("img", { src: asset(f.redraw?.file || f.keyed), alt: f.id,  }),
                 f.redraw?.status ? h("small", null, f.redraw.status) : null,
                 f.redraw?.file ? h("a", { href: asset(f.keyed), target: "_blank", rel: "noreferrer" }, T("查看重绘前")) : null))),
               h("p", null, T("本次新增图片调用：{n0}张。", { n0: newCount }), " ", job.costs.imageRate > 0 ? T("估算¥{n0}", { n0: (newCount * job.costs.imageRate).toFixed(2) }) : T("图片单价未配置，请先核对服务商报价。")),
@@ -8011,7 +8485,8 @@
               h(BusyBtn, { busy, busyText: T("正在逐帧重绘…"), disabled: !redrawConsent || newCount === 0, onClick: () => void run(T("正在逐帧重绘…"), async () => { await operate("redraw", { confirmed: redrawConsent, regenerate, targets: selected }); setRedrawConsent(false); }) }, T("重绘选中帧")),
               h(Btn, { onClick: () => setStep(4) }, T("继续导出"))
             ) : null,
-            step === 4 ? h("section", null,
+            step === 4 ? h("section", { className: "SPR_workflowPanel", role: "tabpanel", "aria-labelledby": "motion-tab-4" },
+              h("h4", null, stages[4]),
               h("p", { className: "SPR_hint" }, T("每种动作独立导出：八方向PNG图集、透明序列帧和播放时长JSON。循环接缝需自行验收。")),
               check(T("导出高清重绘版（要求全部帧完成）"), useRedraw, setUseRedraw),
               h(BusyBtn, { busy, busyText: T("正在导出…"), disabled: !job.frames.length, onClick: () => void run(T("正在导出…"), () => operate("export", { useRedraw })) }, T("打包全部动作")),
@@ -8036,8 +8511,8 @@
       }, [count, selectedAction, range?.start, range?.end]);
       if (!count) return null;
       const current = sequence[index % count];
-      return h("div", null,
-        h("img", { src: asset(redrawn && current.redraw?.file ? current.redraw.file : current.keyed), alt: T("动作循环预览"), style: { width: 256, height: 256, background: "#27364b" } }),
+      return h("div", { className: "SPR_workflowAnimation" },
+        h("img", { src: asset(redrawn && current.redraw?.file ? current.redraw.file : current.keyed), alt: T("动作循环预览"),  }),
         h("label", null, h("input", { type: "checkbox", checked: redrawn, onChange: e => setRedrawn(e.target.checked) }), " ", T("预览已完成的重绘帧"))
       );
     }
@@ -9526,7 +10001,7 @@
             max: 32,
             onChange: (value) => setSettingsDraft({ ...draft, pixelSize: value })
           }),
-          h(KeyColorField, { value: draft.keyColor, onChange: (value) => { setSettingsDraft({ ...draft, keyColor: value }); void saveSettings({ keyColor: value }); } }),
+          h(KeyColorField, { themed: true, value: draft.keyColor, onChange: (value) => { setSettingsDraft({ ...draft, keyColor: value }); void saveSettings({ keyColor: value }); } }),
           h(NumField, {
             label: T("背景分割容差（0 = 只认背景色）"),
             value: draft.bgTolerance ?? 90,
@@ -9583,7 +10058,7 @@
             { className: "SPR_field" },
             h("span", { className: "SPR_fieldLabel" }, T("自动裁剪到角色包围盒")),
             h(
-              "select",
+              SettingsSelect,
               {
                 className: "SPR_input",
                 value: draft.autoCrop === false ? "off" : "on",
@@ -9975,7 +10450,7 @@
             { className: "SPR_field" },
             h("span", { className: "SPR_fieldLabel" }, T("背景参考网格")),
             h(
-              "select",
+              SettingsSelect,
               { className: "SPR_input", value: grid ? "on" : "off", onChange: (event) => setGrid(event.target.value === "on") },
               h("option", { value: "on" }, T("显示（更容易看出在移动）")),
               h("option", { value: "off" }, T("关闭（纯白）"))
@@ -10204,9 +10679,9 @@
     }
 
     /** 抠像参数表单（三个模块共用同一套字段）。 */
-    function KeyingFields({ draft, onChange, fallbackColor, layout }) {
+    function KeyingFields({ draft, onChange, fallbackColor, layout, themed = false }) {
       const grouped = layout === "image";
-      const color = h(KeyColorField, { value: draft.keyColor || fallbackColor, onChange: (v) => onChange({ keyColor: v }) });
+      const color = h(KeyColorField, { themed, value: draft.keyColor || fallbackColor, onChange: (v) => onChange({ keyColor: v }) });
       const lower = h(NumField, { label: grouped ? T("抠像下限") : T("抠像下限（背景色接近度）"), value: draft.keyLow ?? 14, min: 0, max: 255, onChange: (v) => onChange({ keyLow: v }) });
       const upper = h(NumField, { label: grouped ? T("抠像上限") : T("抠像上限（背景色接近度）"), value: draft.keyHigh ?? 80, min: 1, max: 255, onChange: (v) => onChange({ keyHigh: v }) });
       const despill = h(NumField, { label: grouped ? T("去溢色") : T("去溢色 0~1"), value: draft.despill ?? 0.65, min: 0, max: 1, step: 0.05, onChange: (v) => onChange({ despill: v }) });
@@ -10321,7 +10796,7 @@
      * 所有模块的项目 / 任务共用它：把当前 id 一键复制给 agent，省得用户从日志或
      * 回复里翻 ID。`inline` 用在侧栏项目行里（span，避免 button 套 button）。
      */
-    function CopyIdButton({ id, inline = false, className = "" }) {
+    function CopyIdButton({ id, inline = false, className = "", menuItem = false }) {
       const [state, setState] = React.useState("idle");
       const timer = React.useRef(null);
       React.useEffect(() => () => {
@@ -10330,7 +10805,7 @@
       if (id === null || id === undefined || id === "") return null;
       const text = String(id);
       const copy = async (event) => {
-        if (event !== null && event !== undefined && typeof event.stopPropagation === "function") event.stopPropagation();
+        if (!menuItem && event !== null && event !== undefined && typeof event.stopPropagation === "function") event.stopPropagation();
         const ok = await copyIdText(text);
         setState(ok ? "ok" : "failed");
         if (timer.current !== null) clearTimeout(timer.current);
@@ -10344,6 +10819,7 @@
       return h(
         tag,
         {
+          role: menuItem ? "menuitem" : undefined,
           ...(inline ? { role: "button", tabIndex: 0 } : { type: "button" }),
           className: `SPR_copyId${inline ? " SPR_copyIdInline" : ""}${className === "" ? "" : ` ${className}`}`,
           "data-copied": state === "ok" ? "true" : undefined,
@@ -10605,7 +11081,7 @@
           onEdit ? h("button", { type: "button", className: "SPR_sidebarInfoEdit", onClick: () => { dismiss(); onEdit(); } }, h(ProjectActionIcon, { name: "settings" }), T("编辑项目")) : null) : null);
     }
 
-    function ImageFolderHeader({ group, api, onEdit, onPin, onArchive, showArchived, onCreate, onReveal, onNotice, onToggle, onRemove, draggable = false, onDragStart, onDragEnd, onKeyDown }) {
+    function ImageFolderHeader({ group, api, summary, onEdit, onPin, onArchive, showArchived, onCreate, onReveal, onNotice, onToggle, onRemove, draggable = false, onDragStart, onDragEnd, onKeyDown }) {
       const directory = group.key, entries = group.entries, collapsed = group.collapsed === true;
       const [open, setOpen] = React.useState(false);
       const [confirmRemove, setConfirmRemove] = React.useState(false);
@@ -10649,7 +11125,7 @@
         }
       };
       return h("div", { className: "SPR_taskGroupTitle", "data-menu-open": open, draggable, onDragStart, onDragEnd, onKeyDown },
-        h(ImageSidebarInfo, { id: "image-folder-info-" + encodeURIComponent(directory), name, directory, directories: sources, entries: group.allEntries ?? entries, folder: true, onEdit: onEdit ? () => setEditing(true) : undefined },
+        h(ImageSidebarInfo, { id: "image-folder-info-" + encodeURIComponent(directory), name, directory, directories: sources.filter(Boolean), entries: group.allEntries ?? entries, summary, folder: true, onEdit: onEdit ? () => setEditing(true) : undefined },
           h("button", { type: "button", className: "SPR_taskFolderLabel", onClick: onToggle, "aria-expanded": !collapsed, "aria-controls": "image-folder-" + encodeURIComponent(directory), title: collapsed ? T("展开项目") : T("收起项目") },
             h("span", { className: "SPR_taskFolderToggleIcon" }, h(TaskHeaderIcon, { name: collapsed ? "folderClosed" : "folderOpen" })), h("span", null, name))),
         h("div", { className: "SPR_taskFolderActions" },
@@ -10658,13 +11134,13 @@
           h("button", { type: "button", className: "SPR_taskIconButton", title: T("新建项目"), "aria-label": T("在此文件夹新建项目"), onClick: () => onCreate(primaryDirectory) }, h(TaskHeaderIcon, { name: "compose" }))),
         h("div", { ref: menuRef, className: "SPR_projectMenu SPR_taskFolderMenu", popover: "manual", role: "menu", "aria-label": T("文件夹操作"), onKeyDown: keys },
           h("button", { type: "button", role: "menuitem", onClick: () => { close(); onPin?.(); } }, h(ProjectActionIcon, { name: "pin" }), group.pinned ? T("取消置顶") : activeLang() === "en" ? T("置顶项目") : T("置顶")),
-          h("button", { type: "button", role: "menuitem", disabled: !onEdit, onClick: () => { close(); setEditing(true); } }, h(ProjectActionIcon, { name: "settings" }), T("编辑")),
-          h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
-          h("button", { type: "button", role: "menuitem", disabled: !primaryDirectory || !onReveal, onClick: () => { close(); void onReveal(primaryDirectory); } }, h(ProjectActionIcon, { name: "openFolder" }), T("在资源管理器中打开")),
+          onEdit ? h("button", { type: "button", role: "menuitem", onClick: () => { close(); setEditing(true); } }, h(ProjectActionIcon, { name: "settings" }), T("编辑")) : null,
+          onReveal && primaryDirectory ? h("div", { className: "SPR_projectMenuSeparator", role: "separator" }) : null,
+          onReveal && primaryDirectory ? h("button", { type: "button", role: "menuitem", onClick: () => { close(); void onReveal(primaryDirectory); } }, h(ProjectActionIcon, { name: "openFolder" }), T("在资源管理器中打开")) : null,
           h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
           h("button", { type: "button", role: "menuitem", disabled: !entries.length || !onArchive, onClick: () => { close(); onArchive?.(); } }, h(ProjectActionIcon, { name: "archive" }), showArchived ? T("取消归档") : T("归档聊天")),
-          h("div", { className: "SPR_projectMenuSeparator", role: "separator" }),
-          h("button", { type: "button", role: "menuitem", onClick: () => { close(); setConfirmRemove(true); } }, h(ProjectActionIcon, { name: "remove" }), T("移除项目"))),
+          onRemove ? h("div", { className: "SPR_projectMenuSeparator", role: "separator" }) : null,
+          onRemove ? h("button", { type: "button", role: "menuitem", onClick: () => { close(); setConfirmRemove(true); } }, h(ProjectActionIcon, { name: "remove" }), T("移除项目")) : null),
         editing ? h(ImageTaskDialog, { api, preferences: { directory: primaryDirectory }, project: { name, directories: sources }, editableSources: true,
           onClose: () => setEditing(false), onRemove: () => { setEditing(false); setConfirmRemove(true); }, onSubmit: async value => { await onEdit(group, value); setEditing(false); } }) : null,
         confirmRemove ? h("dialog", { ref: removeDialogRef, className: "SPR_projectRenameDialog SPR_templateDeleteDialog", "data-kind": "delete", role: "alertdialog", "aria-label": T("移除文件夹？"),
@@ -10676,7 +11152,7 @@
               h("button", { type: "submit", className: "SPR_btn SPR_projectDeleteConfirm" }, T("确认移除"))))) : null);
     }
 
-    function JobSidebar({ title, items, activeId, onSelect, onCreate, onOpenFolder, renderMeta, renderSummary, renderActions, createInSidebar = true, storageKey = "sequence", preferences, onPreferences, onReorder, onRevealFolder, onNotice, onRemoveFolder, onEditFolder, onArchiveFolder, onProjectRename, onProjectPin, onProjectArchive, onProjectDelete, api }) {
+    function JobSidebar({ title, items, activeId, onSelect, onCreate, onOpenFolder, grouping = !!onOpenFolder, renderMeta, renderSummary, renderFolderSummary, renderActions, createInSidebar = true, storageKey = "sequence", preferences, onPreferences, onReorder, onRevealFolder, onNotice, onRemoveFolder, onEditFolder, onArchiveFolder, onProjectRename, onProjectPin, onProjectArchive, onProjectDelete, api }) {
       const key = "dsh-game-material-master:task-list-collapsed:" + storageKey;
       const [collapsed, setCollapsed] = React.useState(() => { try { return window.localStorage.getItem(key) === "true"; } catch { return false; } });
       const dragged = React.useRef(null);
@@ -10725,14 +11201,14 @@
           onDragOver: event => { if (!showFolders || !canMoveFolder(draggedFolder.current, directory)) return; event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = "move"; const rect = event.currentTarget.getBoundingClientRect(); setFolderDropTarget({ key: directory, after: event.clientY > rect.top + rect.height / 2 }); },
           onDrop: event => { if (!showFolders || draggedFolder.current === null) return; event.preventDefault(); event.stopPropagation(); const rect = event.currentTarget.getBoundingClientRect(); moveFolder(draggedFolder.current, directory, event.clientY > rect.top + rect.height / 2); draggedFolder.current = null; setFolderDropTarget(null); }
         },
-          showFolders ? h(ImageFolderHeader, { group, api, onEdit: onEditFolder, onCreate, onReveal: onRevealFolder, onNotice, showArchived: preferences.showArchived, draggable: manual,
+          showFolders ? h(ImageFolderHeader, { group, api, summary: renderFolderSummary?.(group), onEdit: onEditFolder, onCreate, onReveal: onRevealFolder, onNotice, showArchived: preferences.showArchived, draggable: manual,
             onDragStart: event => { event.stopPropagation(); draggedFolder.current = directory; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", directory); },
             onDragEnd: () => { draggedFolder.current = null; setFolderDropTarget(null); },
             onKeyDown: event => { if (manual && event.altKey && ["ArrowUp", "ArrowDown"].includes(event.key)) { event.preventDefault(); event.stopPropagation(); const index = list.indexOf(group), other = list[index + (event.key === "ArrowUp" ? -1 : 1)]; if (other) moveFolder(directory, other.key, event.key === "ArrowDown"); } },
             onPin: () => onPreferences({ folders: { ...preferences.folders, [directory]: { ...(preferences.folders?.[directory] ?? {}), pinned: !group.pinned } } }),
             onArchive: () => onArchiveFolder?.(group),
             onToggle: () => onPreferences({ folders: { ...preferences.folders, [directory]: { ...(preferences.folders?.[directory] ?? {}), collapsed: !group.collapsed } } }),
-            onRemove: () => onRemoveFolder?.(directory) }) : null,
+            onRemove: onRemoveFolder ? () => onRemoveFolder(directory) : undefined }) : null,
           h("div", { className: "SPR_taskGroupItems", id: showFolders ? "image-folder-" + encodeURIComponent(directory) : "image-merged-" + storageKey + (directory ? "-" + directory : ""), hidden: showFolders && group.collapsed === true },
           entries.map((item) => {
           const select = h(
@@ -10766,7 +11242,7 @@
       const archivedCount = folderGroups.reduce((count, group) => count + group.allEntries.filter(item => preferences.archivedProjects?.includes(item.id)).length, 0);
       return h(
         "div",
-        { className: "SPR_side", "data-kind": storageKey, "data-archive-empty": archiveView && !visibleItems.length ? "true" : undefined, "data-list-empty": projectEmpty ? "true" : undefined },
+        { className: "SPR_side SPR_jobSidebar", "data-kind": storageKey, "data-archive-empty": archiveView && !visibleItems.length ? "true" : undefined, "data-list-empty": projectEmpty ? "true" : undefined },
         context && visibleIds.has(context.item.id) ? h(ImageProjectContextMenu, { key: context.item.id, context, pinned: pinnedProjectIds.has(context.item.id), archived: archiveView, unread: unreadProjectIds.has(context.item.id),
           onClose: () => setContext(null), onRename: setRenameTarget, onPin: onProjectPin, onArchive: onProjectArchive, onDelete: onProjectDelete, onNotice,
           onUnread: item => onPreferences({ unreadProjects: unreadProjectIds.has(item.id) ? (preferences.unreadProjects ?? []).filter(id => id !== item.id) : [...(preferences.unreadProjects ?? []), item.id] }) }) : null,
@@ -10780,7 +11256,7 @@
           h("button", { type: "button", className: "SPR_taskSideTitle", onClick: toggle, "aria-expanded": !collapsed, "aria-controls": "task-list-" + storageKey },
             h("span", null, preferences ? preferences.showArchived ? T("已归档聊天") : title : T("{n0}（{n1}）", { n0: title, n1: items.length })), h(TaskHeaderIcon, { name: "chevron", collapsed })),
           h("div", { className: "SPR_taskHeadActions" },
-            preferences ? h(ProjectSidebarMenu, { preferences, onChange: onPreferences, folders: !!onOpenFolder }) : null,
+            preferences ? h(ProjectSidebarMenu, { preferences, onChange: onPreferences, folders: grouping }) : null,
             h("button", { type: "button", className: "SPR_taskIconButton", title: onOpenFolder ? T("打开文件夹") : T("新建任务"), "aria-label": onOpenFolder ? T("打开文件夹") : T("新建任务"), onClick: onOpenFolder || onCreate }, h(TaskHeaderIcon, { name: onOpenFolder ? "folderAdd" : "compose" })))),
         h("div", { className: "SPR_taskList", id: "task-list-" + storageKey, hidden: collapsed },
           archiveView && !visibleItems.length ? h("div", { className: "SPR_archiveEmpty", "data-testid": "image-archive-empty", role: "status" }, h(ProjectActionIcon, { name: "archive" }), h("p", null, T("没有归档聊天")), h("span", null, T("归档后可在这里查看和恢复。")))
@@ -11558,6 +12034,14 @@
           stampKeyColor: globalConfig?.keyColor
         };
         setOpenCard("assets");
+        if (target.transferId) {
+          try {
+            const transferred = await api.getAssetTransfer({ transferId: target.transferId, module: "map", jobId: loaded.id });
+            const blob = await (await fetch(`data:${transferred.mime};base64,${transferred.data}`)).blob();
+            setAddDraft({ ...draft, file: fileFromBlob(blob, transferred.name + ".png"), name: transferred.name, shape: "stamp", stampCols: "1", stampRows: "1", stampFrames: "1", stampPass: [0], stampKey: false });
+          } catch (failure) { setNotice({ kind: "error", text: msg(failure) }); }
+          return;
+        }
         const base = (loaded !== null && loaded !== undefined && loaded.assetBase) || (view !== null && view.assetBase) || "";
         if (relative === "" || base === "") {
           setAddDraft(draft);
@@ -15177,30 +15661,45 @@
       const update = next => setValue(current => { const resolved = typeof next === "function" ? next(current) : next; writeAudioState(key, resolved); return resolved; });
       return [value, update];
     }
-    function useAudioSidebar({ api, module, jobs, activeId, onSelect, onCreate, onRefresh, onDeleted, onNotice }) {
-      const [preferences, setPreferences] = React.useState(() => ({ ...readImageTaskPreferences(module), layout: "merged", folders: {} }));
+    function WorkflowSidebar(props) { return useJobSidebar({ ...props, grouped: true }); }
+    /** Shared task-list behavior; each module supplies its existing host actions. */
+    function useJobSidebar({ api, module, jobs, activeId, onSelect, onCreate, onRefresh, onDeleted = (_id: string) => {}, onNotice, onRename, onDelete, describe, deleteDescription, grouped = false }) {
+      const [preferences, setPreferences] = React.useState(() => { const saved = readImageTaskPreferences(module); return grouped ? saved : { ...saved, layout: "merged", folders: {} }; });
       const [deleting, setDeleting] = React.useState(null), [undo, setUndo] = React.useState(null);
       const state = React.useRef(preferences); state.current = preferences;
       const update = patch => {
-        const next = { ...state.current, ...patch, layout: "merged", folders: {} }; state.current = next; setPreferences(next);
+        const next = { ...state.current, ...patch, ...(!grouped ? { layout: "merged", folders: {} } : {}) };
+        if (patch.sort === "manual" && state.current.sort !== "manual") next.order = jobs.map(item => item.id);
+        state.current = next; setPreferences(next);
         writeAudioState(module + "-task-preferences", next);
       };
       const toggle = (field, id) => update({ [field]: (state.current[field] ?? []).includes(id) ? state.current[field].filter(value => value !== id) : [...(state.current[field] ?? []), id] });
-      const archive = item => { const old = state.current.archivedProjects ?? []; setUndo(old); toggle("archivedProjects", item.id); };
-      const suffix = module === "sfx" ? "Sfx" : "Music";
+      const archiveEntries = entries => {
+        const old = state.current.archivedProjects ?? [], ids = new Set(entries.map(item => item.id)); setUndo(old);
+        update({ archivedProjects: state.current.showArchived ? old.filter(id => !ids.has(id)) : [...new Set([...old, ...ids])] });
+      };
+      const archive = item => archiveEntries([item]);
       const order = new Map((preferences.order ?? []).map((id, index) => [id, index]));
       const sorted = [...jobs].sort((a, b) => preferences.sort === "manual" ? (Number(order.get(a.id) ?? 999999) - Number(order.get(b.id) ?? 999999)) : b.updatedAt - a.updatedAt);
-      const describe = item => module === "sfx" ? T("{n0} 条音效", { n0: item.takes ?? 0 }) : T("{n0} 首音乐 · {n1} 个版本", { n0: item.songsTotal ?? 0, n1: (item.versions ?? 0) + (item.compositions ?? 0) });
       return h(React.Fragment, null,
         h(JobSidebar, { title: T("项目"), storageKey: module, items: sorted, activeId, onSelect: id => { writeAudioState(module + "-selection", id); onSelect(id); },
-          onCreate, createInSidebar: false, preferences, onPreferences: update, onReorder: ids => update({ order: ids }), onNotice,
-          onProjectRename: async (item, name) => { await api["save" + suffix + "Job"]({ jobId: item.id, name }); await onRefresh(); },
-          onProjectPin: item => toggle("pinnedProjects", item.id), onProjectArchive: archive, onProjectDelete: setDeleting,
+          onCreate, createInSidebar: false, preferences, onPreferences: update, onReorder: ids => update({ order: ids }), onNotice, grouping: grouped,
+          onArchiveFolder: group => archiveEntries(group.entries), renderFolderSummary: group => T("{n0} 个项目", { n0: group.allEntries.length }),
+          onProjectRename: onRename ? async (item, name) => { await onRename(item, name); await onRefresh(); } : undefined,
+          onProjectPin: item => toggle("pinnedProjects", item.id), onProjectArchive: archive, onProjectDelete: onDelete ? setDeleting : undefined,
           renderSummary: describe, renderActions: item => h(ImageProjectActions, { id: item.id, pinned: preferences.pinnedProjects?.includes(item.id), archived: preferences.archivedProjects?.includes(item.id),
-            onPin: () => toggle("pinnedProjects", item.id), onArchive: () => archive(item), onDelete: () => setDeleting(item) }) }),
+            onPin: () => toggle("pinnedProjects", item.id), onArchive: () => archive(item), onDelete: onDelete ? () => setDeleting(item) : undefined }) }),
         undo ? h("div", { className: "SPR_audioUndo", role: "status" }, T("归档状态已更新"), h(Btn, { onClick: () => { update({ archivedProjects: undo }); setUndo(null); } }, T("撤回")), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("关闭"), onClick: () => setUndo(null) }, h(TaskHeaderIcon, { name: "remove" }))) : null,
-        deleting ? h(ImageProjectDeleteDialog, { project: deleting, description: T("将永久删除该项目的音频、参考素材和全部版本，无法撤销。"), onClose: () => setDeleting(null),
-          onDelete: async item => { await api["delete" + suffix + "Job"]({ jobId: item.id }); for (const field of ["pinnedProjects", "archivedProjects", "unreadProjects"]) update({ [field]: (state.current[field] ?? []).filter(id => id !== item.id) }); await onRefresh(); onDeleted(item.id); } }) : null);
+        deleting ? h(ImageProjectDeleteDialog, { project: deleting, description: typeof deleteDescription === "function" ? deleteDescription(deleting) : deleteDescription, onClose: () => setDeleting(null),
+          onDelete: async item => { await onDelete(item); for (const field of ["pinnedProjects", "archivedProjects", "unreadProjects", "order"]) update({ [field]: (state.current[field] ?? []).filter(id => id !== item.id) }); await onRefresh(); onDeleted(item.id); } }) : null);
+    }
+    function useAudioSidebar(props) {
+      const suffix = props.module === "sfx" ? "Sfx" : "Music";
+      return useJobSidebar({ ...props,
+        onRename: async (item, name) => { await props.api["save" + suffix + "Job"]({ jobId: item.id, name }); },
+        onDelete: item => props.api["delete" + suffix + "Job"]({ jobId: item.id }),
+        deleteDescription: T("将永久删除该项目的音频、参考素材和全部版本，无法撤销。"),
+        describe: item => props.module === "sfx" ? T("{n0} 条音效", { n0: item.takes ?? 0 }) : T("{n0} 首音乐 · {n1} 个版本", { n0: item.songsTotal ?? 0, n1: (item.versions ?? 0) + (item.compositions ?? 0) }) });
     }
     function AudioChoice({ label, value, choices, onChange, disabled = false }) {
       const selected = choices.find(choice => choice.id === value);
@@ -15209,12 +15708,12 @@
           h("span", { className: "SPR_chatVersionCheck" }, choice.id === value ? h(TaskHeaderIcon, { name: "check" }) : null),
           choice.description ? h("span", { className: "SPR_choiceText" }, h("span", { className: "SPR_choiceTitle" }, choice.label), h("span", { className: "SPR_choiceDescription" }, choice.description)) : choice.label))));
     }
-    function AudioPanel({ title, children, onClose, canClose = () => true }) {
+    function AudioPanel({ title, children, onClose, canClose = () => true, className = "" }) {
       const ref = React.useRef(null);
       React.useEffect(() => { const dialog = ref.current, previous = document.activeElement; dialog.showModal(); return () => { if (dialog.open) dialog.close(); if (previous?.isConnected) (previous as HTMLElement).focus({ preventScroll: true }); }; }, []);
       const close = () => { if (canClose()) onClose(); };
-      return h("dialog", { ref, className: "SPR_audioPanel SPR_projectRenameDialog", "aria-label": title, onCancel: event => { event.preventDefault(); close(); } },
-        h("div", { className: "SPR_chatRequestHead" }, h("h3", null, title), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("关闭"), onClick: close }, h(TaskHeaderIcon, { name: "remove" }))), children);
+      return h("dialog", { ref, className: "SPR_audioPanel SPR_projectRenameDialog" + (className ? " " + className : ""), "aria-label": title, onCancel: event => { event.preventDefault(); close(); } },
+        h("div", { className: "SPR_chatRequestHead" }, h("h3", null, title), h("button", { type: "button", className: "SPR_taskIconButton", "aria-label": T("关闭"), onClick: close }, h(TaskHeaderIcon, { name: "close" }))), children);
     }
     function AudioConfirm({ title, text, onConfirm, onClose }) {
       const [working, setWorking] = React.useState(false), [error, setError] = React.useState("");
@@ -16821,6 +17320,14 @@
         };
         setOpenCard("assets");
         setAddPreview(null);
+        if (target.transferId) {
+          try {
+            const transferred = await api.getAssetTransfer({ transferId: target.transferId, module: "iso", jobId: loaded.id });
+            setAddDraft({ ...draft, base64: transferred.data, name: transferred.name, kind: "object", sourceW: transferred.width, sourceH: transferred.height, keyGreen: false });
+            setAddPreview(`data:${transferred.mime};base64,${transferred.data}`);
+          } catch (failure) { setNotice({ kind: "error", text: msg(failure) }); }
+          return;
+        }
         const base = (loaded !== null && loaded !== undefined && loaded.assetBase) || (view !== null ? view.assetBase : "");
         if (relative === "" || base === "") {
           setAddDraft(draft);
@@ -18350,6 +18857,16 @@
       return [...materials.values()];
     }
 
+    function imageConversationMaterialGroups(media) {
+      const groups = new Map();
+      for (const ref of media) {
+        const key = ref.roundNumber ? "round:" + ref.roundNumber : "references";
+        if (!groups.has(key)) groups.set(key, { key, title: ref.roundNumber ? T("第 {n0} 轮", { n0: ref.roundNumber }) : T("参考图"), items: [] });
+        groups.get(key).items.push(ref);
+      }
+      return [...groups.values()].sort((a, b) => a.key === "references" ? -1 : b.key === "references" ? 1 : Number(a.key.slice(6)) - Number(b.key.slice(6)));
+    }
+
     function ImageFileBookmark({ file, label, bookmarked, onToggle }) {
       const action = bookmarked ? T("取消收藏 {n0}", { n0: label }) : T("收藏 {n0}", { n0: label });
       return h("button", { type: "button", className: "SPR_taskIconButton SPR_imageBookmark", "data-file": file, "data-bookmarked": bookmarked,
@@ -18394,7 +18911,7 @@
           h(Btn, { role: "menuitem", disabled, onClick: () => imageInput.current?.click() }, T("导入已有图片"))));
     }
 
-    function ImageChatRound({ round, job, busy, keyingBusy, renderResult, onReuse, onRegenerate, onReference, onHistory, onKeying, favoriteFiles, onFavorite }) {
+    function ImageChatRound({ api, round, job, busy, keyingBusy, renderResult, onReuse, onRegenerate, onReference, onHistory, onKeying, favoriteFiles, onFavorite }) {
       const [versions, setVersions] = React.useState({});
       const slots = round.slots.map(slot => ({ ...slot, versions: imageConversationDisplayVersions(slot) }));
       const entries = slots.map(slot => slot.versions.find(entry => (entry.displayId || entry.id) === versions[slot.id]) ?? slot.versions.at(-1));
@@ -18436,6 +18953,7 @@
                   slot.versions.length > 1 ? h(ImageVersionPicker, { slot, entry, favoriteFiles, onChange: id => setVersions(current => ({ ...current, [slot.id]: id })) }) : h("span", { className: "SPR_chatVersionLabel" }, label),
                   h(ImageFileBookmark, { file, label, bookmarked: (favoriteFiles ?? []).includes(file), onToggle: onFavorite }),
                   h("div", { className: "SPR_chatImageActions" },
+                  api ? h(AssetTransferButton, { api, source: { module: "image", jobId: job.id, file }, name: job.name }) : null,
                   h(Btn, { disabled: busy, onClick: () => onReference({ file: item.keyedFile || item.file, name: T("第 {n0} 轮", { n0: round.number }) + ".png" }) }, T("作为参考")),
                   h(Btn, { disabled: busy, onClick: () => onKeying(entry, currentIndex) }, T("抠图设置")),
                   item.keyedFile ? h("a", { className: "SPR_btn", href: job.assetBase + item.keyedFile + "?v=" + item.updatedAt, download: `image-${entry.id}.png` }, T("下载 PNG")) : h("a", { className: "SPR_btn", href: job.assetBase + item.file + "?v=" + item.updatedAt, download: `image-${entry.id}.${item.file.split(".").at(-1)}` }, T("下载原图")))) : null);
@@ -18447,7 +18965,7 @@
       if (imageConversationViews.has(id)) return imageConversationViews.get(id);
       try { return JSON.parse(window.localStorage.getItem("dsh-game-material-master:image-conversation:" + id) || "null") || {}; } catch { return {}; }
     }
-    function ImageConversation({ job, composer, parameters, keying, busy, keyingBusy, renderResult, onReuse, onRegenerate, onReference, onHistory, onUpload }) {
+    function ImageConversation({ api, job, composer, parameters, keying, busy, keyingBusy, renderResult, onReuse, onRegenerate, onReference, onHistory, onUpload }) {
       const rounds = imageConversationRounds(job);
       const [panel, setPanel] = React.useState(null), [hovered, setHovered] = React.useState(null), [active, setActive] = React.useState(null);
       const [view, setView] = React.useState(() => imageConversationView(job.id));
@@ -18529,6 +19047,12 @@
         finally { dialogLock.current = false; setWorking(false); }
       };
       const media = imageConversationMaterials(job, rounds);
+      const materialGroups = imageConversationMaterialGroups(media);
+      const renderMaterial = ref => h("div", { key: ref.file, className: "SPR_chatMaterial", "data-file": ref.file, "data-kind": ref.kind, "data-bookmarked": (view.favoriteFiles ?? []).includes(ref.file) },
+        h("div", { className: "SPR_chatMaterialHead" }, h("span", null, ref.label), h(ImageFileBookmark, { file: ref.file, label: ref.label, bookmarked: (view.favoriteFiles ?? []).includes(ref.file), onToggle: toggleFavorite })),
+        h(ImageResultPreview, { src: job.assetBase + ref.file, alt: ref.name, label: ref.label + " · " + ref.name }),
+        ref.roundNumber ? h("span", { className: "SPR_chatMaterialLocation" }, T("第 {n0} 张", { n0: ref.imageNumber })) : null,
+        h("span", { title: ref.name }, ref.name), h(Btn, { disabled: busy, onClick: () => onReference(ref) }, T("加入输入框")));
       const bookmarkedRounds = new Set(rounds.filter(round => round.slots.some(slot => slot.versions.some(entry =>
         [entry.item.file, entry.item.keyedFile].some(file => file && (view.favoriteFiles ?? []).includes(file))))).map(round => round.id));
       const preview = rounds.find(round => round.id === hovered?.id);
@@ -18537,7 +19061,7 @@
           h("div", null, h(Btn, { on: panel === "materials", onClick: () => setPanel(panel === "materials" ? null : "materials"), "aria-label": T("项目素材") }, h(ImageChatIcon, { name: "image" })),
             h(Btn, { on: panel === "parameters", onClick: () => setPanel(panel === "parameters" ? null : "parameters"), "aria-label": T("生成参数") }, h(ImageChatIcon, { name: "parameters" })))),
         h("div", { className: "SPR_chatScroll", "data-empty": rounds.length === 0, ref: scroller, onScroll: scroll, onPointerLeave: () => setHovered(null), "data-testid": "image-message-scroll" },
-          h("div", { className: "SPR_chatMessages", "data-empty": rounds.length === 0 }, rounds.length ? rounds.map(round => h(ImageChatRound, { key: round.id, round, job, busy, keyingBusy, renderResult, onReference, onRegenerate, onReuse: act,
+          h("div", { className: "SPR_chatMessages", "data-empty": rounds.length === 0 }, rounds.length ? rounds.map(round => h(ImageChatRound, { key: round.id, api, round, job, busy, keyingBusy, renderResult, onReference, onRegenerate, onReuse: act,
             favoriteFiles: view.favoriteFiles ?? [], onFavorite: toggleFavorite,
             onHistory: (entry, action) => setConfirmation({ entry, action }), onKeying: async (entry, index) => { try { if (index < 0 && !await onHistory(entry, "restore")) return; setPanel("keying"); } catch (error) { setNotice(msg(error)); } } }))
             : h("div", { className: "SPR_chatWelcome" }, h(ImageChatIcon, { name: "image" }), h("h2", null, T("想创作什么游戏素材？")), h("p", null, T("描述你的想法，或添加参考图片开始。"))))),
@@ -18556,11 +19080,9 @@
           h("aside", { className: "SPR_chatPanel", onKeyDown: event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setPanel(null); } } },
             h("header", null, h("strong", null, panel === "materials" ? T("项目素材") : panel === "keying" ? T("抠图设置") : T("生成参数")), h(Btn, { "aria-label": T("关闭"), onClick: () => setPanel(null) }, h(TaskHeaderIcon, { name: "remove" }))),
             h("nav", { className: "SPR_chatPanelTabs" }, [["parameters", T("生成参数")], ["keying", T("抠图设置")], ["materials", T("项目素材")]].map(([id, label]) => h(Btn, { key: id, on: panel === id, "aria-pressed": panel === id, onClick: () => setPanel(id) }, label))),
-            panel === "materials" ? h("div", { className: "SPR_chatMaterials" }, media.length ? media.map(ref => h("div", { key: ref.file, className: "SPR_chatMaterial", "data-file": ref.file, "data-kind": ref.kind, "data-bookmarked": (view.favoriteFiles ?? []).includes(ref.file) },
-              h("div", { className: "SPR_chatMaterialHead" }, h("span", null, ref.label), h(ImageFileBookmark, { file: ref.file, label: ref.label, bookmarked: (view.favoriteFiles ?? []).includes(ref.file), onToggle: toggleFavorite })),
-              h(ImageResultPreview, { src: job.assetBase + ref.file, alt: ref.name, label: ref.label + " · " + ref.name }),
-              ref.roundNumber ? h("span", { className: "SPR_chatMaterialLocation" }, T("第 {n0} 轮", { n0: ref.roundNumber }), " · ", T("第 {n0} 张", { n0: ref.imageNumber })) : null,
-              h("span", { title: ref.name }, ref.name), h(Btn, { disabled: busy, onClick: () => onReference(ref) }, T("加入输入框")))) : h("div", { className: "SPR_chatMaterialsEmpty", "data-testid": "image-materials-empty" },
+            panel === "materials" ? h("div", { className: "SPR_chatMaterials" }, media.length ? h("div", { className: "SPR_chatMaterialGroups" }, materialGroups.map(group => h("section", { key: group.key, className: "SPR_chatMaterialGroup", "data-group": group.key },
+              h("div", { className: "SPR_chatMaterialGroupHead" }, h("strong", null, group.title), h("span", null, T("{n0} 项", { n0: group.items.length }))),
+              h("div", { className: "SPR_chatMaterialGroupItems" }, group.items.map(renderMaterial))))) : h("div", { className: "SPR_chatMaterialsEmpty", "data-testid": "image-materials-empty" },
               h(ImageChatIcon, { name: "image" }), h("h4", null, T("暂无项目素材")), h("p", null, T("添加参考图或生成图片后，素材会显示在这里。")),
               h("label", { className: "SPR_btn" }, T("添加参考图"), h("input", { type: "file", accept: "image/*", multiple: true, hidden: true, disabled: busy,
                 onChange: event => { const files = Array.from(event.target.files || []); event.target.value = ""; if (files.length && !busy) void onUpload(files, "ref"); } })))) : panel === "keying" ? keying : parameters)) : null,
@@ -19054,7 +19576,7 @@
             job === null
               ? h("p", { className: "SPR_empty" }, taskPreferences.showArchived ? T("没有归档聊天") : T("选择文件夹旁的新建图标开始一个项目。"))
               : h(ImageConversation, {
-                    key: job.id, job, busy, keyingBusy, renderResult: (item, index, { navigation, counter }, entry, round) => {
+                    key: job.id, api, job, busy, keyingBusy, renderResult: (item, index, { navigation, counter }, entry, round) => {
                             const position = index < 0 ? item.index : index;
                             const itemKey = K_IMG_ITEM(index);
                             const itemBusy = item.status === "running" || index >= 0 && tasks.has(itemKey);
@@ -19250,7 +19772,7 @@
       useLocaleTick();
       const api = props.api;
       const [jobs, setJobs] = React.useState([]);
-      const [jobId, setJobId] = React.useState(null);
+      const [jobId, setJobId] = React.useState(() => pendingIntent?.module === "sequence" && pendingIntent.jobId ? pendingIntent.jobId : workflowStored("selection:sequence"));
       const [job, setJob] = React.useState(null);
       const [notice, setNotice] = React.useState(null);
       const [uploading, setUploading] = React.useState(false);
@@ -19270,6 +19792,11 @@
        * 用户正在改提示词 / 时长时会被打回原形。判定见 `mergeDrafts`。
        */
       const loadedDrafts = React.useRef({ id: null, prompt: "", suffix: "", settings: {}, keying: {} });
+      const selectedJob = React.useRef(jobId), loadTicket = React.useRef(0); selectedJob.current = jobId;
+      React.useEffect(() => {
+        if (jobId) workflowStored("selection:sequence", jobId);
+        if (jobId && loadedDrafts.current.id === jobId) workflowStored("draft:sequence:" + jobId, { prompt: promptDraft, suffix: suffixDraft, settings: settingsDraft, keying: keyingDraft });
+      }, [jobId, promptDraft, suffixDraft, settingsDraft, keyingDraft]);
 
       React.useEffect(() => {
         if (intent === null) return;
@@ -19308,18 +19835,21 @@
 
       const load = React.useCallback(async (id) => {
         if (id === null) return;
+        const ticket = ++loadTicket.current;
         try {
           const next = await api.getSequenceJob(id);
+          if (selectedJob.current !== id || ticket !== loadTicket.current) return;
           const previous = loadedDrafts.current;
           const force = previous.id !== id;
           const settings = { ...(next.settings ?? {}) };
           const keying = { ...(next.keying ?? {}) };
           loadedDrafts.current = { id, prompt: next.prompt ?? "", suffix: next.suffix ?? "", settings, keying };
           setJob(next);
-          setPromptDraft((current) => mergeDrafts(current, previous.prompt, next.prompt ?? "", force));
-          setSuffixDraft((current) => mergeDrafts(current, previous.suffix, next.suffix ?? "", force));
-          setSettingsDraft((current) => mergeDrafts(current, previous.settings, settings, force));
-          setKeyingDraft((current) => mergeDrafts(current, previous.keying, keying, force));
+          const stored = force ? workflowStored("draft:sequence:" + id) : null;
+          setPromptDraft((current) => mergeDrafts(current, previous.prompt, stored ? stored.prompt : next.prompt ?? "", force));
+          setSuffixDraft((current) => mergeDrafts(current, previous.suffix, stored ? stored.suffix : next.suffix ?? "", force));
+          setSettingsDraft((current) => mergeDrafts(current, previous.settings, stored ? stored.settings : settings, force));
+          setKeyingDraft((current) => mergeDrafts(current, previous.keying, stored ? stored.keying : keying, force));
         } catch (error) {
           setNotice({ kind: "error", text: msg(error) });
         }
@@ -19333,7 +19863,7 @@
       React.useEffect(() => {
         void (async () => {
           const list = await refresh();
-          if (list.length > 0) setJobId((current) => current ?? list[0].id);
+          if (list.length > 0) setJobId((current) => list.some(item => item.id === current) ? current : list[0].id);
         })();
       }, [refresh]);
 
@@ -19385,29 +19915,9 @@
         return value;
       };
 
-      const create = async () => {
-        const name = askNewName(T("新序列帧任务的名字"), T("序列帧 {n0}", { n0: new Date().toLocaleString("zh-CN", { hour12: false }) }));
-        if (name === null) return;
-        await run(async () => {
-          const created = await api.createSequenceJob({ name });
-          await refresh();
-          setJobId(created.jobId);
-        }, T("已新建序列帧任务"), { key: K_SEQ_CREATE, label: T("正在新建任务…") });
-      };
-
+      const create = () => setDialog({ kind: "create" });
       const saveJob = (patch) => run(() => api.saveSequenceJob({ jobId: job.id, ...patch }), undefined);
-
-      const del = async () => {
-        if (job === null) return;
-        if (typeof window !== "undefined" && !window.confirm(T("删除任务「{n0}」？目录会被整个移除。", { n0: job.name }))) return;
-        await run(async () => {
-          await api.deleteSequenceJob({ jobId: job.id });
-          const list = await refresh();
-          setJobId(list.length > 0 ? list[0].id : null);
-          if (list.length === 0) setJob(null);
-        }, T("已删除"));
-      };
-
+      const del = () => { if (job) setDialog({ kind: "delete", job }); };
       const uploadRef = async (files, kind) => {
         setUploading(true);
         await tasks.run(K_SEQ_UPLOAD, T("正在上传 {n0} 个文件…", { n0: files.length }), async () => {
@@ -19441,51 +19951,71 @@
         job?.sheet?.status === "running" || tasks.has(K_SEQ_KEY) || tasks.has(K_SEQ_COMPOSE);
       const composeText = tasks.label(K_SEQ_KEY) ?? tasks.label(K_SEQ_COMPOSE) ?? T("正在抠像并合成条图…");
 
+      const [stage, setStage] = React.useState("input");
+      const [dialog, setDialog] = React.useState(null);
+      const stages = [
+        { key: "input", title: T("参考素材"), done: job?.mode === "reference" ? !!job?.refs?.referenceImages?.length || !!job?.refs?.referenceVideos?.length : !!job?.refs?.firstFrame },
+        { key: "video", title: T("生成视频"), done: job?.video?.status === "ready" },
+        { key: "frames", title: T("提取序列帧"), done: job?.frames?.status === "ready" },
+        { key: "keying", title: T("抠像与合成"), done: job?.sheet?.status === "ready" },
+        { key: "review", title: T("验收"), done: !!job?.video?.approved && !!job?.frames?.approved && !!job?.sheet?.approved }
+      ];
       return h(
         React.Fragment,
         null,
+        dialog ? h(WorkflowTaskDialog, { key: dialog.kind, title: dialog.kind === "create" ? T("新建任务") : T("删除任务"),
+          initialName: dialog.kind === "create" ? T("序列帧 {n0}", { n0: new Date().toLocaleString("zh-CN", { hour12: false }) }) : undefined,
+          description: dialog.kind === "delete" ? T("删除任务「{n0}」？目录会被整个移除。", { n0: dialog.job.name }) : undefined, onClose: () => setDialog(null),
+          onSubmit: async name => {
+            if (dialog.kind === "create") await tasks.run(K_SEQ_CREATE, T("正在新建任务…"), async () => { const created = await api.createSequenceJob({ name }); await refresh(); setJobId(created.jobId); setStage("input"); setNotice({ kind: "ok", text: T("已新建序列帧任务") }); });
+            else { await api.deleteSequenceJob({ jobId: dialog.job.id }); const list = await refresh(); setJobId(list[0]?.id ?? null); if (!list.length) setJob(null); setNotice({ kind: "ok", text: T("已删除") }); }
+          } }) : null,
         h(
           "div",
-          { className: "SPR_body" },
-          h(JobSidebar, {
-            title: T("序列帧任务"),
-            items: jobs,
+          { className: "SPR_body SPR_workflow", "data-testid": "sequence-workflow" },
+          h(WorkflowSidebar, {
+            api, module: "sequence", jobs,
             activeId: jobId,
             onSelect: setJobId,
             onCreate: create,
-            renderMeta: (item) => T("{n0} {n1} {n2}", { n0: item.videoReady ? T("视频✓") : T("视频·"), n1: item.frameReady ? T("帧✓") : T("帧·"), n2: item.sheetReady ? T("合成✓") : T("合成·") })
+            onNotice: setNotice, onRefresh: refresh,
+            onRename: async (item, name) => { await api.saveSequenceJob({ jobId: item.id, name }); if (jobIdRef.current === item.id) await load(item.id); },
+            onDelete: item => api.deleteSequenceJob({ jobId: item.id }),
+            onDeleted: id => { if (jobIdRef.current === id) { setJobId(null); setJob(null); } },
+            deleteDescription: item => T("删除任务「{n0}」？产物文件会一并删除。", { n0: item.name }),
+            describe: (item) => T("{n0} {n1} {n2}", { n0: item.videoReady ? T("视频✓") : T("视频·"), n1: item.frameReady ? T("帧✓") : T("帧·"), n2: item.sheetReady ? T("合成✓") : T("合成·") })
           }),
           h(
             "div",
-            { className: "SPR_main" },
+            { className: "SPR_main SPR_workflowMain" },
             h(NoticePopup, { notice, onClose: () => setNotice(null) }),
-            h(
-              "div",
-              { className: "SPR_toolbar" },
-              h(BusyBtn, { onClick: create, primary: true, busy: tasks.has(K_SEQ_CREATE), busyText: T("正在新建…") }, T("新建任务")),
-              job !== null ? h(Btn, { onClick: del, danger: true }, T("删除任务")) : null,
-              job !== null ? h(CopyIdButton, { id: job.id }) : null,
-              h(BusyBadge, { show: tasks.active, text: tasks.firstLabel ?? T("正在调用接口…") })
-            ),
+            h(WorkflowHeader, { title: job?.name || T("序列帧生成") },
+              h(BusyBadge, { show: tasks.active, text: tasks.firstLabel ?? T("正在调用接口…") }),
+              job ? h(ImageResultMenu, { label: T("更多操作") },
+                h(Btn, { role: "menuitem", onClick: del, danger: true }, T("删除任务")), h(CopyIdButton, { id: job.id, menuItem: true })) : null),
             job === null
-              ? h("p", { className: "SPR_empty" }, T("请选择或新建一个序列帧任务"))
+              ? h(WorkflowEmpty, { title: T("开始制作序列帧"), text: T("添加参考素材，生成视频后提取、抠像并合成动画。") }, h(BusyBtn, { primary: true, busy: tasks.has(K_SEQ_CREATE), busyText: T("正在新建…"), onClick: create }, T("新建任务")))
               : h(
-                  React.Fragment,
-                  null,
+                  WorkflowConversation,
+                  { key: job.id, api, module: "sequence", job, prompt: promptDraft, onPrompt: setPromptDraft,
+                    onSave: () => api.saveSequenceJob({ jobId: job.id, prompt: promptDraft, suffix: suffixDraft, settings: settingsDraft, keying: keyingDraft }),
+                    onConsumed: value => setPromptDraft(current => current === value ? "" : current),
+                    onReuse: async request => { await load(job.id); setPromptDraft(request.prompt || ""); setSuffixDraft(request.suffix || ""); if (request.settings) setSettingsDraft(request.settings); if (request.keying) setKeyingDraft(request.keying); } },
+                  h(WorkflowTabs, { id: "sequence", items: stages.filter(item => item.key !== "review"), value: stage, onChange: setStage }),
                   h(
                     "div",
-                    { className: "SPR_card" },
-                    h("div", { className: "SPR_cardHead" }, h("h3", null, T("① 视频输入"))),
-                    h("p", { className: "SPR_hint" }, T("平台规定两种模式互斥：首尾帧模式以一张图作为起始画面；多模态参考模式用参考图+参考视频来约束风格与动作。") ),
+                    { className: "SPR_workflowPanel", hidden: stage !== "input", role: "tabpanel", "aria-labelledby": "sequence-tab-input", "data-workflow-stage": "input" },
+                    h("div", { className: "SPR_cardHead" }, h("h3", null, stages.find(item => item.key === "input").title)),
+                    h(DescriptionTip, { id: "sequence-mode-help", label: T("参考素材"), text: T("平台规定两种模式互斥：首尾帧模式以一张图作为起始画面；多模态参考模式用参考图+参考视频来约束风格与动作。") }),
                     h(
                       "div",
                       { className: "SPR_toolbar" },
                       h(
-                        "select",
+                        SettingsSelect,
                         {
                           className: "SPR_input",
                           style: { width: 260 },
-                          value: job.mode,
+                          "aria-label": T("参考模式"), value: job.mode,
                           onChange: (event) => void run(() => api.saveSequenceJob({ jobId: job.id, mode: event.target.value }), undefined)
                         },
                         h("option", { value: "frames" }, T("首尾帧模式（上传首帧图）")),
@@ -19532,14 +20062,16 @@
                   ),
                   h(
                     "div",
-                    { className: "SPR_card" },
-                    h("div", { className: "SPR_cardHead" }, h("h3", null, T("② 提示词与参数"))),
+                    { className: "SPR_workflowPanel SPR_workflowVideoBody", hidden: stage !== "video", role: "tabpanel", "aria-labelledby": "sequence-tab-video", "data-workflow-stage": "video" },
+                    h("div", { className: "SPR_cardHead" }, h("h3", null, stages.find(item => item.key === "video").title)),
+                    h("div", { className: "SPR_workflowPrompt" },
                     h("textarea", {
                       className: "SPR_area",
                       value: promptDraft,
                       onChange: (event) => setPromptDraft(event.target.value),
                       onBlur: () => { if (promptDraft !== (job.prompt ?? "")) void saveJob({ prompt: promptDraft }); }
                     }),
+                    h(WorkflowFold, { title: T("生成参数与附加提示词") },
                     h("textarea", {
                       className: "SPR_area",
                       style: { minHeight: 60 },
@@ -19558,12 +20090,12 @@
                         { className: "SPR_field" },
                         h("span", { className: "SPR_fieldLabel" }, T("分辨率")),
                         h(
-                          "select",
+                          SettingsSelect,
                           { className: "SPR_input", value: effectiveResolution, onChange: (event) => { setSettingsDraft({ ...settingsDraft, resolution: event.target.value }); void saveJob({ settings: { ...settingsDraft, resolution: event.target.value } }); } },
                           modelCaps.resolutions.map((value) => h("option", { key: value, value }, value))
                         )
                       )
-                    ),
+                    )),
                     h(
                       "div",
                       { className: "SPR_toolbar" },
@@ -19574,11 +20106,7 @@
                           busy: tasks.has(K_SEQ_VIDEO),
                           busyText: T("正在提交视频任务…"),
                           disabled: promptDraft.trim() === "" || tasks.has(K_SEQ_VIDEO),
-                          onClick: () =>
-                            void kickAndWatch(() => api.runSequenceVideo({ jobId: job.id }), T("已提交视频任务，可离开本页"), {
-                              key: K_SEQ_VIDEO,
-                              label: T("正在提交视频任务…")
-                            })
+                          onClick: () => requestWorkflowSend("sequence", job.id)
                         },
                         job.video?.status === "ready" ? T("重新生成视频") : T("生成视频")
                       ),
@@ -19599,6 +20127,8 @@
                       h(Btn, { danger: true, disabled: videoBusy, onClick: () => void run(() => api.clearSequenceVideo({ jobId: job.id }), T("已清空视频与帧")) }, T("清空视频重来")),
                       h("span", { className: "SPR_refRow" }, T("H3 768P 按 0.5 元/秒刊例计费"))
                     ),
+                    ),
+                    h("div", { className: "SPR_workflowVideoResult" },
                     h(
                       "div",
                       { className: "SPR_toolbar" },
@@ -19616,14 +20146,16 @@
                           )
                         : videoBusy
                           ? h("div", { className: "SPR_thumbEmpty", style: { minHeight: 90 } }, videoText)
-                          : null,
+                          : h(WorkflowEmpty, { title: T("还没有生成视频"), text: T("填写动作描述，确认参数后生成视频。") }),
                       job.video?.file === undefined ? h(LoadingOverlay, { show: videoBusy, text: videoText }) : null
                     )
+                    ),
                   ),
                   h(
                     "div",
-                    { className: "SPR_card" },
-                    h("div", { className: "SPR_cardHead" }, h("h3", null, T("③ 序列帧提取"))),
+                    { className: "SPR_workflowPanel", hidden: stage !== "frames", role: "tabpanel", "aria-labelledby": "sequence-tab-frames", "data-workflow-stage": "frames" },
+                    h("div", { className: "SPR_cardHead" }, h("h3", null, stages.find(item => item.key === "frames").title)),
+                    h(WorkflowFold, { title: T("抽帧参数") },
                     h(
                       "div",
                       { className: "SPR_fields" },
@@ -19632,7 +20164,7 @@
                       h(NumField, { label: T("单格宽（px）"), value: settingsDraft.cellWidth ?? 256, min: 16, max: 2048, onChange: (v) => { setSettingsDraft({ ...settingsDraft, cellWidth: v }); void saveJob({ settings: { ...settingsDraft, cellWidth: v } }); } }),
                       h(NumField, { label: T("单格高（px）"), value: settingsDraft.cellHeight ?? 256, min: 16, max: 2048, onChange: (v) => { setSettingsDraft({ ...settingsDraft, cellHeight: v }); void saveJob({ settings: { ...settingsDraft, cellHeight: v } }); } }),
                       h(NumField, { label: T("像素块边长（0/1 = 关闭）"), value: settingsDraft.pixelSize ?? 0, min: 0, max: 32, onChange: (v) => { setSettingsDraft({ ...settingsDraft, pixelSize: v }); void saveJob({ settings: { ...settingsDraft, pixelSize: v } }); } })
-                    ),
+                    )),
                     h(
                       "div",
                       { className: "SPR_toolbar" },
@@ -19654,13 +20186,14 @@
                       job.frames?.stale === true ? h(Chip, { kind: "stale", text: T("参数已变，需重抽") }) : null,
                       h(BusyBadge, { show: framesBusy, text: framesText }),
                       h("span", { className: "SPR_refRow" }, job.frames?.duration !== undefined ? T("视频时长 {n0} 秒 · {n1} 帧", { n0: job.frames.duration.toFixed(2), n1: job.frames.files.length }) : "")
-                    )
+                    ),
+                  frameUrls.length ? h(SequencePlayer, { urls: frameUrls, active: stage === "frames" }) : h(WorkflowEmpty, { title: T("还没有序列帧"), text: T("视频就绪后，按设定张数提取动画帧。") }),
                   ),
                   h(
                     "div",
-                    { className: "SPR_card" },
-                    h("div", { className: "SPR_cardHead" }, h("h3", null, T("④ 绿幕抠像与合成"))),
-                    h(KeyingFields, { draft: keyingDraft, fallbackColor: globalConfig?.keyColor, onChange: (patch) => { const next = { ...keyingDraft, ...patch }; setKeyingDraft(next); void saveJob({ keying: patch }); } }),
+                    { className: "SPR_workflowPanel", hidden: stage !== "keying", role: "tabpanel", "aria-labelledby": "sequence-tab-keying", "data-workflow-stage": "keying" },
+                    h("div", { className: "SPR_cardHead" }, h("h3", null, stages.find(item => item.key === "keying").title)),
+                    h(WorkflowFold, { title: T("高级抠像参数") }, h(KeyingFields, { themed: true, draft: keyingDraft, fallbackColor: globalConfig?.keyColor, onChange: (patch) => { const next = { ...keyingDraft, ...patch }; setKeyingDraft(next); void saveJob({ keying: patch }); } })),
                     h(
                       "div",
                       { className: "SPR_toolbar" },
@@ -19701,7 +20234,7 @@
                       { style: { position: "relative" } },
                       frameUrls.length === 0
                         ? h("p", { className: "SPR_empty" }, framesBusy ? T("正在处理序列帧…") : T("还没有序列帧"))
-                        : h(SequencePlayer, { urls: frameUrls }),
+                        : h(SequencePlayer, { urls: frameUrls, active: stage === "keying" }),
                       h(LoadingOverlay, { show: framesBusy, text: framesText })
                     ),
                     job.sheet?.file !== undefined
@@ -19730,10 +20263,10 @@
                   ),
                   h(
                     "div",
-                    { className: "SPR_card" },
-                    h("div", { className: "SPR_cardHead" }, h("h3", null, T("⑤ 验收"))),
+                    { className: "SPR_workflowPanel", hidden: stage !== "review", role: "tabpanel", "aria-labelledby": "sequence-tab-review", "data-workflow-stage": "review" },
+                    h("div", { className: "SPR_cardHead" }, h("h3", null, stages.find(item => item.key === "review").title)),
                     h("p", { className: "SPR_hint" }, T("三步各自打「通过」。对话里的 agent 读写同一份标记：选「每一步人工审核」时，它会等你通过才继续。") ),
-                    h(ReviewModeBar, { api, module: "sequence", id: job.id, mode: job.reviewMode, onChanged: () => void load(job.id) }),
+                    h(ReviewModeBar, { api, module: "sequence", id: job.id, mode: job.reviewMode, themed: true, onChanged: () => void load(job.id) }),
                     [
                       { step: "video", title: T("① 生成视频"), node: job.video },
                       { step: "frames", title: T("② 抽帧 + 抠像"), node: job.frames },
@@ -19756,7 +20289,7 @@
                       )
                     )
                   ),
-                  h(JobLogPanel, { job })
+                  h(WorkflowFold, { title: T("运行日志") }, h(JobLogPanel, { job }))
                 )
           )
         ),
@@ -19796,6 +20329,7 @@
     /** 序列帧播放预览：把抠好的帧按 fps 循环播出来。 */
     function SequencePlayer(props) {
       const urls = props.urls;
+      const active = props.active !== false;
       const canvasRef = React.useRef(null);
       const imagesRef = React.useRef([]);
       const rafRef = React.useRef(0);
@@ -19838,7 +20372,7 @@
 
       React.useEffect(() => {
         const canvas = canvasRef.current;
-        if (canvas === null) return undefined;
+        if (canvas === null || !active) return undefined;
         const g = canvas.getContext("2d");
         let frame = 0;
         let last = performance.now();
@@ -19864,7 +20398,7 @@
         };
         rafRef.current = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafRef.current);
-      }, [key]);
+      }, [key, active]);
 
       return h(
         React.Fragment,
@@ -19879,7 +20413,7 @@
             { className: "SPR_field" },
             h("span", { className: "SPR_fieldLabel" }, T("播放")),
             h(
-              "select",
+              SettingsSelect,
               { className: "SPR_input", value: playing ? "on" : "off", onChange: (event) => setPlaying(event.target.value === "on") },
               h("option", { value: "on" }, T("播放中")),
               h("option", { value: "off" }, T("暂停"))
@@ -24722,6 +25256,12 @@
 
       const submitVideo = createVideoSubmitter(call);
       const api = {
+        transferAsset: payload => call("transferAsset", payload),
+        getAssetTransfer: payload => call("getAssetTransfer", payload),
+        getWorkflowConversation: payload => call("getWorkflowConversation", payload),
+        submitWorkflowRound: payload => call("submitWorkflowRound", payload),
+        runWorkflowRoundStep: payload => call("runWorkflowRoundStep", payload),
+        reuseWorkflowRound: payload => call("reuseWorkflowRound", payload),
         getConfig: () => call("getConfig"),
         revealConfigKey: (payload) => call("revealConfigKey", payload),
         saveConfig: (payload) => call("saveConfig", payload),
@@ -24790,6 +25330,7 @@
         listMotionJobs: () => call("listMotionJobs"),
         createMotionJob: (payload) => call("createMotionJob", payload),
         getMotionJob: (payload) => call("getMotionJob", payload),
+        getMotionTemplatePreview: (payload) => call("getMotionTemplatePreview", payload),
         saveMotionJob: (payload) => call("saveMotionJob", payload),
         uploadMotionAsset: (payload) => call("uploadMotionAsset", payload),
         runMotionStep: (payload) => payload.step === "video" ? submitVideo("runMotionStep", payload) : call("runMotionStep", payload),
@@ -25024,7 +25565,7 @@
      * `mapgeom` / `mapdoc` 的真实现做黄金对照逐点比对 —— 界面复刻的那部分几何
      * 必须有守门的，否则「预览与导出错位」会以静默的方式回来。
      */
-    bundleModule.exports.__test = { createVideoSubmitter, StudioPanel, JobSidebar, ImageTaskDialog, ImageResultsEmpty, readImageTaskPreferences, MotionModule, MotionAnimationPreview, IsoModule, ImageModule, SequenceModule, mergeDrafts, RigSemanticsPanel, MapModule, MusicModule, SfxModule, ISO_pointToCell, ISO_cellCenter, ISO_cellTopLeft, ISO_lineCells, MAP_pointToCell, MAP_cellAnchor, MAP_cellTopLeft, MAP_lineCells, usePendingTasks, LoadingOverlay, MediaBox, BusyBtn, BusyBadge, NumField, ZoomableImage, CSS, subscribeIntent, parseIntents, openStudioIntent, OPEN_QUERY_KEY, StudioGlyph, StudioGlyphIcon, SidebarToggleIcon, publishHiddenModules, publishModuleOrder, readLastStudioModule, rememberStudioModule, readLastSidebarCollapsed, rememberSidebarCollapsed, useHiddenModules, visibleModulesOf, normalizeHiddenKeys, ConfigSection, attachSessionBridge, openAssetChat, openMusicChat, buildAssetRequestPrompt, buildIsoAssetRequestPrompt, buildMusicRequestPrompt, buildComposeRequestPrompt, openIsoAssetChat, deriveAssetName, deriveMusicName, ASSET_FRAMES_MIN, ASSET_FRAMES_MAX };
+    bundleModule.exports.__test = { AssetTransferButton, WorkflowConversation, WorkflowRound, publishWorkflowIntent, createVideoSubmitter, WorkflowTabs, WorkflowTaskDialog, StudioPanel, JobSidebar, ImageTaskDialog, ImageResultsEmpty, readImageTaskPreferences, MotionModule, MotionActionPicker, MotionAnimationPreview, IsoModule, ImageModule, SequenceModule, mergeDrafts, RigSemanticsPanel, MapModule, MusicModule, SfxModule, ISO_pointToCell, ISO_cellCenter, ISO_cellTopLeft, ISO_lineCells, MAP_pointToCell, MAP_cellAnchor, MAP_cellTopLeft, MAP_lineCells, usePendingTasks, LoadingOverlay, MediaBox, BusyBtn, BusyBadge, NumField, ZoomableImage, CSS, subscribeIntent, parseIntents, openStudioIntent, OPEN_QUERY_KEY, StudioGlyph, StudioGlyphIcon, SidebarToggleIcon, publishHiddenModules, publishModuleOrder, readLastStudioModule, rememberStudioModule, readLastSidebarCollapsed, rememberSidebarCollapsed, useHiddenModules, visibleModulesOf, normalizeHiddenKeys, ConfigSection, attachSessionBridge, openAssetChat, openMusicChat, buildAssetRequestPrompt, buildIsoAssetRequestPrompt, buildMusicRequestPrompt, buildComposeRequestPrompt, openIsoAssetChat, deriveAssetName, deriveMusicName, ASSET_FRAMES_MIN, ASSET_FRAMES_MAX };
     Object.assign(bundleModule.exports.__test, { ImageModelEditor, ImageConnectionForm, ImageModelPicker, AudioModule, AudioTimeline, AudioPlayer, AudioChoice, AudioPanel, AudioConfirm, MusicWorkspace, MusicSongResult, SfxWorkspace, musicConversationRounds, sfxConversationRounds, musicAssetUrl, musicDownloadUrl, writeAudioState });
     bundleModule.exports.__test.NoticePopup = NoticePopup;
     bundleModule.exports.__test.imageFolderGroups = imageFolderGroups;
@@ -25035,6 +25576,7 @@
     bundleModule.exports.__test.ImageProjectRenameDialog = ImageProjectRenameDialog;
     bundleModule.exports.__test.imageConversationRounds = imageConversationRounds;
     bundleModule.exports.__test.imageConversationMaterials = imageConversationMaterials;
+    bundleModule.exports.__test.imageConversationMaterialGroups = imageConversationMaterialGroups;
     bundleModule.exports.__test.imageConversationDisplayVersions = imageConversationDisplayVersions;
     return bundleModule.exports;
   }

@@ -80,6 +80,7 @@ type Frame = {
   };
 };
 interface MotionJob {
+  workflowParent?: string;
   id: string;
   name: string;
   updatedAt: number;
@@ -157,13 +158,42 @@ function number(value: unknown, low: number, high: number): number {
 export async function motionCatalog(): Promise<any> {
   return JSON.parse(await readFile(join(TEMPLATE_DIR, "catalog.json"), "utf8"));
 }
+const templatePreviews = new Map<string, any>();
+/** Read-only, local previews use the exact frames/timing used by prepare(). */
+export async function motionTemplatePreview(action: string, direction: string): Promise<any> {
+  if ((await loadConfig()).hiddenModules.includes("sprite")) throw new Error("Module disabled");
+  const catalog = await motionCatalog();
+  const spec = catalog.actions.find(item => item.key === action);
+  const directionIndex = catalog.directions.indexOf(direction);
+  if (!spec || directionIndex < 0) throw new Error("Unknown motion template or direction");
+  const key = action + ":" + direction;
+  if (templatePreviews.has(key)) return templatePreviews.get(key);
+  const raw = gunzipSync(await readFile(join(TEMPLATE_DIR, spec.key + ".rgba.gz")));
+  const { width, height } = catalog, frameBytes = width * height * 4;
+  if (raw.length !== frameBytes * spec.frames * catalog.directions.length) throw new Error("Corrupt template data");
+  const columns = Math.min(8, spec.frames), rows = Math.ceil(spec.frames / columns);
+  const atlas = Buffer.alloc(columns * width * rows * height * 4);
+  for (let frame = 0; frame < spec.frames; frame++) {
+    const start = (directionIndex * spec.frames + frame) * frameBytes;
+    const body = Buffer.from(raw.subarray(start, start + frameBytes));
+    for (let p = 0; p < body.length; p += 4) {
+      const gray = Math.round(70 + 0.72 * (0.299 * body[p] + 0.587 * body[p + 1] + 0.114 * body[p + 2]));
+      body[p] = body[p + 1] = body[p + 2] = gray;
+    }
+    blit(body, width, height, atlas, columns * width, rows * height, (frame % columns) * width, Math.floor(frame / columns) * height);
+  }
+  const result = { image: "data:image/png;base64," + encodePng(atlas, columns * width, rows * height).toString("base64"), width, height, columns, frames: spec.frames, frameDurationsMs: spec.frameDurationsMs };
+  if (templatePreviews.size >= 16) templatePreviews.delete(templatePreviews.keys().next().value);
+  templatePreviews.set(key, result);
+  return result;
+}
 export async function readMotion(id: string): Promise<MotionJob> {
   if (!isMotionId(id)) throw new Error("Invalid motion job ID");
   const job = await readJson<MotionJob>(file(id));
   if (!job) throw new Error("Motion job not found");
   return job;
 }
-export async function listMotionJobs(): Promise<any[]> {
+export async function listMotionJobs(includeRounds = false): Promise<any[]> {
   const entries = await readdir(root()).catch(() => [] as string[]);
   const jobs = await Promise.all(
     entries
@@ -171,7 +201,7 @@ export async function listMotionJobs(): Promise<any[]> {
       .map((id) => readMotion(id).catch(() => undefined)),
   );
   return jobs
-    .filter(Boolean)
+    .filter(j => j && (includeRounds || !j.workflowParent))
     .map((j) => ({
       id: j!.id,
       name: j!.name,
@@ -485,6 +515,9 @@ export async function motionSettings(input: any = {}): Promise<any> {
   return { ...publicValue, apiKeySet: apiKey !== "" };
 }
 export async function motionView(id: string): Promise<any> {
+  // The operation can finish while the job/config files are being read. Keep
+  // the busy snapshot until a fresh read can include its final saved result.
+  const wasActive = active.has(id);
   const job = await readMotion(id),
     config = await loadConfig(),
     prices = await settings();
@@ -504,7 +537,7 @@ export async function motionView(id: string): Promise<any> {
     imageProvider: config.imageProvider,
     imageModel:
       config.imageProvider === "custom" ? config.customModel : config.arkModel,
-    active: active.has(id),
+    active: wasActive || active.has(id),
     duration: 4,
   };
 }
@@ -1286,7 +1319,7 @@ export function disposeMotion(): void {
   pollTimers.clear();
 }
 export async function resumeMotionJobs(): Promise<void> {
-  for (const item of await listMotionJobs()) {
+  for (const item of await listMotionJobs(true)) {
     if (active.has(item.id)) continue;
     await exclusive(item.id, async (job) => {
       if (job.operation) {

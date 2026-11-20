@@ -1294,9 +1294,18 @@ export const METHODS: MethodSpec[] = [  { method: "getConfig", result: configVie
   { method: "keyImageJob", payload: imageJobIdSchema, result: startedSchema },
 
   // 白模动作流程（现有八方向模块内）
+  { method: "transferAsset", payload: z.object({ source: z.object({ module: z.enum(["image", "sprite", "sequence"]), jobId: z.string(), file: z.string().min(1).max(500) }), target: z.enum(["sprite", "sequence", "map", "iso"]), targetId: z.string().optional(), name: z.string().max(80).optional() }), result: jsonObject, clientOnly: true },
+  { method: "getAssetTransfer", payload: z.object({ transferId: z.string(), module: z.enum(["sprite", "sequence", "map", "iso"]), jobId: z.string() }), result: jsonObject, clientOnly: true },
+  { method: "getWorkflowConversation", payload: z.object({ module: z.enum(["sprite", "sequence"]), jobId: z.string() }), result: jsonObject, clientOnly: true },
+  { method: "reuseWorkflowRound", payload: z.object({ module: z.enum(["sprite", "sequence"]), jobId: z.string(), roundId: z.string() }), result: jsonObject, clientOnly: true },
+  { method: "submitWorkflowRound", payload: z.object({ module: z.enum(["sprite", "sequence"]), jobId: z.string(), requestId: z.string().min(1).max(100), automatic: z.boolean(), confirmed: z.boolean().optional(), localOnly: z.boolean().optional() }), result: jsonObject, clientOnly: true },
+  { method: "runWorkflowRoundStep", payload: z.object({ module: z.enum(["sprite", "sequence"]), jobId: z.string(), roundId: z.string(), step: z.enum(["extract", "keyed", "sheet", "redraw", "export", "poll"]), ranges: z.array(motionSegmentSchema).optional(), targets: z.array(z.string()).optional(), confirmed: z.boolean().optional(), regenerate: z.boolean().optional(), useRedraw: z.boolean().optional(),
+    settings: z.object({ frameCount: z.number().int().min(1).max(64).optional(), longEdge: z.number().int().min(128).max(2048).optional(), cellWidth: z.number().int().min(16).max(2048).optional(), cellHeight: z.number().int().min(16).max(2048).optional(), pixelSize: z.number().int().min(0).max(32).optional(), cropInset: z.number().min(0).max(0.2).optional() }).optional(),
+    keying: z.object({ keyColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(), keyLow: z.number().min(0).max(255).optional(), keyHigh: z.number().min(1).max(255).optional(), despill: z.number().min(0).max(1).optional(), bgTolerance: z.number().min(0).max(255).optional(), edgeShrink: z.number().min(0).max(8).optional() }).optional() }), result: jsonObject, clientOnly: true },
   { method: "listMotionJobs", result: z.object({ jobs: z.array(jsonObject) }) },
   { method: "createMotionJob", payload: z.object({ name: z.string().optional() }), result: jsonObject },
   { method: "getMotionJob", payload: z.object({ jobId: z.string() }), result: jsonObject },
+  { method: "getMotionTemplatePreview", payload: z.object({ action: z.string().min(1).max(80), direction: z.enum(["back", "upRight", "right", "downRight", "front", "downLeft", "left", "upLeft"]) }), result: jsonObject, clientOnly: true },
   { method: "saveMotionJob", payload: motionSaveSchema, result: okSchema },
   { method: "uploadMotionAsset", payload: z.object({ jobId: z.string(), kind: z.enum(["character", "directions", "video", "project"]), data: z.string() }), result: okSchema },
   { method: "runMotionStep", payload: motionRunSchema, result: startedSchema },

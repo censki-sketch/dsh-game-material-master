@@ -12,6 +12,8 @@ import {assertVideoBackendReady,assertVideoSubmissionConfirmed,videoBackendOf} f
 import { createReadStream, readdirSync, statSync } from "node:fs";
 import { pickImageFolder, revealLocalFolder } from "./folderpicker.js";
 import * as motiongen from "./motiongen.js";
+import * as workflowchat from "./workflowchat.js";
+import { transferAsset, getAssetTransfer } from "./assetflow.js";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1967,16 +1969,26 @@ export class GameStudioGateway extends TypertRemoteService {
 
   // ── 序列帧生成模块 ────────────────────────────────────────────────────
 
-  async listMotionJobs() { return { jobs: await motiongen.listMotionJobs() }; }
+  async listMotionJobs() { return { jobs: await Promise.all((await motiongen.listMotionJobs()).map(async job => ({ ...job, ...await workflowchat.workflowSummary("sprite", job.id) }))) }; }
   async createMotionJob(payload) { const job = await motiongen.createMotionJob(asString(asRecord(payload).name, "")); return { jobId: job.id }; }
   async getMotionJob(payload) { const jobId = asString(asRecord(payload).jobId); return { ...await motiongen.motionView(jobId), assetBase: assetBasePath(`${ROUTE_PREFIX}/motion-assets/${jobId}/`) }; }
+  async getMotionTemplatePreview(payload) { return motiongen.motionTemplatePreview(payload.action, payload.direction); }
   async saveMotionJob(payload) { const input = asRecord(payload); await motiongen.saveMotionJob(asString(input.jobId), input); return { ok: true }; }
   async uploadMotionAsset(payload) { const input = asRecord(payload); await motiongen.uploadMotionAsset(asString(input.jobId), asString(input.kind), asString(input.data)); return { ok: true }; }
   async runMotionStep(payload) { const input = asRecord(payload); return motiongen.runMotionStep(asString(input.jobId), input); }
   async motionSettings(payload) { return motiongen.motionSettings(asRecord(payload)); }
+  async transferAsset(payload) { return transferAsset(payload); }
+  async getAssetTransfer(payload) { return getAssetTransfer(payload.transferId, payload.module, payload.jobId); }
+  async getWorkflowConversation(payload) {
+    const result = await workflowchat.workflowConversation(payload.module, payload.jobId);
+    return { ...result, rounds: result.rounds.map(round => ({ ...round, assetBase: assetBasePath(`${ROUTE_PREFIX}/${payload.module === "sprite" ? "motion" : "sequence"}-assets/${round.childId}/`) })) };
+  }
+  async submitWorkflowRound(payload) { return workflowchat.submitWorkflowRound(payload); }
+  async runWorkflowRoundStep(payload) { return workflowchat.runWorkflowRoundStep(payload); }
+  async reuseWorkflowRound(payload) { return workflowchat.reuseWorkflowRound(payload.module, payload.jobId, payload.roundId); }
 
   async listSequenceJobs() {
-    return { jobs: await seqgen.listSequenceJobs() };
+    return { jobs: await Promise.all((await seqgen.listSequenceJobs()).map(async job => ({ ...job, ...await workflowchat.workflowSummary("sequence", job.id) }))) };
   }
 
   async createSequenceJob(payload) {
@@ -2001,6 +2013,7 @@ export class GameStudioGateway extends TypertRemoteService {
   }
 
   async deleteSequenceJob(payload) {
+    await workflowchat.deleteWorkflowChildren("sequence", asString(asRecord(payload).jobId));
     await seqgen.deleteSequenceJob(asString(asRecord(payload).jobId));
     return { ok: true };
   }
@@ -3290,6 +3303,7 @@ export function apply(ctx) {
   musicgen.activateMusic();
   sfxgen.activateSfx();
   motiongen.activateMotion();
+  workflowchat.activateWorkflowChat();
 
   // 旧版本的数据目录叫 8dir-sprites，插件改名后搬一次，已有项目无缝接上。
   void migrateLegacyDataRoot()
@@ -3346,7 +3360,7 @@ export function apply(ctx) {
   void musicgen.resumeMusicJobs().catch(() => undefined);
   // 音效任务（模块八）：同步接口没有远端 taskId 可续查，残留的 running 标失败。
   void sfxgen.resumeSfxJobs().catch(() => undefined);
-  void motiongen.resumeMotionJobs().catch(() => undefined);
+  void motiongen.resumeMotionJobs().then(() => workflowchat.resumeWorkflowChats()).catch(() => undefined);
   ctx.effect(() => () => {
     disposePipeline();
     seqgen.disposeSequence();
@@ -3354,5 +3368,6 @@ export function apply(ctx) {
     musicgen.disposeMusic();
     sfxgen.disposeSfx();
     motiongen.disposeMotion();
+    workflowchat.disposeWorkflowChat();
   }, "dsh-game-material-master: pipeline cleanup");
 }

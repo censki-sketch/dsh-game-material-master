@@ -167,7 +167,6 @@ const FEEDBACK_REQUIRED = {
   exportImages: "中间图片打包",
   runImageJob: "图片生成",
   keyImageJob: "图片抠像",
-  runSequenceVideo: "序列帧：生视频",
   runSequenceFrames: "序列帧：抽帧",
   keySequenceFrames: "序列帧：抠像",
   composeSequence: "序列帧：合成",
@@ -316,6 +315,11 @@ for (const file of files) {
   check(`${label}：图片版本复用主题菜单，禁止退回原生select/option弹层`,
     versionPicker.includes("h(ImageResultMenu") && imageRound.includes("h(ImageVersionPicker") &&
     !/\bh\(\s*"(?:select|option)"/.test(versionPicker + imageRound));
+  check(`${label}：动作选择使用有高度限制的主题预览弹窗`,
+    text.includes("function MotionActionPicker") && text.includes("SPR_motionActionDialog") &&
+    /\.SPR_imageResultMenu\{[^}]*max-height:min\(520px/.test(text));
+  check(`${label}：动作预览接口已同时声明并挂到 api`,
+    text.includes('["getMotionTemplatePreview", true]') && text.includes('getMotionTemplatePreview: (payload) => call("getMotionTemplatePreview", payload)'));
 
   const renderers = renderersIn(text);
   check(`${label}：找到阶段渲染函数`, renderers.size > 0, [...renderers.keys()].join("、"));
@@ -384,6 +388,7 @@ for (const file of files) {
   if (broken.length > 0) {
     console.log(`     ↳ ${broken.join("\n     ↳ ")}`);
   }
+  check(`${label}：动画聊天提交有忙碌锁和发送反馈`, text.includes('setSubmitting(true)') && text.includes('setSubmitting(false)') && text.includes('await api.submitWorkflowRound(') && text.includes('className: "SPR_flowSend", disabled: busy'));
 }
 
 // ── Hook 必须全在早退之前：漏一个就白屏 ────────────────────────────────
@@ -898,8 +903,8 @@ function checkDraftContracts(text, label) {
   );
   check(
     `${label}：模块②③④ 的提示词/参数草稿同样走合并`,
-    /setPromptDraft\(\(current\) => mergeDrafts\(current, previous\.prompt, next\.prompt \?\? "", force\)\)/.test(text) &&
-      /setSettingsDraft\(\(current\) => mergeDrafts\(current, previous\.settings, settings, force\)\)/.test(text) &&
+    /setPromptDraft\(\(current\) => mergeDrafts\(current, previous\.prompt, (?:stored \? stored\.prompt : )?next\.prompt \?\? "", force\)\)/.test(text) &&
+      /setSettingsDraft\(\(current\) => mergeDrafts\(current, previous\.settings, (?:stored \? stored\.settings : )?settings, force\)\)/.test(text) &&
       /setPromptDraft\(\(current\) => mergeDrafts\(current, previous\.prompt, prompt, force\)\)/.test(text)
   );
   check(
