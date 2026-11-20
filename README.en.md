@@ -537,21 +537,23 @@ Reading settings or model lists and switching models never starts generation. **
 | Custom protocol | One of `OpenAI API` / `ComfyUI API` / `Stable Diffusion WebUI API`; just give the host root URL |
 | Custom parameters | Model name, output size (width x height), negative prompt, steps / CFG / sampler, img2img denoising, seed, timeout |
 | ComfyUI workflow | Paste the whole JSON from "Export (API)"; placeholders `{{prompt}}` `{{width}}` `{{seed}}` `{{image}}` and friends are supported, and a workflow with none runs as-is |
-| MiniMax API Key | "Test connection" is free and can tell an invalid key apart from other errors |
+| Paid video protection | New MiniMax / ToAPIs requests are locked by default. Enabling still requires confirmation for each submission; local ComfyUI, imports and extraction remain available |
+| MiniMax API Key | Saves on blur or Enter, with inline reveal/clear. Test connection beside the title only validates the key for free. URL is under Advanced settings; help is in the info icon |
 | Video model | Defaults to `MiniMax-H3` (v2 protocol); Hailuo / I2V use v1; the UCloud version of H3 is selected explicitly |
 | Base URL | Host root, without `/v1` or `/v2`. `api.minimax.cn` in mainland China, `api.minimaxi.com` internationally |
 | Output size | Default for every image-generating module; accepts `1K` / `2K` / `4K` or `width x height`. An image task can switch its size source to Custom to affect only that task; tasks that follow the global value update with this setting |
 | Key background color | Pure green `#00FF00` by default; switch to magenta / blue / white / black when the character wears green. "Green screen / #00FF00" in generated prompts is replaced accordingly, and every keying entry can pick its own color |
 | Default parameters | Cell width and height, frame count, pixel block size, keying threshold, and so on |
-| Local ComfyUI (image-to-video) | Routes image-to-video through a local **ComfyUI** instead of MiniMax; "Test connection" is read-only and free |
+| ToAPIs (video) | Enabling replaces MiniMax and shares the image connection. Model/resolution and aspect ratio/duration form paired rows. Supports one first frame |
+| Local ComfyUI (image-to-video) | Enabling replaces cloud video. URL and workflow stay visible; save workflows explicitly, with restore/discard under More. Cookie, timeout and injection parameters are under Advanced settings. Test connection beside the title is read-only and free |
 | Music generation (Puyue AI) | Key saves on blur or Enter, with inline reveal and clear. API URL and default model share a row; timeouts are under Advanced settings. Test connection beside the title only reads history. Help and documentation links are in the info icon; generation uses platform credits |
-| Sound effects (Volcengine Seed-Audio) | Speech console API key (not the Ark key), base URL, default model `seed-audio-1.0`, default format / sample rate and timeout; "Generate test (billed)" generates one short sound effect after confirmation (small charge) |
+| Sound effects (Volcengine Seed-Audio) | Speech key saves automatically with inline reveal/clear. URL and model, and format and sample rate, form two rows; timeout is under Advanced settings. Help and docs are in the info icon. Generate test (billed) beside the title requires confirmation before generating a short sound |
 | Feature management | Per-module switches: a disabled module disappears from the UI **and the agent cannot call it either** (see below) |
 
-Keys are written only to `<DSH_HOME>/game-material-master/config.json` on your machine and show a masked value after saving. Focus the input to enter a replacement; leaving it empty keeps the saved key.
+Keys are written only to `<DSH_HOME>/game-material-master/config.json` on your machine and show a masked value after saving. Enter a replacement directly, or use the inline clear icon to remove a key.
 In settings, click the eye icon inside a key input to view the saved key; click again or leave the input area to hide it. Viewing does not change settings or call generation APIs. Model tools cannot read saved keys. **The image backend and model are plugin-level settings shared by
 every module that generates images**; after you switch, tasks align to the new tier automatically.
-Image-to-video always goes through MiniMax and is unaffected by the image backend.
+Switch video generation between MiniMax, ToAPIs and local ComfyUI. ToAPIs shares its connection with image generation; the remaining video settings are independent.
 
 ### Custom image backend
 
@@ -569,21 +571,21 @@ plugin appends the protocol-specific endpoint. Choose a model and confirm "Gener
 ### Local ComfyUI (image-to-video)
 
 If you would rather not use MiniMax, or you want to run your own model, **image-to-video** can be
-routed to a local [ComfyUI](https://github.com/comfyanonymous/ComfyUI): tick "Local ComfyUI
-(image-to-video)" in the settings, set the address (default `http://127.0.0.1:8188`) and paste a
-workflow JSON — either the API format or the UI format the editor saves directly.
+routed to a local [ComfyUI](https://github.com/comfyanonymous/ComfyUI): enable it in "Settings → Video → Local ComfyUI",
+set the address (default `http://127.0.0.1:8188`), paste a workflow JSON and click "Save workflow" — either the API format or the UI format the editor saves directly.
+Cookies, injection targets and size overrides are under Advanced settings.
 Image generation, keying, frame extraction and composition are unaffected — the same downstream
 pipeline as MiniMax.
 
 - **Both formats are accepted**: the API format exported by `Workflow → Export (API)` is the most
   direct; the **UI format** (top level holds `nodes` / `links` arrays) can be pasted as-is — the
   plugin converts it first, and the line "converted from the ComfyUI UI format (N nodes)" shows up
-  under "Test connection". Notes and muted / bypassed nodes are skipped; if that JSON is so old
+  in "Connection details" after testing. Notes and muted / bypassed nodes are skipped; if that JSON is so old
   that its widgets carry no `widget` metadata, the plugin tells you to re-export with Save (API
   Format) instead.
 - **Injection points are detected automatically**: which node input receives the prompt, where the
   first frame goes, and which inputs override width / height / duration / seed. The detected
-  bindings are shown under "Test connection". If a guess is wrong, override it by hand with
+  bindings are shown in "Connection details". If a guess is wrong, override it in Advanced settings with
   `nodeId.inputName` (for example `1.text`).
 - **First frame**: an existing `LoadImage` node is used when present. Otherwise the plugin reads the
   node definitions from ComfyUI and inserts a `LoadImage` at any declared-but-unwired `IMAGE` input
@@ -592,7 +594,7 @@ pipeline as MiniMax.
   empty `LoadImage`, with the first frame wired to `FreeVideoGenerate.first` — the same wiring as the
   official
   [FreeVideo-All-in-One.json](https://github.com/FlashML-org/FreeVideo/blob/main/example_workflows/FreeVideo-All-in-One.json)).
-  Broke it? Click "Restore built-in template"; the official UI-format JSON can be pasted in too.
+  Broke it? Click "More → Restore built-in template"; the official UI-format JSON can be pasted in too.
 - The output is unchanged: ComfyUI only produces the green-screen clip — **frame extraction, keying
   and composition still run locally through `ffmpeg`**.
 - "Test connection" only reads the ComfyUI version, device and queue length: **no queueing, no

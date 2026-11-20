@@ -1657,9 +1657,9 @@ section("功能管理（隐藏模块）");
     };
 
     // Hook 顺序（位置桩）：0 useLocaleTick / 1 config / 2 arkKey / 3 customKey /
-    // 4 toapisKey / 5 minimaxKey / 6 notice / 7 testing / 8 workflowDraft /
-    // 9 comfyWorkflowDraft / 10 comfyProbe / 11 comfyCookie / 12 musicKey /
-    // 13 scorePaths / 14 sfxKey / 15 settingsTab。
+    // 4 toapisKey / 5 videoDraft / 6 notice / 7 testing / 8 workflowDraft /
+    // 9 comfyWorkflowDraft / 10 comfyProbe / 11 comfyCookie / 12 musicBaseDraft /
+    // 13 scorePaths / 14 sfxDraft / 15 settingsTab。
     HOOK.slots = [0, featureConfig, "", "", "", "", null, "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, "image"];
     HOOK.cursor = 0;
     hookOverflow = false;
@@ -1738,7 +1738,8 @@ section("功能管理（隐藏模块）");
     check("自定义连接展示地址与模型列表", collect(settings, node => node.props?.["data-testid"] === "cfg-custom-base-url").length === 1 && collect(settings, node => node.props?.["data-testid"] === "cfg-custom-models").length === 1);
     check("连接页面不平铺模型尺寸参数", collect(settings, node => node.props?.["data-model-param"] === "size").length === 0);
     check("OpenAI 协议不显示 ComfyUI 的工作流文本框（调了也没用的控件不该出现）", collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-workflow").length === 0);
-    check("自定义那一组也有自己的「测试连接」", textOf(settings).includes("生成测试（计费）"));
+    const customTestGroup = collect(settings, node => node.props?.["data-testid"] === "cfg-custom-group")[0];
+    check("自定义模型有自己的计费测试操作", collect(customTestGroup, node => node.props?.label === "生成测试（计费）" && typeof node.props?.onClick === "function").length === 1);
 
     // ── 分类页签：六个入口、六个面板常驻挂载 ──────────────────────────────
     const tabButtons = collect(settings, (node) => typeof node.props?.["data-testid"] === "string" && node.props["data-testid"].startsWith("cfg-tab-"));

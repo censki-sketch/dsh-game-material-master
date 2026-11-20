@@ -465,20 +465,22 @@ Windows 注册表里的同名变量 → WinGet / Scoop / Chocolatey 与 `C:\ffmp
 | 自定义生图协议 | `OpenAI API` / `ComfyUI API` / `Stable Diffusion WebUI API` 三选一，填主机根地址即可 |
 | 自定义生图参数 | 模型名、输出尺寸（宽x高）、负面提示词、采样步数 / CFG / 采样器、图生图重绘强度、种子、超时 |
 | ComfyUI 工作流 | 整段粘贴「导出（API）」的 JSON；支持 `{{prompt}}` `{{width}}` `{{seed}}` `{{image}}` 等占位符，不写占位符就原样跑 |
-| MiniMax API Key | 「测试连接」免费，能区分 Key 无效与其它错误 |
+| 付费视频保护 | 默认锁定 MiniMax / ToAPIs 新请求；开启后每次仍需确认，本地 ComfyUI、导入与抽帧不受影响 |
+| MiniMax API Key | 失焦或 Enter 自动保存，输入框内查看/清除；标题右侧「测试连接」只校验 Key、免费。地址收进高级设置，说明在感叹号中 |
 | 视频模型 | 默认 `MiniMax-H3`（v2 协议）；Hailuo / I2V 走 v1；优云智算版 H3 显式选择 |
 | Base URL | 主机根，不含 `/v1` `/v2`。国内 `api.minimax.cn`，国际 `api.minimaxi.com` |
 | 输出尺寸 | 所有生图模块的**默认值**；支持 `1K` / `2K` / `4K` 或 `宽x高`。图片任务可单独把「尺寸来源」切成「自定义」，只影响那一个任务；跟随全局的任务会随这里变化 |
 | 抠像背景色 | 默认纯绿 `#00FF00`；角色穿绿衣服时改成品红 / 蓝 / 白 / 黑等。生成提示词里的「绿幕 / #00FF00」会跟着替换，所有抠像入口都能单独选 |
 | 默认参数 | 单格宽高、抽帧张数、像素块边长、抠像阈值等 |
-| 本地 ComfyUI（图生视频） | 勾选后图生视频改走**本机 ComfyUI**，替代 MiniMax；「测试连接」只读状态、免费 |
+| ToAPIs（视频） | 启用后替代 MiniMax，连接共用生图配置；模型/分辨率、画面比例/时长成组排列，支持单首帧 |
+| 本地 ComfyUI（图生视频） | 启用后替代云端视频；常用地址与工作流常显，工作流手动保存，恢复/放弃在「更多」中。Cookie、超时和注入参数收进高级设置；标题右侧「测试连接」只读状态、免费 |
 | 音乐生成（谱乐 AI） | Key 失焦或按 Enter 自动保存，输入框内可查看与清除；API 地址和默认模型并排，超时收进高级设置。标题右侧「测试连接」只读历史，说明与文档链接在感叹号中；生成按平台积分计费 |
-| 音效生成（火山引擎 Seed-Audio） | 填语音控制台 API Key（不是方舟 Key）、Base URL、默认模型 `seed-audio-1.0`、默认格式/采样率与超时；「生成测试（计费）」确认后生成一条极短音效（少量费用） |
+| 音效生成（火山引擎 Seed-Audio） | 语音 Key 自动保存，输入框内查看/清除；地址与模型、格式与采样率成组排列，超时收进高级设置。说明与文档链接在感叹号中；标题右侧「生成测试（计费）」确认后生成一条极短音效 |
 | 功能管理 | 逐个开关八个模块：关掉的模块界面上不再出现，**对话里的 AI 也调不到**（见下） |
 
-Key 只写入本机 `<DSH_HOME>/game-material-master/config.json`，保存后输入框显示掩码，聚焦可输入替换值，留空不会覆盖已存Key。设置页可点击输入框内的眼睛图标查看原Key，再次点击或离开输入区域后隐藏；查看不修改配置，也不调用生成接口。模型工具无法读取原Key。
+Key 只写入本机 `<DSH_HOME>/game-material-master/config.json`，保存后输入框显示掩码，可直接输入替换值，或点击框内清除图标删除。设置页可点击输入框内的眼睛图标查看原Key，再次点击或离开输入区域后隐藏；查看不修改配置，也不调用生成接口。模型工具无法读取原Key。
 **生图后端与模型是插件级设置，所有需要生图的模块共用**，切换后任务自动对齐新档位。
-图生视频始终只走 MiniMax，不受生图后端影响。
+图生视频可在 MiniMax、ToAPIs 与本地 ComfyUI 之间切换；ToAPIs 的连接与生图共用，其余视频配置独立。
 
 ### 自定义生图后端
 
@@ -496,17 +498,17 @@ Key 只写入本机 `<DSH_HOME>/game-material-master/config.json`，保存后输
 ### 本地 ComfyUI（图生视频）
 
 不想用 MiniMax、或想跑自己的模型时，可以把**图生视频**这一步接到本机的
-[ComfyUI](https://github.com/comfyanonymous/ComfyUI)：设置页勾选「本地 ComfyUI（图生视频）」，
-填上地址（默认 `http://127.0.0.1:8188`），把工作流 JSON 贴进去即可——API 格式、或编辑器里直接
-保存的界面格式都行。
+[ComfyUI](https://github.com/comfyanonymous/ComfyUI)：在「设置 → 生视频 → 本地 ComfyUI」启用，
+填上地址（默认 `http://127.0.0.1:8188`），粘贴工作流 JSON 后点击「保存工作流」——API 格式、或编辑器里直接
+保存的界面格式都行。Cookie、注入点和尺寸覆盖位于「高级设置」。
 生图、抠像、抽帧、合图完全不受影响，与 MiniMax 走同一套下游流程。
 
 - **两种格式都收**：`Workflow → Export (API)` 导出的 API 格式最直接；编辑器里直接保存的**界面格
   式**（顶层是 `nodes` / `links` 数组）也直接粘——插件会先转成 API 格式，那句「已自动转成 API 格
-  式（N 个节点）」会出现在「测试连接」下面。转换会跳过便签与静音 / 旁路节点；若那份 JSON 连控件
+  式（N 个节点）」会出现在测试后的「连接详情」。转换会跳过便签与静音 / 旁路节点；若那份 JSON 连控件
   值都没带 `widget` 信息（很老的 ComfyUI 版本），插件会提示你改用 Save (API Format)。
 - **注入点自动探测**：提示词写进哪个节点的哪个输入、首帧图从哪进、宽高 / 时长 / 种子覆盖哪几个
-  输入，插件会自己认一遍，认到的结果就显示在「测试连接」下面。认错了就手工填 `节点ID.输入名`
+  输入，插件会自己认一遍，认到的结果显示在「连接详情」。认错了就在高级设置中手工填 `节点ID.输入名`
   （例如 `1.text`）覆盖。
 - **首帧图**：工作流里已经有 `LoadImage` 就直接用它；没有时插件会读 ComfyUI 的节点定义，在
   「声明了 `IMAGE` 输入却没接线」的位置（例如 `FreeVideoGenerate.first`）自动补一个 `LoadImage`
@@ -514,7 +516,7 @@ Key 只写入本机 `<DSH_HOME>/game-material-master/config.json`，保存后输
 - **内置模板就是 FreeVideo 那条链路**（`FreeVideoGenerate` + `FreeVideoMedia` + 一个空
   `LoadImage`，首帧接在 `FreeVideoGenerate.first`——与官方示例
   [FreeVideo-All-in-One.json](https://github.com/FlashML-org/FreeVideo/blob/main/example_workflows/FreeVideo-All-in-One.json)
-  的接法一致）。改坏了点「恢复内置模板」还原；官方那份界面格式的 JSON 也可以直接粘进来用。
+  的接法一致）。改坏了点「更多 → 恢复内置模板」还原；官方那份界面格式的 JSON 也可以直接粘进来用。
 - 产物照旧：ComfyUI 只负责吐出那段绿幕视频，**抽帧、抠像、合图仍然是本机 `ffmpeg` 干的**。
 - 「测试连接」只读 ComfyUI 的版本、显卡与队列长度，**不排队、不生成、不产生费用**。
 - **Cookie（可选）**：ComfyUI 自己不做鉴权；只有当它被挡在需要登录的反向代理后面（Cloudflare

@@ -7,13 +7,24 @@ const home = await mkdtemp(join(tmpdir(), 'gmm-settings-browser-')); process.env
 const { Context } = await import('@deepseek-ai/cordis');
 const { METHODS } = await import('../lib/wire.js');
 const { encodePng } = await import('../lib/png.js');
+const { writeWavPcm16 } = await import('../lib/midifile.js');
 const { apply } = await import('../lib/index.js');
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const png = encodePng(Buffer.from([25, 150, 250, 255]), 1, 1), requests = [], calls = [];
 let musicTestFailure = false;
+let sfxTestFailure = false;
+const testAudio = writeWavPcm16(new Int16Array(800), 16000, 1);
 globalThis.fetch = async (url, options = {}) => {
   const address = new URL(String(url)); assert.equal(address.hostname, '127.0.0.1', 'No external API allowed');
-  requests.push({ url: address.pathname, origin: address.origin, body: options.body, method: options.method || 'GET', authorization: new Headers(options.headers).get('authorization') });
+  requests.push({ url: address.pathname, origin: address.origin, body: options.body, method: options.method || 'GET', authorization: new Headers(options.headers).get('authorization'), speechKey: new Headers(options.headers).get('x-api-key'), cookie: new Headers(options.headers).get('cookie') });
+  if (address.pathname.includes('/query/video_generation')) return Response.json({ base_resp: { status_code: 1008, status_msg: 'task not found' } });
+  if (address.pathname === '/system_stats') { await new Promise(resolve => setTimeout(resolve, 150)); return Response.json({ system: { comfyui_version: 'fixture-1' }, devices: [{ name: 'Fixture GPU' }] }); }
+  if (address.pathname === '/queue') return Response.json({ queue_running: [], queue_pending: [] });
+  if (address.pathname.startsWith('/object_info')) return Response.json({ FreeVideoGenerate: { input: { required: { text: ['STRING'], width: ['INT'], height: ['INT'], seconds: ['FLOAT'], seed: ['INT'] }, optional: { first: ['IMAGE'] } } } });
+  if (address.pathname.endsWith('/api/v3/tts/create')) {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return new Response(JSON.stringify(sfxTestFailure ? { message: 'SFX fixture: invalid key' } : { audio: testAudio.toString('base64'), duration: 0.05 }), { status: sfxTestFailure ? 401 : 200, headers: { 'Content-Type': 'application/json' } });
+  }
   if (address.pathname.endsWith('/music/generations/history')) {
     await new Promise(resolve => setTimeout(resolve, 150));
     return new Response(JSON.stringify(musicTestFailure ? { message: 'Music fixture: invalid key' } : { data: [], total: 0 }), { status: musicTestFailure ? 401 : 200, headers: { 'Content-Type': 'application/json' } });
@@ -594,7 +605,7 @@ try {
     for (const width of [1280, 720, 390]) {
       await page.setViewportSize({ width, height: 900 });
       check('music header and fields fit at ' + width + (dark ? ' dark' : ' light'), await music.evaluate(el => { const head = el.querySelector('.SPR_settingsGroupHead'), title = head.querySelector('h3').getBoundingClientRect(), button = head.querySelector(':scope > button').getBoundingClientRect(); return el.scrollWidth <= el.clientWidth + 1 && button.right <= innerWidth && title.right <= button.left && Math.abs(title.top + title.height / 2 - button.top - button.height / 2) < 2; }));
-      check('music address and model adapt to the panel at ' + width, await music.locator('.SPR_musicFields').evaluate((el, width) => { const [a,b] = [...el.children].map(child => child.getBoundingClientRect()); return width === 1280 ? Math.abs(a.top-b.top) < 2 : b.top >= a.bottom; }, width));
+      check('music address and model adapt to the panel at ' + width, await music.locator('.SPR_serviceConnectionFields').evaluate((el, width) => { const [a,b] = [...el.children].map(child => child.getBoundingClientRect()); return width === 1280 ? Math.abs(a.top-b.top) < 2 : b.top >= a.bottom; }, width));
       await page.screenshot({ path: '.verify/music-settings-' + width + (dark ? '-dark' : '-light') + '.png', fullPage: true });
       await modelPicker.click();
       check('music model menu stays within ' + width + 'px', await page.getByRole('menu').evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }));
@@ -615,6 +626,216 @@ try {
   await until(async () => !(await invoke('getConfig')).musicApiKeySet && await musicTest().isDisabled());
   check('music inline clear removes the stored key and disables testing', (await invoke('revealConfigKey', { key: 'musicApiKey' })).value === '' && await musicTest().isDisabled());
   check('music validation never submits a generation', musicRequests().length === 3 && musicRequests().every(r => r.method === 'GET' && r.url.endsWith('/music/generations/history')));
+  await invoke('saveConfig', { sfxBaseUrl: 'http://127.0.0.1:9320' });
+  await page.getByTestId('studio-settings-back').click();
+  await page.locator('.SPR_head').getByRole('button', { name: '设置', exact: true }).click();
+  await page.getByTestId('cfg-tab-sfx').click();
+  const sfx = page.getByTestId('cfg-sfx-service'), sfxKey = sfx.getByTestId('cfg-sfx-key'), sfxAdvanced = sfx.getByTestId('cfg-sfx-advanced');
+  const sfxTest = () => sfx.getByRole('button', { name: '生成测试（计费）', exact: true });
+  const sfxRequests = () => requests.filter(r => r.url.endsWith('/api/v3/tts/create'));
+  check('SFX opens without generation or a repeated blocker banner', sfxRequests().length === 0 && await sfx.locator('.SPR_note,.SPR_settingsHelp').count() === 0 && await sfx.getByText('未配置', { exact: true }).isVisible());
+  check('SFX billed test is in the header and disabled without a key', await sfx.locator('.SPR_settingsGroupHead').getByRole('button', { name: '生成测试（计费）', exact: true }).isDisabled());
+  check('SFX timeout starts folded and there are no external key action buttons', !await sfxAdvanced.getAttribute('open') && await sfx.getByRole('button', { name: '保存 Key', exact: true }).count() === 0 && await sfx.getByRole('button', { name: '清除 Key', exact: true }).count() === 0);
+  await sfx.getByRole('button', { name: '查看音效生成说明', exact: true }).click();
+  const sfxHelp = page.getByRole('tooltip');
+  check('SFX help retains the speech-key distinction, limits, billing and links', (await sfxHelp.textContent()).includes('不是火山方舟的 ARK_API_KEY') && (await sfxHelp.textContent()).includes('120 秒') && (await sfxHelp.textContent()).includes('生成和测试均计费') && await sfxHelp.getByRole('link').count() === 2);
+  await page.keyboard.press('Escape');
+  await sfxKey.fill('fake-speech-one');
+  check('SFX key typing does not save or generate', !calls.some(c => c.method === 'saveConfig' && c.payload.sfxApiKey !== undefined) && sfxRequests().length === 0);
+  await sfxKey.press('Enter');
+  await until(async () => (await invoke('revealConfigKey', { key: 'sfxApiKey' })).value === 'fake-speech-one' && await sfxTest().isEnabled());
+  await sfx.getByRole('button', { name: '查看原 Key', exact: true }).click();
+  check('SFX saves and reveals the original key', await sfxKey.inputValue() === 'fake-speech-one' && await sfxKey.getAttribute('type') === 'text');
+  const sfxUrl = sfx.getByTestId('cfg-sfx-url'), sfxModel = sfx.getByTestId('cfg-sfx-model');
+  await sfxUrl.fill('http://127.0.0.1:9321'); await sfxModel.fill('seed-audio-fixture');
+  await sfxTest().click();
+  const sfxConfirmation = page.getByRole('dialog', { name: '生成测试（计费）', exact: true }); await sfxConfirmation.waitFor();
+  check('SFX click opens a billing confirmation before any request', (await sfxConfirmation.textContent()).includes('可能产生费用') && sfxRequests().length === 0);
+  await sfxConfirmation.getByRole('button', { name: '取消', exact: true }).click();
+  check('cancelling SFX test never submits generation', sfxRequests().length === 0);
+  await sfxKey.fill('fake-speech-two'); await sfxKey.press('Enter');
+  await sfxKey.fill('fake-speech-three'); await sfxTest().click();
+  await sfxConfirmation.getByRole('button', { name: '确认', exact: true }).click();
+  await sfx.getByRole('button', { name: '正在生成测试音效…', exact: true }).waitFor();
+  check('SFX billed test displays busy feedback while running', await sfx.getByRole('button', { name: '正在生成测试音效…', exact: true }).isDisabled());
+  await until(async () => await sfxTest().isEnabled() && sfxRequests().length === 1);
+  await sfxConfirmation.waitFor({ state: 'hidden' });
+  check('confirmed SFX test uses the latest saved key, address and model exactly once', sfxRequests()[0].speechKey === 'fake-speech-three' && sfxRequests()[0].origin === 'http://127.0.0.1:9321' && JSON.parse(sfxRequests()[0].body).model === 'seed-audio-fixture');
+  for (const [testId, text, value] of [['cfg-sfx-format','MP3','mp3'],['cfg-sfx-rate','48000 Hz',48000]]) {
+    await sfx.getByTestId(testId).getByRole('button').click();
+    await page.getByRole('menuitemradio').filter({ hasText: text }).click();
+    await until(async () => (await invoke('getConfig'))[testId === 'cfg-sfx-format' ? 'sfxFormat' : 'sfxSampleRate'] === value);
+  }
+  check('SFX format and sample rate choices persist without replacing its key', await sfxKey.inputValue() === 'fake-speech-three' && (await invoke('getConfig')).sfxModel === 'seed-audio-fixture');
+  await sfxAdvanced.locator('summary').click();
+  await sfxAdvanced.getByLabel('请求超时（毫秒）', { exact: true }).fill('65000'); await sfx.locator('h3').click();
+  await until(async () => (await invoke('getConfig')).sfxTimeoutMs === 65000);
+  await sfxAdvanced.locator('summary').click();
+  const sfxWritesBeforeLayout = calls.filter(c => c.method === 'saveConfig').length;
+  for (const dark of [false, true]) {
+    await page.evaluate(dark => document.documentElement.style.cssText = dark ? '--dsw-alias-label-primary:#eee;--dsw-alias-label-secondary:#aaa;--dsw-alias-label-tertiary:#777;--dsw-alias-bg-layer-1:#18181c;--dsw-alias-bg-layer-2:#242428;--dsw-alias-bg-layer-3:#333;--dsw-alias-border-l1:#333;--dsw-alias-border-l2:#414147;--dsw-alias-state-business-primary:#8ca6ff;--dsw-alias-interactive-bg-hover-solid:#333' : '', dark);
+    for (const width of [1280,720,390]) {
+      await page.setViewportSize({ width, height: 900 });
+      check('SFX header and fields fit at ' + width + (dark ? ' dark' : ' light'), await sfx.evaluate(el => { const head=el.querySelector('.SPR_settingsGroupHead'), a=head.querySelector('h3').getBoundingClientRect(), b=head.querySelector(':scope > button').getBoundingClientRect(); return el.scrollWidth <= el.clientWidth+1 && b.right <= innerWidth && a.right <= b.left && Math.abs(a.top+a.height/2-b.top-b.height/2)<2; }));
+      check('SFX paired fields adapt to the panel at ' + width, await sfx.evaluate((el,width) => [...el.querySelectorAll('.SPR_serviceConnectionFields,.SPR_serviceOutputFields')].every(row => { const [a,b]=[...row.children].map(child=>child.getBoundingClientRect()); return width === 1280 ? Math.abs(a.top-b.top)<2 : b.top>=a.bottom; }), width));
+      await page.screenshot({ path: '.verify/sfx-settings-' + width + (dark ? '-dark' : '-light') + '.png', fullPage: true });
+      for (const testId of ['cfg-sfx-format','cfg-sfx-rate']) {
+        await sfx.getByTestId(testId).getByRole('button').click();
+        check('SFX themed menu fits at ' + width, await page.getByRole('menu').evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0 && r.right<=innerWidth;}));
+        await page.keyboard.press('Escape');
+      }
+    }
+  }
+  check('SFX layout changes and menu browsing never save or generate', calls.filter(c=>c.method==='saveConfig').length === sfxWritesBeforeLayout && sfxRequests().length === 1);
+  sfxTestFailure = true; await sfxTest().click(); await sfxConfirmation.getByRole('button', { name: '确认', exact: true }).click();
+  await page.getByText(/SFX fixture: invalid key/).waitFor();
+  await until(async () => await sfxTest().isEnabled());
+  check('SFX test errors show a popup and never automatically resubmit', sfxRequests().length === 2 && await sfx.locator('.SPR_note').count() === 0);
+  sfxTestFailure = false;
+  await page.getByTestId('notice-popup').filter({ hasText: 'SFX fixture: invalid key' }).getByRole('button', { name: '关闭提示', exact: true }).click();
+  await page.getByTestId('studio-settings-back').click();
+  await page.locator('.SPR_head').getByRole('button', { name: '设置', exact: true }).click(); await page.getByTestId('cfg-tab-sfx').click();
+  await until(async () => await sfxKey.inputValue() === 'fake-speech-three');
+  check('SFX reopens with saved masked credentials and settings', await sfxKey.getAttribute('type') === 'password' && await sfxModel.inputValue() === 'seed-audio-fixture' && await sfxUrl.inputValue() === 'http://127.0.0.1:9321' && sfxRequests().length === 2);
+  await sfxKey.hover(); const sfxClear=sfx.getByRole('button', { name:'清除 Key',exact:true });
+  await until(async()=>await sfxClear.evaluate(el=>getComputedStyle(el).opacity)==='1'); await sfxClear.click();
+  await until(async()=>!(await invoke('getConfig')).sfxApiKeySet && await sfxTest().isDisabled());
+  check('SFX inline clear removes only the speech key', (await invoke('revealConfigKey',{key:'sfxApiKey'})).value === '' && sfxRequests().length === 2);
+  await page.setViewportSize({ width:1280,height:900 });
+  await page.evaluate(() => document.documentElement.style.cssText = '');
+  const videoRequestStart=requests.length;
+  await page.getByTestId('cfg-tab-video').click();
+  const video=page.getByTestId('cfg-panel-video'), videoNav=page.locator('.SPR_settingsChildren');
+  const safety=page.getByTestId('paid-video-safety'), minimax=page.getByTestId('cfg-minimax-group'), toapisVideo=page.getByTestId('cfg-toapis-video'), comfy=page.getByTestId('cfg-comfy-video-group');
+  check('video settings contain exactly four focused pages', JSON.stringify(await videoNav.getByRole('button').allTextContents())===JSON.stringify(['付费视频保护','MiniMax','ToAPIs（视频）','本地 ComfyUI']));
+  check('paid video remains locked by default', !await page.getByTestId('cfg-paid-video-enabled').isChecked() && !(await invoke('getConfig')).allowPaidVideoGeneration);
+  await safety.getByRole('button',{name:'查看付费视频保护说明',exact:true}).click();
+  check('paid protection explains per-submission confirmation and local exceptions', await safety.getByRole('tooltip').evaluate(el=>el.textContent.includes('每次仍需确认')&&el.textContent.includes('本地导入')&&el.textContent.includes('保存配置不会生成视频')));
+  await safety.locator('h3').click();
+  await page.getByTestId('cfg-paid-video-enabled').click();
+  await until(async()=>(await invoke('getConfig')).allowPaidVideoGeneration);
+  await page.getByTestId('cfg-paid-video-enabled').click();
+  await until(async()=>!(await invoke('getConfig')).allowPaidVideoGeneration);
+  await videoNav.getByRole('button',{name:'MiniMax',exact:true}).click();
+  const minimaxKey=page.getByTestId('cfg-minimax-key'), minimaxAdvanced=page.getByTestId('cfg-minimax-advanced');
+  check('MiniMax opens without a request or native menus and hides advanced settings', requests.length===videoRequestStart && await minimax.locator('select,datalist').count()===0 && !await minimaxAdvanced.evaluate(el=>el.open));
+  await minimaxKey.fill('fake-minimax-one'); await minimaxKey.press('Enter');
+  await until(async()=>(await invoke('revealConfigKey',{key:'minimaxApiKey'})).value==='fake-minimax-one');
+  await minimax.getByRole('button',{name:'查看原 Key',exact:true}).click();
+  check('MiniMax key supports original-value reveal', await minimaxKey.inputValue()==='fake-minimax-one' && await minimaxKey.getAttribute('type')==='text');
+  await minimaxAdvanced.locator('summary').click();
+  await page.getByTestId('cfg-minimaxBaseUrl').fill('http://127.0.0.1:9322'); await minimax.locator('h3').click();
+  await until(async()=>(await invoke('getConfig')).minimaxBaseUrl==='http://127.0.0.1:9322');
+  await minimaxKey.fill('fake-minimax-two'); await minimax.getByRole('button',{name:'测试连接',exact:true}).click();
+  await until(async()=>calls.some(c=>c.method==='testMinimax') && await minimax.getByRole('button',{name:'测试连接',exact:true}).isEnabled());
+  const minimaxRequests=()=>requests.slice(videoRequestStart).filter(r=>r.url.includes('/query/video_generation'));
+  check('MiniMax test waits for the latest key and never submits generation', minimaxRequests().length===1 && minimaxRequests()[0].authorization==='Bearer fake-minimax-two' && minimaxRequests()[0].method==='GET');
+  const models=(await invoke('getConfig')).minimaxModels;
+  const hailuo=models.find(m=>m.id==='MiniMax-Hailuo-02'); assert.ok(hailuo);
+  await minimax.getByTestId('cfg-minimax-model').getByRole('button').click();
+  await page.getByRole('menuitemradio').filter({hasText:hailuo.id}).first().click();
+  await until(async()=>(await invoke('getConfig')).minimaxModel===hailuo.id);
+  await minimax.getByTestId('cfg-minimax-duration').getByRole('button').click();
+  check('MiniMax model switching retains discrete model durations', JSON.stringify(await page.getByRole('menuitemradio').allTextContents())===JSON.stringify(['6 秒','10 秒']));
+  await page.getByRole('menuitemradio',{name:'10 秒',exact:true}).click();
+  await until(async()=>(await invoke('getConfig')).minimaxDuration===10);
+  const compshare=(await invoke('getConfig')).minimaxCompshareModelId;
+  await minimax.getByTestId('cfg-minimax-model').getByRole('button').click();
+  await page.getByRole('menuitemradio').filter({hasText:compshare}).first().click();
+  await until(async()=>(await invoke('getConfig')).minimaxModel===compshare && await page.getByTestId('cfg-minimaxBaseUrl').isDisabled());
+  check('CompShare model selects and locks its own gateway', await page.getByTestId('cfg-minimaxBaseUrl').isDisabled() && (await invoke('getConfig')).minimaxBaseUrl===(await invoke('getConfig')).minimaxCompshareBaseUrl);
+  await minimax.getByRole('button',{name:'白模推荐参数',exact:true}).click();
+  await until(async()=>{const c=await invoke('getConfig');return c.minimaxModel==='MiniMax-H3-Lite'&&c.minimaxDuration===4&&c.minimaxResolution==='480P';});
+  check('mannequin preset saves 4s 480P, restores the official gateway and keeps submission locked', !(await invoke('getConfig')).allowPaidVideoGeneration && (await invoke('getConfig')).minimaxBaseUrl===(await invoke('getConfig')).defaults.minimaxBaseUrl && minimaxRequests().length===1);
+  await minimaxAdvanced.locator('summary').click();
+  await videoNav.getByRole('button',{name:'ToAPIs（视频）',exact:true}).click();
+  await page.getByTestId('cfg-toapis-video-enabled').click();
+  await until(async()=>{const c=await invoke('getConfig');return c.toapisVideo&&!c.comfyVideo;});
+  check('ToAPIs video displays the shared connection instead of duplicate credentials', await toapisVideo.locator('.SPR_secretInputWrap').count()===0 && await toapisVideo.getByText('共用生图连接',{exact:true}).isVisible());
+  await page.getByTestId('cfg-toapisVideoModel').fill('fixture-video');
+  await videoNav.getByRole('button',{name:'本地 ComfyUI',exact:true}).click();
+  await until(async()=>(await invoke('getConfig')).toapisVideoModel==='fixture-video');
+  const comfyAdvanced=page.getByTestId('cfg-comfy-video-advanced'), workflow=page.getByTestId('cfg-comfy-workflow');
+  check('ComfyUI starts with advanced configuration collapsed and no automatic test', !await comfyAdvanced.evaluate(el=>el.open) && !calls.some(c=>c.method==='testComfy'));
+  await page.getByTestId('cfg-comfy-video-enabled').click();
+  await until(async()=>{const c=await invoke('getConfig');return c.comfyVideo&&!c.toapisVideo;});
+  await page.getByTestId('cfg-comfy-video-enabled').click();
+  await until(async()=>{const c=await invoke('getConfig');return !c.comfyVideo&&!c.toapisVideo;});
+  check('video backend toggles are mutually exclusive and disabling returns to MiniMax', !(await invoke('getConfig')).allowPaidVideoGeneration);
+  const originalWorkflow=(await invoke('getConfig')).comfyWorkflow;
+  const workflowDraft=JSON.stringify({'1':{class_type:'FreeVideoGenerate',inputs:{text:'fixture',width:512,height:512,seconds:4,seed:0}}},null,2);
+  await workflow.fill(workflowDraft); await comfy.locator('h3').click();
+  await videoNav.getByRole('button',{name:'MiniMax',exact:true}).click(); await videoNav.getByRole('button',{name:'本地 ComfyUI',exact:true}).click();
+  check('ComfyUI workflow draft survives navigation without saving on blur', await workflow.inputValue()===workflowDraft && (await invoke('getConfig')).comfyWorkflow===originalWorkflow);
+  await comfy.getByRole('button',{name:'保存工作流',exact:true}).click();
+  await until(async()=>(await invoke('getConfig')).comfyWorkflow===workflowDraft);
+  await until(async()=>await comfy.getByRole('button',{name:'保存工作流',exact:true}).isDisabled());
+  await workflow.fill('unsaved'); await comfy.getByRole('button',{name:'更多',exact:true}).click();
+  await page.getByRole('menuitem',{name:'放弃修改',exact:true}).click();
+  check('workflow actions use the themed menu and discard only the draft', await workflow.inputValue()===workflowDraft);
+  await comfyAdvanced.locator('summary').click();
+  await comfyAdvanced.getByRole('spinbutton',{name:'超时（秒）',exact:true}).fill('120');
+  await comfy.locator('h3').click();
+  await until(async()=>(await invoke('getConfig')).comfyTimeoutMs===120000);
+  await comfyAdvanced.getByRole('spinbutton',{name:'宽度',exact:true}).fill('0');
+  await comfyAdvanced.getByRole('spinbutton',{name:'高度',exact:true}).fill('512');
+  await comfy.locator('h3').click();
+  await until(async()=>(await invoke('getConfig')).comfyHeight===512);
+  await page.getByTestId('cfg-comfyBaseUrl').fill('http://127.0.0.1:9323'); await comfy.locator('h3').click();
+  await until(async()=>(await invoke('getConfig')).comfyBaseUrl==='http://127.0.0.1:9323');
+  await page.getByTestId('cfg-comfyPromptTarget').fill('1.text'); await page.getByTestId('cfg-comfyFirstFrameTarget').fill(''); await comfy.locator('h3').click();
+  await until(async()=>(await invoke('getConfig')).comfyPromptTarget==='1.text');
+  await page.getByTestId('cfg-comfy-cookie').fill('token=fixture'); await comfy.getByRole('button',{name:'测试连接',exact:true}).click();
+  await until(async()=>await comfy.getByRole('button',{name:'测试连接',exact:true}).isEnabled() && await page.getByTestId('cfg-comfy-probe').count()===1);
+  const comfyRequests=()=>requests.slice(videoRequestStart).filter(r=>r.origin==='http://127.0.0.1:9323');
+  check('ComfyUI test waits for Cookie save and only reads status and nodes', comfyRequests().length>=3 && comfyRequests().every(r=>r.method==='GET'&&r.cookie==='token=fixture') && !requests.slice(videoRequestStart).some(r=>r.url==='/prompt'));
+  await page.getByTestId('cfg-comfy-probe').locator('summary').click();
+  check('ComfyUI connection details retain device and injection diagnostics', (await page.getByTestId('cfg-comfy-probe').textContent()).includes('Fixture GPU') && (await page.getByTestId('cfg-comfy-probe').textContent()).includes('1.text'));
+  await page.getByTestId('cfg-comfy-probe').locator('summary').click();
+  const cookie=page.getByTestId('cfg-comfy-cookie'); await cookie.hover();
+  const clearCookie=comfy.getByRole('button',{name:'清除 Cookie',exact:true});
+  await until(async()=>await clearCookie.evaluate(el=>getComputedStyle(el).opacity)==='1'); await clearCookie.click();
+  await until(async()=>!(await invoke('getConfig')).comfyCookiesSet);
+  check('ComfyUI inline Cookie removal is explicit and does not submit video', comfyRequests().every(r=>r.method==='GET'));
+  await comfyAdvanced.locator('summary').click();
+  const requestsBeforeLayout=requests.length;
+  for(const dark of [false,true]) {
+    await page.evaluate(dark=>document.documentElement.style.cssText=dark?'--dsw-alias-label-primary:#eee;--dsw-alias-label-secondary:#aaa;--dsw-alias-label-tertiary:#777;--dsw-alias-bg-layer-1:#18181c;--dsw-alias-bg-layer-2:#242428;--dsw-alias-bg-layer-3:#333;--dsw-alias-border-l1:#333;--dsw-alias-border-l2:#414147;--dsw-alias-state-business-primary:#8ca6ff;--dsw-alias-interactive-bg-hover-solid:#333':'',dark);
+    for(const width of [1280,720,390]) {
+      await page.setViewportSize({width,height:900});
+      for(const [name,group,key] of [['付费视频保护',safety,'safety'],['MiniMax',minimax,'minimax'],['ToAPIs（视频）',toapisVideo,'toapis'],['本地 ComfyUI',comfy,'comfy']]) {
+        await videoNav.getByRole('button',{name,exact:true}).click();
+        check(key+' video form fits '+width+(dark?' dark':' light'),await group.evaluate(el=>el.scrollWidth<=el.clientWidth+1&&el.getBoundingClientRect().right<=innerWidth));
+        await page.screenshot({path:'.verify/video-settings-'+key+'-'+width+(dark?'-dark':'-light')+'.png',fullPage:true});
+        if(key==='minimax'||key==='comfy') {
+          const advanced=key==='minimax'?minimaxAdvanced:comfyAdvanced;
+          await advanced.locator('summary').click();
+          check(key+' expanded advanced fields fit '+width,await advanced.evaluate(el=>[el,...el.querySelectorAll('.SPR_field,.SPR_serviceOutputFields')].every(n=>n.scrollWidth<=n.clientWidth+1)));
+          await page.screenshot({path:'.verify/video-settings-'+key+'-expanded-'+width+(dark?'-dark':'-light')+'.png',fullPage:true});
+          await advanced.locator('summary').click();
+        }
+        if(key==='minimax'||key==='toapis') {
+          await group.getByTestId(key==='minimax'?'cfg-minimax-model':'cfg-toapis-video-ratio').getByRole('button').click();
+          check(key+' video themed menu stays within viewport at '+width,await page.getByRole('menu').evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;}));
+          await page.keyboard.press('Escape');
+        }
+      }
+    }
+  }
+  check('visiting every video page and resizing never submits or auto-tests',requests.length===requestsBeforeLayout && requests.slice(videoRequestStart).every(r=>r.method==='GET') && !calls.some(c=>/^run.*Video|runMotionBatch/.test(c.method)));
+  // Reopen the whole settings panel to exercise persisted state, rather than mounted drafts.
+  for(const notice of await page.getByTestId('notice-popup').all()) await notice.getByRole('button',{name:'关闭提示',exact:true}).click();
+  await page.getByTestId('studio-settings-back').click();
+  await page.locator('.SPR_head').getByRole('button',{name:'设置',exact:true}).click();
+  await page.getByTestId('cfg-tab-video').click(); await videoNav.getByRole('button',{name:'MiniMax',exact:true}).click();
+  await until(async()=>await minimaxKey.inputValue()==='fake-minimax-two');
+  check('MiniMax credentials reopen masked without replacements',await minimaxKey.getAttribute('type')==='password');
+  const beforeMinimaxClear=await invoke('getConfig');
+  await minimaxKey.hover(); const minimaxClear=minimax.getByRole('button',{name:'清除 Key',exact:true});
+  await until(async()=>await minimaxClear.evaluate(el=>getComputedStyle(el).opacity)==='1'); await minimaxClear.click();
+  await until(async()=>!(await invoke('getConfig')).minimaxApiKeySet);
+  const afterMinimaxClear=await invoke('getConfig');
+  check('MiniMax inline clear removes only its key',!afterMinimaxClear.minimaxApiKeySet && ['arkApiKeySet','toapisApiKeySet','musicApiKeySet','sfxApiKeySet'].every(key=>afterMinimaxClear[key]===beforeMinimaxClear[key]) && requests.length===requestsBeforeLayout);
   check('all validation stayed local without UI runtime errors', outbound.length === 0 && errors.length === 0);
   console.log(`Passed ${checks} browser settings checks. Screenshots in .verify/settings-*.png. No paid calls.`);
 } finally {

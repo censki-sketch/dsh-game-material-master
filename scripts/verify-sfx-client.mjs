@@ -124,12 +124,12 @@ const textOf = (node) => {
 // ── 静态契约 ────────────────────────────────────────────────────────────
 section("1) 模块注册 / 深链接 / 设置页");
 check("浏览器模块表有 sfx", /function make_MODULES\(\)[\s\S]*?key: "sfx", title: T\("音效生成"\)/.test(source));
-check("OPEN_MODULES 放行 sfx", source.includes('new Set(["sprite", "image", "sequence", "rig", "iso", "map", "music", "sfx"])'));
+check("OPEN_MODULES 放行 sfx", T.parseIntents("?dsh-gmm=1&module=sfx")?.module === "sfx");
 check("深链接能解析 sfx", (() => {
   const intent = T.parseIntents("?dsh-gmm=1&module=sfx&job=f1234&stage=generate");
   return intent?.module === "sfx" && intent?.jobId === "f1234" && intent?.stage === "generate";
 })());
-check("设置页有音效分组与 Key 输入", source.includes("音效生成（火山引擎 Seed-Audio）") && source.includes('"data-testid": "cfg-sfx-key"') && source.includes("testSfx"));
+check("设置页有音效分组与 Key 输入", source.includes('testId: "cfg-sfx-service"') && source.includes('"data-testid": "cfg-sfx-key"') && source.includes("testSfx"));
 check("设置页说明 Key 不是方舟 Key", /不是火山方舟的 ARK_API_KEY/.test(source));
 check("新建卡 / 生成按钮 / 参考卡都有 data-testid", ["sfx-generate", "sfx-prompt"].every((id) => source.includes(`"data-testid": "${id}"`)));
 check("远程方法都在客户端清单里", ["testSfx", "createSfxJob", "getSfxJob", "runSfxGeneration", "uploadSfxRef", "exportSfx"].every((method) => source.includes(`["${method}", true]`) || source.includes(`["${method}", false]`)));

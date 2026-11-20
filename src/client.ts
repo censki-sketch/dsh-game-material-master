@@ -44,6 +44,30 @@
     /** 中文原文 → 英文译文。key 里可能带 `{nN}` 占位符。 */
 /* i18n-ignore-start */
     const EN: Record<string, string> = {
+      "付费视频保护": "Paid video protection",
+      "默认禁止 MiniMax / ToAPIs 新的付费请求。允许后，每次仍需确认模型、时长、分辨率和段数；不查询余额与实时价格。本地导入、抽帧和 ComfyUI 不受影响，保存配置不会生成视频。": "New paid MiniMax / ToAPIs requests are disabled by default. Enabling still requires confirmation of the model, duration, resolution and count for every submission. Balance and live prices are not checked. Local imports, frame extraction and ComfyUI remain available. Saving settings does not generate videos.",
+      "允许付费生成": "Allow paid generation",
+      "每次生成仍需确认": "Each submission requires confirmation",
+      "已锁定付费生成": "Paid generation locked",
+      "默认视频后端。白模流程固定使用 MiniMax-H3-Lite、4 秒、480P；下方时长与分辨率用于其他视频流程。Key 失焦或按 Enter 自动保存；测试仅校验 Key，不生成、不计费。地址填主机根，不含 /v1、/v2；优云智算模型自动切换网关。": "Default video backend. The mannequin workflow uses MiniMax-H3-Lite at a fixed 4s / 480P; duration and resolution below apply to other video workflows. Keys save on blur or Enter. Testing only validates the key, with no generation or charges. Enter a host root without /v1 or /v2. CompShare models switch the gateway automatically.",
+      "使用 MiniMax": "Use MiniMax",
+      "白模推荐参数": "Mannequin preset",
+      "启用后替代 MiniMax，关闭后回到 MiniMax。地址、Key 与请求超时共用生图里的 ToAPIs 配置。支持文生视频或一张首帧，不支持尾帧与多模态参考。方形首帧建议 1:1，避免裁切头脚；MP4 抽帧仍需去背景。": "Enabling replaces MiniMax; disabling returns to MiniMax. The address, key and request timeout are shared with ToAPIs image settings. Supports text or a single first frame, without last frames or multimodal references. Use 1:1 for square character images to avoid cropping heads and feet. MP4 frames still need background removal.",
+      "共用生图连接": "Shared image connection",
+      "画面比例": "Aspect ratio",
+      "本地 ComfyUI": "Local ComfyUI",
+      "启用后替代云端视频，关闭后回到 MiniMax。工作流使用 ComfyUI 导出的 API JSON，需手动保存；插件注入提示词、首帧、尺寸、时长和种子，其余节点保持原样。测试只读服务状态，不提交生成。": "Enabling replaces cloud video; disabling returns to MiniMax. Paste API JSON exported from ComfyUI and save it explicitly. The plugin injects the prompt, first frame, size, duration and seed while preserving other nodes. Testing only reads service status and never submits generation.",
+      "服务地址": "Service URL",
+      "连接": "Connection",
+      "Cookie 仅用于需要登录的反向代理，可粘贴完整 Cookie 头。失焦或按 Enter 保存，留空不修改已存值；使用清除图标移除。超时单位为秒。": "Cookies are only needed for login-protected reverse proxies. Paste the complete Cookie header; blur or Enter saves it. Leave blank to keep the saved value, or use the clear icon to remove it. Timeout is in seconds.",
+      "清除 Cookie": "Clear cookie",
+      "工作流参数": "Workflow parameters",
+      "注入点留空自动探测，格式为节点ID.输入名。宽度、高度和时长填 0 时沿用工作流；种子填 0 时每次随机。": "Leave injection targets blank for automatic detection, or use nodeID.inputName. Set width, height or duration to 0 to use the workflow values. Seed 0 randomizes each run.",
+      "提示词注入点": "Prompt target",
+      "首帧注入点": "First-frame target",
+      "宽度": "Width",
+      "高度": "Height",
+      "连接详情": "Connection details",
       "启用": "Enabled",
     "自定义接口": "Custom API",
     "编辑模型": "Edit model",
@@ -66,7 +90,6 @@
     "确认测试": "Confirm test",
     "生图连接": "Image connections",
     "复制连接": "Duplicate connection",
-
       "测试通过": "Test passed",
       "未测试": "Untested",
       "{n0} 副本": "{n0} copy",
@@ -121,7 +144,6 @@
       "重新生成会再次计费，确认提交这一轮的请求？": "Regenerating will be billed again. Submit this round's request?",
       "音效设计": "Sound design",
       "音频暂时无法播放，请检查文件或刷新。": "Audio cannot be played right now. Check the file or refresh.",
-
   "本次消息未提交，请重试。": "This message was not submitted. Please retry.",
   "停止生成": "Stop generation",
   "停止等待生成，已提交的请求仍可能计费。": "Stop waiting for generation. Submitted requests may still be billed.",
@@ -337,15 +359,6 @@
       "当前任务已切换，未修改提示词。": "The current task changed. Its prompt was not modified.",
       "提示词保存失败，尚未采用优化结果。": "Could not save the prompt. The optimized result has not been applied.",
       "查看{n0}说明": "View {n0} description",
-      "ToAPIs 视频模型": "ToAPIs video model",
-      "ToAPIs 视频分辨率": "ToAPIs video resolution",
-      "ToAPIs 视频比例": "ToAPIs video aspect ratio",
-      "角色首帧为方形时建议1:1，避免宽屏裁掉头脚；MP4抽帧仍需去背景。": "Use 1:1 for square character first frames to avoid widescreen cropping of head and feet. MP4 frames still require background removal.",
-      "ToAPIs 视频参数独立于 MiniMax；目前仅支持文生视频或一张首帧，不支持尾帧及多模态参考。": "ToAPIs video settings are independent of MiniMax. Currently supports text or one first frame, not last-frame/multimodal inputs.",
-      "ToAPIs 视频时长（秒）": "ToAPIs video duration (seconds)",
-      "使用 ToAPIs 生成视频": "Use ToAPIs for video generation",
-      "ToAPIs Key 已配置": "ToAPIs Key configured",
-      "ToAPIs Key 未配置": "ToAPIs Key not configured",
       "南 · 正对镜头": "South · facing the camera",
       "源图": "Source image",
       "北 · 背对镜头": "North · back to the camera",
@@ -1253,7 +1266,6 @@
       "像素与裁切": "Pixelation & cropping",
       "本机依赖与数据": "Local dependencies & data",
       "ToAPIs（视频）": "ToAPIs (video)",
-      "图生视频三选一：MiniMax（云端，默认）、ToAPIs（云端异步）、本机 ComfyUI；勾选后两者之一会替换 MiniMax，取消勾选即回到 MiniMax。ToAPIs 的 Base URL / Key / 超时在「生图」里配置，图片与视频共用。": "Pick one video backend: MiniMax (cloud, default), ToAPIs (cloud, async) or local ComfyUI. Enabling either of the latter two replaces MiniMax; clear both to return to MiniMax. ToAPIs' Base URL, key and timeout are configured on the \"Images\" tab and shared by image and video.",
       "生图后端": "Image backend",
       "当前使用": "In use",
       "负面提示词": "Negative prompt",
@@ -1267,14 +1279,9 @@
       "ffmpeg 可用：{n0}": "ffmpeg available: {n0}",
       "ffmpeg 不可用：{n0}": "ffmpeg unavailable: {n0}",
       "未知": "Unknown",
-      "API Key {n0}": "API Key {n0}",
-      "（已配置 {n0}）": "(configured {n0})",
-      "（未配置）": "(not configured)",
       "留空表示不修改": "Leave blank to keep unchanged",
-      "保存 Key": "Save key",
       "自定义：{n0}": "Custom: {n0}",
       "输出尺寸": "Output size",
-      "MiniMax（图生视频）": "MiniMax (image-to-video)",
       "视频提交正在确认或处理中，请勿重复点击": "A video submission is being confirmed or processed. Please do not click again.",
       "付费视频已锁定，请先打开右上角「设置 → 生视频」，检查参数后手动开启": "Paid videos are locked. Open Settings → Video in the top-right corner, check the parameters, and enable submission manually.",
       "另含4秒参考视频输入，服务商可能另计输入费用。": "Includes a 4-second reference video input, which the provider may bill separately.",
@@ -1286,23 +1293,12 @@
       "项目「{n0}」的更多操作": "More actions for project {n0}",
       "项目及其素材文件将被永久删除，此操作无法撤销。": "The project and its asset files will be permanently deleted. This cannot be undone.",
       "正在删除…": "Deleting…",
-      "付费视频保护（默认关闭）": "Paid video protection (submission disabled by default)",
-      "允许提交付费视频（MiniMax / ToAPIs）": "Allow paid video submissions (MiniMax / ToAPIs)",
-      "关闭时拦截所有新的付费视频请求；开启后每次仍需确认模型、时长、分辨率和段数。配置、准备白模、本地导入与抽帧不会提交付费视频。": "When disabled, all new paid video requests are blocked. Each submission still requires confirmation of its model, duration, resolution and count when enabled. Configuration, mannequin preparation, local imports and frame extraction do not submit paid videos.",
-      "这里不会查询余额或实时单价，提交前请核对服务商价格。": "Balance and live prices are not checked here. Verify the provider's pricing before submitting.",
-      "白模流程推荐MiniMax-H3-Lite，固定4秒480P；下方时长与分辨率用于原有视频流程。保存设置不会生成视频。": "The mannequin workflow recommends MiniMax-H3-Lite at a fixed 4s / 480P. Duration and resolution below apply to the classic video workflow. Saving settings does not generate a video.",
-      "使用白模推荐参数（4秒480P，不生成）": "Use recommended mannequin settings (4s / 480P, no generation)",
       "粘贴 MiniMax API Key": "Paste MiniMax API Key",
-      "MiniMax Key 已保存": "MiniMax key saved",
-      "已清除 MiniMax Key": "MiniMax key cleared",
-      "Base URL（优云智算版 H3 固定使用，无需修改）": "Base URL (fixed for the CompShare H3 build, no changes needed)",
-      "Base URL（主机根，不含 /v1、/v2）": "Base URL (host root, without /v1 or /v2)",
       "当前协议：{n0}": "Current protocol: {n0}",
       "v2（{n0}/v2/video_generation）": "v2 ({n0}/v2/video_generation)",
       "v1（{n0}/v1/video_generation）": "v1 ({n0}/v1/video_generation)",
       "正在校验…": "Validating…",
       "连接正常：{n0}": "Connection OK: {n0}",
-      "测试连接（只校验 Key，不产生费用）": "Test connection (validates the key only, no charge)",
       "新建项目的默认参数": "Defaults for new projects",
       "工作长边（px）": "Working long edge (px)",
       "像素块边长": "Pixel block size",
@@ -1827,34 +1823,16 @@
       "第 {n0} 层 / 共 {n1} 层":
         "Layer {n0} of {n1}",
       // ── 本地 ComfyUI 视频后端（设置页区块 + 连接自检结果）──
-      "本地 ComfyUI（图生视频）": "Local ComfyUI (image-to-video)",
-      "勾选后，视频阶段改由本机 ComfyUI 生成，不再调用 MiniMax。工作流贴「导出（API 格式）」的那份 JSON；插件只负责把提示词、首帧图、尺寸、时长、种子注入进去，其余节点原样提交。": "When enabled, the video stage is generated by your local ComfyUI instead of MiniMax. Paste the JSON from ComfyUI's Export (API format); the plugin only injects the prompt, first frame, size, duration and seed, and submits every other node as-is.",
-      "用本机 ComfyUI 生成视频（替代 MiniMax）": "Generate video with local ComfyUI (instead of MiniMax)",
-      "ComfyUI 地址（本机默认 http://127.0.0.1:8188）": "ComfyUI address (default http://127.0.0.1:8188)",
       "超时（秒）": "Timeout (seconds)",
-      "提示词注入点（留空自动探测）": "Prompt injection target (leave empty to auto-detect)",
-      "首帧图注入点（留空自动探测）": "First-frame injection target (leave empty to auto-detect)",
-      "宽度（0 = 用工作流里的值）": "Width (0 = use the workflow value)",
-      "高度（0 = 用工作流里的值）": "Height (0 = use the workflow value)",
-      "时长（秒，0 = 用工作流里的值）": "Duration (seconds, 0 = use the workflow value)",
-      "种子（0 = 每次随机）": "Seed (0 = random each run)",
-      "工作流 JSON（ComfyUI 菜单里的「导出（API 格式）」）": "Workflow JSON (ComfyUI menu: Export (API format))",
       "已恢复内置模板": "Built-in template restored",
       "恢复内置模板": "Restore built-in template",
       "正在连接…": "Connecting…",
       "连接正常：ComfyUI {n0}": "Connected: ComfyUI {n0}",
-      "测试连接（只读状态，不产生费用）": "Test connection (read-only, no cost)",
       "ComfyUI {n0} · {n1} · 队列 {n2} 运行 / {n3} 等待 · 工作流 {n4} 个节点": "ComfyUI {n0} · {n1} · queue {n2} running / {n3} pending · workflow has {n4} nodes",
       "未知显卡": "unknown device",
       "探测到的注入点 —— 提示词：{n0}；首帧：{n1}；尺寸：{n2} × {n3}；秒数：{n4}；种子：{n5}": "Detected injection targets - prompt: {n0}; first frame: {n1}; size: {n2} x {n3}; duration: {n4}; seed: {n5}",
       "未探测到": "not detected",
       "—": "-",
-      "Cookie {n0}": "Cookie {n0}",
-      "粘贴 Cookie 头，例如 token=abc; session=xyz": "Paste the Cookie header, e.g. token=abc; session=xyz",
-      "保存 Cookie": "Save cookie",
-      "ComfyUI Cookie 已保存": "ComfyUI cookie saved",
-      "已清除 ComfyUI Cookie": "ComfyUI cookie cleared",
-      "ComfyUI 本身不做鉴权；只有当它藏在需要登录的反向代理后面（Cloudflare Access、Basic Auth 之类）时才用得上——从浏览器开发者工具里把 Cookie 整段复制过来即可，所有请求（包括取回成品视频）都会带上它。": "ComfyUI does not authenticate on its own; a Cookie is only needed when it sits behind a login-protected reverse proxy (Cloudflare Access, Basic Auth, and the like). Copy the whole Cookie from your browser developer tools - every request, including fetching the finished video, carries it.",
       // AI 生成素材（地图编辑器素材窗口 → 新对话）
       "AI 生成素材": "Generate with AI",
       "当前环境不支持自动开新对话，请在对话里直接说明你要的素材。": "This environment cannot open a new chat automatically. Please describe the asset you want in the chat instead.",
@@ -2034,7 +2012,6 @@
       "已在新对话里开始生成：素材「{n0}」（用哪种由对话判断）": "Generation started in a new chat: asset \"{n0}\" (the chat decides which type)",
       "已在新对话里开始生成：素材「{n0}」（{n1}）": "Generation started in a new chat: asset \"{n0}\" ({n1})",
       // ── 音乐生成编辑（模块七）──
-
       "【游戏素材大师 · 音乐生成编辑】": "[Game Material Master - Music Generation & Editing]",
       "这是「音乐生成编辑」自动发起的一次任务：用户在界面上已经填好下面的内容，任务已经建好（jobId 见下），不要调用 game_material({action:'intake'}) 追问、不要停下来等确认，直接做完。": "This task was started automatically by \"Music Generation & Editing\". The user has already filled in the parameters below and the job already exists (jobId below). Do not call game_material({action:'intake'}) to ask questions and do not stop for confirmation; finish the task directly.",
       "目标音乐任务：{n0}（jobId={n1}）": "Target music job: {n0} (jobId={n1})",
@@ -2101,36 +2078,16 @@
       "标准化 {n0} LUFS": "Normalize {n0} LUFS",
       "处理中": "Processing",
       "波形还没算出来（可以先直接裁剪/调音量）": "Waveform is not ready yet (you can still trim or adjust gain directly)",
-
-
-
-
-
       "裁剪终点必须大于起点。": "The trim end must be greater than the start.",
       "删除这个版本？原曲不会受影响。": "Delete this version? The original song is unaffected.",
-
-
       "已导出：{n0}": "Exported: {n0}",
       "新建音乐": "New music",
-
-
-
-
       "标题（可选）": "Title (optional)",
       "风格标签（可选）": "Style tags (optional)",
       "引擎偏好": "Engine preference",
-
       "纯音乐（不需要人声）": "Instrumental (no vocals)",
-
-
-
       "创作技巧": "Creation guide",
       "正在读取创作指南…": "Loading the creation guide...",
-
-
-
-
-
       "下载 WAV": "Download WAV",
       "歌词": "Lyrics",
       "编辑：{n0}": "Edit: {n0}",
@@ -2152,42 +2109,19 @@
       "查询中…": "Checking...",
       "获取无损 WAV（可能计费）": "Get lossless WAV (may cost credits)",
       "获取滚动歌词": "Get scrolling lyrics",
-
-
-
-
       "保存为正式版本": "Save as final version",
-
       "下载": "Download",
-
-
-
       "刷新": "Refresh",
       "打开任务目录": "Open job folder",
-
-
-
-
-
-
-
-
       "正在导出…": "Exporting...",
-
       "导出全部（zip）": "Export all (zip)",
       "下载导出文件": "Download exported file",
-
-
-
-
-
       "音乐生成（谱乐 AI）": "Music generation (Puyue AI)",
       "目前只支持谱乐 AI。生成按平台积分计费；测试连接只读取历史，不生成音乐。Key 保存在本机，失焦或按 Enter 自动保存。": "Currently only Puyue AI is supported. Generation uses platform credits. Testing only reads history and does not generate music. The key is stored locally and saved on blur or Enter.",
       "已配置": "Configured",
       "API 文档": "API docs",
       "控制台": "Console",
       "API Key": "API Key",
-      "已配置 {n0}（留空表示不修改）": "Configured {n0} (leave blank to keep)",
       "粘贴谱乐 AI API Key（sk-live-…）": "Paste the Puyue AI API key (sk-live-...)",
       "清除 Key": "Clear key",
       "测试连接": "Test connection",
@@ -2196,8 +2130,6 @@
       "默认音乐模型": "Default music model",
       "请求超时（毫秒）": "Request timeout (ms)",
       "生成等待超时（毫秒）": "Generation wait timeout (ms)",
-      "文档：": "Docs: ",
-      " · 控制台：": " - Console: ",
       "音乐创作技巧来源：bitwize-music-studio/claude-ai-music-skills（CC0-1.0），已提炼为插件内置指南；原仓库版权归其作者所有，特此致谢。": "Music creation guide source: bitwize-music-studio/claude-ai-music-skills (CC0-1.0), distilled into this plugin's built-in guide; original rights belong to its authors. With thanks.",
       "【游戏素材大师 · 谱曲模式（本地 MIDI）】": "[Game Material Master - Compose Mode (local MIDI)]",
       "这是「音乐生成编辑 → 谱曲模式」自动发起的一次任务：任务已经建好（jobId 见下），不要调用 game_material({action:'intake'}) 追问、不要重复建任务、不要问参数，直接按下面的步骤做。": "This task was started automatically by \"Music Generation & Editing -> Compose Mode\". The job already exists (jobId below). Do not call game_material({action:'intake'}), do not create another job, do not ask for parameters; follow the steps below.",
@@ -2235,50 +2167,13 @@
       "  已有歌曲时必须传 regenerate:true，并先问用户。提交后 game_material({action:'wait'})，再把新的 openUrl 贴回来。**绝不自动提交。**": "  If songs already exist, pass regenerate:true and ask the user first. After submitting, game_material({action:'wait'}), then paste the new openUrl. Never auto-submit.",
       "审核模式：manual。方案后停一次；每版试听后也停下等用户反馈；只有用户明确说「通过」才打验收或进入 Suno。": "Review mode: manual. Stop after the plan, and after each preview; only mark approved or proceed to Suno when the user explicitly says \"approved\".",
       "审核模式：auto。自己核对结果后继续，但交 Suno 之前仍然必须由用户明确要求（会再计费）。": "Review mode: auto. Verify and continue on your own, but the user must still explicitly request Suno (it costs credits).",
-
-
-
-
       "谱曲模式（本地 MIDI）": "Compose mode (local MIDI)",
-
-
-
-
-
-
-
-
-
-
       "FluidSynth + SoundFont": "FluidSynth + SoundFont",
-
-
-
-
-
-
       "提交没有启动": "Submission did not start",
-
-
-
-
-
-
-
-
-
-
-
-
       "下载 MIDI": "Download MIDI",
       "下载试听": "Download preview",
-
-
       "导出乐谱包": "Export score bundle",
       "查看 compose.py": "View compose.py",
-
-
-
       "已就绪": "Ready",
       "依赖未就绪": "Dependencies missing",
       "未检测": "Not checked",
@@ -2304,73 +2199,24 @@
       "安装提示：python3 -m pip install scoremill；macOS 可 brew install fluid-synth；SoundFont 放到 ~/Library/Audio/SoundFonts/FluidR3_GM.sf2。": "Install hints: python3 -m pip install scoremill; on macOS brew install fluid-synth; put a SoundFont at ~/Library/Audio/SoundFonts/FluidR3_GM.sf2.",
       "谱曲模式参考：scoremill（MIT，https://github.com/CharlesCNorton/scoremill）与 Midra 的 prompt-to-code MIDI 思路；只吸收方法论，未打包其代码或音源。": "Compose mode references: scoremill (MIT, https://github.com/CharlesCNorton/scoremill) and Midra's prompt-to-code MIDI idea; only the methodology is used, no code or soundfont is bundled.",
       "Suno 判定这段参考音频有版权，需要走付费版权上传通道（会扣积分）。继续？": "Suno judged the reference audio as copyrighted; it must go through the paid copyright upload channel (credits will be deducted). Continue?",
-
-
-
-
-
-
       // 音效生成（模块八）
       "音效生成": "Sound effects",
       "一句话描述 → 音效 / 环境音 / 角色配音（火山引擎 Seed-Audio）": "One prompt → sound effects / ambience / character voices (Volcengine Seed-Audio)",
       "火山方舟 Seedream 生图 · MiniMax 图生视频 · 谱乐 AI 音乐 · 火山引擎音效 · 本地处理": "Volcengine Ark Seedream image gen · MiniMax image-to-video · Puyue AI music · Volcengine sound effects · local processing",
-
-
-
-
-
-
-
-
       "WAV（无损，游戏引擎常用）": "WAV (lossless, common in game engines)",
       "MP3（体积小）": "MP3 (smaller)",
       "Ogg Opus（体积更小）": "Ogg Opus (even smaller)",
       "新建音效": "New sound effect",
-
-
-
       "输出格式": "Output format",
       "采样率": "Sample rate",
-
-
-
-
-
-
-
-
-
       "语速（-50~100）": "Speech rate (-50 to 100)",
       "音量（-50~100）": "Loudness (-50 to 100)",
       "音调（-12~12）": "Pitch (-12 to 12)",
       "加 AIGC 节奏水印（默认关）": "Add AIGC rhythm watermark (off by default)",
       "生成（计费）": "Generate (billed)",
-
       "正在保存…": "Saving…",
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      "音效生成（火山引擎 Seed-Audio）": "Sound effects (Volcengine Seed-Audio)",
-      "用豆包语音的生成式音频模型做游戏音效：撞击 / 环境音 / UI 声 / 生物吼叫 / 角色配音。单次最长 120 秒。Key 是语音控制台的 API Key（请求头 X-Api-Key），不是火山方舟的 ARK_API_KEY；模型需要在语音控制台开通。": "Generate game sound effects with Doubao Speech's generative audio model: impacts / ambience / UI sounds / creature roars / character voices. Up to 120 seconds per run. The key is the speech console API key (header X-Api-Key), not the Ark ARK_API_KEY; the model must be enabled in the speech console.",
+      "火山引擎 Seed-Audio 音效，单次最长 120 秒。使用语音控制台 API Key，需开通模型；不是火山方舟的 ARK_API_KEY。Key 失焦或按 Enter 自动保存。生成和测试均计费，测试会先确认。": "Volcengine Seed-Audio sound effects, up to 120 seconds per run. Requires a speech console API key and model access, not the Ark ARK_API_KEY. The key saves on blur or Enter. Generation and tests are billed; testing requires confirmation.",
       "粘贴语音控制台 API Key": "Paste the speech console API key",
-      "音效 API Key 已保存": "Sound effect API key saved",
-      "已清除音效 API Key": "Sound effect API key cleared",
       "正在生成测试音效…": "Generating a test sound effect…",
       "默认模型": "Default model",
       "默认输出格式": "Default output format",
@@ -4730,16 +4576,30 @@
 .SPR_scoreSettings .SPR_field{margin:0;min-width:0}
 .SPR_scoreSettings .SPR_input{box-sizing:border-box;width:100%;height:36px;min-width:0}
 .SPR_scoreSettings .SPR_settingsAdvanced{margin:0}
-.SPR_musicSettings{display:flex;flex-direction:column;gap:18px;min-width:0;container-type:inline-size}
-.SPR_musicSettings .SPR_field{margin:0;min-width:0}
-.SPR_musicSettings .SPR_fieldLabel{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.SPR_musicSettings .SPR_input{box-sizing:border-box;width:100%;height:36px;min-width:0}
-.SPR_musicFields{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
-.SPR_musicSettings .SPR_settingsAdvanced{margin:0}
-.SPR_musicSettings .SPR_settingsAdvanced>.SPR_fields{margin-top:14px}
-.SPR_musicHelp{display:flex;flex-direction:column;gap:12px}
-.SPR_musicLinks{display:flex;flex-wrap:wrap;gap:14px}
-@container(max-width:580px){.SPR_musicFields{grid-template-columns:minmax(0,1fr)}}
+.SPR_serviceSettings{display:flex;flex-direction:column;gap:18px;min-width:0;container-type:inline-size}
+.SPR_serviceSettings .SPR_field{margin:0;min-width:0}
+.SPR_serviceSettings .SPR_fieldLabel{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.SPR_serviceSettings .SPR_input{box-sizing:border-box;width:100%;height:36px;min-width:0}
+.SPR_serviceConnectionFields{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
+.SPR_serviceOutputFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.SPR_serviceSettings .SPR_settingsAdvanced{margin:0}
+.SPR_serviceSettings .SPR_settingsAdvanced>.SPR_fields{margin-top:14px}
+.SPR_settingsWorkspace [data-testid=cfg-sfx-service] .SPR_settingsGroupHead{gap:8px}
+.SPR_settingsWorkspace [data-testid=cfg-sfx-service] .SPR_settingsGroupHead>.SPR_btn{padding-inline:10px}
+.SPR_settingsWorkspace [data-testid=cfg-sfx-service] .SPR_settingsGroupHead h3{word-break:keep-all;overflow-wrap:normal}
+.SPR_serviceSettings textarea.SPR_videoWorkflow{height:180px;min-height:120px;resize:vertical;font:12px/1.6 ui-monospace,Consolas,monospace}
+.SPR_videoPresetRow,.SPR_videoWorkflowActions,.SPR_videoSafety{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.SPR_videoSafety>.SPR_hint,.SPR_videoSharedConnection>.SPR_hint{margin:0}
+.SPR_videoWorkflowActions{justify-content:flex-end;margin-top:-6px}
+.SPR_videoAdvancedBody{display:flex;flex-direction:column;gap:18px;padding-top:16px;min-width:0}
+.SPR_videoAdvancedBody .SPR_settingsSub{display:flex;flex-direction:column;gap:14px}
+.SPR_videoAdvancedBody .SPR_settingsSub h4{margin:0}
+.SPR_videoSharedConnection{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:12px;border-radius:10px;background:var(--dsw-alias-bg-layer-2);font-size:12px}
+.SPR_videoSharedConnection code{grid-column:1/-1;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}
+.SPR_videoProbe{padding-top:14px;font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+.SPR_serviceSettingsHelp{display:flex;flex-direction:column;gap:12px}
+.SPR_serviceSettingsLinks{display:flex;flex-wrap:wrap;gap:14px}
+@container(max-width:580px){.SPR_serviceConnectionFields,.SPR_serviceOutputFields{grid-template-columns:minmax(0,1fr)}}
 .SPR_scoreOptional{display:flex;flex-direction:column;gap:16px;padding-top:14px}
 .SPR_scoreOptional .SPR_scoreDependencies{grid-template-columns:repeat(2,minmax(0,1fr))}
 .SPR_scoreOptionalPaths{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
@@ -23551,16 +23411,16 @@
         h(NoticePopup, { notice, onClose: () => setNotice(null) }));
     }
 
-    function SettingsEnableSwitch({ enabled, onChange, testId }) {
+    function SettingsEnableSwitch({ enabled, onChange, testId, label = T("启用") }) {
       const [pending, setPending] = React.useState(null);
       const lock = React.useRef(false);
-      return h("label", { className: "SPR_transparentToggle SPR_settingsEnable" }, h("input", { type: "checkbox", role: "switch", "aria-label": T("启用"), "data-testid": testId, checked: pending === null ? enabled !== false : pending, disabled: pending !== null,
+      return h("label", { className: "SPR_transparentToggle SPR_settingsEnable" }, h("input", { type: "checkbox", role: "switch", "aria-label": label, "data-testid": testId, checked: pending === null ? enabled !== false : pending, disabled: pending !== null,
         onChange: async event => {
           if (lock.current) return;
           const value = event.target.checked;
           lock.current = true; setPending(value);
           try { await onChange(value); } finally { lock.current = false; setPending(null); }
-        } }), T("启用"));
+        } }), label);
     }
 
     function SettingsGroup({ title, hint, badge, lead, children, collapsible, defaultOpen, testId, enabled, onEnabledChange, actions }) {
@@ -24001,7 +23861,7 @@
       const [arkKey, setArkKey] = React.useState("");
       const [legacyCustomKey, setLegacyCustomKey] = React.useState("");
       const [toapisKey, setToapisKey] = React.useState("");
-      const [minimaxKey, setMinimaxKey] = React.useState("");
+      const [videoDraft, setVideoDraft] = React.useState(null);
       const [notice, setNotice] = React.useState(null);
       const [testing, setTesting] = React.useState(null);
       /**
@@ -24016,8 +23876,8 @@
       // 这里同样留成草稿（null = 跟随配置），点「保存工作流」才提交。
       const [comfyWorkflowDraft, setComfyWorkflowDraft] = React.useState(null);
       const [comfyProbe, setComfyProbe] = React.useState(null);
-      // Cookie 也是凭据：已配置时输入框留空 = 不修改，点「保存 Cookie」才覆盖。
-      const [comfyCookie, setComfyCookie] = React.useState("");
+      // Cookie 不提供原值回读；null 表示未编辑，失焦 / Enter 保存新值。
+      const [comfyCookie, setComfyCookie] = React.useState(null);
       // 复用原音乐草稿槽位，保留后续 Hook 的位置；地址失焦保存。
       const [musicBaseDraft, setMusicBaseDraft] = React.useState(null);
       /**
@@ -24025,8 +23885,8 @@
        * 探测，所以留成草稿，失焦才保存。
        */
       const [scorePaths, setScorePaths] = React.useState(null);
-      /** 音效模块的语音 API Key（单独一份，不是方舟 Key）。 */
-      const [sfxKey, setSfxKey] = React.useState("");
+      /** 音效地址和模型草稿沿用原 Key 状态槽位；凭据由 ConfigKeyInput 管理。 */
+      const [sfxDraft, setSfxDraft] = React.useState(null);
       /**
        * 设置页分类页签。
        *
@@ -24040,6 +23900,11 @@
       const [testConfirmation, setTestConfirmation] = React.useState(null);
       const musicWrites = React.useRef(Promise.resolve());
       const musicKeyWrite = React.useRef(Promise.resolve());
+      const sfxWrites = React.useRef(Promise.resolve());
+      const sfxKeyWrite = React.useRef(Promise.resolve());
+      const videoWrites = React.useRef(Promise.resolve());
+      const minimaxKeyWrite = React.useRef(Promise.resolve());
+      const comfyCookieWrite = React.useRef(Promise.resolve());
       const connections = storedConfig?.customImageConnections ?? [];
       const edited = connections.find(entry => entry.id === editingConnectionId) || connections.find(entry => entry.id === storedConfig?.activeCustomImageConnectionId) || connections[0];
       const config = React.useMemo(() => edited ? { ...storedConfig, ...edited, customImageBlocker: storedConfig.imageModels?.find(route => route.connectionId === edited.id && route.model === edited.customModel)?.blocker ?? null } : storedConfig, [storedConfig, edited]);
@@ -24091,6 +23956,43 @@
         const write = musicWrites.current.catch(() => {}).then(() => api.saveConfig(values));
         musicWrites.current = write;
         return write.then(next => { setConfig(next); return next; });
+      };
+      const saveSfxConfig = values => {
+        const write = sfxWrites.current.catch(() => {}).then(() => api.saveConfig(values));
+        sfxWrites.current = write;
+        return write.then(next => { setConfig(next); return next; });
+      };
+      const saveSfxField = key => {
+        const value = sfxDraft?.[key];
+        if (value === null || value === undefined) return;
+        void run(async () => {
+          if (value.trim() !== config[key]) await saveSfxConfig({ [key]: value.trim() });
+          setSfxDraft(current => current?.[key] === value ? { ...current, [key]: null } : current);
+        }, T("配置已保存"));
+      };
+      const saveVideoConfig = values => {
+        const write = videoWrites.current.catch(() => {}).then(() => api.saveConfig(values));
+        videoWrites.current = write;
+        return write.then(next => { setConfig(next); return next; });
+      };
+      const saveVideoField = key => {
+        const value = videoDraft?.[key];
+        if (value === null || value === undefined) return;
+        void run(async () => {
+          if (value.trim() !== config[key]) await saveVideoConfig({ [key]: value.trim() });
+          setVideoDraft(current => current?.[key] === value ? { ...current, [key]: null } : current);
+        }, T("配置已保存"));
+      };
+      const videoTextField = (key, label, placeholder = "", disabled = false) => h("label", { className: "SPR_field" },
+        h("span", { className: "SPR_fieldLabel" }, label),
+        h("input", { className: "SPR_input", "data-testid": "cfg-" + key, value: videoDraft?.[key] ?? config[key] ?? "", placeholder, disabled,
+          onChange: event => { const value = event.target.value; setVideoDraft(current => ({ ...current, [key]: value })); },
+          onBlur: () => saveVideoField(key), onKeyDown: event => { if (event.key === "Enter" && !event.nativeEvent?.isComposing) event.currentTarget.blur(); } }));
+      const saveComfyCookie = value => {
+        if (value === null) return;
+        const write = saveVideoConfig(value.trim() ? { comfyCookies: value } : { clearComfyCookies: true });
+        comfyCookieWrite.current = write;
+        void write.then(() => setComfyCookie(current => current === value ? null : current)).catch(error => setNotice({ kind: "error", text: msg(error) }));
       };
       const editConnection = async (op, values = undefined) => {
         const next = await api.saveConfig({ customConnection: { op, ...(op !== "create" ? { id: edited?.id } : {}), values } });
@@ -24150,15 +24052,16 @@
       // 从该模型切走时，若 Base URL 还停在优云智算网关，则还原成官方默认地址。
       const compshareModelId = config.minimaxCompshareModelId;
       const compshareBaseUrl = config.minimaxCompshareBaseUrl;
-      const onModelChange = (nextModel) => {
+      const minimaxModelValues = (nextModel) => {
         const values: Record<string, unknown> = { minimaxModel: nextModel };
         if (compshareModelId !== undefined && nextModel === compshareModelId) {
           values.minimaxBaseUrl = compshareBaseUrl;
         } else if (config.minimaxModel === compshareModelId && config.minimaxBaseUrl === compshareBaseUrl) {
           values.minimaxBaseUrl = config.defaults?.minimaxBaseUrl ?? "https://api.minimaxi.com";
         }
-        void patch(values);
+        return values;
       };
+      const onModelChange = nextModel => run(() => saveVideoConfig(minimaxModelValues(nextModel)), T("配置已保存"));
       const usingCompshare = compshareModelId !== undefined && config.minimaxModel === compshareModelId;
 
       /**
@@ -24267,373 +24170,89 @@
             "aria-labelledby": "cfg-tab-video",
             hidden: activeTab !== "video"
           },
-          h("p", { className: "SPR_hint" }, T("图生视频三选一：MiniMax（云端，默认）、ToAPIs（云端异步）、本机 ComfyUI；勾选后两者之一会替换 MiniMax，取消勾选即回到 MiniMax。ToAPIs 的 Base URL / Key / 超时在「生图」里配置，图片与视频共用。")),
-          h(SettingsGroup, { title: T("付费视频保护（默认关闭）"), testId: "paid-video-safety" },
-            h("label", { className: "SPR_check" },
-              h("input", { type: "checkbox", checked: config.allowPaidVideoGeneration === true, onChange: event => void patch({ allowPaidVideoGeneration: event.target.checked }) }),
-              T("允许提交付费视频（MiniMax / ToAPIs）")),
-            h("p", { className: "SPR_hint" }, T("关闭时拦截所有新的付费视频请求；开启后每次仍需确认模型、时长、分辨率和段数。配置、准备白模、本地导入与抽帧不会提交付费视频。")),
-            h("p", { className: "SPR_hint" }, T("这里不会查询余额或实时单价，提交前请核对服务商价格。"))),
-          h(
-            SettingsGroup,
-            {
-              title: T("MiniMax（图生视频）"),
-              hint: T("白模流程推荐MiniMax-H3-Lite，固定4秒480P；下方时长与分辨率用于原有视频流程。保存设置不会生成视频。"),
-              badge: videoBackend === "minimax" ? T("当前使用") : null,
-              testId: "cfg-minimax-group"
-            },
-            h(Btn, { onClick: () => void patch({ minimaxModel: "MiniMax-H3-Lite", minimaxDuration: 4, minimaxResolution: "480P", comfyVideo: false, toapisVideo: false }) }, T("使用白模推荐参数（4秒480P，不生成）")),
-            h(
-              "div",
-              { className: "SPR_keyRow" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("API Key {n0}", { n0: config.minimaxApiKeySet ? T("（已配置 {n0}）", { n0: config.minimaxApiKeyHint }) : T("（未配置）") })),
-              h(ConfigKeyInput, {
-                api, keyName: "minimaxApiKey", isSet: config.minimaxApiKeySet, resetToken: config,
-                className: "SPR_input",
-                placeholder: config.minimaxApiKeySet ? T("留空表示不修改") : T("粘贴 MiniMax API Key"),
-                value: minimaxKey,
-                onChange: (event) => setMinimaxKey(event.target.value)
-              })
-            ),
-            h(Btn, { disabled: !minimaxKey.trim(), onClick: () => run(async () => { await api.saveConfig({ minimaxApiKey: minimaxKey }); setMinimaxKey(""); }, T("MiniMax Key 已保存")) }, T("保存 Key")),
-            h(Btn, { disabled: !config.minimaxApiKeySet, onClick: () => run(() => api.saveConfig({ clearMinimaxApiKey: true }), T("已清除 MiniMax Key")) }, T("清除"))
+          h(SettingsGroup, { title: T("付费视频保护"), testId: "paid-video-safety",
+            hint: T("默认禁止 MiniMax / ToAPIs 新的付费请求。允许后，每次仍需确认模型、时长、分辨率和段数；不查询余额与实时价格。本地导入、抽帧和 ComfyUI 不受影响，保存配置不会生成视频。") },
+            h("div", { className: "SPR_videoSafety" },
+              h(SettingsEnableSwitch, { enabled: config.allowPaidVideoGeneration === true, label: T("允许付费生成"), testId: "cfg-paid-video-enabled", onChange: value => run(() => saveVideoConfig({ allowPaidVideoGeneration: value }), T("配置已保存")) }),
+              h("span", { className: "SPR_hint" }, config.allowPaidVideoGeneration === true ? T("每次生成仍需确认") : T("已锁定付费生成")))),
+          h(SettingsGroup, { title: "MiniMax", testId: "cfg-minimax-group", badge: videoBackend === "minimax" ? T("当前使用") : null,
+            hint: T("默认视频后端。白模流程固定使用 MiniMax-H3-Lite、4 秒、480P；下方时长与分辨率用于其他视频流程。Key 失焦或按 Enter 自动保存；测试仅校验 Key，不生成、不计费。地址填主机根，不含 /v1、/v2；优云智算模型自动切换网关。"),
+            actions: h(BusyBtn, { busy: testing === "minimax", busyText: T("正在校验…"), disabled: testing !== null || !config.minimaxApiKeySet,
+              onClick: async () => { setTesting("minimax"); try { await run(async () => { await minimaxKeyWrite.current; await videoWrites.current; return api.testMinimax(); }, value => T("连接正常：{n0}", { n0: value.model })); } finally { setTesting(null); } } }, T("测试连接")) },
+            h("div", { className: "SPR_serviceSettings" },
+              h("div", { className: "SPR_videoPresetRow" },
+                h(Btn, { disabled: videoBackend === "minimax", onClick: () => run(() => saveVideoConfig({ comfyVideo: false, toapisVideo: false }), T("配置已保存")) }, videoBackend === "minimax" ? T("当前使用") : T("使用 MiniMax")),
+                h(Btn, { onClick: () => run(() => saveVideoConfig({ ...minimaxModelValues("MiniMax-H3-Lite"), minimaxDuration: 4, minimaxResolution: "480P", comfyVideo: false, toapisVideo: false }), T("配置已保存")) }, T("白模推荐参数"))),
+              h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, "API Key", h("span", { className: "SPR_connectionStatus" }, config.minimaxApiKeySet ? T("已配置") : T("未配置"))),
+                h(ConfigKeyInput, { api, keyName: "minimaxApiKey", isSet: config.minimaxApiKeySet, resetToken: config.minimaxApiKeyHint, clearable: true, pendingSaveRef: minimaxKeyWrite,
+                  "data-testid": "cfg-minimax-key", className: "SPR_input", placeholder: T("粘贴 MiniMax API Key"),
+                  onSave: value => saveVideoConfig(value.trim() ? { minimaxApiKey: value } : { clearMinimaxApiKey: true }) })),
+              h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("视频模型")),
+                h(SettingsSelect, { className: "SPR_input", "data-testid": "cfg-minimax-model", value: config.minimaxModel, onChange: event => onModelChange(event.target.value) },
+                  (config.minimaxModels ?? []).map(model => h("option", { key: model.id, value: model.id }, T("{n0}（{n1}）", { n0: model.label, n1: model.id }))),
+                  (config.minimaxModels ?? []).some(model => model.id === config.minimaxModel) ? null : h("option", { value: config.minimaxModel }, T("自定义：{n0}", { n0: config.minimaxModel })))),
+              h("div", { className: "SPR_serviceOutputFields" },
+                minimaxCaps.durations !== undefined
+                  ? h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("时长（秒）")),
+                      h(SettingsSelect, { className: "SPR_input", "data-testid": "cfg-minimax-duration", value: config.minimaxDuration, onChange: event => run(() => saveVideoConfig({ minimaxDuration: Number(event.target.value) }), T("配置已保存")) },
+                        minimaxCaps.durations.map(seconds => h("option", { key: seconds, value: seconds }, T("{n0} 秒", { n0: seconds })))))
+                  : h(NumField, { label: T("时长（秒，{n0}~{n1}）", { n0: minimaxCaps.durationMin, n1: minimaxCaps.durationMax }), value: config.minimaxDuration, min: minimaxCaps.durationMin, max: minimaxCaps.durationMax,
+                      onChange: value => run(() => saveVideoConfig({ minimaxDuration: value }), T("配置已保存")) }),
+                h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("分辨率")),
+                  h(SettingsSelect, { className: "SPR_input", "data-testid": "cfg-minimax-resolution", value: config.minimaxResolution, onChange: event => run(() => saveVideoConfig({ minimaxResolution: event.target.value }), T("配置已保存")) },
+                    minimaxCaps.resolutions.map(value => h("option", { key: value, value }, value))))),
+              h("details", { className: "SPR_settingsAdvanced", "data-testid": "cfg-minimax-advanced" }, h("summary", null, T("高级设置")),
+                h("div", { className: "SPR_videoAdvancedBody" }, videoTextField("minimaxBaseUrl", T("API 地址"), "https://api.minimaxi.com", usingCompshare),
+                  h("span", { className: "SPR_hint" }, T("当前协议：{n0}", { n0: minimaxCaps.protocol === "v2" ? T("v2（{n0}/v2/video_generation）", { n0: config.minimaxPathPrefix ?? "" }) : T("v1（{n0}/v1/video_generation）", { n0: config.minimaxPathPrefix ?? "" }) }))))),
           ),
-          h(
-            "div",
-            { className: "SPR_fields" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("视频模型")),
-              h(
-                SettingsSelect,
-                {
-                  className: "SPR_input",
-                  value: config.minimaxModel,
-                  onChange: (event) => onModelChange(event.target.value)
-                },
-                (config.minimaxModels ?? []).map((model) =>
-                  h("option", { key: model.id, value: model.id }, T("{n0}（{n1}）", { n0: model.label, n1: model.id }))
-                ),
-                (config.minimaxModels ?? []).some((model) => model.id === config.minimaxModel)
-                  ? null
-                  : h("option", { value: config.minimaxModel }, T("自定义：{n0}", { n0: config.minimaxModel }))
-              )
-            ),
-            // 时长控件随模型切换：Hailuo 是 6/10 两档，H3 是 4~15 连续区间。
-            minimaxCaps.durations !== undefined
-              ? h(
-                  "label",
-                  { className: "SPR_field" },
-                  h("span", { className: "SPR_fieldLabel" }, T("时长（秒）")),
-                  h(
-                    SettingsSelect,
-                    {
-                      className: "SPR_input",
-                      value: config.minimaxDuration,
-                      onChange: (event) => void patch({ minimaxDuration: Number(event.target.value) })
-                    },
-                    minimaxCaps.durations.map((seconds) =>
-                      h("option", { key: seconds, value: seconds }, T("{n0} 秒", { n0: seconds }))
-                    )
-                  )
-                )
-              : h(NumField, {
-                  label: T("时长（秒，{n0}~{n1}）", { n0: minimaxCaps.durationMin, n1: minimaxCaps.durationMax }),
-                  value: config.minimaxDuration,
-                  min: minimaxCaps.durationMin,
-                  max: minimaxCaps.durationMax,
-                  onChange: (value) => void patch({ minimaxDuration: value })
-                }),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("分辨率")),
-              h(
-                SettingsSelect,
-                {
-                  className: "SPR_input",
-                  value: config.minimaxResolution,
-                  onChange: (event) => void patch({ minimaxResolution: event.target.value })
-                },
-                minimaxCaps.resolutions.map((value) => h("option", { key: value, value }, value))
-              )
-            ),
-            h(
-              "label",
-              { className: "SPR_field SPR_settingsWide" },
-              h(
-                "span",
-                { className: "SPR_fieldLabel" },
-                usingCompshare
-                  ? T("Base URL（优云智算版 H3 固定使用，无需修改）")
-                  : T("Base URL（主机根，不含 /v1、/v2）")
-              ),
-              h("input", {
-                className: "SPR_input",
-                list: "SPR_minimax_hosts",
-                value: config.minimaxBaseUrl,
-                disabled: usingCompshare,
-                onChange: (event) => void patch({ minimaxBaseUrl: event.target.value })
-              }),
-              h(
-                "datalist",
-                { id: "SPR_minimax_hosts" },
-                (config.minimaxHosts ?? []).map((host) => h("option", { key: host.id, value: host.id }, host.label))
-              ),
-              h(
-                "span",
-                { className: "SPR_fieldLabel" },
-                T("当前协议：{n0}", { n0: minimaxCaps.protocol === "v2" ? T("v2（{n0}/v2/video_generation）", { n0: config.minimaxPathPrefix ?? "" }) : T("v1（{n0}/v1/video_generation）", { n0: config.minimaxPathPrefix ?? "" }) })
-              )
-            )
-          ),
-          h(
-            "div",
-            { className: "SPR_toolbar" },
-            h(
-              BusyBtn,
-              {
-                busy: testing === "minimax",
-                busyText: T("正在校验…"),
-                disabled: testing !== null || !config.minimaxApiKeySet,
-                onClick: async () => {
-                  setTesting("minimax");
-                  await run(() => api.testMinimax(), (value) => T("连接正常：{n0}", { n0: value.model }));
-                  setTesting(null);
-                }
-              },
-              T("测试连接（只校验 Key，不产生费用）")
-            )
-          )
-        ),
-
-        h(
-          SettingsGroup,
-          {
-            title: T("ToAPIs（视频）"),
-            hint: T("ToAPIs 视频参数独立于 MiniMax；目前仅支持文生视频或一张首帧，不支持尾帧及多模态参考。"),
-            badge: videoBackend === "toapis" ? T("当前使用") : null,
-            testId: "cfg-toapis-video",
-            lead: h(
-              "label",
-              { className: "SPR_check" },
-              h("input", {
-                type: "checkbox",
-                checked: config.toapisVideo === true,
-                onChange: (event) => void patch({ toapisVideo: event.target.checked, ...(event.target.checked ? { comfyVideo: false } : {}) })
-              }),
-              h("span", null, T("使用 ToAPIs 生成视频"))
-            )
-          },
-          h(
-            "div",
-            { className: "SPR_fields" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("ToAPIs 视频模型")),
-              h("input", {
-                className: "SPR_input",
-                value: config.toapisVideoModel ?? "",
-                onChange: (event) => void patch({ toapisVideoModel: event.target.value })
-              })
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("ToAPIs 视频分辨率")),
-              h("input", {
-                className: "SPR_input",
-                value: config.toapisVideoResolution ?? "",
-                onChange: (event) => void patch({ toapisVideoResolution: event.target.value })
-              })
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("ToAPIs 视频比例")),
-              h(
-                SettingsSelect,
-                {
-                  className: "SPR_input",
-                  "data-testid": "cfg-toapis-video-ratio",
-                  value: config.toapisVideoAspectRatio ?? "16:9",
-                  onChange: (event) => void patch({ toapisVideoAspectRatio: event.target.value })
-                },
-                ...["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"].map((value) => h("option", { key: value, value }, value))
-              )
-            ),
-            h(NumField, {
-              label: T("ToAPIs 视频时长（秒）"),
-              value: config.toapisVideoDuration ?? 4,
-              min: 4,
-              max: 15,
-              onChange: (value) => void patch({ toapisVideoDuration: value })
-            })
-          ),
-          h("p", null, T("角色首帧为方形时建议1:1，避免宽屏裁掉头脚；MP4抽帧仍需去背景。")),
-          h("p", { className: "SPR_hint" }, config.toapisApiKeySet ? T("ToAPIs Key 已配置") : T("ToAPIs Key 未配置"))
-        ),
-
-        h(
-          SettingsGroup,
-          {
-            title: T("本地 ComfyUI（图生视频）"),
-            hint: T("勾选后，视频阶段改由本机 ComfyUI 生成，不再调用 MiniMax。工作流贴「导出（API 格式）」的那份 JSON；插件只负责把提示词、首帧图、尺寸、时长、种子注入进去，其余节点原样提交。"),
-            badge: videoBackend === "comfy" ? T("当前使用") : null,
-            testId: "cfg-comfy-video-group",
-            lead: h(
-              "label",
-              { className: "SPR_check" },
-              h("input", {
-                type: "checkbox",
-                checked: config.comfyVideo === true,
-                onChange: (event) => void patch({ comfyVideo: event.target.checked, ...(event.target.checked ? {toapisVideo:false} : {}) })
-              }),
-              h("span", null, T("用本机 ComfyUI 生成视频（替代 MiniMax）"))
-            )
-          },
-          h(
-            "div",
-            { className: "SPR_fields" },
-            h(
-              "label",
-              { className: "SPR_field SPR_settingsWide" },
-              h("span", { className: "SPR_fieldLabel" }, T("ComfyUI 地址（本机默认 http://127.0.0.1:8188）")),
-              h("input", {
-                className: "SPR_input",
-                value: config.comfyBaseUrl,
-                onChange: (event) => void patch({ comfyBaseUrl: event.target.value })
-              })
-            ),
-            h(NumField, {
-              label: T("超时（秒）"),
-              value: Math.round((config.comfyTimeoutMs ?? 600000) / 1000),
-              min: 10,
-              max: 3600,
-              onChange: (value) => void patch({ comfyTimeoutMs: value * 1000 })
-            })
-          ),
-          h(
-            "div",
-            { className: "SPR_keyRow" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("Cookie {n0}", { n0: config.comfyCookiesSet ? T("（已配置 {n0}）", { n0: config.comfyCookiesHint }) : T("（未配置）") })),
-              h("input", {
-                className: "SPR_input",
-                type: "password",
-                placeholder: config.comfyCookiesSet ? T("留空表示不修改") : T("粘贴 Cookie 头，例如 token=abc; session=xyz"),
-                value: comfyCookie,
-                onChange: (event) => setComfyCookie(event.target.value)
-              })
-            ),
-            h(Btn, { onClick: () => run(async () => { await api.saveConfig({ comfyCookies: comfyCookie }); setComfyCookie(""); }, T("ComfyUI Cookie 已保存")) }, T("保存 Cookie")),
-            h(Btn, { disabled: !config.comfyCookiesSet, onClick: () => run(() => api.saveConfig({ clearComfyCookies: true }), T("已清除 ComfyUI Cookie")) }, T("清除"))
-          ),
-          h("p", { className: "SPR_hint" }, T("ComfyUI 本身不做鉴权；只有当它藏在需要登录的反向代理后面（Cloudflare Access、Basic Auth 之类）时才用得上——从浏览器开发者工具里把 Cookie 整段复制过来即可，所有请求（包括取回成品视频）都会带上它。")),
-          h(
-            "div",
-            { className: "SPR_fields" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("提示词注入点（留空自动探测）")),
-              h("input", {
-                className: "SPR_input",
-                placeholder: "1.text",
-                value: config.comfyPromptTarget,
-                onChange: (event) => void patch({ comfyPromptTarget: event.target.value })
-              })
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("首帧图注入点（留空自动探测）")),
-              h("input", {
-                className: "SPR_input",
-                placeholder: "10.image",
-                value: config.comfyFirstFrameTarget,
-                onChange: (event) => void patch({ comfyFirstFrameTarget: event.target.value })
-              })
-            )
-          ),
-          h(
-            "div",
-            { className: "SPR_fields" },
-            h(NumField, { label: T("宽度（0 = 用工作流里的值）"), value: config.comfyWidth, min: 0, max: 4096, onChange: (value) => void patch({ comfyWidth: value }) }),
-            h(NumField, { label: T("高度（0 = 用工作流里的值）"), value: config.comfyHeight, min: 0, max: 4096, onChange: (value) => void patch({ comfyHeight: value }) }),
-            h(NumField, { label: T("时长（秒，0 = 用工作流里的值）"), value: config.comfySeconds, min: 0, max: 120, onChange: (value) => void patch({ comfySeconds: value }) }),
-            h(NumField, { label: T("种子（0 = 每次随机）"), value: config.comfySeed, min: 0, max: 2147483647, onChange: (value) => void patch({ comfySeed: value }) })
-          ),
-          h(
-            "label",
-            { className: "SPR_field" },
-            h("span", { className: "SPR_fieldLabel" }, T("工作流 JSON（ComfyUI 菜单里的「导出（API 格式）」）")),
-            h("textarea", {
-              className: "SPR_input",
-              rows: 8,
-              spellCheck: false,
-              value: comfyWorkflowDraft ?? config.comfyWorkflow,
-              onChange: (event) => setComfyWorkflowDraft(event.target.value)
-            })
-          ),
-          h(
-            "div",
-            { className: "SPR_toolbar" },
-            h(Btn, { onClick: () => run(async () => { await api.saveConfig({ comfyWorkflow: comfyWorkflowDraft ?? config.comfyWorkflow }); setComfyWorkflowDraft(null); }, T("工作流已保存")) }, T("保存工作流")),
-            h(Btn, { onClick: () => run(async () => { await api.saveConfig({ comfyWorkflow: "" }); setComfyWorkflowDraft(null); }, T("已恢复内置模板")) }, T("恢复内置模板")),
-            h(
-              BusyBtn,
-              {
-                busy: testing === "comfy",
-                busyText: T("正在连接…"),
-                disabled: testing !== null,
-                onClick: async () => {
-                  setTesting("comfy");
-                  try {
-                    const value = await api.testComfy();
-                    setComfyProbe(value);
-                    setNotice({ kind: "ok", text: T("连接正常：ComfyUI {n0}", { n0: value.version }) });
-                  } catch (error) {
-                    setComfyProbe(null);
-                    setNotice({ kind: "error", text: msg(error) });
-                  } finally {
-                    setTesting(null);
-                  }
-                }
-              },
-              T("测试连接（只读状态，不产生费用）")
-            )
-          ),
-          comfyProbe === null
-            ? null
-            : h(
-                "div",
-                { className: "SPR_hint" },
-                h("div", null, T("ComfyUI {n0} · {n1} · 队列 {n2} 运行 / {n3} 等待 · 工作流 {n4} 个节点", {
-                  n0: comfyProbe.version,
-                  n1: comfyProbe.device || T("未知显卡"),
-                  n2: comfyProbe.queueRunning,
-                  n3: comfyProbe.queuePending,
-                  n4: comfyProbe.nodes
-                })),
-                h("div", null, T("探测到的注入点 —— 提示词：{n0}；首帧：{n1}；尺寸：{n2} × {n3}；秒数：{n4}；种子：{n5}", {
-                  n0: comfyProbe.bindings?.prompt ?? T("未探测到"),
-                  n1: comfyProbe.bindings?.first ?? T("未探测到"),
-                  n2: comfyProbe.bindings?.width ?? T("—"),
-                  n3: comfyProbe.bindings?.height ?? T("—"),
-                  n4: comfyProbe.bindings?.seconds ?? T("—"),
-                  n5: comfyProbe.bindings?.seed ?? T("—")
-                })),
-                (comfyProbe.notes ?? []).map((note, index) => h("div", { key: index }, note))
-              )
-        ),
+          h(SettingsGroup, { title: T("ToAPIs（视频）"), testId: "cfg-toapis-video", badge: videoBackend === "toapis" ? T("当前使用") : null, enabled: config.toapisVideo === true,
+            onEnabledChange: value => run(() => saveVideoConfig({ toapisVideo: value, ...(value ? { comfyVideo: false } : {}) }), T("配置已保存")),
+            hint: T("启用后替代 MiniMax，关闭后回到 MiniMax。地址、Key 与请求超时共用生图里的 ToAPIs 配置。支持文生视频或一张首帧，不支持尾帧与多模态参考。方形首帧建议 1:1，避免裁切头脚；MP4 抽帧仍需去背景。") },
+            h("div", { className: "SPR_serviceSettings" },
+              h("div", { className: "SPR_videoSharedConnection" }, h("span", null, T("共用生图连接")),
+                h("span", { className: "SPR_hint" }, config.toapisApiKeySet ? T("已配置") : T("未配置")),
+                h("code", null, config.toapisBaseUrl)),
+              h("div", { className: "SPR_serviceConnectionFields" }, videoTextField("toapisVideoModel", T("视频模型")), videoTextField("toapisVideoResolution", T("分辨率"))),
+              h("div", { className: "SPR_serviceOutputFields" },
+                h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("画面比例")),
+                  h(SettingsSelect, { className: "SPR_input", "data-testid": "cfg-toapis-video-ratio", value: config.toapisVideoAspectRatio ?? "16:9", onChange: event => run(() => saveVideoConfig({ toapisVideoAspectRatio: event.target.value }), T("配置已保存")) },
+                    ...["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"].map(value => h("option", { key: value, value }, value)))),
+                h(NumField, { label: T("时长（秒）"), value: config.toapisVideoDuration ?? 4, min: 4, max: 15, onChange: value => run(() => saveVideoConfig({ toapisVideoDuration: value }), T("配置已保存")) })))),
+          h(SettingsGroup, { title: T("本地 ComfyUI"), testId: "cfg-comfy-video-group", badge: videoBackend === "comfy" ? T("当前使用") : null,
+            hint: T("启用后替代云端视频，关闭后回到 MiniMax。工作流使用 ComfyUI 导出的 API JSON，需手动保存；插件注入提示词、首帧、尺寸、时长和种子，其余节点保持原样。测试只读服务状态，不提交生成。"),
+            actions: h(BusyBtn, { busy: testing === "comfy", busyText: T("正在连接…"), disabled: testing !== null,
+              onClick: async () => { setTesting("comfy"); try { await comfyCookieWrite.current; await videoWrites.current; const value = await api.testComfy(); setComfyProbe(value); setNotice({ kind: "ok", text: T("连接正常：ComfyUI {n0}", { n0: value.version }) }); }
+                catch (error) { setComfyProbe(null); setNotice({ kind: "error", text: msg(error) }); } finally { setTesting(null); } } }, T("测试连接")) },
+            h("div", { className: "SPR_serviceSettings" },
+              h(SettingsEnableSwitch, { enabled: config.comfyVideo === true, testId: "cfg-comfy-video-enabled", onChange: value => run(() => saveVideoConfig({ comfyVideo: value, ...(value ? { toapisVideo: false } : {}) }), T("配置已保存")) }),
+              videoTextField("comfyBaseUrl", T("服务地址"), "http://127.0.0.1:8188"),
+              h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("工作流 JSON")),
+                h("textarea", { className: "SPR_input SPR_videoWorkflow", "data-testid": "cfg-comfy-workflow", rows: 7, spellCheck: false, value: comfyWorkflowDraft ?? config.comfyWorkflow, onChange: event => setComfyWorkflowDraft(event.target.value) })),
+              h("div", { className: "SPR_videoWorkflowActions" },
+                h(Btn, { primary: true, disabled: comfyWorkflowDraft === null || comfyWorkflowDraft === config.comfyWorkflow,
+                  onClick: () => run(async () => { const draft = comfyWorkflowDraft; await saveVideoConfig({ comfyWorkflow: draft ?? config.comfyWorkflow }); setComfyWorkflowDraft(current => current === draft ? null : current); }, T("工作流已保存")) }, T("保存工作流")),
+                h(ImageResultMenu, { label: T("更多") }, h(Btn, { role: "menuitem", onClick: () => setComfyWorkflowDraft(null) }, T("放弃修改")),
+                  h(Btn, { role: "menuitem", onClick: () => run(async () => { await saveVideoConfig({ comfyWorkflow: "" }); setComfyWorkflowDraft(null); }, T("已恢复内置模板")) }, T("恢复内置模板")))),
+              h("details", { className: "SPR_settingsAdvanced", "data-testid": "cfg-comfy-video-advanced" }, h("summary", null, T("高级设置")),
+                h("div", { className: "SPR_videoAdvancedBody" },
+                  h(SettingsSubGroup, { title: T("连接"), hint: T("Cookie 仅用于需要登录的反向代理，可粘贴完整 Cookie 头。失焦或按 Enter 保存，留空不修改已存值；使用清除图标移除。超时单位为秒。") },
+                    h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, "Cookie", h("span", { className: "SPR_connectionStatus" }, config.comfyCookiesSet ? T("已配置") : T("未配置"))),
+                      h("div", { className: "SPR_secretInputWrap", "data-clearable": "true" },
+                        h("input", { className: "SPR_input", "data-testid": "cfg-comfy-cookie", type: "password", autoComplete: "new-password", value: comfyCookie ?? "", placeholder: config.comfyCookiesSet ? T("留空表示不修改") : "token=abc; session=xyz",
+                          onChange: event => setComfyCookie(event.target.value), onBlur: () => { if (comfyCookie?.trim()) saveComfyCookie(comfyCookie); }, onKeyDown: event => { if (event.key === "Enter" && !event.nativeEvent?.isComposing) event.currentTarget.blur(); } }),
+                        config.comfyCookiesSet || comfyCookie ? h("button", { type: "button", className: "SPR_secretClear", "aria-label": T("清除 Cookie"), onMouseDown: event => event.preventDefault(), onClick: () => { setComfyCookie(""); saveComfyCookie(""); } }, h(TaskHeaderIcon, { name: "close" })) : null)),
+                    h(NumField, { label: T("超时（秒）"), value: Math.round((config.comfyTimeoutMs ?? 600000) / 1000), min: 10, max: 3600, onChange: value => run(() => saveVideoConfig({ comfyTimeoutMs: value * 1000 }), T("配置已保存")) })),
+                  h(SettingsSubGroup, { title: T("工作流参数"), hint: T("注入点留空自动探测，格式为节点ID.输入名。宽度、高度和时长填 0 时沿用工作流；种子填 0 时每次随机。") },
+                    h("div", { className: "SPR_serviceOutputFields" }, videoTextField("comfyPromptTarget", T("提示词注入点"), "1.text"), videoTextField("comfyFirstFrameTarget", T("首帧注入点"), "10.image"),
+                      h(NumField, { label: T("宽度"), value: config.comfyWidth, min: 0, max: 4096, onChange: value => run(() => saveVideoConfig({ comfyWidth: value }), T("配置已保存")) }),
+                      h(NumField, { label: T("高度"), value: config.comfyHeight, min: 0, max: 4096, onChange: value => run(() => saveVideoConfig({ comfyHeight: value }), T("配置已保存")) }),
+                      h(NumField, { label: T("时长（秒）"), value: config.comfySeconds, min: 0, max: 120, onChange: value => run(() => saveVideoConfig({ comfySeconds: value }), T("配置已保存")) }),
+                      h(NumField, { label: T("种子"), value: config.comfySeed, min: 0, max: 2147483647, onChange: value => run(() => saveVideoConfig({ comfySeed: value }), T("配置已保存")) }))))),
+              comfyProbe === null ? null : h("details", { className: "SPR_settingsAdvanced", "data-testid": "cfg-comfy-probe" }, h("summary", null, T("连接详情")),
+                h("div", { className: "SPR_videoProbe" },
+                  h("div", null, T("ComfyUI {n0} · {n1} · 队列 {n2} 运行 / {n3} 等待 · 工作流 {n4} 个节点", { n0: comfyProbe.version, n1: comfyProbe.device || T("未知显卡"), n2: comfyProbe.queueRunning, n3: comfyProbe.queuePending, n4: comfyProbe.nodes })),
+                  h("div", null, T("探测到的注入点 —— 提示词：{n0}；首帧：{n1}；尺寸：{n2} × {n3}；秒数：{n4}；种子：{n5}", { n0: comfyProbe.bindings?.prompt ?? T("未探测到"), n1: comfyProbe.bindings?.first ?? T("未探测到"), n2: comfyProbe.bindings?.width ?? T("—"), n3: comfyProbe.bindings?.height ?? T("—"), n4: comfyProbe.bindings?.seconds ?? T("—"), n5: comfyProbe.bindings?.seed ?? T("—") })),
+                  (comfyProbe.notes ?? []).map((note, index) => h("div", { key: index }, note))))))
         ),
 
         h(
@@ -24791,10 +24410,10 @@
             {
               title: T("音乐生成（谱乐 AI）"),
               testId: "cfg-music-service",
-              hint: h("div", { className: "SPR_musicHelp" },
+              hint: h("div", { className: "SPR_serviceSettingsHelp" },
                 h("span", null, T("目前只支持谱乐 AI。生成按平台积分计费；测试连接只读取历史，不生成音乐。Key 保存在本机，失焦或按 Enter 自动保存。")),
                 h("span", null, T("音乐创作技巧来源：bitwize-music-studio/claude-ai-music-skills（CC0-1.0），已提炼为插件内置指南；原仓库版权归其作者所有，特此致谢。")),
-                h("div", { className: "SPR_musicLinks" },
+                h("div", { className: "SPR_serviceSettingsLinks" },
                   config.musicDocsUrl ? h("a", { className: "SPR_link", href: config.musicDocsUrl, target: "_blank", rel: "noreferrer" }, T("API 文档")) : null,
                   config.musicConsoleUrl ? h("a", { className: "SPR_link", href: config.musicConsoleUrl, target: "_blank", rel: "noreferrer" }, T("控制台")) : null)),
               actions: h(BusyBtn, { busy: testing === "music", busyText: T("正在测试…"), disabled: testing !== null || config.musicApiKeySet !== true,
@@ -24805,7 +24424,7 @@
                 }
               }, T("测试连接"))
             },
-          h("div", { className: "SPR_musicSettings" },
+          h("div", { className: "SPR_serviceSettings" },
           h(
             "div",
             { className: "SPR_field" },
@@ -24826,7 +24445,7 @@
           ),
           h(
             "div",
-            { className: "SPR_musicFields" },
+            { className: "SPR_serviceConnectionFields" },
             h(
               "label",
               { className: "SPR_field" },
@@ -24939,107 +24558,43 @@
           h(
             SettingsGroup,
             {
-              title: T("音效生成（火山引擎 Seed-Audio）"),
-              hint: T("用豆包语音的生成式音频模型做游戏音效：撞击 / 环境音 / UI 声 / 生物吼叫 / 角色配音。单次最长 120 秒。Key 是语音控制台的 API Key（请求头 X-Api-Key），不是火山方舟的 ARK_API_KEY；模型需要在语音控制台开通。")
-            },
-          config.sfxBlocker !== null && config.sfxBlocker !== undefined
-            ? h("div", { className: "SPR_note", "data-kind": "error" }, config.sfxBlocker)
-            : null,
-          h(
-            "div",
-            { className: "SPR_keyRow" },
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("API Key")),
-              h(ConfigKeyInput, {
-                api, keyName: "sfxApiKey", isSet: config.sfxApiKeySet, resetToken: config,
-                className: "SPR_input",
-                autoComplete: "off",
-                "data-testid": "cfg-sfx-key",
-                placeholder: config.sfxApiKeySet ? T("已配置 {n0}（留空表示不修改）", { n0: config.sfxApiKeyHint }) : T("粘贴语音控制台 API Key"),
-                value: sfxKey,
-                onChange: (event) => setSfxKey(event.target.value)
-              })
-            ),
-            h(Btn, { primary: true, disabled: sfxKey.trim() === "", onClick: () => void run(async () => { await api.saveConfig({ sfxApiKey: sfxKey }); setSfxKey(""); }, T("音效 API Key 已保存")) }, T("保存 Key")),
-            h(Btn, { disabled: config.sfxApiKeySet !== true, onClick: () => void run(() => api.saveConfig({ clearSfxApiKey: true }), T("已清除音效 API Key")) }, T("清除 Key")),
-            h(
-              BusyBtn,
-              {
-                busy: testing === "sfx",
-                busyText: T("正在生成测试音效…"),
-                disabled: testing !== null || config.sfxApiKeySet !== true,
+              title: T("音效生成"),
+              testId: "cfg-sfx-service",
+              hint: h("div", { className: "SPR_serviceSettingsHelp" },
+                h("span", null, T("火山引擎 Seed-Audio 音效，单次最长 120 秒。使用语音控制台 API Key，需开通模型；不是火山方舟的 ARK_API_KEY。Key 失焦或按 Enter 自动保存。生成和测试均计费，测试会先确认。")),
+                h("div", { className: "SPR_serviceSettingsLinks" },
+                  config.sfxDocsUrl ? h("a", { className: "SPR_link", href: config.sfxDocsUrl, target: "_blank", rel: "noreferrer" }, T("API 文档")) : null,
+                  config.sfxConsoleUrl ? h("a", { className: "SPR_link", href: config.sfxConsoleUrl, target: "_blank", rel: "noreferrer" }, T("控制台")) : null)),
+              actions: h(BusyBtn, { busy: testing === "sfx", busyText: T("正在生成测试音效…"), disabled: testing !== null || config.sfxApiKeySet !== true,
                 onClick: () => setTestConfirmation({ run: async () => {
                   setTesting("sfx");
-                  await run(() => api.testSfx(), (value) => T("连接正常：{n0}", { n0: value.message ?? "" }));
-                  setTesting(null);
+                  try { await run(async () => { await sfxKeyWrite.current; await sfxWrites.current; return api.testSfx(); }, value => T("连接正常：{n0}", { n0: value.message ?? "" })); }
+                  finally { setTesting(null); }
                 } })
-              },
-              T("生成测试（计费）")
-            )
-          ),
-          h(
-            "div",
-            { className: "SPR_fields" },
-            h(
-              "label",
-              { className: "SPR_field SPR_settingsWide" },
-              h("span", { className: "SPR_fieldLabel" }, T("API 地址")),
-              h("input", {
-                className: "SPR_input",
-                value: config.sfxBaseUrl ?? "",
-                onChange: (event) => void patch({ sfxBaseUrl: event.target.value }),
-                placeholder: "https://openspeech.bytedance.com"
-              })
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("默认模型")),
-              h("input", {
-                className: "SPR_input",
-                value: config.sfxModel ?? "seed-audio-1.0",
-                onChange: (event) => void patch({ sfxModel: event.target.value }),
-                placeholder: "seed-audio-1.0"
-              })
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("默认输出格式")),
-              h(
-                SettingsSelect,
-                { className: "SPR_input", value: config.sfxFormat ?? "wav", onChange: (event) => void patch({ sfxFormat: event.target.value }) },
-                (config.sfxFormats ?? [{ id: "wav" }, { id: "mp3" }, { id: "ogg_opus" }]).map((format) => h("option", { key: format.id, value: format.id }, sfxFormatLabel(format.id)))
-              )
-            ),
-            h(
-              "label",
-              { className: "SPR_field" },
-              h("span", { className: "SPR_fieldLabel" }, T("默认采样率")),
-              h(
-                SettingsSelect,
-                { className: "SPR_input", value: String(config.sfxSampleRate ?? 24000), onChange: (event) => void patch({ sfxSampleRate: Number(event.target.value) }) },
-                (config.sfxSampleRates ?? [16000, 24000, 44100, 48000]).map((rate) => h("option", { key: String(rate), value: String(rate) }, `${rate} Hz`))
-              )
-            ),
-            h(NumField, {
-              label: T("请求超时（毫秒）"),
-              value: config.sfxTimeoutMs ?? 300000,
-              min: 30000,
-              max: 900000,
-              onChange: (value) => void patch({ sfxTimeoutMs: value })
-            })
-          ),
-          h(
-            "p",
-            { className: "SPR_hint" },
-            T("文档："),
-            config.sfxDocsUrl ? h("a", { className: "SPR_link", href: config.sfxDocsUrl, target: "_blank", rel: "noreferrer" }, config.sfxDocsUrl) : null,
-            T(" · 控制台："),
-            config.sfxConsoleUrl ? h("a", { className: "SPR_link", href: config.sfxConsoleUrl, target: "_blank", rel: "noreferrer" }, config.sfxConsoleUrl) : null
-          )
+              }, T("生成测试（计费）"))
+            },
+            h("div", { className: "SPR_serviceSettings" },
+              h("div", { className: "SPR_field" },
+                h("label", { className: "SPR_fieldLabel", htmlFor: "cfg-sfx-key-input" }, T("API Key"), h("span", { className: "SPR_connectionStatus" }, config.sfxApiKeySet ? T("已配置") : T("未配置"))),
+                h(ConfigKeyInput, { api, keyName: "sfxApiKey", isSet: config.sfxApiKeySet, resetToken: config.sfxApiKeyHint,
+                  id: "cfg-sfx-key-input", className: "SPR_input", "data-testid": "cfg-sfx-key", placeholder: T("粘贴语音控制台 API Key"), clearable: true, pendingSaveRef: sfxKeyWrite,
+                  onSave: value => saveSfxConfig(value.trim() ? { sfxApiKey: value } : { clearSfxApiKey: true }) })),
+              h("div", { className: "SPR_serviceConnectionFields" },
+                h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("API 地址")),
+                  h("input", { className: "SPR_input", "data-testid": "cfg-sfx-url", value: sfxDraft?.sfxBaseUrl ?? config.sfxBaseUrl ?? "", placeholder: "https://openspeech.bytedance.com",
+                    onChange: event => setSfxDraft(current => ({ ...current, sfxBaseUrl: event.target.value })), onBlur: () => saveSfxField("sfxBaseUrl") })),
+                h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("默认模型")),
+                  h("input", { className: "SPR_input", "data-testid": "cfg-sfx-model", value: sfxDraft?.sfxModel ?? config.sfxModel ?? "seed-audio-1.0", placeholder: "seed-audio-1.0",
+                    onChange: event => setSfxDraft(current => ({ ...current, sfxModel: event.target.value })), onBlur: () => saveSfxField("sfxModel") }))),
+              h("div", { className: "SPR_serviceOutputFields" },
+                h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("默认输出格式")),
+                  h(SettingsSelect, { "data-testid": "cfg-sfx-format", value: config.sfxFormat ?? "wav", onChange: event => void patch({ sfxFormat: event.target.value }) },
+                    (config.sfxFormats ?? [{ id: "wav" }, { id: "mp3" }, { id: "ogg_opus" }]).map(format => h("option", { key: format.id, value: format.id }, sfxFormatLabel(format.id))))),
+                h("label", { className: "SPR_field" }, h("span", { className: "SPR_fieldLabel" }, T("默认采样率")),
+                  h(SettingsSelect, { "data-testid": "cfg-sfx-rate", value: String(config.sfxSampleRate ?? 24000), onChange: event => void patch({ sfxSampleRate: Number(event.target.value) }) },
+                    (config.sfxSampleRates ?? [16000, 24000, 44100, 48000]).map(rate => h("option", { key: String(rate), value: String(rate) }, `${rate} Hz`))))),
+              h("details", { className: "SPR_settingsAdvanced", "data-testid": "cfg-sfx-advanced" }, h("summary", null, T("高级设置")),
+                h("div", { className: "SPR_fields" }, h(NumField, { label: T("请求超时（毫秒）"), value: config.sfxTimeoutMs ?? 300000, min: 30000, max: 900000, onChange: value => void patch({ sfxTimeoutMs: value }) }))))
         ),
         ),
 
