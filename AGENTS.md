@@ -75,7 +75,8 @@ DSH 插件「游戏素材大师」：从一张角色设定图出发批量产出�
 | 音效模块：**参考图与参考音频互斥** | 参考图最多 1 张；参考音频最多 3 条、每条 ≤30 秒 / ≤10MB；`uploadSfxRef` 与 `buildSfxBody` 两处都要校验。音频参考在提示词里按 `@音频1…@音频3` 引用 |
 | 音效模块：后台任务表 **`activateSfx()` 每次 apply 都要复位**，`resumeSfxJobs()` 把残留 running 标失败 | 与 `pipeline` / `seqgen` / `riggen` / `musicgen` 同一个坑。同步接口没有远端 taskId 可续查，重启后只能标失败并提示「可能已计费」 |
 | 音效模块：**静态资源 scope 四处 + MIME** | `AssetScope` 加 `sfx-assets`、`resolveAssetTarget` 分支、`SCOPES` 数组、`SERVABLE_SFX_DIRS`（唯一真源在 `sfxgen.ts`）四处同步；子目录 `refs` / `takes` / `out` 少一个就是 403 |
-| 音效模块：**界面轮询不许覆盖草稿** | 生成中每 2.5 秒拉一次 `getSfxJob`；提示词与参数走 `mergeDrafts()`，只有「草稿 === 上次宿主值」才跟随更新，切任务才 `force`。`verify-sfx-client.mjs` 有静态契约 |
+| 图片、音乐、音效：**左侧复用 `JobSidebar`，不复制另一套项目列表** | 音频由 `useAudioSidebar` 适配数据与宿主方法，共用行、菜单、图标、排序、归档/撤回和主题样式。模块的选择、排序、折叠、草稿与收藏缓存键必须隔离；音乐与音效共用 `AudioModule` / `AudioTimeline` / `AudioPlayer`，保持音乐走 DSH 新对话、音效直接生成的流程 |
+| 音频模块：**轮询不许覆盖草稿，历史必须使用提交快照** | `useAudioStored` 独立保存提示词与参数，轮询只刷结果；选择 ticket 拦迟到响应。音乐 `source.conversationId` 归组 generation/composition，旧谱曲交 Suno 优先原 composition.source；音效 rounds 保存 prompt/settings/refs、take.roundId 关联，历史重生不改当前草稿，参考文件仍被历史引用则不删。缺快照的旧记录禁止伪造精确重生成。用本地假 API 的 `verify-audio-browser.mjs` 验证，不触真实计费 |
 | 新增产物子目录时，`SERVABLE_DIRS`（`src/index.ts`）必须同步加一条 | 静态资源路由按**第一段路径**比对白名单，漏掉就 403。界面只表现为「图裂了」、不报错——转圈截帧的 `turn/` 就踩过。模块六的子目录白名单**唯一真源是 `mapgen.SERVABLE_MAP_DIRS`**（`index.ts` 的资源路由直接引用它，别再各写一份）；scope 级那三处（`AssetScope` 类型 / `resolveAssetTarget` 分支 / `SCOPES` 数组）改 scope 时要同步。`verify-map-gateway.mjs` 会真调一遍路由（含 `ai/` 的 200 与未列入目录的 403） |
 | 模块五：**AI 生成素材首版只做 ground / object**，`autotile` 4×4 仍手工导入；`composeIsoAsset` 只整理到 `ai/`、不自动进素材列表，`ai/` 必须留在 `SERVABLE_ISO_DIRS` | 单张 AI 图无法可靠推导 16 种接法；`ai/` 漏白名单就是回链图片 403；自动导入会替用户拍板「属性一次定死」的素材 |
 | 模块五：**物件大小 `objectScale` 在导入时烘进存图**（`footprint.cols × cell.width × objectScale`），渲染 / 导出都不读它；`importIsoTileset` 的 `objectScale` 必须留在 wire schema 里，越界要报错、不静默夹 | 少一行 schema 就是「滑杆调了、点确定还是原大小」；改成运行期缩放则地图与导出会各算一套 |
@@ -132,6 +133,7 @@ node scripts/verify-music-client.mjs   # 音乐界面真渲染 + 新对话桥 + 
 node scripts/verify-sfx.mjs         # 音效生成：mock 火山引擎语音的请求/返回/错误/参考/导出/路由（55 项，纯本地）
 node scripts/verify-sfx-gateway.mjs # 音效走真实网关：wire schema 不丢键、工具面、深链接、隐藏模块、配置字段（39 项）
 node scripts/verify-sfx-client.mjs  # 音效界面真渲染：新建卡 / 任务卡 / 参考 / takes / 生成 / 遮罩 / 静态契约（29 项）
+node scripts/verify-audio-browser.mjs # 共用侧栏与音频聊天：真实Chromium、假API/DSH、草稿/轮次/版本/播放/计费确认/窄屏；禁用外网。PLAYWRIGHT_MODULE/CHROMIUM_PATH/REACT_TEST_ROOT 可指定本地fixture
 node scripts/verify-rig-runtime.mjs  # 骨骼改动：官方 Spine 4.2 实际加载/IK/Path/FFD/顶点求值（开发依赖）
 node scripts/verify-iso.mjs        # 45° 地图编辑器几何内核（42 项：2:1 步进 / 命中反解 / 物件锚点 / 环绕脏块 / 内置素材确定性 / 自动连接 mask / 水面无接缝 / 物件大小边界）
 node scripts/verify-iso-pipeline.mjs  # 45° 地图编辑器数据层与导出（54 项：导入 / 编辑 / 撤销 / 计划 / 动画 / 一键生成 / 导出可复现 / 删除素材重映射 / AI 整理 / 物件大小落盘）

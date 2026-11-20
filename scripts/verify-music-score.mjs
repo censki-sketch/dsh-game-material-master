@@ -13,7 +13,7 @@
  * 老任务迁移与深链接。
  */
 
-import { chmod, mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { chmod, copyFile, mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:http';
@@ -66,6 +66,26 @@ await writeFile(fixture, makeMidi());
 
 // ── 假 Python：-c 探测返回版本；否则复制 fixture 到 score.mid ─────────────
 async function makeFakePython(name, body) {
+  if (process.platform === 'win32') {
+    const path = join(HOME, name + '.exe'), binary = join(HOME, 'fake-python.exe');
+    if (name === 'python-ok') {
+      const code = `using System; using System.IO;
+public class FakePython {
+  public static int Main(string[] args) {
+    if (args.Length > 0 && args[0] == "-c") { Console.WriteLine("3.12.0"); Console.WriteLine("0.5.0"); return 0; }
+    var executable = Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+    if (executable.Contains("fail")) { Console.Error.WriteLine("bar 3: has 5.0 beats, expected 4.0 - over by 1.0 beats"); return 1; }
+    if (executable.Contains("nomidi")) { Console.WriteLine("forgot to save"); return 0; }
+    File.Copy(${JSON.stringify(fixture)}, "score.mid", true);
+    Console.WriteLine(${JSON.stringify(JSON.stringify({tempo:120,key:"C",sections:[{name:"A",bars:2}],duration_s:2}))}); return 0;
+  }
+}`;
+      const sourcePath = join(HOME, 'fake-python.cs'); await writeFile(sourcePath, code, 'utf8');
+      const quote = text => "'" + text.replaceAll("'", "''") + "'";
+      execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Add-Type -Path ${quote(sourcePath)} -OutputAssembly ${quote(binary)} -OutputType ConsoleApplication`], { windowsHide: true, stdio: 'pipe' });
+    }
+    await copyFile(binary, path); return path;
+  }
   const path = join(HOME, name);
   await writeFile(path, body, 'utf8');
   await chmod(path, 0o755);
@@ -240,7 +260,7 @@ try {
     name: '谱曲自检',
     workflow: 'compose',
     reviewMode: 'auto',
-    source: { kind: 'prompt', prompt: '一首 chipline 战斗循环', note: '90 秒', instrumental: true }
+    source: { conversationId: 'score-round-1', kind: 'prompt', prompt: '一首 chipline 战斗循环', note: '90 秒', instrumental: true }
   });
   check('compose 任务 workflow 正确', created.workflow === 'compose' && created.stages.compose !== undefined && created.compositions.length === 0, JSON.stringify(created.workflow));
   const saved = await gw.saveMusicScorePlan({ jobId: created.id, plan });
@@ -268,6 +288,7 @@ try {
   check('任务里有第一版', afterFirst.compositions.length === 1 && firstComp.status === 'ready' && firstComp.label === '第一版');
   check('MIDI 元数据解析正确', firstComp.midi.bars === 0.75 && Math.abs(firstComp.midi.duration - 1.5) < 0.01 && firstComp.midi.tempo === 120, JSON.stringify(firstComp.midi));
   check('试听音频已生成', typeof firstComp.audioFile === 'string' && /preview\.(mp3|wav)$/u.test(firstComp.audioFile) && firstComp.audioRenderer === 'builtin');
+  check('谱曲产物保存提交轮次和原始描述', firstComp.source?.conversationId === 'score-round-1' && firstComp.source?.prompt === '一首 chipline 战斗循环');
   check('report() JSON 被保存', firstComp.report?.tempo === 120 && firstComp.report?.sections?.[0]?.name === 'A');
   check('stages.compose=done', afterFirst.stages.compose.status === 'done');
   const midiFile = join(HOME, 'game-material-master', 'music-jobs', created.id, firstComp.midiFile);
@@ -324,9 +345,11 @@ try {
     noConfirm = String(error.message ?? error);
   }
   check('没有 confirm 时拒绝提交', /confirm/u.test(noConfirm) && /MIDI/u.test(noConfirm), noConfirm.slice(0, 160));
+  await gw.saveMusicJob({ jobId: created.id, source: { kind: 'prompt', prompt: '另一个新轮次', conversationId: 'score-round-2' } });
   const submitted = await gw.submitMusicScoreToSuno({ jobId: created.id, scoreId: first.scoreId, confirm: true });
   check('提交启动并带 scoreId', submitted.started === true && submitted.scoreId === first.scoreId && submitted.mode === 'cover', JSON.stringify(submitted).slice(0, 240));
   const rightAfter = await gw.getMusicJob({ jobId: created.id });
+  check('旧谱曲交Suno使用原轮请求快照', rightAfter.generations.find(g => g.id === submitted.generationId)?.source?.conversationId === 'score-round-1' && rightAfter.source.conversationId === 'score-round-2');
   check(
     '提交后立刻是 busy 或已有歌（界面据此开始轮询）',
     rightAfter.busy === true || (rightAfter.songs ?? []).length > 0,

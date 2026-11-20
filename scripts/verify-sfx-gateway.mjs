@@ -90,6 +90,9 @@ try {
   check("exportSfx 全部字段都过 schema", true);
 
   deepStrictEqual(parsed("runSfxGeneration", { jobId: "f1234" }), { jobId: "f1234" });
+  deepStrictEqual(parsed("runSfxGeneration", { jobId: "f1234", roundId: "r1234" }), { jobId: "f1234", roundId: "r1234" });
+  deepStrictEqual(parsed("saveSfxJob", { jobId: "f1234", reuseRoundId: "r1234" }), { jobId: "f1234", reuseRoundId: "r1234" });
+  check("历史轮次重生成与复用字段不会被wire丢弃", true);
   deepStrictEqual(parsed("setReviewMode", { id: "f1234", module: "sfx", reviewMode: "manual" }), { id: "f1234", module: "sfx", reviewMode: "manual" });
   check("setReviewMode 接受 sfx 模块", true);
 

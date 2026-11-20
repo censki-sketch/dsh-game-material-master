@@ -58,6 +58,7 @@ export interface MusicScoreMeta {
 }
 
 export interface MusicComposition {
+  source?: Record<string, unknown>;
   id: string;
   label: string;
   title: string;

@@ -199,6 +199,7 @@ try {
   const after2 = await waitIdle(job.id);
   check("两条 take 都保留", after2.takes.length === 2 && after2.takes[0].id !== after2.takes[1].id, `${after2.takes.length}`);
   check("take 内保留生成时提示词", after2.takes[0].prompt === job.prompt);
+  check("每次生成保存独立轮次并关联take", after2.rounds.length === 2 && after2.rounds.every(round => round.status === "ready" && after2.takes.some(take => take.id === round.takeId && take.roundId === round.id)));
   // 用一个慢任务来测并发闸门。
   const slow = await gw.createSfxJob({ prompt: "SLOW 慢任务", settings: { format: "wav", sampleRate: 24000 } });
   const first = await gw.runSfxGeneration({ jobId: slow.id });
@@ -207,6 +208,14 @@ try {
   check("取消接口能找到任务", (await gw.cancelSfxGeneration({ jobId: slow.id })).canceled === true);
   const canceled = await waitIdle(slow.id);
   check("取消后任务进入 error 且没有新 take", canceled.status === "error" && canceled.takes.length === 0, `${canceled.status} / ${canceled.takes.length}`);
+  check("取消保留本轮请求和失败详情", canceled.rounds.length === 1 && canceled.rounds[0].status === "error" && canceled.rounds[0].request.prompt === slow.prompt && !!canceled.rounds[0].error);
+
+  const parallel = await gw.createSfxJob({ prompt: "SLOW 固定请求", settings: { format: "wav", sampleRate: 24000 } });
+  const submissions = await Promise.all([gw.runSfxGeneration({ jobId: parallel.id }), gw.runSfxGeneration({ jobId: parallel.id })]);
+  check("同一时刻并发提交只有一次被接受", submissions.filter(result => result.started).length === 1);
+  await gw.saveSfxJob({ jobId: parallel.id, prompt: "下轮编辑草稿", settings: { format: "mp3", sampleRate: 16000 } });
+  const parallelView = await waitIdle(parallel.id);
+  check("生成过程中修改草稿不会改变已提交请求", parallelView.rounds[0].request.prompt === "SLOW 固定请求" && parallelView.takes[0].prompt === "SLOW 固定请求" && parallelView.takes[0].settings.format === "wav" && parallelView.prompt === "下轮编辑草稿");
 
   section("5) 参考素材");
   const refJob = await gw.createSfxJob({ prompt: "参考图生成声线", settings: { format: "mp3", sampleRate: 16000 } });
@@ -215,10 +224,11 @@ try {
   check("参考图已入库并带 URL", withImage.refs.image?.name === "角色.png" && typeof withImage.refs.image.url === "string", JSON.stringify(withImage.refs.image));
   await expectThrow("参考图与参考音频互斥", () => gw.uploadSfxRef({ jobId: refJob.id, kind: "audio", name: "a.wav", data: toneBytes.toString("base64") }), "不能同时使用");
   await gw.runSfxGeneration({ jobId: refJob.id });
-  await waitIdle(refJob.id);
+  const imageView = await waitIdle(refJob.id);
   const imageReq = requests.filter((entry) => entry.path === "/api/v3/tts/create").at(-1);
   check("请求里带 image_data", typeof imageReq.body.references?.[0]?.image_data === "string", JSON.stringify(Object.keys(imageReq.body.references?.[0] ?? {})));
   await gw.removeSfxRef({ jobId: refJob.id, kind: "image" });
+  check("移除当前参考仍保留历史快照中的文件", (await stat(G.sfxAssetPath(refJob.id, withImage.refs.image.file))).size === pngBytes.length);
 
   await gw.uploadSfxRef({ jobId: refJob.id, kind: "audio", name: "a.wav", data: toneBytes.toString("base64") });
   const withAudio = await gw.getSfxJob({ jobId: refJob.id });
@@ -233,6 +243,14 @@ try {
     await gw.uploadSfxRef({ jobId: refJob.id, kind: "audio", name: "d.wav", data: toneBytes.toString("base64") });
   }, "最多 3 条");
   await gw.removeSfxRef({ jobId: refJob.id, kind: "audio" });
+  await gw.saveSfxJob({ jobId: refJob.id, prompt: "当前新草稿", settings: { format: "wav", sampleRate: 24000 } });
+  await gw.runSfxGeneration({ jobId: refJob.id, roundId: imageView.rounds[0].id });
+  const regeneratedView = await waitIdle(refJob.id);
+  check("历史重生成精确使用原参考和设置", regeneratedView.rounds.at(-1).request.refs.image.file === withImage.refs.image.file && regeneratedView.rounds.at(-1).request.settings.format === "mp3" && regeneratedView.rounds.at(-1).request.prompt === refJob.prompt);
+  check("历史重生成不覆盖当前草稿或当前参考", regeneratedView.prompt === "当前新草稿" && regeneratedView.settings.format === "wav" && regeneratedView.refs.image == null && regeneratedView.refs.audios.length === 0);
+  const reused = await gw.saveSfxJob({ jobId: refJob.id, reuseRoundId: imageView.rounds[0].id });
+  check("复用本轮恢复原提示词设置和参考图，不触发生成", reused.refs.image.file === withImage.refs.image.file && reused.settings.format === "mp3" && reused.rounds.length === regeneratedView.rounds.length);
+  await gw.removeSfxRef({ jobId: refJob.id, kind: "image" });
   await expectThrow("超长参考音频被拒绝", async () => {
     const longBytes = await readFile(longWav);
     await gw.uploadSfxRef({ jobId: refJob.id, kind: "audio", name: "long.wav", data: longBytes.toString("base64") });
@@ -245,6 +263,7 @@ try {
   const grantView = await waitIdle(grantJob.id);
   check("10074 给出开通提示", grantView.status === "error" && /开通/u.test(grantView.error ?? ""), grantView.error);
   check("失败不新增 take", grantView.takes.length === 0);
+  check("失败轮次仍保留描述与错误", grantView.rounds.length === 1 && grantView.rounds[0].status === "error" && grantView.rounds[0].request.prompt === grantJob.prompt && !!grantView.rounds[0].error);
   const corruptJob = await gw.createSfxJob({ prompt: "CORRUPT 测试" });
   await gw.runSfxGeneration({ jobId: corruptJob.id });
   const corruptView = await waitIdle(corruptJob.id);

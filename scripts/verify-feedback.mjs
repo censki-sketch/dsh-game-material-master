@@ -1040,7 +1040,7 @@ section("图片项目侧栏与创建弹窗");
   check("删除完成后关闭确认弹窗", deleteCalls === 1 && deleteClosed === 1);
   HOOK.slots = []; HOOK.cursor = 0;
   const preferences = { directory: "", sort: "updated", layout: "merged", order: [] };
-  const tree = bundle.__test.JobSidebar({ title: "项目", items: [makeImageJob()], activeId: "i1", storageKey: "image", preferences, onPreferences: () => {}, onCreate: () => {}, renderMeta: () => "" });
+  const tree = bundle.__test.JobSidebar({ title: "项目", items: [makeImageJob()], activeId: "i1", storageKey: "image", preferences, onPreferences: () => {}, onCreate: () => {}, onOpenFolder: () => {}, renderMeta: () => "" });
   check("图片侧栏标题为项目，不显示数量", byClass(tree, "SPR_taskSideTitle").some(node => textOf(node) === "项目"));
   check("侧栏顶栏打开文件夹与整理项目分开", byTag(tree, "button").some(node => node.props["aria-label"] === "打开文件夹") && byTag(tree, "button").some(node => node.props["aria-label"] === "整理项目") && !byTag(tree,"button").some(node=>node.props["aria-label"]==="创建项目"));
   check("顶栏操作收进悬停操作容器", byClass(tree, "SPR_taskHeadActions").length === 1);

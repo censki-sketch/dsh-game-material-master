@@ -74,6 +74,7 @@ more room. On narrow screens it becomes a drawer; click the backdrop or press Es
 is remembered.
 
 The image sidebar now uses a **Projects** heading. Its arrow collapses only the list; the header panel icon collapses the entire sidebar. Both choices are remembered separately.
+Image, music and sound effects reuse the same project sidebar, with consistent pinning, archive and undo, unread status, rename, context menus, manual order and collapse behavior. Each module remembers its own selection and order. Music and sound effects also use a conversation timeline: descriptions and results stay together by round, the composer stays at the bottom, settings and assets open on demand, and logs are collapsed within each round.
 The top **Open folder** button uses the native system picker and discovers existing image projects in that directory. It does not create a project or generate an image. The compose icon beside a folder resumes its unfinished draft instead of repeatedly creating empty projects. Unsaved text, template choices and settings survive chat switches and page reloads; reference images stay with the draft. After generation or explicitly importing a result, compose can start the next project. **Generate** adds the project to that folder's list. Later generations stay in its history. Explicitly importing an existing result also publishes the project; editing and uploading references do not add list entries.
 Open and closed folder icons indicate the remembered expansion state and stay unchanged on hover. Groups use compact spacing and a gray row hover. Image projects show a single name line, with counts kept in hover cards beside a chat icon. Folder cards omit the update time; individual image-project cards keep their dates. Counts include current and historical versions, deduplicating the same version while keeping new keyed versions separate.
 The folder menu follows **Pin, Edit, Open in file explorer, Archive chats, Remove project**, with outline icons and separators. Click the trigger again, click outside or press Esc to close it. The separate compose icon still creates projects. Pinned folders appear in a separate **Pinned** section above **Projects**, hidden when empty. Both sections collapse independently and remember their state; headings use transparent backgrounds and compact spacing. Archiving moves the folder's currently visible image projects to the local archive view, with **View** and **Undo** in the notice. An always-visible **Archived chats (count)** link at the bottom of the sidebar opens the archive, including its empty state when the count is zero, where projects can be unarchived or the normal view restored. **Organize projects → View archived chats** remains available. Images and history are kept.
@@ -342,9 +343,9 @@ flowchart LR
 
 ## ⑦ Music generation & editing (Puyue AI)
 
-This module does not produce a song from a single button click. You enter an idea or paste a full set of
-lyrics and click "Generate and open chat"; the plugin creates a music job, then opens a **new chat that is not
-attached to any project** and sends the job id plus your original text as the first message. The agent in
+Enter an idea or paste lyrics in the bottom composer and click the send icon. The plugin creates a music job
+(later rounds reuse it), then opens a **new DSH chat that is not attached to any project** and sends the job id,
+round id and your original text as the first message. The agent in
 that chat:
 
 1. reads the built-in **music creation guide** (style-prompt structure, the 13-point lyric QC, choosing
@@ -362,10 +363,11 @@ Clicking the link returns to the music page: preview (the asset route supports R
 waveform, trim, gain, fades, normalization to -14 LUFS / -1 dBTP, save as a new version, and export to
 MP3 / WAV / M4A (multiple outputs are zipped automatically). The original is never overwritten. Generation is
 billed by Puyue AI credits; the plugin does not collect payment and never re-submits just to check status.
+Switch between the original and edits in the round's version menu and bookmark each file separately. Only one audio player plays at a time. Unsent text and settings survive project switches and reloads; clicking New again resumes the unfinished draft.
 
 ### Compose mode (local MIDI; composing and previewing are free)
 
-The New Music card has a **"Compose mode (local MIDI)"** tab. It does not ask an audio model for a song.
+For new music, choose **Local composition** in the mode menu below the composer. It does not ask an audio model for a song.
 Instead:
 
 1. the agent in the chat analyses your idea: use, emotional arc, style, key and tonic, BPM, meter,
@@ -380,7 +382,7 @@ Instead:
    approved, and export a score bundle (MIDI + preview + `plan.md` + `compose.py`);
 6. when you say "too loud / too slow / too many drums / the second section is too long", the agent changes
    only that section; **every revision is a new version**, old versions are kept;
-7. when you are happy you can click **"Generate a Suno version from this audio (billed)"**. The plugin first
+7. when you are happy, choose **Hand off to Suno** in that version's More menu and confirm the charge. The plugin first
    **uploads this version's preview audio** to Suno as a reference (standard upload is free), then generates a
    **cover**. Suno does not accept MIDI files, but it does accept audio, so the chain is
    "MIDI → rendered audio → upload → cover"; this stays much closer to your instrumentation and sections than
@@ -402,6 +404,7 @@ Suno handoff is billed.
 
 This module generates directly in the UI: describe the sound, choose a format and sample rate, then click
 Generate (billed).
+Format, sample rate and pitch settings are in **Generation settings** at the top right; use the send icon below to submit. Each round keeps its description, settings and references. Confirm before regenerating a failed round, or use **Reuse this round** to restore and edit its request without submitting it. Legacy records without reference snapshots allow text and settings reuse only. The right-hand navigator locates historical rounds, and the asset panel can export everything as a ZIP.
 
 - **Write the prompt like a dubbing director's script**: source + environment + intensity/rhythm + approximate
   duration, e.g. "metal impact in heavy rain, short and forceful, about 1 second, with a slight tail". Up to

@@ -131,15 +131,10 @@ check("深链接能解析 sfx", (() => {
 })());
 check("设置页有音效分组与 Key 输入", source.includes("音效生成（火山引擎 Seed-Audio）") && source.includes('"data-testid": "cfg-sfx-key"') && source.includes("testSfx"));
 check("设置页说明 Key 不是方舟 Key", /不是火山方舟的 ARK_API_KEY/.test(source));
-check("新建卡 / 生成按钮 / 参考卡都有 data-testid", ["sfx-create", "sfx-create-submit", "sfx-generate", "sfx-refs", "sfx-takes"].every((id) => source.includes(`"data-testid": "${id}"`)));
+check("新建卡 / 生成按钮 / 参考卡都有 data-testid", ["sfx-generate", "sfx-prompt"].every((id) => source.includes(`"data-testid": "${id}"`)));
 check("远程方法都在客户端清单里", ["testSfx", "createSfxJob", "getSfxJob", "runSfxGeneration", "uploadSfxRef", "exportSfx"].every((method) => source.includes(`["${method}", true]`) || source.includes(`["${method}", false]`)));
 check("模块导出到 __test", typeof T.SfxModule === "function");
-check("轮询草稿用 mergeDrafts", /setPromptDraft\(\(current\) => mergeDrafts\(current, loadedDraft\.current\.prompt/.test(source));
-check("轮询同时刷新左侧任务列表", /setJobs\(\(current\) => \{[\s\S]{0,900}?takes\.length/.test(source));
-check("生成前先保存提示词与参数", /await api\.saveSfxJob\(\{ jobId, prompt: promptDraft, settings: settingsDraft \}\);\s*\n\s*const result = await api\.runSfxGeneration/.test(source));
 
-// ── 真渲染：新建卡 ──────────────────────────────────────────────────────
-section("2) 真渲染：新建卡");
 const config = {
   sfxBlocker: null,
   sfxApiKeySet: true,
@@ -155,22 +150,6 @@ const config = {
   sfxSampleRates: [16000, 24000, 44100, 48000],
   sfxLimits: { promptChars: 2048, maxSeconds: 120 }
 };
-function renderSfx(slots, api) {
-  HOOK.slots = slots;
-  HOOK.cursor = 0;
-  return T.SfxModule({ api: api ?? new Proxy({}, { get: () => async () => ({}) }) });
-}
-const createTree = renderSfx([
-  0, null, config, [], null, null, null, false, true,
-  { name: "", prompt: "", format: "wav", sampleRate: 24000 }, "auto", false, "", { format: "wav", sampleRate: 24000, speechRate: 0, loudnessRate: 0, pitchRate: 0, watermark: false }, false, false, null, null, false
-]);
-check("新建卡出现", byTestId(createTree, "sfx-create") !== undefined);
-check("新建提交按钮出现", byTestId(createTree, "sfx-create-submit") !== undefined);
-check("新建提示词框出现", byTestId(createTree, "sfx-create-prompt") !== undefined);
-check("新建卡有审核模式", textOf(createTree).includes("审核模式"));
-
-// ── 真渲染：任务视图 ────────────────────────────────────────────────────
-section("3) 真渲染：任务视图");
 const job = {
   module: "sfx",
   id: "f1",
@@ -202,74 +181,49 @@ const job = {
   exports: [],
   log: [{ at: 1, level: "info", message: "hello" }]
 };
-function jobSlots(overrides = {}) {
-  return [
-    0,
-    null,
-    config,
-    [{ id: "f1", name: "测试音效", takes: 1, latestDuration: 3, busy: false }],
-    "f1",
-    job,
-    null,
-    false,
-    false,
-    { name: "", prompt: "", format: "wav", sampleRate: 24000 },
-    "auto",
-    false,
-    job.prompt,
-    { format: "wav", sampleRate: 24000, speechRate: 0, loudnessRate: 0, pitchRate: 0, watermark: false },
-    false,
-    false,
-    null,
-    null,
-    false,
-    ...(overrides.extra ?? [])
-  ];
-}
-const jobTree = renderSfx(jobSlots());
-check("任务卡出现", byTestId(jobTree, "sfx-job") !== undefined);
-check("提示词框出现", byTestId(jobTree, "sfx-prompt") !== undefined);
-check("生成按钮出现", byTestId(jobTree, "sfx-generate") !== undefined);
-check("参考卡出现", byTestId(jobTree, "sfx-refs") !== undefined);
-check("takes 卡出现", byTestId(jobTree, "sfx-takes") !== undefined);
-check("audio 播放器出现", [...nodes(jobTree)].some((node) => node.type === "audio" && node.props?.controls === true));
-check("参考图缩略图出现", [...nodes(jobTree)].some((node) => node.type === "img"));
-check("参考音频列表出现", textOf(jobTree).includes("@音频1"));
-check("通过按钮出现", [...nodes(jobTree)].some((node) => textOf(node) === "通过本条音效"));
+section("2) 共用工作台与请求快照");
+const draft = { prompt: "金属撞击，新描述", settings: job.settings, reviewMode: "manual" };
+const calls = [], updates = [];
+const api = new Proxy({}, { get: (_target, name) => async input => { calls.push([String(name), input]); if (name === 'runSfxGeneration') return { started: true }; if (name === 'saveSfxJob' || name === 'getSfxJob') return job; return {}; } });
+function render(jobValue = job, cfg = config, draftValue = draft) { HOOK.slots = [draftValue]; HOOK.cursor = 0; return T.SfxWorkspace({ api, job: jobValue, config: cfg, onCreated: j => updates.push(j), onUpdate: j => updates.push(j) }); }
+function timeline(tree) { return [...nodes(tree)].find(n => n.type === T.AudioTimeline); }
+check("音效与音乐使用同一个容器", T.SfxModule({ api }).type === T.AudioModule && T.MusicModule({ api }).type === T.AudioModule);
+const tree = render(), conversation = timeline(tree), composer = conversation.props.composer;
+check("输入框和生成按钮在底部composer", byTestId(composer, 'sfx-prompt') && byTestId(composer, 'sfx-generate'));
+check("已有旧take转换为时间线，不编造参考快照", conversation.props.rounds.length === 1 && conversation.props.rounds[0].legacy && !conversation.props.rounds[0].request.refs);
+check("参考图片可预览并使用相对路径", [...nodes(composer)].some(n => n.props?.src === '/dsh-game-material-master/sfx-assets/f1/refs/image.png'));
+check("参考音频保留引用标签", textOf(composer).includes('@音频1'));
+const parameters = conversation.props.panels.find(p => p.id === 'parameters').content;
+check("格式采样率与审核都使用主题菜单", [...nodes(parameters)].filter(n => n.type === T.AudioChoice).length === 3 && ![...nodes(parameters)].some(n => n.type === 'select'));
+const result = conversation.props.renderResult(conversation.props.rounds[0], () => null);
+check("结果使用统一播放器", [...nodes(result)].some(n => n.type === T.AudioPlayer));
+check("结果保留下载、导出、审核和目录", [...nodes(result)].some(n => n.type === 'a' && n.props.href.endsWith('takes/k1.wav?download=1')) && textOf(result).includes('导出') && textOf(result).includes('通过') && textOf(result).includes('打开任务目录'));
+const busy = timeline(render({ ...job, busy: true })).props.composer;
+check("忙碌时发送按钮成为停止按钮", byTestId(busy, 'sfx-generate').props['aria-label'] === '停止生成');
+const blocked = timeline(render(job, { ...config, sfxBlocker: '缺少凭据' })).props.composer;
+check("缺Key时禁止提交", byTestId(blocked, 'sfx-generate').props.disabled === true);
+const empty = timeline(render(job, config, { ...draft, prompt: '' })).props.composer;
+check("空描述时禁止提交", byTestId(empty, 'sfx-generate').props.disabled === true);
+check("草稿按项目独立缓存且轮询不覆盖", source.includes('useAudioStored("sfx-draft:" + (job?.id || "new")') && source.includes('if (alive.current && request === ticket.current && selection.current === id) setJob(next)'));
+const snapshot = { id: 'r1', createdAt: 1, status: 'ready', request: { prompt: '历史描述', settings: job.settings, refs: { audios: [] } }, takeId: 'k1' };
+const stored = T.sfxConversationRounds({ ...job, rounds: [snapshot] });
+check("新快照与take按轮次ID关联", stored.length === 1 && stored[0].takes[0].id === 'k1' && stored[0].request.prompt === '历史描述');
+const failed = T.sfxConversationRounds({ ...job, rounds: [{ ...snapshot, status: 'error', takeId: undefined, error: '失败' }], takes: [] });
+check("失败轮次保留描述和错误", failed.length === 1 && failed[0].error === '失败' && failed[0].prompt === '历史描述');
 
-// 生成中必须出现遮罩。
-const busyTree = renderSfx(jobSlots().map((value, index) => (index === 5 ? { ...job, busy: true } : value)));
-check("生成中显示遮罩", [...nodes(busyTree)].some((node) => node.type === T.LoadingOverlay && node.props?.show === true));
-
-// ── 点击「生成」真的调到远程方法 ────────────────────────────────────────
-section("4) 点击生成");
-const calls = [];
-const api = new Proxy({}, {
-  get: (_target, name) => async (...args) => {
-    calls.push([String(name), args]);
-    if (name === "getConfig") return config;
-    if (name === "listSfxJobs") return { jobs: [] };
-    if (name === "saveSfxJob") return job;
-    if (name === "runSfxGeneration") return { started: true };
-    if (name === "getSfxJob") return job;
-    if (name === "setSfxApproved") return job;
-    if (name === "uploadSfxRef" || name === "removeSfxRef" || name === "exportSfx") return job;
-    return {};
-  }
-});
-const clickTree = renderSfx(jobSlots(), api);
-const generateButton = byTestId(clickTree, "sfx-generate");
-generateButton.props.onClick();
-await new Promise((resolve) => setTimeout(resolve, 20));
-check("点击生成先 saveSfxJob", calls.some(([name]) => name === "saveSfxJob"));
-check("点击生成调用 runSfxGeneration", calls.some(([name]) => name === "runSfxGeneration"));
-
-// 生成中按钮禁用（Key 缺失 / 提示词为空时）。
-const blockedTree = renderSfx(jobSlots().map((value, index) => (index === 2 ? { ...config, sfxBlocker: "还没配置 API Key" } : value)));
-check("缺 Key 时生成按钮禁用", byTestId(blockedTree, "sfx-generate")?.props?.disabled === true);
+section("3) 点击提交与并发保护");
+const generate = byTestId(composer, 'sfx-generate'); generate.props.onClick(); generate.props.onClick();
+await new Promise(resolve => setTimeout(resolve, 30));
+check("重复点击只调用一次生成", calls.filter(([name]) => name === 'runSfxGeneration').length === 1);
+const savedIndex = calls.findIndex(([name]) => name === 'saveSfxJob'), runIndex = calls.findIndex(([name]) => name === 'runSfxGeneration');
+check("生成前先保存本轮描述、设置和审核模式", savedIndex >= 0 && savedIndex < runIndex && calls[savedIndex][1].prompt === draft.prompt && calls[savedIndex][1].reviewMode === 'manual');
+check("提交后刷新目标任务", calls.some(([name]) => name === 'getSfxJob') && updates.length === 1);
+await conversation.props.onRegenerate(snapshot);
+check("重新生成使用历史roundId", calls.filter(([name]) => name === 'runSfxGeneration').at(-1)[1].roundId === 'r1');
+const beforeLegacy = calls.length; let legacyError;
+try { await conversation.props.onRegenerate({ ...snapshot, legacy: true }); } catch (error) { legacyError = error; }
+check("缺完整快照的旧版不能悄悄使用当前参考重新生成", !!legacyError && !calls.slice(beforeLegacy).some(([name]) => name === 'runSfxGeneration'));
+check("重新生成统一经过计费确认", source.includes('重新生成会再次计费，确认提交这一轮的请求？'));
 
 console.log(`\n共 ${checks} 项检查，失败 ${failures.length} 项。`);
-if (failures.length > 0) {
-  console.error(`失败项：${failures.join("、")}`);
-  process.exitCode = 1;
-}
+if (failures.length) { console.error(failures.join('、')); process.exitCode = 1; }

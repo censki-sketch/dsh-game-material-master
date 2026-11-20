@@ -259,7 +259,7 @@ try {
   check("history 分页参数保留", history.page === 1 && history.total === 7, JSON.stringify(history));
 
   section("4) 任务生命周期");
-  const made = await gw.createMusicJob({ name: "自检歌曲", source: { kind: "prompt", prompt: "a short bright test tone", note: "90 秒" }, reviewMode: "auto" });
+  const made = await gw.createMusicJob({ name: "自检歌曲", source: { conversationId: "round-source-test", kind: "prompt", prompt: "a short bright test tone", note: "90 秒" }, reviewMode: "auto" });
   check("任务 id 以 a 开头", /^a[a-z0-9]+$/u.test(made.id), made.id);
   check("任务落盘", (await stat(join(HOME, "game-material-master", "music-jobs", made.id, "job.json"))).isFile());
   check("新建任务视图带 assetBase", made.assetBase === `/dsh-game-material-master/music-assets/${made.id}/`, made.assetBase);
@@ -270,6 +270,7 @@ try {
   check("并发/已提交时拒绝重复提交", again.started === false && /已有|在跑|计费/.test(again.reason ?? ""), again.reason);
   let settled = await waitIdle(made.id);
   check("生成结束且不再是 busy", settled.busy === false);
+  check("音乐生成保存conversationId和用户原文快照", settled.generations[0].source?.conversationId === "round-source-test" && settled.generations[0].source?.prompt === "a short bright test tone");
   check("Suno 返回 2 首并下载到本地", settled.songs.length === 2 && settled.songs.every((song) => song.status === "succeeded" && song.file), JSON.stringify(settled.songs.map((song) => [song.id, song.status, song.file])));
   check("歌曲 URL 走 music-assets 路由", settled.songs.every((song) => String(song.url).includes(`/music-assets/${made.id}/songs/`)));
   const blocked = await gw.runMusicGeneration({ jobId: made.id, engine: "suno", mode: "prompt", params: { prompt: "again" } });

@@ -126,6 +126,9 @@ try {
     check(`清单里有 ${method}`, wire.METHODS.some((entry) => entry.method === method));
   }
 
+  assertPayload("createMusicJob", { source: { conversationId: "round-wire" } });
+  assertPayload("saveMusicJob", { jobId: "a1234", source: { conversationId: "round-wire", adaptedPrompt: "updated" } });
+  check("音乐轮次ID通过create/save的wire schema", losses.length === 0);
   section("2) 配置字段过 schema 不丢");
   const cfg = await call("saveConfig", { musicApiKey: "sk-test", musicBaseUrl: base, musicProvider: "puyue", musicModel: "chirp-v6", musicTimeoutMs: 30000, musicPollTimeoutMs: 60000, musicPythonPath: "/tmp/py", musicFluidsynthPath: "/tmp/fs", musicSoundfontPath: "/tmp/sf2" });
   check("音乐配置写入并脱敏", cfg.musicApiKeySet === true && cfg.musicApiKey === undefined && cfg.musicModel === "chirp-v6");

@@ -80,6 +80,16 @@ export interface SfxTake {
   settings: SfxSettings;
   createdAt: number;
   logId?: string;
+  roundId?: string;
+}
+
+export interface SfxRound {
+  id: string;
+  createdAt: number;
+  status: "running" | "ready" | "error";
+  request: { prompt: string; settings: SfxSettings; refs: SfxJob["refs"] };
+  takeId?: string;
+  error?: string;
 }
 
 export interface SfxExport {
@@ -106,6 +116,7 @@ export interface SfxJob {
   status: "idle" | "running" | "ready" | "error";
   error?: string;
   takes: SfxTake[];
+  rounds?: SfxRound[];
   stages: Record<SfxStageKey, SfxStageState>;
   exports: SfxExport[];
   log: JobLogEntry[];
@@ -238,6 +249,17 @@ function normalizeJob(raw: any, id: string): SfxJob {
         : []
     },
     status: ["idle", "running", "ready", "error"].includes(config.status) ? config.status : "idle",
+    rounds: Array.isArray(config.rounds) ? config.rounds.flatMap((round: any): SfxRound[] => {
+      if (!round || typeof round.id !== "string" || typeof round.request?.prompt !== "string") return [];
+      try {
+        const image = normalizeRefImage(round.request.refs?.image);
+        return [{ id: round.id, createdAt: Number(round.createdAt) || Number(config.createdAt) || now(),
+          status: ["running", "ready", "error"].includes(round.status) ? round.status : "error",
+          request: { prompt: clampString(round.request.prompt, SFX_LIMITS.promptChars), settings: normalizeSfxSettings(round.request.settings),
+            refs: { ...(image ? { image } : {}), audios: Array.isArray(round.request.refs?.audios) ? round.request.refs.audios.map(normalizeRefAudio).filter(Boolean) : [] } },
+          ...(typeof round.takeId === "string" ? { takeId: round.takeId } : {}), ...(typeof round.error === "string" ? { error: round.error } : {}) }];
+      } catch { return []; }
+    }) : [],
     ...(typeof config.error === "string" && config.error !== "" ? { error: config.error } : {}),
     takes: Array.isArray(config.takes)
       ? config.takes
@@ -258,7 +280,8 @@ function normalizeJob(raw: any, id: string): SfxJob {
               }
             })(),
             createdAt: Number(take.createdAt) || now(),
-            ...(typeof take.logId === "string" && take.logId !== "" ? { logId: take.logId } : {})
+            ...(typeof take.logId === "string" && take.logId !== "" ? { logId: take.logId } : {}),
+            ...(typeof take.roundId === "string" ? { roundId: take.roundId } : {})
           }))
       : [],
     stages: {
@@ -342,10 +365,17 @@ export async function readSfxJob(id: string): Promise<SfxJob | undefined> {
 /** 保存提示词 / 名称 / 参数 / 审核模式。生成中的任务也允许改，下一次生成才生效。 */
 export async function saveSfxJob(
   id: string,
-  input: { name?: string; prompt?: string; settings?: unknown; reviewMode?: "auto" | "manual" }
+  input: { name?: string; prompt?: string; settings?: unknown; reviewMode?: "auto" | "manual"; reuseRoundId?: string }
 ): Promise<Record<string, unknown>> {
   assertJobId(id);
   const job = await patchSfxJob(id, (current) => {
+    if (input.reuseRoundId) {
+      const round = current.rounds?.find(entry => entry.id === input.reuseRoundId);
+      if (!round) throw new Error("生成轮次不存在，无法复用。");
+      current.prompt = round.request.prompt;
+      current.settings = { ...round.request.settings };
+      current.refs = JSON.parse(JSON.stringify(round.request.refs));
+    }
     if (typeof input.name === "string") {
       const name = input.name.trim().slice(0, 200);
       if (name !== "") current.name = name;
@@ -512,6 +542,7 @@ export async function uploadSfxRef(id: string, kind: "image" | "audio", name: st
   assertJobId(id);
   const job = await readSfxJob(id);
   if (job === undefined) throw new Error(`音效任务不存在：${id}`);
+  if (sfxBusy(id, job) || submittingSfx.has(id)) throw new Error("正在生成，结束后再修改参考素材。");
   const raw = typeof data === "string" ? data.replace(/^data:[^,]*,/u, "") : "";
   if (raw.trim() === "") throw new Error("上传内容为空");
   let bytes: Buffer;
@@ -545,7 +576,7 @@ export async function uploadSfxRef(id: string, kind: "image" | "audio", name: st
       };
       sfxLog(current, "info", `上传参考图：${current.refs.image.name}`);
     });
-    if (previous !== undefined) await rm(sfxAssetPath(id, previous.file), { force: true }).catch(() => undefined);
+    if (previous !== undefined && !job.rounds?.some(round => round.request.refs.image?.file === previous.file)) await rm(sfxAssetPath(id, previous.file), { force: true }).catch(() => undefined);
     const latest = await readSfxJob(id);
     return sfxSnapshot(latest ?? job, originForLinks());
   }
@@ -595,6 +626,7 @@ export async function removeSfxRef(id: string, kind: "image" | "audio", file?: s
   assertJobId(id);
   const job = await readSfxJob(id);
   if (job === undefined) throw new Error(`音效任务不存在：${id}`);
+  if (sfxBusy(id, job) || submittingSfx.has(id)) throw new Error("正在生成，结束后再修改参考素材。");
   const removed: string[] = [];
   await patchSfxJob(id, (current) => {
     if (kind === "image") {
@@ -614,8 +646,11 @@ export async function removeSfxRef(id: string, kind: "image" | "audio", file?: s
     current.refs.audios = keep;
     if (removed.length > 0) sfxLog(current, "info", `删除 ${removed.length} 条参考音频`);
   });
-  for (const relative of removed) await rm(sfxAssetPath(id, relative), { force: true }).catch(() => undefined);
   const latest = await readSfxJob(id);
+  for (const relative of removed) {
+    const retained = latest?.rounds?.some(round => round.request.refs.image?.file === relative || round.request.refs.audios.some(audio => audio.file === relative));
+    if (!retained) await rm(sfxAssetPath(id, relative), { force: true }).catch(() => undefined);
+  }
   return sfxSnapshot(latest ?? job, originForLinks());
 }
 
@@ -640,30 +675,48 @@ async function readRefs(id: string, job: SfxJob): Promise<{ image?: Buffer; audi
   return { ...(image === undefined ? {} : { image }), audios };
 }
 
-export async function startSfxGeneration(id: string): Promise<StartSfxGenerationResult> {
+const submittingSfx = new Set<string>();
+export async function startSfxGeneration(id: string, roundId?: string): Promise<StartSfxGenerationResult> {
   assertJobId(id);
+  if (submittingSfx.has(id)) return { started: false, reason: "这个任务正在提交，请勿重复生成。" };
+  submittingSfx.add(id);
+  try { return await submitSfxGeneration(id, roundId); }
+  finally { submittingSfx.delete(id); }
+}
+async function submitSfxGeneration(id: string, roundId?: string): Promise<StartSfxGenerationResult> {
   const job = await readSfxJob(id);
   if (job === undefined) throw new Error(`音效任务不存在：${id}`);
   if (sfxBusy(id, job)) return { started: false, reason: "这个任务正在生成，等它结束再提交（重复提交会重复计费）。" };
   const config = await loadConfig();
   const blocker = sfxBlocker(config);
   if (blocker !== undefined) throw new Error(blocker);
+  if (roundId) {
+    const previous = job.rounds?.find(round => round.id === roundId);
+    if (!previous) throw new Error("生成轮次不存在，不能重新生成。");
+    job.prompt = previous.request.prompt;
+    job.settings = { ...previous.request.settings };
+    job.refs = JSON.parse(JSON.stringify(previous.request.refs));
+  }
   if (job.prompt.trim() === "") throw new Error("提示词为空：先写清要什么声音");
   const refs = await readRefs(id, job);
   // 先在主线程校验一遍（不消耗网络），避免「任务已置 running 才因为参数不合法失败」。
   buildSfxBody({ prompt: job.prompt, settings: job.settings, refs }, config.sfxModel);
   const startedAt = now();
+  const round: SfxRound = { id: `r${startedAt.toString(36)}${randomUUID().slice(0, 6)}`, createdAt: startedAt, status: "running", request: JSON.parse(JSON.stringify({ prompt: job.prompt, settings: job.settings, refs: job.refs })) };
   await patchSfxJob(id, (current) => {
+    (current.rounds ??= []).push(round);
     current.status = "running";
     current.error = undefined;
     current.stages.generate = { status: "running", approved: false, at: startedAt };
     sfxLog(current, "info", `提交生成：${job.settings.format} / ${job.settings.sampleRate}Hz`);
   });
-  const ok = trackSfxTask(id, "generation", () => runSfxGeneration(id, refs));
+  const ok = trackSfxTask(id, "generation", () => runSfxGeneration(id, refs, round));
   if (!ok) {
     await patchSfxJob(id, (current) => {
       current.status = "error";
       current.error = "后台任务没有启动（插件正在重载？）";
+      const stored = current.rounds?.find(entry => entry.id === round.id);
+      if (stored) { stored.status = "error"; stored.error = current.error; }
       current.stages.generate = { status: "error", approved: false, error: current.error, at: now() };
       sfxLog(current, "error", current.error);
     });
@@ -672,7 +725,7 @@ export async function startSfxGeneration(id: string): Promise<StartSfxGeneration
   return { started: true };
 }
 
-async function runSfxGeneration(id: string, refs: { image?: Buffer; audios: Buffer[] }): Promise<void> {
+async function runSfxGeneration(id: string, refs: { image?: Buffer; audios: Buffer[] }, round: SfxRound): Promise<void> {
   const config = await loadConfig();
   const controller = controllerOf(id);
   const job = await readSfxJob(id);
@@ -686,8 +739,8 @@ async function runSfxGeneration(id: string, refs: { image?: Buffer; audios: Buff
         timeoutMs: config.sfxTimeoutMs
       },
       {
-        prompt: job.prompt,
-        settings: job.settings,
+        prompt: round.request.prompt,
+        settings: round.request.settings,
         refs
       },
       controller?.signal
@@ -710,6 +763,8 @@ async function runSfxGeneration(id: string, refs: { image?: Buffer; audios: Buff
     await patchSfxJob(id, (current) => {
       current.status = "ready";
       current.error = undefined;
+      const stored = current.rounds?.find(entry => entry.id === round.id);
+      if (stored) { stored.status = "ready"; stored.takeId = takeId; }
       current.takes.push({
         id: takeId,
         file: relative,
@@ -717,8 +772,9 @@ async function runSfxGeneration(id: string, refs: { image?: Buffer; audios: Buff
         format: result.ext,
         ...(duration === undefined ? {} : { duration }),
         ...(result.originalDuration === undefined ? {} : { originalDuration: result.originalDuration }),
-        prompt: job.prompt,
-        settings: job.settings,
+        roundId: round.id,
+        prompt: round.request.prompt,
+        settings: round.request.settings,
         createdAt: now(),
         ...(result.logId === undefined ? {} : { logId: result.logId })
       });
@@ -730,6 +786,8 @@ async function runSfxGeneration(id: string, refs: { image?: Buffer; audios: Buff
     await patchSfxJob(id, (current) => {
       current.status = "error";
       current.error = message;
+      const stored = current.rounds?.find(entry => entry.id === round.id);
+      if (stored) { stored.status = "error"; stored.error = message; }
       current.stages.generate = { status: "error", approved: false, error: message, at: now() };
       sfxLog(current, "error", message);
     }).catch(() => undefined);
@@ -863,6 +921,7 @@ export async function sfxSnapshot(job: SfxJob, origin = originForLinks()): Promi
     prompt: job.prompt,
     settings: job.settings,
     status: job.status,
+    rounds: job.rounds ?? [],
     ...(job.error === undefined ? {} : { error: job.error }),
     refs: {
       image: job.refs.image === undefined
@@ -895,6 +954,7 @@ export async function resumeSfxJobs(): Promise<void> {
     await patchSfxJob(summary.id, (job) => {
       job.status = "error";
       job.error = "宿主重启导致生成中断；远端可能已经完成并计费，请重新生成或先到控制台核对。";
+      for (const round of job.rounds ?? []) if (round.status === "running") { round.status = "error"; round.error = job.error; }
       job.stages.generate = { status: "error", approved: false, error: job.error, at: now() };
       sfxLog(job, "warn", job.error);
     }).catch(() => undefined);

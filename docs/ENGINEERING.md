@@ -2522,6 +2522,16 @@ running 落在下一次 `getProject` 里**：
 
 ## 音乐生成编辑（模块七 · `music`）
 
+### 与图片、音效共用的工作台
+
+- 项目列表只有一套 `JobSidebar`，图片、音乐、音效均复用其行、置顶/归档/未读、右键、重命名、删除确认、排序与折叠；音频通过 `useAudioSidebar` 接入宿主方法与统计。音频隐藏目录布局选项，保留项目排序和归档。状态按模块分别存储，不能复用图片的缓存键。
+- `MusicModule` / `SfxModule` 使用 `AudioModule` 管理加载、选择、轮询和草稿入口；每次选择有 ticket，迟到响应不能切回旧项目。`useAudioStored` 把草稿、阅读锚点与逐文件收藏存到本机，内存兜底；轮询只刷新结果，不覆盖输入。重复新建恢复未提交草稿，上传参考所需的临时项目也复用。
+- `AudioTimeline` 保持每轮描述、附件、折叠日志、结果与操作在一起；输入区固定底部，参数和素材按需打开。右侧定位条及窄屏目录可跳转，`ResizeObserver` 保持阅读锚点，程序滚动不覆写用户位置。
+- 音乐仍开 DSH 新对话，音效仍在插件内直接提交。音乐发送生成 `source.conversationId`，generation/composition 保存提交时的 source 快照，编辑版本通过 songId 归入原轮。旧谱曲交给 Suno 时优先使用该 composition 的 source，不读当前轮的描述。待处理 DSH 记录按本轮 ID 与返回产物合并，缺快照的旧记录不伪造历史请求。
+- `AudioPlayer` 共用播放/暂停、进度与时长，互斥播放；音乐波形按需读取 `musicPeaks`，音效没有波形时显示进度条。音乐编辑的基准、时长和波形都跟随所选版本，渲染传对应 versionId；保留 pendingVersionId，后台渲染完成后自动切换试听，等待时阻止再次提交。切换版本或项目后，迟到波形不能污染当前播放器。所有产物地址仍由 `assetBase` 拼相对路径。
+- `AudioChoice` 复用 `ImageResultMenu` 的主题菜单，`AudioPanel` / `AudioConfirm` 使用主题弹窗；禁用原生 select/confirm 和 audio controls。Suno、版权上传与 WAV 获取分别确认；重复提交在 await 之前锁定，失败保留确认窗和错误。
+- `scripts/verify-audio-browser.mjs` 使用真实 Chromium + 本地 React fixture + 假 API/DSH bridge，拦截全部外网请求；涵盖草稿、选择竞争、排序归档、版本编辑、播放、计费确认、窄屏及浅深色截图。fixture 可通过 `PLAYWRIGHT_MODULE`、`CHROMIUM_PATH`、`REACT_TEST_ROOT` 指定，默认 React UMD 文件放在 `.verify/`。
+
 ### 为什么单开一个模块
 
 八方向图 / 图片 / 序列帧都在做「视觉素材」，而音乐是**长时音频 + 外部生成平台 + 本地后期**：
@@ -2622,15 +2632,14 @@ running 落在下一次 `getProject` 里**：
 
 ### 自检
 
-- `verify-music.mjs`：mock 谱乐 AI + 真 ffmpeg，86 项（端点映射、状态机、计费闸门、下载、
+- `verify-music.mjs`：mock 谱乐 AI + 真 ffmpeg，87 项（端点映射、状态机、计费闸门、请求快照、下载、
   编辑/淡入淡出/loudnorm、波形、工具、导出 zip、路由 200/206/403/下载头、402/429/坏 JSON）。
-- `verify-music-score.mjs`：谱曲模式，46 项（方案归一化、假 Python 脚本、脚本报错/不产出 MIDI、
+- `verify-music-score.mjs`：谱曲模式，48 项（方案归一化、假 Python 脚本、脚本报错/不产出 MIDI、
   MIDI 元数据、内置试听、逐版修改、波形、乐谱包、Suno mock 的音频上传/cover/confirm/regenerate/
   版权通道/scoreId、老任务迁移、深链接）。纯本地、零计费。
-- `verify-music-gateway.mjs`：走真实网关，52 项（wire schema 逐键不丢、工具面、深链接、
+- `verify-music-gateway.mjs`：走真实网关，53 项（wire schema 逐键不丢、conversationId、工具面、深链接、
   隐藏模块、谱曲字段与依赖状态）。
-- `verify-music-client.mjs`：真渲染 + 假 sessions，65 项（创建卡、歌曲/编辑/版本/导出、
-  谱曲创建卡 / 谱曲卡 / 提示词 / 深链接、新对话不挂靠项目、功能管理）。
+- `verify-music-client.mjs`：真渲染 + 假 sessions，61 项（共用侧栏、聊天工作台、版本与谱曲归组、提示词、深链接、新对话不挂靠项目、功能管理）。
 
 ### 谱曲模式（本地 MIDI）
 
@@ -2709,8 +2718,8 @@ X-Api-Request-Id: <uuid>
 └── out/       导出（单条 / zip）
 ```
 
-`runSfxGeneration` 先落 `status=running`，再起后台任务；成功追加一条 take，失败写 `status=error`
-且**不新增 take、不自动重试**。`patchSfxJob` 是按任务串行队列，避免界面保存与后台收尾互相覆盖。
+`runSfxGeneration` 在第一个 await 前锁住提交，先保存 `rounds[]` 请求快照（prompt/settings/refs）与 `status=running`，再起后台任务。后台只读取快照，用户后续编辑不会改变已提交的请求。成功追加一条 take 并以 roundId 关联原轮，失败/取消保留本轮错误且**不新增 take、不自动重试**。`patchSfxJob` 是按任务串行队列，避免界面保存与后台收尾互相覆盖。
+传 `roundId` 会按该历史快照新增一轮生成，不改当前草稿和参考；`saveSfxJob({reuseRoundId})` 只恢复描述、设置和参考，不提交。移除/替换当前参考时，历史快照仍引用的文件必须保留；没有快照的旧 take 仅支持文字与参数复用，界面不允许精确重生成。
 `activateSfx()` 每次 `apply` 复位 `disposed` / 任务表；`resumeSfxJobs()` 把重启前残留的 `running`
 标失败（同步接口没有远端 taskId 可续查，只能提示可能已计费）。
 
@@ -2723,20 +2732,19 @@ X-Api-Request-Id: <uuid>
 
 ### 界面
 
-- 左侧任务列表 + 「新建音效」；右侧提示词 / 格式 / 采样率 / 三档速率 / 水印 / 参考 / takes / 导出。
-- 生成按钮带 `BusyBtn` 与 `LoadingOverlay`，文案写明每次真实计费；Key 未配置时禁用。
-- 生成中每 2.5 秒拉一次 `getSfxJob`；提示词与参数用 `mergeDrafts()`，切任务才 `force`。
+- 与音乐共用 `AudioModule` / `AudioTimeline` / `AudioPlayer`，左侧复用图片的 `JobSidebar`。底部描述与参考、发送/停止图标，右上角打开参数和素材；每轮折叠日志、试听、下载、复用与确认后重新生成。
+- 发送按钮带提交锁和忙状态，Key 未配置时禁用；旧 take、原参考与全部导出保留。
+- 生成中每 2.5 秒拉一次 `getSfxJob` 并刷新列表；草稿通过 `useAudioStored` 独立保存，轮询不写入草稿。
 - 产物 URL 从 `job.assetBase` + 相对 `file` 拼（复用音乐模块的相对地址逻辑），不直接依赖绝对 URL。
 
 ### 自检
 
-- `verify-sfx.mjs`（55 项）：mock 语音服务，请求路径 / Header / body、base64 与 URL 返回、
+- `verify-sfx.mjs`（64 项）：mock 语音服务，请求路径 / Header / body、base64 与 URL 返回、
   伪音频拒绝、401 / 10074 / 空响应、并发闸门、取消、重启恢复、参考互斥与上限、导出、资源路由、
   以及「只重试握手前网络错误」的判据。
-- `verify-sfx-gateway.mjs`（39 项）：wire schema 逐键不丢、工具面归类、深链接、隐藏模块、
+- `verify-sfx-gateway.mjs`（40 项）：wire schema 逐键不丢（含 roundId/reuseRoundId）、工具面归类、深链接、隐藏模块、
   配置字段、intake / status / review / approve / upload。
-- `verify-sfx-client.mjs`（29 项）：模块注册、设置页字段、远程方法清单、草稿合并、真渲染
-  （新建卡 / 任务卡 / 参考 / takes / 生成 / 遮罩）。
+- `verify-sfx-client.mjs`（29 项）：模块注册、设置页字段、远程方法清单、草稿隔离、真渲染（共用工作台 / 历史参考 / 轮次与旧 take / 提交锁 / 复用与重生成）。浏览器交互另由 `verify-audio-browser.mjs` 覆盖。
 
 ## 许可
 

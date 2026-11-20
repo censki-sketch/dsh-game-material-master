@@ -969,6 +969,7 @@ const setMusicApprovedSchema = z.object({  jobId: z.string(),
 });
 
 const musicSourceSchema = z.object({
+  conversationId: z.string().optional(),
   kind: z.enum(["prompt", "lyrics"]).optional(),
   prompt: z.string().optional(),
   lyrics: z.string().optional(),
@@ -1185,6 +1186,7 @@ const createSfxJobSchema = z.object({
 });
 const saveSfxJobSchema = z.object({
   jobId: z.string(),
+  reuseRoundId: z.string().optional(),
   name: z.string().optional(),
   prompt: z.string().optional(),
   settings: sfxSettingsSchema.optional(),
@@ -1442,7 +1444,7 @@ export const METHODS: MethodSpec[] = [  { method: "getConfig", result: configVie
   { method: "deleteSfxJob", payload: sfxJobIdSchema, result: okSchema },
   { method: "uploadSfxRef", payload: uploadSfxRefSchema, result: jsonObject },
   { method: "removeSfxRef", payload: removeSfxRefSchema, result: jsonObject },
-  { method: "runSfxGeneration", payload: sfxJobIdSchema, result: startedSchema },
+  { method: "runSfxGeneration", payload: z.object({ jobId: z.string(), roundId: z.string().optional() }), result: startedSchema },
   { method: "cancelSfxGeneration", payload: sfxJobIdSchema, result: jsonObject },
   { method: "setSfxApproved", payload: setSfxApprovedSchema, result: jsonObject },
   { method: "revealSfxJob", payload: sfxJobIdSchema, result: okSchema },

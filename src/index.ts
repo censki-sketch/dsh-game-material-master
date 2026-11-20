@@ -2840,6 +2840,7 @@ export class GameStudioGateway extends TypertRemoteService {
   async saveSfxJob(payload: any) {
     const input = asRecord(payload);
     return sfxgen.saveSfxJob(asString(input.jobId), {
+      reuseRoundId: typeof input.reuseRoundId === "string" ? input.reuseRoundId : undefined,
       name: typeof input.name === "string" ? input.name : undefined,
       prompt: typeof input.prompt === "string" ? input.prompt : undefined,
       settings: input.settings,
@@ -2873,7 +2874,8 @@ export class GameStudioGateway extends TypertRemoteService {
   }
 
   async runSfxGeneration(payload: any) {
-    return sfxgen.startSfxGeneration(asString(asRecord(payload).jobId));
+    const input = asRecord(payload);
+    return sfxgen.startSfxGeneration(asString(input.jobId), typeof input.roundId === "string" ? input.roundId : undefined);
   }
 
   async cancelSfxGeneration(payload: any) {

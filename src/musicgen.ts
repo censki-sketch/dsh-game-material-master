@@ -107,6 +107,7 @@ export interface MusicStageState {
 }
 
 export interface MusicSource {
+  conversationId?: string;
   kind: "prompt" | "lyrics";
   prompt: string;
   lyrics: string;
@@ -177,6 +178,7 @@ export interface MusicGeneration {
   endpoint: string;
   summary: string;
   request: Record<string, unknown>;
+  source?: MusicSource;
   status: "submitting" | "polling" | "succeeded" | "partial" | "failed" | "timeout" | "canceled";
   taskId?: string;
   songIds: string[];
@@ -330,6 +332,7 @@ export function normalizeMusicSource(input: unknown): MusicSource {
     title: clampString(raw.title, 200),
     tags: clampString(raw.tags, 4000),
     instrumental: raw.instrumental === true,
+    conversationId: typeof raw.conversationId === "string" ? raw.conversationId.slice(0, 120) : undefined,
     preferredEngine: isMusicEngine(raw.preferredEngine) ? raw.preferredEngine : undefined,
     adaptedPrompt: typeof raw.adaptedPrompt === "string" ? clampString(raw.adaptedPrompt) : undefined,
     adaptedLyrics: typeof raw.adaptedLyrics === "string" ? clampString(raw.adaptedLyrics) : undefined,
@@ -826,6 +829,11 @@ export async function startMusicGeneration(
   }
   const { requestInput, engine, mode } = mergeGenerationInput(job, input);
   const request = buildGenerationRequest(requestInput);
+  // A cover of an older score belongs to that score's conversation, even after
+  // another round has changed the project's current source.
+  const source = input.scoreId
+    ? job.compositions.find((entry) => entry.id === input.scoreId)?.source
+    : job.source;
   const generationId = `g${Date.now().toString(36)}${randomUUID().slice(0, 6)}`;
   const startedAt = now();
   await patchMusicJob(id, (current) => {
@@ -838,6 +846,7 @@ export async function startMusicGeneration(
       endpoint: request.endpoint,
       summary: request.summary,
       request: request.body,
+      ...(source === undefined ? {} : { source: JSON.parse(JSON.stringify(source)) }),
       ...(typeof input.scoreId === "string" && input.scoreId !== "" ? { scoreId: input.scoreId } : {}),
       ...(typeof input.sourceClipId === "string" && input.sourceClipId !== "" ? { sourceClipId: input.sourceClipId } : {}),
       status: "submitting",
@@ -1358,6 +1367,7 @@ export async function runMusicScore(id: string, input: RunMusicScoreInput): Prom
       warnings.push(`方案写的是 ${plan.lengthBars} 小节，MIDI 实际 ${ran.parsed.meta.bars} 小节；如果是有意的请忽略。`);
     }
     const composition: MusicComposition = {
+      source: JSON.parse(JSON.stringify(job.source)),
       id: scoreId,
       label,
       title,
