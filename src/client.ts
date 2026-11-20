@@ -1306,10 +1306,13 @@
       "连接正常：{n0}": "Connection OK: {n0}",
       "测试连接（只校验 Key，不产生费用）": "Test connection (validates the key only, no charge)",
       "新建项目的默认参数": "Defaults for new projects",
+      "工作长边（px）": "Working long edge (px)",
+      "像素块边长": "Pixel block size",
+      "单格尺寸用于最终序列帧；工作长边控制抽帧时的处理尺寸，并发数控制同时执行的任务数。": "Cell dimensions apply to the final frames. Working long edge controls the processing size during extraction; concurrency limits simultaneous tasks.",
+      "像素块边长设为 0 或 1 时关闭像素化；填充比例控制主体占比，底部留白单位为 px。": "Set pixel block size to 0 or 1 to disable pixelation. Fill ratio controls the subject's share of the frame; bottom margin is measured in px.",
       "这些值会成为每个新项目的初始设置，之后可在项目里单独调整。": "These values become the initial settings for every new project and can be adjusted per project later.",
       "抠像下限": "Keying lower bound",
       "抠像上限": "Keying upper bound",
-      "去绿溢出": "Despill",
       "自动裁剪填充比例": "Auto-crop fill ratio",
       "数据位置": "Data location",
       "所有项目（源图、绿幕图、视频、序列帧、整图）都保存在：": "All projects (source images, chroma-key images, videos, sequence frames, sheets) are stored in:",
@@ -4710,6 +4713,23 @@
 .SPR_settingsSub h4{margin:0;font-size:12px;font-weight:600;color:var(--dsw-alias-label-secondary)}
 .SPR_settingsWide{grid-column:1 / -1}
 .SPR_settingsPath{word-break:break-all}
+.SPR_projectDefaults{container-type:inline-size}
+.SPR_projectDefaults .SPR_settingsSectionContent{display:flex;flex-direction:column;gap:16px}
+.SPR_projectDefaults .SPR_settingsSub{padding:16px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:color-mix(in srgb,var(--dsw-alias-label-secondary) 2%,transparent);gap:14px}
+.SPR_projectDefaults .SPR_settingsSub h4{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--dsw-alias-label-primary)}
+.SPR_settingsWorkspace .SPR_projectDefaults .SPR_fields{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin:0;align-items:start}
+.SPR_projectDefaults .SPR_fields>.SPR_field{grid-column:span 2;margin:0}
+.SPR_projectDefaults .SPR_defaultsCanvas .SPR_fields>.SPR_field:nth-child(-n+2),.SPR_projectDefaults .SPR_defaultsKeying .SPR_fields>.SPR_field:nth-last-child(-n+2){grid-column:span 3}
+.SPR_projectDefaults .SPR_defaultsKeying .SPR_fields>.SPR_field:first-child{grid-column:1/-1}
+.SPR_projectDefaults .SPR_input{box-sizing:border-box;height:36px;min-height:36px;width:100%}
+.SPR_projectDefaults input[type=number]{appearance:textfield;-moz-appearance:textfield}
+.SPR_projectDefaults input[type=number]::-webkit-inner-spin-button,.SPR_projectDefaults input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.SPR_projectDefaults .SPR_keyColorControls{display:grid;grid-template-columns:36px minmax(0,180px) 112px;gap:8px;align-items:center}
+.SPR_projectDefaults .SPR_keyColorSwatch{box-sizing:border-box;width:36px;height:36px;border-radius:8px;cursor:pointer}
+.SPR_projectDefaults .SPR_keyColorHex{font-family:ui-monospace,monospace}
+.SPR_projectDefaults .SPR_settingsSelect{min-width:0}
+@container(max-width:540px){.SPR_projectDefaults .SPR_fields>.SPR_field{grid-column:span 3}}
+@container(max-width:300px){.SPR_projectDefaults .SPR_settingsSub{padding:12px}.SPR_projectDefaults .SPR_fields>.SPR_field,.SPR_projectDefaults .SPR_defaultsCanvas .SPR_fields>.SPR_field:nth-child(-n+2),.SPR_projectDefaults .SPR_defaultsKeying .SPR_fields>.SPR_field:nth-last-child(-n+2){grid-column:1/-1}.SPR_projectDefaults .SPR_keyColorControls{grid-template-columns:36px minmax(0,1fr)}.SPR_projectDefaults .SPR_keyColorHex{grid-column:1/-1}}
 .SPR_videoWrap{position:relative;width:100%}
 .SPR_video{width:100%;border-radius:8px;display:block;background:#000}
 /* 转圈视频多半是竖屏（角色立绘比例）：按 width:100% 铺开会有上千像素高，把下面的
@@ -7654,7 +7674,7 @@
             )
           )
         ),
-        sidebarCollapsed ? null : h("button", {
+        sidebarCollapsed || activeModule === "settings" ? null : h("button", {
           type: "button",
           className: "SPR_sidebarBackdrop",
           "aria-label": T("关闭侧栏"),
@@ -23567,8 +23587,9 @@
     }
 
     /** 设置卡里的视觉小节：只分组，不折叠、不带状态。 */
-    function SettingsSubGroup({ title, children }) {
-      return h("div", { className: "SPR_settingsSub" }, title ? h("h4", null, title) : null, children);
+    function SettingsSubGroup({ title, hint, className = "", children }) {
+      return h("div", { className: "SPR_settingsSub" + (className ? " " + className : "") }, title ? h("h4", null, title,
+        hint ? h(DescriptionTip, { id: "settings-sub-help-" + String(title).replace(/\s/g, ""), label: title, text: hint }) : null) : null, children);
     }
 
     /** Keep each settings form mounted so switching sections preserves input drafts. */
@@ -24579,12 +24600,13 @@
             SettingsGroup,
             {
               title: T("新建项目的默认参数"),
+              testId: "cfg-project-defaults",
               hint: T("这些值会成为每个新项目的初始设置，之后可在项目里单独调整。")
             },
-            h(SettingsSections, { hideNavigation: true, showAll: true, id: "cfg-pipeline-sections", "aria-labelledby": "cfg-tab-pipeline" },
+            h(SettingsSections, { className: "SPR_projectDefaults", hideNavigation: true, showAll: true, id: "cfg-pipeline-sections", "aria-labelledby": "cfg-tab-pipeline" },
             h(
               SettingsSubGroup,
-              { title: T("画布与抽帧") },
+              { title: T("画布与抽帧"), className: "SPR_defaultsCanvas", hint: T("单格尺寸用于最终序列帧；工作长边控制抽帧时的处理尺寸，并发数控制同时执行的任务数。") },
               h(
                 "div",
                 { className: "SPR_fields" },
@@ -24617,7 +24639,7 @@
                   onChange: (value) => void patch({ concurrency: value })
                 }),
                 h(NumField, {
-                  label: T("抽帧工作尺寸（长边 px）"),
+                  label: T("工作长边（px）"),
                   value: config.workingLongEdge,
                   min: 128,
                   max: 2048,
@@ -24627,7 +24649,7 @@
             ),
             h(
               SettingsSubGroup,
-              { title: T("抠像") },
+              { title: T("抠像"), className: "SPR_defaultsKeying", hint: T("下限和上限控制背景色接近度；分割容差设为 0 时，只按背景色判断。") + " " + T("去溢色强度为 0~1，设为 0 时关闭；边缘收缩单位为 px。") },
               h(
                 "div",
                 { className: "SPR_fields" },
@@ -24647,7 +24669,14 @@
                   onChange: (value) => void patch({ keyHigh: value })
                 }),
                 h(NumField, {
-                  label: T("去绿溢出"),
+                  label: T("分割容差"),
+                  value: config.bgTolerance,
+                  min: 0,
+                  max: 160,
+                  onChange: (value) => void patch({ bgTolerance: value })
+                }),
+                h(NumField, {
+                  label: T("去溢色"),
                   value: config.despill,
                   min: 0,
                   max: 1,
@@ -24660,24 +24689,17 @@
                   min: 0,
                   max: 8,
                   onChange: (value) => void patch({ edgeShrink: value })
-                }),
-                h(NumField, {
-                  label: T("背景分割容差（0 = 只认背景色）"),
-                  value: config.bgTolerance,
-                  min: 0,
-                  max: 160,
-                  onChange: (value) => void patch({ bgTolerance: value })
                 })
               )
             ),
             h(
               SettingsSubGroup,
-              { title: T("像素与裁切") },
+              { title: T("像素与裁切"), hint: T("像素块边长设为 0 或 1 时关闭像素化；填充比例控制主体占比，底部留白单位为 px。") },
               h(
                 "div",
                 { className: "SPR_fields" },
                 h(NumField, {
-                  label: T("像素块边长（0/1 = 关闭）"),
+                  label: T("像素块边长"),
                   value: config.pixelSize,
                   min: 0,
                   max: 32,
@@ -25024,7 +25046,7 @@
 
         h(
           SettingsGroup,
-          { title: T("本机依赖与数据") },
+          { title: T("本机依赖与数据"), testId: "cfg-local-data", actions: h(Btn, { onClick: () => void run(() => api.saveConfig({}), T("已刷新")) }, T("重新读取配置")) },
           h("p", null, config.ffmpeg?.ok === true ? T("ffmpeg 可用：{n0}", { n0: config.ffmpeg.version }) : T("ffmpeg 不可用：{n0}", { n0: config.ffmpeg?.error ?? T("未知") })),
           h(
             SettingsSubGroup,
@@ -25034,11 +25056,6 @@
               null,
               T("所有项目（源图、绿幕图、视频、序列帧、整图）都保存在："),
               h("code", { className: "SPR_settingsPath" }, config.dataRoot)
-            ),
-            h(
-              "div",
-              { className: "SPR_toolbar" },
-              h(Btn, { onClick: () => void run(() => api.saveConfig({}), T("已刷新")) }, T("重新读取配置"))
             )
           )
         )

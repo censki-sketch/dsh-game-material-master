@@ -85,6 +85,48 @@ try {
   await featureGroup.locator('[data-feature=image]:first-child').waitFor();
   check('Restore default order puts Image generation first again', await featureGroup.locator('[data-feature]').first().getAttribute('data-feature') === 'image');
   await page.screenshot({ path: '.verify/settings-features-light.png', fullPage: true });
+  await page.locator('.SPR_settingsChildren').getByRole('button', { name: '本机依赖与数据', exact: true }).click();
+  const localData = page.getByTestId('cfg-local-data'); await localData.waitFor();
+  for (const width of [1280, 720, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    check('local data title and Reload button share one row at ' + width + 'px', await localData.locator('.SPR_settingsGroupHead').evaluate(el => { const a = el.querySelector('h3').getBoundingClientRect(), b = el.querySelector(':scope > button').getBoundingClientRect(); return Math.abs(a.top + a.height / 2 - b.top - b.height / 2) < 2 && a.right < b.left && b.right <= innerWidth; }));
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const reloadsBefore = calls.filter(c => c.method === 'saveConfig' && Object.keys(c.payload).length === 0).length;
+  await localData.getByRole('button', { name: '重新读取配置', exact: true }).click();
+  await until(async () => calls.filter(c => c.method === 'saveConfig' && Object.keys(c.payload).length === 0).length === reloadsBefore + 1);
+  check('header Reload keeps the original local-only refresh action', requests.length === 0);
+  await page.screenshot({ path: '.verify/settings-local-data-light.png', fullPage: true });
+  await page.getByTestId('cfg-tab-pipeline').click();
+  const defaults = page.getByTestId('cfg-project-defaults'); await defaults.waitFor();
+  const beforeDefaults = await invoke('getConfig');
+  check('default parameters retain all thirteen numeric fields and themed color selector', await defaults.getByRole('spinbutton').count() === 13 && await defaults.locator('select').count() === 0 && await defaults.locator('.SPR_settingsSub h4 .SPR_descriptionButton').count() === 3);
+  for (const [label, key, value] of [['单格宽（px）', 'cellWidth', 512], ['去溢色', 'despill', 0.5], ['像素块边长', 'pixelSize', 2]]) {
+    const input = defaults.getByRole('spinbutton', { name: label, exact: true });
+    await input.fill(String(value)); await input.press('Enter');
+    await until(async () => (await invoke('getConfig'))[key] === value);
+    // Host persistence precedes ConfigSection's follow-up read and React commit.
+    await page.waitForTimeout(150);
+    check('restyled default field saves its original setting: ' + key, (await invoke('getConfig'))[key] === value);
+    await input.fill(String(beforeDefaults[key])); await input.press('Enter');
+    await until(async () => (await invoke('getConfig'))[key] === beforeDefaults[key]);
+    await page.waitForTimeout(150);
+  }
+  const defaultsWrites = calls.filter(c => c.method === 'saveConfig').length;
+  for (const width of [1280, 720, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    check('project defaults fit within the ' + width + 'px viewport', await defaults.evaluate(el => { const r = el.getBoundingClientRect(); return r.right <= innerWidth && el.scrollWidth <= el.clientWidth + 1 && [...el.querySelectorAll('.SPR_settingsSub,.SPR_field,.SPR_keyColorControls')].every(n => n.scrollWidth <= n.clientWidth + 1); }));
+    check('settings has no hidden workbench sidebar backdrop at ' + width + 'px', await page.getByTestId('studio-sidebar-backdrop').count() === 0);
+    if (width === 1280) check('color swatch, preset and hex align on one row', await defaults.locator('.SPR_keyColorControls').evaluate(el => { const rows = [...el.children].map(n => n.getBoundingClientRect()); return rows.every(r => Math.abs(r.top - rows[0].top) < 2 && Math.abs(r.height - rows[0].height) < 2); }));
+    const presetButton = defaults.getByTestId('key-color-preset').getByRole('button');
+    const presetLabel = await presetButton.getAttribute('aria-label');
+    await presetButton.click();
+    check('default color menu stays inside the ' + width + 'px viewport', await page.getByRole('menu', { name: presetLabel, exact: true }).evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; }));
+    await page.keyboard.press('Escape');
+    await page.screenshot({ path: '.verify/settings-defaults-' + width + '-light.png', fullPage: true });
+  }
+  check('responsive defaults do not change configuration or generate', calls.filter(c => c.method === 'saveConfig').length === defaultsWrites && requests.length === 0);
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByTestId('cfg-tab-image').click();
   check('opening settings only reads metadata', requests.length === 0);
   check('forms contain no native select elements', await workspace.locator('select').count() === 0);
@@ -297,6 +339,13 @@ try {
   }
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.evaluate(() => { for (const [key, value] of Object.entries({ 'label-primary': '#e7e7e9', 'label-secondary': '#b1b1b7', 'label-tertiary': '#8e8e94', 'bg-layer-1': '#202024', 'bg-layer-2': '#2b2b30', 'bg-layer-3': '#323238', 'border-l1': '#38383e', 'border-l2': '#414149', 'interactive-bg-hover-solid': '#343439' })) document.documentElement.style.setProperty('--dsw-alias-' + key, value); document.body.style.background = '#202024'; });
+  await page.getByTestId('cfg-tab-pipeline').click();
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.screenshot({ path: '.verify/settings-defaults-' + width + '-dark.png', fullPage: true });
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByTestId('cfg-tab-image').click();
   await form.getByTestId('cfg-custom-protocol').getByRole('button').click();
   check('protocol menu uses the theme', await page.getByRole('menuitemradio', { name: 'OpenAI API', exact: true }).isVisible());
   await page.keyboard.press('End');

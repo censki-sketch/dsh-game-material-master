@@ -507,6 +507,8 @@ installation tree.
 
 ## Configuration
 
+Local dependencies & data places Reload configuration to the right of its title. New-project defaults group canvas and frame extraction, keying, and pixelation and cropping into aligned fields, with color controls on one row. Narrow panels use fewer columns; group help is available beside each heading. Parameter ranges, defaults and save-on-blur behavior are unchanged.
+
 **Settings → Game Material Master**:
 
 Settings opens the first category, Image, by default and uses a left navigation and right-hand forms, hiding the business tabs. The arrow beside the title returns to the previous module. Advanced parameters and longer help are collapsed initially; menus follow the theme.
