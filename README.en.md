@@ -292,7 +292,7 @@ Add, review mode, generation settings, transparent background, Optimize, model s
 operation feedback across modules uses floating notifications without shifting the page. Success messages dismiss
 automatically; errors stay until dismissed.
 
-The composer shows both the current image and prompt model names, updating immediately after switching. The menu groups models under Image and Prompt. Click a model to switch directly, without an extra dialog. It lists the configured Ark, ToAPIs and custom image routes; incomplete connections appear disabled, and switching affects the global image backend. DSH prompt choices are remembered per project, using existing sign-in and usage rules without changing DSH's default. Entering a chat or opening the menu only reads model metadata. There are no reload or test buttons; reading or switching never starts generation. Settings keeps the three connection forms and opens the active connection by default. The duplicate size button has been removed from the composer.
+The composer shows both the current image and prompt model names, updating immediately after switching. The menu groups models under Image and Prompt. Click a model to switch directly, without an extra dialog. It lists the configured Ark, ToAPIs and custom image routes; incomplete connections appear disabled, and switching affects the global image backend. DSH prompt choices are remembered per project, using existing sign-in and usage rules without changing DSH's default. Entering a chat or opening the menu only reads model metadata. There are no reload or test buttons; reading or switching never starts generation. Settings manages service connections, including multiple custom connections with multiple models each, and opens the active connection by default. The duplicate size button has been removed from the composer.
 
 Optimize prompt keeps editable source and result fields, the base-template selector and final-request preview, removing the repeated model picker, reference hints and read-only tag. Help lives in the title's information icon. Both fields still highlight @ image references. Empty chats show a centered welcome, and the empty project-materials panel provides an icon, explanation and Add reference action. Optimize uses a transparent background with a colored icon. Composer controls stay on one row and scroll horizontally when needed.
 
@@ -508,12 +508,18 @@ installation tree.
 
 **Settings → Game Material Master**:
 
+Settings uses a left navigation and right-hand forms, hiding the business tabs. The arrow beside the title returns to the previous module. Advanced parameters and longer help are collapsed initially; menus follow the theme.
+
+Under Image, add, name, duplicate or delete custom connections with separate URLs, keys, protocols and parameters. Enter one model per line. Choose a connection and model directly in the composer; identical model names display their connection name. Editing another connection does not switch the active image route, and switching forms retains unsaved key and workflow drafts. Legacy single-connection settings migrate automatically. Deletion requires confirmation; deleting the last connection clears its key and falls back to the Ark configuration.
+
+Reading settings or model lists and switching models never starts generation. **Generate test (billed)** requires confirmation. Custom connections let you select the model to test; evidence is kept per connection and model and invalidated by credential, endpoint or protocol changes. MiniMax, ComfyUI video and music connection tests remain read-only. **This update changes host code: fully quit DSH, including its tray process, and reopen it.**
+
 ![Settings](https://raw.githubusercontent.com/universe-st/dsh-game-material-master/main/docs/images/gmm-10-settings.png)
 
 | Item | Description |
 |---|---|
-| Image backend | Pick **Volcengine Ark Seedream** (default) or a **custom image model**; switching here redirects every image-generating module |
-| Volcengine Ark API Key | "Test connection" really generates a 1K thumbnail (a small charge) and validates both the key and the model |
+| Image backend | Configure Ark, ToAPIs or multiple custom connections; choose a model in the composer for every image-generating module |
+| Volcengine Ark API Key | "Generate test (billed)" generates a 1K thumbnail after confirmation, validating the key and model |
 | Image model | Defaults to `doubao-seedream-5-0-flash-260915`; switchable to 5.0 Pro / Lite / 4.5 |
 | Custom protocol | One of `OpenAI API` / `ComfyUI API` / `Stable Diffusion WebUI API`; just give the host root URL |
 | Custom parameters | Model name, output size (width x height), negative prompt, steps / CFG / sampler, img2img denoising, seed, timeout |
@@ -526,7 +532,7 @@ installation tree.
 | Default parameters | Cell width and height, frame count, pixel block size, keying threshold, and so on |
 | Local ComfyUI (image-to-video) | Routes image-to-video through a local **ComfyUI** instead of MiniMax; "Test connection" is read-only and free |
 | Music generation (Puyue AI) | Puyue AI API key, base URL, default music model and timeouts; "Test connection" reads one page of history and does not generate anything (no generation credits). Generation is billed by platform credits; the plugin does not collect payment |
-| Sound effects (Volcengine Seed-Audio) | Speech console API key (not the Ark key), base URL, default model `seed-audio-1.0`, default format / sample rate and timeout; "Test connection" really generates one very short sound effect (small charge) |
+| Sound effects (Volcengine Seed-Audio) | Speech console API key (not the Ark key), base URL, default model `seed-audio-1.0`, default format / sample rate and timeout; "Generate test (billed)" generates one short sound effect after confirmation (small charge) |
 | Feature management | Per-module switches: a disabled module disappears from the UI **and the agent cannot call it either** (see below) |
 
 Keys are written only to `<DSH_HOME>/game-material-master/config.json` on your machine and show a masked value after saving. Focus the input to enter a replacement; leaving it empty keeps the saved key.
@@ -545,8 +551,7 @@ Besides Volcengine Ark you can plug in **your own image service** (Settings → 
 | Stable Diffusion WebUI API | `POST {base}/sdapi/v1/txt2img` | `POST {base}/sdapi/v1/img2img` (`init_images` + denoising strength) | WebUI must be started with `--api`; an API key of `user:pass` uses HTTP Basic |
 
 Local servers usually need no API key; enter the **host root** (for example `http://127.0.0.1:8188`) and the
-plugin appends the protocol-specific endpoint. Hit "Test connection" to really generate one test image and
-prove the whole path works.
+plugin appends the protocol-specific endpoint. Choose a model and confirm "Generate test (billed)" to submit one real test image. Tests never retry automatically.
 
 ### Local ComfyUI (image-to-video)
 

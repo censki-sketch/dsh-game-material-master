@@ -1727,15 +1727,15 @@ section("功能管理（隐藏模块）");
     check("当前连接在设置页签中有标记", collect(imagePanel, node => node.props?.className === "SPR_settingsSectionCurrent" && node.props?.["aria-label"] === "当前使用").length === 1);
 
     // 默认协议是 openai：协议下拉、地址、模型名、尺寸、测试按钮都要在。
-    check("自定义那一组有协议下拉（三种协议由宿主给）", collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-protocol").length === 1);
+    check("自定义那一组有协议下拉（三种协议由宿主给）", collect(settings, (node) => node.type === "div" && node.props?.["data-testid"] === "cfg-custom-protocol").length === 1);
     check("自定义那一组有 Base URL 与模型名输入框", collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-base-url").length === 1 && collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-model").length === 1);
     check("自定义那一组有输出尺寸输入框", collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-size").length === 1);
     check("OpenAI 协议不显示 ComfyUI 的工作流文本框（调了也没用的控件不该出现）", collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-workflow").length === 0);
-    check("自定义那一组也有自己的「测试连接」", textOf(settings).includes("测试连接（会真实生成 1 张测试图"));
+    check("自定义那一组也有自己的「测试连接」", textOf(settings).includes("生成测试（计费）"));
 
     // ── 分类页签：六个入口、六个面板常驻挂载 ──────────────────────────────
     const tabButtons = collect(settings, (node) => typeof node.props?.["data-testid"] === "string" && node.props["data-testid"].startsWith("cfg-tab-"));
-    const panels = collect(settings, (node) => node.type === "div" && typeof node.props?.["data-testid"] === "string" && node.props["data-testid"].startsWith("cfg-panel-"));
+    const panels = [...new Map(collect(settings, (node) => node.type === "div" && typeof node.props?.["data-testid"] === "string" && node.props["data-testid"].startsWith("cfg-panel-")).map(node => [node.props.id, node])).values()];
     check("设置页有 7 个分类页签", tabButtons.length === 7, `${tabButtons.length} 个`);
     check("默认停在「生图」页签", tabButtons.find((node) => node.props["data-testid"] === "cfg-tab-image")?.props?.["data-active"] === "true");
     check("七个页签面板都常驻挂载（只是 hidden）", panels.length === 7, `${panels.length} 个`);
@@ -1746,7 +1746,7 @@ section("功能管理（隐藏模块）");
     const customGroup = collect(settings, (node) => node.props?.["data-testid"] === "cfg-custom-group")[0];
     check("当前后端表单完整展开", arkGroup?.props?.["data-open"] === "true");
     check("非当前后端也可由选项卡打开", customGroup?.props?.["data-open"] === "true" && customGroup?.props?.["data-collapsible"] === undefined);
-    check("隐藏的后端仍渲染，可先配置再切换", collect(customGroup, (node) => node.props?.["data-testid"] === "cfg-custom-protocol").length === 1);
+    check("隐藏的后端仍渲染，可先配置再切换", collect(customGroup, (node) => node.type === "div" && node.props?.["data-testid"] === "cfg-custom-protocol").length === 1);
     check("ToAPIs 视频单独成组", collect(settings, (node) => node.props?.["data-testid"] === "cfg-toapis-video").length === 1);
     const miscPanel = panels.find((node) => node.props["data-testid"] === "cfg-panel-misc");
     check("ffmpeg 状态归到「功能与数据」", textOf(miscPanel).includes("ffmpeg"));

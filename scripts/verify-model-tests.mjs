@@ -9,12 +9,12 @@ const home = await mkdtemp(join(tmpdir(), "gmm-model-tests-")); process.env.DSH_
 const { Context } = await import("@deepseek-ai/cordis");
 const plugin = await import("../lib/index.js"), wire = await import("../lib/wire.js");
 const { encodePng } = await import("../lib/png.js");
-const { dataRoot } = await import("../lib/config.js");
+const { dataRoot, loadConfig, normalizeConfig, configPath } = await import("../lib/config.js");
 const png = encodePng(Buffer.from([0, 100, 255, 255]), 1, 1);
 let mode = "ready", release, requests = [];
 globalThis.fetch = async (url, init = {}) => {
   const address = new URL(String(url)); assert.equal(address.hostname, "127.0.0.1", "external requests forbidden");
-  requests.push({ path: address.pathname, method: init.method, body: init.body });
+  requests.push({ path: address.pathname, method: init.method, body: init.body, authorization: new Headers(init.headers).get("authorization") });
   if (mode === "hold") await new Promise((done, reject) => {
     release = done;
     init.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
@@ -60,7 +60,7 @@ try {
   check("concurrent configuration edits never mark the new image route tested", !(await invoke("getConfig")).imageModelTests.find(model => model.provider === "custom").testedAt);
   await invoke("saveConfig", { customModel: "model-two" });
   const child = spawnSync(process.execPath, ["--input-type=module", "-e", "const {loadConfig}=await import('./lib/config.js');const {imageModelTests}=await import('./lib/modeltests.js');console.log(JSON.stringify(await imageModelTests(await loadConfig())));"], { cwd: process.cwd(), encoding: "utf8" });
-  assert.equal(child.status, 0, child.stderr); check("image test evidence survives a new process", JSON.parse(child.stdout).every(model => model.testedAt));
+  assert.equal(child.status, 0, child.stderr); check("image test evidence survives a new process", JSON.parse(child.stdout).filter(model => model.provider !== "custom" || model.model === "model-two").every(model => model.testedAt) && JSON.parse(child.stdout).filter(model => model.provider === "custom" && model.model === "edited-during-test").every(model => !model.testedAt));
 
   let profile = { baseURL: "https://mock.invalid", apiKey: "MOCK_MODEL_KEY" }, secret = "fake-llm-secret", llmMode = "ready", modelCalls = [];
   ctx.provide("settings", { describe: () => [{ ns: "mock-llm", value: { profiles: { local: profile } } }] });
@@ -117,6 +117,50 @@ try {
   state = await invoke("getImageJob", { jobId });
   check("a captured send cannot consume newer composer text", state.prompt === "next message draft" && state.rounds.at(-1).request.prompt === "captured before the next draft");
   await wait(async () => !(await invoke("getImageJob", { jobId })).tasks.length);
+  const migrated = normalizeConfig({ imageProvider: "custom", customApiKey: "legacy-secret", customBaseUrl: "http://127.0.0.1/legacy", customModel: "legacy-model" });
+  check("legacy configuration migrates without losing its key or model", migrated.customImageConnections.length === 1 && migrated.customImageConnections[0].customApiKey === "legacy-secret" && migrated.customModel === "legacy-model");
+  view = await invoke("getConfig"); const originalId = view.activeCustomImageConnectionId;
+  view = await invoke("saveConfig", { customConnection: { op: "create", values: { name: "Second", customBaseUrl: "http://127.0.0.1/second", customApiKey: " second-secret ", customModel: "shared", models: ["shared", "other"] } } });
+  const secondId = view.customImageConnections.at(-1).id;
+  check("creating a connection retains the active generation route", view.activeCustomImageConnectionId === originalId && view.customImageConnections.at(-1).models.length === 2);
+  check("all connection credentials remain masked in ordinary responses", !JSON.stringify(view).includes("second-secret") && view.customImageConnections.at(-1).customApiKeySet);
+  await invoke("saveConfig", { customConnection: { op: "update", id: secondId, values: { name: "Edited second", customSize: "512x512" } } });
+  check("editing an inactive connection cannot change the current route", (await loadConfig()).activeCustomImageConnectionId === originalId && (await loadConfig()).customBaseUrl !== "http://127.0.0.1/second");
+  check("explicit key reveal resolves the requested connection", (await invoke("revealConfigKey", { key: "customApiKey", connectionId: secondId })).value === "second-secret");
+  const noTest = requests.length;
+  await assert.rejects(invoke("testCustomImage", { connectionId: secondId, model: "other", confirmed: false }), /确认/);
+  await assert.rejects(invoke("testCustomImage", { connectionId: secondId, model: "deleted", confirmed: true }), /移除/);
+  check("unconfirmed or removed-model tests never dispatch", requests.length === noTest);
+  await invoke("testCustomImage", { connectionId: secondId, model: "other", confirmed: true });
+  const testRequest = requests.at(-1);
+  check("model tests route the exact connection, credential and model", testRequest.path.startsWith("/second/") && testRequest.authorization === "Bearer second-secret" && JSON.parse(testRequest.body).model === "other");
+  view = await invoke("getConfig");
+  check("test evidence is isolated to the tested model", view.imageModelTests.find(r => r.connectionId === secondId && r.model === "other").testedAt && !view.imageModelTests.find(r => r.connectionId === secondId && r.model === "shared").testedAt && view.activeCustomImageConnectionId === originalId);
+  await invoke("saveConfig", { imageProvider: "custom", activeCustomImageConnectionId: secondId, customModel: "other" });
+  await invoke("testCustomImage");
+  check("composer selection persists its connection and generation route", (await loadConfig()).customModel === "other" && requests.at(-1).path.startsWith("/second/"));
+  view = await invoke("saveConfig", { customConnection: { op: "duplicate", id: secondId, values: { name: "Copy" } } });
+  const copyId = view.customImageConnections.at(-1).id;
+  check("duplicated connections need their own explicit model test", view.imageModelTests.filter(r => r.connectionId === copyId).every(r => !r.testedAt));
+  await Promise.all([
+    invoke("saveConfig", { customConnection: { op: "update", id: secondId, values: { name: "Concurrent", customApiKey: "new-second-secret" } } }),
+    invoke("saveConfig", { customConnection: { op: "update", id: copyId, values: { customModel: "copy-model" } } })
+  ]);
+  const saved = await loadConfig();
+  check("concurrent saves preserve updates to separate connections", saved.customImageConnections.find(r => r.id === secondId).name === "Concurrent" && saved.customImageConnections.find(r => r.id === copyId).customModel === "copy-model");
+  check("duplicate credentials are independent from the original", saved.customImageConnections.find(r => r.id === copyId).customApiKey === "second-secret");
+  check("changed credentials invalidate the tested connection", !(await invoke("getConfig")).imageModelTests.find(r => r.connectionId === secondId && r.model === "other").testedAt);
+  for (const values of [{ customApiKey: 4 }, { customTimeoutMs: "bad" }, { models: [null] }, { customProtocol: "bad" }]) await assert.rejects(invoke("saveConfig", { customConnection: { op: "update", id: secondId, values } }));
+  check("invalid connection field types are rejected without altering saved credentials", (await loadConfig()).customApiKey === "new-second-secret");
+  const fresh = spawnSync(process.execPath, ["--input-type=module", "-e", "const {loadConfig}=await import('./lib/config.js');const c=await loadConfig();console.log(JSON.stringify({active:c.activeCustomImageConnectionId,model:c.customModel,count:c.customImageConnections.length}));"], { cwd: process.cwd(), encoding: "utf8" });
+  assert.equal(fresh.status, 0, fresh.stderr); check("multiple connections and model selection survive a process restart", JSON.parse(fresh.stdout).active === secondId && JSON.parse(fresh.stdout).model === "other" && JSON.parse(fresh.stdout).count === 3);
+  const createdWithId = await invoke("saveConfig", { customConnection: { op: "create", id: secondId, values: { name: "Fresh" } } });
+  check("creation never inherits the active connection even if an id is supplied", !createdWithId.customImageConnections.at(-1).customApiKeySet && createdWithId.customImageConnections.at(-1).customBaseUrl === "https://api.openai.com/v1");
+  for (const entry of (await loadConfig()).customImageConnections) await invoke("saveConfig", { customConnection: { op: "delete", id: entry.id } });
+  const empty = await loadConfig(), disk = JSON.parse(await readFile(configPath(), "utf8"));
+  check("deleting the last connection clears legacy credentials and selects a remaining provider", empty.customImageConnections.length === 0 && !empty.customApiKey && !disk.customApiKey && empty.imageProvider === "ark");
+  await invoke("saveConfig", { customModel: "new-after-delete" });
+  check("subsequent legacy edits cannot resurrect a deleted key", !(await loadConfig()).customApiKey && (await loadConfig()).customImageConnections.every(r => !r.customApiKey));
   console.log(`Passed ${checks} model verification and send lifecycle checks. No network or paid calls.`);
 } finally {
   const target = resolve(home); assert.ok(target.startsWith(resolve(tmpdir()) + sep) && basename(target).startsWith("gmm-model-tests-"));

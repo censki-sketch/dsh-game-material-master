@@ -5,6 +5,17 @@
 
 ---
 
+## 设置导航与多连接生图（2026-11-20）
+
+`Config.customImageConnections` 保存具备宿主 UUID 的连接（name、models 及 CUSTOM_IMAGE_FIELDS），`activeCustomImageConnectionId` 选择生成连接。归一化时将活动连接投影到旧 `custom*` 字段，所有模块继续经过 `generateImageWithProvider`。旧版平铺配置迁移到 legacy 连接；显式空数组不重新迁移。删除最后一个连接时清除平铺凭据，避免旧调用方编辑时复活已删 Key。`saveConfig` 串行写入，以免并发更新丢字段；连接增删改复制通过 `customConnection` 操作，禁止直接透传含密钥数组。
+
+普通配置视图对每个连接脱敏；`revealConfigKey` 仅客户端显式读取，并带 connectionId。测试 API 接受连接和模型，显式指定连接时强制 confirmed，测试不会改变全局选择。`imageModelRoutes` 提供唯一的模型目录与缺项状态；测试 fingerprint 包含连接 ID、地址、Key、模型、协议与工作流，不落盘明文。复制连接不继承测试通过记录。
+
+`SettingsLayout` 将分类与连接合为左侧导航；各 `SettingsSections` 表单保留挂载，按类别记住子项。Key、模型列表、工作流草稿按连接隔离；模型列表失焦保存，异步完成只清除已提交的草稿，保留后续输入。设置页隐藏业务页签和右上按钮，标题左箭头回原模块，窄屏也保持同排。`SettingsSelect` 复用 `AudioChoice` / `ImageResultMenu`，设置内无原生 select；高级字段和说明默认收起。Ark、自定义、ToAPIs 生图测试与音效测试均先经过主题计费确认，元数据读取不会生成。
+
+验证：`verify-model-tests.mjs` 使用真实网关与 wire、假图片服务验证多连接凭据隔离、路由、复制、删除、并发写入、重启和测试状态；`verify-settings-browser.mjs` 使用真实 Chromium、真实本地网关和假接口验证导航、连接草稿、模型选择、计费确认、浅深主题及窄屏边界。需要本地 React UMD fixtures 和 Playwright，环境变量与 `verify-audio-browser.mjs` 一致。不得使用真实 Key 或付费服务验证。宿主、wire 与客户端同时变更，使用方需完全退出 DSH（含托盘）后重开。
+
+
 # 游戏素材大师 · DSH 插件
 
 从一张设定图出发，批量产出游戏要用的角色素材。生图走**可切换的后端**——默认

@@ -14,7 +14,7 @@
 
 import { assertToapisReady, generateToapisImage } from "./toapis.js";
 import { generateImage, type ArkResult } from "./ark.js";
-import { CUSTOM_PROTOCOL_DEFAULTS, loadConfig, type Config } from "./config.js";
+import { CUSTOM_PROTOCOL_DEFAULTS, customConnectionConfig, loadConfig, type Config } from "./config.js";
 import { CustomImageError, generateCustomImage } from "./customimage.js";
 
 export interface ProviderImageRequest {
@@ -53,6 +53,15 @@ export function isCustomProvider(config: Config): boolean {
 export function imageModelOf(config: Config): string {
   if (config.imageProvider === "toapis") return config.toapisImageModel;
   return isCustomProvider(config) ? config.customModel : config.arkModel;
+}
+
+export function imageModelRoutes(config: Config) {
+  const builtins = (["ark", "toapis"] as const).map(provider => {
+    const route = { ...config, imageProvider: provider };
+    return { provider: provider as Config["imageProvider"], model: imageModelOf(route), blocker: imageProviderBlocker(route) ?? null, connectionId: undefined as string | undefined, name: "" };
+  });
+  const custom = config.customImageConnections.flatMap(entry => (entry.models.length ? entry.models : [entry.customModel]).map(model => ({ provider: "custom" as const, connectionId: entry.id, name: entry.name, model, blocker: customImageBlocker(customConnectionConfig(config, entry.id, model)) ?? null })));
+  return [...builtins, ...(custom.length ? custom : [{ provider: "custom" as const, connectionId: undefined, name: "", model: config.customModel, blocker: customImageBlocker(config) ?? null }])];
 }
 
 /** 当前输出尺寸。 */

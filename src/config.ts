@@ -8,6 +8,7 @@
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { DEFAULT_ROW_ORDER } from "./directions.js";
 import { DEFAULT_KEY_COLOR, normalizeKeyColor } from "./keycolor.js";
 import { STUDIO_MODULES } from "./links.js";
@@ -160,7 +161,11 @@ export const CUSTOM_PROTOCOL_DEFAULTS: Record<CustomProtocol, { baseUrl: string;
   }
 };
 
+export const CUSTOM_IMAGE_FIELDS = ["customProtocol", "customBaseUrl", "customApiKey", "customModel", "customSize", "customNegativePrompt", "customSteps", "customCfgScale", "customSampler", "customDenoising", "customSeed", "customWorkflow", "customTimeoutMs"] as const;
+export type CustomImageConnection = Pick<Config, typeof CUSTOM_IMAGE_FIELDS[number]> & { id: string; name: string; models: string[] };
 export interface Config {
+  customImageConnections: CustomImageConnection[];
+  activeCustomImageConnectionId: string;
   imagePromptTemplates: ImagePromptTemplate[];
   toapisBaseUrl: string;
   toapisApiKey: string;
@@ -417,6 +422,8 @@ export const DEFAULT_CONFIG: Config = {
   toapisVideoAspectRatio: "16:9",
   toapisTimeoutMs: 600000,
   imageProvider: "ark",
+  customImageConnections: [],
+  activeCustomImageConnectionId: "",
   customProtocol: "openai",
   customBaseUrl: CUSTOM_PROTOCOL_DEFAULTS.openai.baseUrl,
   customApiKey: "",
@@ -613,7 +620,7 @@ export function normalizeConfig(input: unknown): Config {
   const comfyWorkflowRaw = asString(raw.comfyWorkflow, DEFAULT_CONFIG.comfyWorkflow);
   const comfyWorkflow = comfyWorkflowRaw.trim() === "" ? DEFAULT_CONFIG.comfyWorkflow : comfyWorkflowRaw;
 
-  return {
+  const config: Config = {
     imagePromptTemplates: normalizeImagePromptTemplates(raw.imagePromptTemplates),
     toapisBaseUrl: asString(raw.toapisBaseUrl, DEFAULT_CONFIG.toapisBaseUrl).trim(),
     toapisApiKey: asString(raw.toapisApiKey, DEFAULT_CONFIG.toapisApiKey).trim(),
@@ -628,6 +635,8 @@ export function normalizeConfig(input: unknown): Config {
     toapisVideoAspectRatio: ["16:9","9:16","1:1","4:3","3:4","21:9"].includes(asString(raw.toapisVideoAspectRatio, "16:9")) ? asString(raw.toapisVideoAspectRatio, "16:9") : "16:9",
     toapisTimeoutMs: asInt(raw.toapisTimeoutMs, DEFAULT_CONFIG.toapisTimeoutMs, 10000, 3600000),
     imageProvider: raw.imageProvider === "toapis" ? "toapis" : raw.imageProvider === "custom" ? "custom" : "ark",
+    customImageConnections: [],
+    activeCustomImageConnectionId: "",
     customProtocol: (CUSTOM_PROTOCOLS as readonly string[]).includes(String(raw.customProtocol))
       ? (raw.customProtocol as CustomProtocol)
       : DEFAULT_CONFIG.customProtocol,
@@ -720,6 +729,27 @@ export function normalizeConfig(input: unknown): Config {
     moduleOrder: normalizeModuleOrder(raw.moduleOrder),
     concurrency: asInt(raw.concurrency, DEFAULT_CONFIG.concurrency, 1, 8)
   };
+  const entries = Array.isArray(raw.customImageConnections) ? raw.customImageConnections
+    : CUSTOM_IMAGE_FIELDS.some(key => raw[key] !== undefined) ? [{ ...config, id: "legacy", name: "Custom", models: [config.customModel] }] : [];
+  const seen = new Set<string>();
+  config.customImageConnections = entries.filter(entry => entry && typeof entry.id === "string" && /^[a-zA-Z0-9_-]{1,80}$/.test(entry.id) && !seen.has(entry.id) && seen.add(entry.id)).map(entry => {
+    const normalized = normalizeConfig({ ...entry, customImageConnections: [] });
+    return { id: entry.id, name: asString(entry.name, "Custom").trim().slice(0, 80) || "Custom",
+      models: [...new Set([normalized.customModel, ...(Array.isArray(entry.models) ? entry.models : [])].filter(value => typeof value === "string" && value.trim()).map(value => value.trim().slice(0, 300)))].slice(0, 50),
+      ...Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, normalized[key]])) } as CustomImageConnection;
+  });
+  config.activeCustomImageConnectionId = config.customImageConnections.some(entry => entry.id === raw.activeCustomImageConnectionId) ? String(raw.activeCustomImageConnectionId) : config.customImageConnections[0]?.id || "";
+  const active = config.customImageConnections.find(entry => entry.id === config.activeCustomImageConnectionId);
+  if (active) for (const key of CUSTOM_IMAGE_FIELDS) (config as any)[key] = active[key];
+  return config;
+}
+
+/** Resolve a saved connection in memory; generation still uses the single provider dispatcher. */
+export function customConnectionConfig(config: Config, id: string, model?: string): Config {
+  const entry = config.customImageConnections.find(value => value.id === id);
+  if (!entry) throw new Error("所选生图连接已删除，请重新选择。");
+  if (model !== undefined && model !== entry.customModel && !entry.models.includes(model)) throw new Error("所选模型已从连接中移除，请重新选择。");
+  return { ...config, ...Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, entry[key]])), imageProvider: "custom", activeCustomImageConnectionId: id, customModel: model ?? entry.customModel };
 }
 
 let cache: Config | undefined;
@@ -735,9 +765,51 @@ export async function loadConfig(): Promise<Config> {
   return cache;
 }
 
-export async function saveConfig(patch: Partial<Config>): Promise<Config> {
+type ConfigPatch = Partial<Config> & { customConnection?: { op: "create" | "update" | "duplicate" | "delete"; id?: string; values?: Partial<CustomImageConnection> } };
+let configWrites: Promise<unknown> = Promise.resolve();
+export function saveConfig(patch: ConfigPatch): Promise<Config> {
+  const write = configWrites.then(() => writeConfig(patch));
+  configWrites = write.catch(() => {});
+  return write;
+}
+async function writeConfig(patch: ConfigPatch): Promise<Config> {
   const current = await loadConfig();
-  const next = normalizeConfig({ ...current, ...patch });
+  const { customConnection, ...fields } = patch;
+  let connections = current.customImageConnections.map(entry => ({ ...entry, models: [...entry.models] }));
+  let activeId = fields.activeCustomImageConnectionId ?? current.activeCustomImageConnectionId;
+  if (customConnection) {
+    const { op, id, values = {} } = customConnection;
+    if (!["create", "update", "duplicate", "delete"].includes(op)) throw new Error("无效的连接操作");
+    const source = op === "create" ? undefined : connections.find(entry => entry.id === id);
+    if (op !== "create" && !source) throw new Error("所选生图连接已删除，请重新选择。");
+    const clean: any = {};
+    for (const key of [...CUSTOM_IMAGE_FIELDS, "name", "models"] as const) if (values[key] !== undefined) clean[key] = values[key];
+    for (const key of [...CUSTOM_IMAGE_FIELDS, "name"] as const) {
+      if (clean[key] === undefined) continue;
+      const valid = key !== "name" && typeof DEFAULT_CONFIG[key] === "number" ? typeof clean[key] === "number" && Number.isFinite(clean[key]) : typeof clean[key] === "string";
+      if (!valid) throw new Error("连接配置字段格式不正确：" + key);
+    }
+    if (clean.customProtocol !== undefined && !["openai", "comfyui", "sdwebui"].includes(clean.customProtocol)) throw new Error("无效的生图协议");
+    if (clean.models !== undefined && (!Array.isArray(clean.models) || clean.models.length > 50 || clean.models.some(value => typeof value !== "string" || !value.trim() || value.length > 300))) throw new Error("模型列表格式不正确");
+    if (typeof clean.customApiKey === "string") clean.customApiKey = clean.customApiKey.trim();
+    if (op === "create" || op === "duplicate") {
+      const created = { ...(source ?? Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, DEFAULT_CONFIG[key]]))), models: source?.models ?? [], ...clean, id: randomUUID(), name: clean.name || (source ? source.name + " copy" : "Custom") } as CustomImageConnection;
+      connections.push(created); if (!activeId) activeId = created.id;
+    } else if (op === "delete") {
+      connections = connections.filter(entry => entry.id !== id);
+      if (activeId === id) activeId = connections[0]?.id || "";
+    } else connections = connections.map(entry => entry.id === id ? { ...entry, ...clean, id } : entry);
+  }
+  const customPatch = Object.fromEntries(CUSTOM_IMAGE_FIELDS.filter(key => fields[key] !== undefined).map(key => [key, fields[key]]));
+  if (Object.keys(customPatch).length) {
+    if (!connections.length) { connections.push({ id: "legacy", name: "Custom", models: [], ...Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, current[key]])) } as CustomImageConnection); activeId = "legacy"; }
+    connections = connections.map(entry => entry.id === activeId ? { ...entry, ...customPatch } : entry);
+  }
+  if (fields.activeCustomImageConnectionId !== undefined && activeId && !connections.some(entry => entry.id === activeId)) throw new Error("所选生图连接已删除，请重新选择。");
+  const cleared = customConnection?.op === "delete" && !connections.length
+    ? Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, DEFAULT_CONFIG[key]])) : {};
+  const next = normalizeConfig({ ...current, ...fields, ...cleared, customImageConnections: connections, activeCustomImageConnectionId: activeId });
+  if (customConnection?.op === "delete" && !connections.length && next.imageProvider === "custom") next.imageProvider = "ark";
   await mkdir(dataRoot(), { recursive: true });
   const target = configPath();
   const tmp = `${target}.tmp`;
@@ -748,7 +820,8 @@ export async function saveConfig(patch: Partial<Config>): Promise<Config> {
 }
 
 /** 回传给浏览器的脱敏视图：只说明 key 是否已配置，以及尾部 4 位。 */
-export interface ConfigView extends Omit<Config, "toapisApiKey" | "arkApiKey" | "minimaxApiKey" | "customApiKey" | "comfyCookies" | "musicApiKey" | "sfxApiKey"> {
+export interface ConfigView extends Omit<Config, "customImageConnections" | "toapisApiKey" | "arkApiKey" | "minimaxApiKey" | "customApiKey" | "comfyCookies" | "musicApiKey" | "sfxApiKey"> {
+  customImageConnections: (Omit<CustomImageConnection, "customApiKey"> & { customApiKeySet: boolean; customApiKeyHint: string })[];
   toapisApiKeySet: boolean;
   toapisApiKeyHint: string;
   arkApiKeySet: boolean;
@@ -766,10 +839,11 @@ export interface ConfigView extends Omit<Config, "toapisApiKey" | "arkApiKey" | 
 }
 
 export function maskConfig(config: Config): ConfigView {
-  const { toapisApiKey, arkApiKey, minimaxApiKey, customApiKey, comfyCookies, musicApiKey, sfxApiKey, ...rest } = config;
+  const { customImageConnections, toapisApiKey, arkApiKey, minimaxApiKey, customApiKey, comfyCookies, musicApiKey, sfxApiKey, ...rest } = config;
   const cookie = normalizeComfyCookies(comfyCookies);
   return {
     ...rest,
+    customImageConnections: customImageConnections.map(({ customApiKey: key, ...entry }) => ({ ...entry, models: [...entry.models], customApiKeySet: key.trim() !== "", customApiKeyHint: hintOf(key) })),
     rowOrder: [...config.rowOrder],
     // 复制一份再回传：界面改勾选后会把它当草稿改，共享同一个数组会互相写花。
     hiddenModules: [...config.hiddenModules],

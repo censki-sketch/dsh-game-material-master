@@ -1,7 +1,8 @@
 /** Local evidence of explicit model tests. Never stores credentials or response content. */
 import { createHash, randomUUID } from "node:crypto";
 import { join } from "node:path";
-import { dataRoot, type Config } from "./config.js";
+import { customConnectionConfig, dataRoot, type Config } from "./config.js";
+import { imageModelRoutes } from "./imageprovider.js";
 import { readJson, writeJsonAtomic } from "./jsonio.js";
 
 function canonical(value: any): string {
@@ -15,7 +16,7 @@ export function modelTestFingerprint(value: unknown): string {
 export function imageTestFingerprint(config: Config, provider: Config["imageProvider"]): string {
   const fields = provider === "ark" ? [config.arkBaseUrl, config.arkApiKey, config.arkModel]
     : provider === "toapis" ? [config.toapisBaseUrl, config.toapisApiKey, config.toapisImageModel]
-    : [config.customBaseUrl, config.customApiKey, config.customModel, config.customProtocol, config.customWorkflow];
+    : [config.activeCustomImageConnectionId, config.customBaseUrl, config.customApiKey, config.customModel, config.customProtocol, config.customWorkflow];
   return modelTestFingerprint(["image-v1", provider, fields]);
 }
 export async function modelTestStatus(fingerprint: string): Promise<number | null> {
@@ -40,9 +41,12 @@ export async function runModelTest<T>(fingerprint: string, action: () => Promise
   } finally { pendingTests.delete(fingerprint); }
 }
 export async function imageModelTests(config: Config) {
-  return Promise.all((["ark", "toapis", "custom"] as const).map(async provider => ({ provider,
-    model: provider === "ark" ? config.arkModel : provider === "toapis" ? config.toapisImageModel : config.customModel,
-    testedAt: await modelTestStatus(imageTestFingerprint(config, provider)) })));
+  return Promise.all(imageModelRoutes(config).map(async route => {
+    const selected = route.connectionId ? customConnectionConfig(config, route.connectionId, route.model) : config;
+    const fingerprint = imageTestFingerprint(selected, route.provider);
+    const record = await readJson<{ state: string; at: number }>(join(dataRoot(), "model-tests", fingerprint + ".json"));
+    return { ...route, testedAt: record?.state === "passed" && Number.isFinite(record.at) ? record.at : null, testState: record?.state ?? "untested" };
+  }));
 }
 
 /** Hash the owning DSH profile and its resolved credentials in memory, never on the wire. */

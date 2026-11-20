@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { appendJobLog } from "./jsonio.js";
-import { ARK_MODEL_PRESETS, CUSTOM_PROTOCOLS, CUSTOM_PROTOCOL_DEFAULTS, DEFAULT_CONFIG, ROW_ORDER_VERSION, MINIMAX_HOST_PRESETS, MINIMAX_MODEL_PRESETS, loadConfig, maskConfig, migrateLegacyDataRoot, projectsRoot, imageJobsRoot, saveConfig } from "./config.js";
+import { ARK_MODEL_PRESETS, CUSTOM_PROTOCOLS, CUSTOM_PROTOCOL_DEFAULTS, DEFAULT_CONFIG, ROW_ORDER_VERSION, MINIMAX_HOST_PRESETS, MINIMAX_MODEL_PRESETS, customConnectionConfig, loadConfig, maskConfig, migrateLegacyDataRoot, projectsRoot, imageJobsRoot, saveConfig } from "./config.js";
 import {
   DEFAULT_ROW_ORDER,
   DIRECTION_KEYS,
@@ -34,7 +34,7 @@ import {
 import { DEFAULT_KEY_COLOR, normalizeKeyColor } from "./keycolor.js";
 import { checkFfmpeg } from "./media.js";
 import { testArk } from "./ark.js";
-import { customImageBlocker, generateImageWithProvider, imageModelOf, imageSizeOf, imageProviderBlocker, imageProviderSummary, testCustomImage } from "./imageprovider.js";
+import { customImageBlocker, generateImageWithProvider, imageModelOf, imageModelRoutes, imageSizeOf, imageProviderBlocker, imageProviderSummary, testCustomImage } from "./imageprovider.js";
 import { imageModelTests, imageTestFingerprint, runModelTest } from "./modeltests.js";
 import {
   detectComfyBindings,
@@ -302,10 +302,7 @@ export class GameStudioGateway extends TypertRemoteService {
       imageProviderSummary: imageProviderSummary(config),
       /** 当前生效的生图模型（模块里那个只读展示位用它，比 summary 短）。 */
       imageModel: imageModelOf(config),
-      imageModels: (["ark", "toapis", "custom"] as const).map(provider => {
-        const route = { ...config, imageProvider: provider };
-        return { provider, model: imageModelOf(route), blocker: imageProviderBlocker(route) ?? null };
-      }),
+      imageModels: imageModelRoutes(config),
       imageModelTests: await imageModelTests(config),
       imageProviderSize: imageSizeOf(config),
       videoProviderBackend: videoBackendOf(config),
@@ -370,7 +367,8 @@ export class GameStudioGateway extends TypertRemoteService {
       throw new Error("不支持查看此凭据");
     }
     const config = await loadConfig();
-    return { value: config[key] };
+    const connectionId = asString(asRecord(payload).connectionId);
+    return { value: key === "customApiKey" && connectionId ? customConnectionConfig(config, connectionId).customApiKey : config[key] };
   }
   /**
   * 保存配置。
@@ -395,6 +393,7 @@ export class GameStudioGateway extends TypertRemoteService {
       "toapisVideoAspectRatio",
       "toapisTimeoutMs",
       "imageProvider",
+      "activeCustomImageConnectionId",
       "customProtocol",
       "customBaseUrl",
       "customModel",
@@ -473,6 +472,7 @@ export class GameStudioGateway extends TypertRemoteService {
       if (input[key] !== undefined)
         patch[key] = input[key];
     }
+    if (input.customConnection !== undefined) patch.customConnection = asRecord(input.customConnection);
     if (input.imagePromptTemplates !== undefined) patch.imagePromptTemplates = validateImagePromptTemplates(input.imagePromptTemplates);
     if (typeof input.toapisApiKey === "string") patch.toapisApiKey = input.toapisApiKey.trim();
     if (input.clearToapisApiKey === true) patch.toapisApiKey = "";
@@ -522,8 +522,10 @@ export class GameStudioGateway extends TypertRemoteService {
     }));
   }
   /** 测自定义生图后端。与 testArk 对称，各自测各自那一组配置。 */
-  async testCustomImage() {
-    const config = await loadConfig();
+  async testCustomImage(input = undefined) {
+    const current = await loadConfig(), payload = asRecord(input);
+    const config = payload.connectionId ? customConnectionConfig(current, asString(payload.connectionId), typeof payload.model === "string" ? payload.model : undefined) : current;
+    if (payload.connectionId && payload.confirmed !== true) throw new Error("请确认测试会真实生成一张图片并计费。");
     return runModelTest(imageTestFingerprint(config, "custom"), () => testCustomImage(config));
   }
   async testToapisImage(input) {
