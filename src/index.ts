@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { appendJobLog } from "./jsonio.js";
-import { ARK_MODEL_PRESETS, CUSTOM_PROTOCOLS, CUSTOM_PROTOCOL_DEFAULTS, DEFAULT_CONFIG, ROW_ORDER_VERSION, MINIMAX_HOST_PRESETS, MINIMAX_MODEL_PRESETS, builtinModelConfig, customConnectionConfig, dataRoot, loadConfig, maskConfig, migrateLegacyDataRoot, projectsRoot, imageJobsRoot, saveConfig } from "./config.js";
+import { ARK_MODEL_PRESETS, CUSTOM_PROTOCOLS, CUSTOM_PROTOCOL_DEFAULTS, DEFAULT_CONFIG, ROW_ORDER_VERSION, MINIMAX_HOST_PRESETS, MINIMAX_MODEL_PRESETS, builtinModelConfig, customConnectionConfig, dataRoot, loadConfig, maskConfig, migrateLegacyDataRoot, motionRedrawModel, motionRedrawRoutes, projectsRoot, imageJobsRoot, saveConfig } from "./config.js";
 import {
   DEFAULT_ROW_ORDER,
   DIRECTION_KEYS,
@@ -283,6 +283,7 @@ export class GameStudioGateway extends TypertRemoteService {
   async decorateConfig(config) {
     if (this.ffmpegCache === undefined)
       this.ffmpegCache = await checkFfmpeg();
+    const motionRedrawModels = motionRedrawRoutes(config);
     return {
       ...maskConfig(config),
       rowOrder: [...config.rowOrder],
@@ -307,6 +308,8 @@ export class GameStudioGateway extends TypertRemoteService {
       /** 当前生效的生图模型（模块里那个只读展示位用它，比 summary 短）。 */
       imageModel: imageModelOf(config),
       imageModels: imageModelRoutes(config),
+      motionRedrawModels,
+      motionRedrawModel: motionRedrawModel(config, motionRedrawModels),
       imageModelTests: await imageModelTests(config),
       imageProviderSize: imageSizeOf(config),
       videoProviderBackend: videoBackendOf(config),
@@ -402,6 +405,7 @@ export class GameStudioGateway extends TypertRemoteService {
       "toapisTimeoutMs",
       "imageProvider",
       "activeCustomImageConnectionId",
+      "motionRedrawSelection",
       "customProtocol",
       "customBaseUrl",
       "customModel",

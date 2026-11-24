@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { DEFAULT_CONFIG, maskConfig } from '../lib/config.js';
 import { PROMPT_TEMPLATE_DEFAULTS, templatesOfType, validatePromptTemplates } from '../lib/prompttemplates.js';
 import { runFfmpeg } from '../lib/media.js';
-import { motionTemplatePreview, motionVideoModels, createMotionJob, previewMotionReference, motionAssetPath } from '../lib/motiongen.js';
+import { motionTemplatePreview, motionVideoModels, motionRedrawPlan, createMotionJob, previewMotionReference, motionAssetPath } from '../lib/motiongen.js';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 await mkdir('.verify', { recursive: true });
 const calls = [], errors = [], outbound = [];
@@ -30,7 +30,12 @@ let sequences=[sequence], motions=[motion], projects=[project];
 let motionTransferRoles=['character','directions'];
 let holdReferencePreview=false,releaseReferencePreview,failReferencePreview=false;
 let failCreate=false, holdOptimization=false, releaseOptimization;
-const config={...maskConfig({...DEFAULT_CONFIG,minimaxModel:'MiniMax-H3-Lite',moduleNames:{},hiddenModules:[],moduleOrder:['image','sprite','sequence','sfx','music','iso','map','rig']}),promptTemplateDefaults:clone(PROMPT_TEMPLATE_DEFAULTS)};
+const redrawModels=[
+  {connectionId:'redraw-a',model:'fixture-1k',label:'重绘模型 A',connectionName:'本地重绘连接 A'},
+  {connectionId:'redraw-b',model:'fixture-1k',label:'重绘模型 B',connectionName:'本地重绘连接 B'},
+];
+const redrawSelection=({connectionId,model})=>({connectionId,model});
+const config={...maskConfig({...DEFAULT_CONFIG,minimaxModel:'MiniMax-H3-Lite',moduleNames:{},hiddenModules:[],moduleOrder:['image','sprite','sequence','sfx','music','iso','map','rig']}),promptTemplateDefaults:clone(PROMPT_TEMPLATE_DEFAULTS),motionRedrawModels:redrawModels,motionRedrawModel:redrawModels[0]};
 const conversations={sprite:[],sequence:[]};
 const invoke=async(method,payload)=>{
   calls.push({method,payload});
@@ -47,8 +52,15 @@ const invoke=async(method,payload)=>{
   if(method==='getMotionJob')return clone(motions.find(item=>item.id===payload.jobId));
   if(method==='getMotionVideoTimeline')return payload.page===undefined?{file:'out.mp4',times:Array.from({length:4},(_,index)=>index/10),duration:.4}:{kind:'video-frame-previews',file:'out.mp4',page:0,firstFrame:0,count:4,columns:4,rows:1,sheet:'preview.png',width:192,height:108};
   if(method==='saveConfig'){
-    config.promptTemplates=validatePromptTemplates(payload.promptTemplates);
-    config.imagePromptTemplates=templatesOfType(config.promptTemplates,'image');return clone(config);
+    if(Object.hasOwn(payload,'promptTemplates')){
+      config.promptTemplates=validatePromptTemplates(payload.promptTemplates);
+      config.imagePromptTemplates=templatesOfType(config.promptTemplates,'image');
+    }
+    if(Object.hasOwn(payload,'motionRedrawSelection')){
+      config.motionRedrawModel=config.motionRedrawModels.find(model=>model.connectionId===payload.motionRedrawSelection?.connectionId&&model.model===payload.motionRedrawSelection?.model)||null;
+      assert.ok(config.motionRedrawModel,'select an available redraw model');
+    }
+    return clone(config);
   }
   if(method==='motionSettings')return {templates:templatesOfType(config.promptTemplates,'video'),templateDefaults:clone(PROMPT_TEMPLATE_DEFAULTS.filter(t=>t.type==='video')),baseUrl:'http://127.0.0.1:11434/v1',model:'',videoRate:.16,imageRate:.1};
   if(method==='listSequenceJobs')return {jobs:clone(sequences)};
@@ -57,7 +69,7 @@ const invoke=async(method,payload)=>{
   if(method==='saveMotionJob'){const job=motions.find(item=>item.id===payload.jobId);Object.assign(job,payload);job.finalPrompt=(job.promptTemplate?.content||'').replaceAll('{{timeline}}','0–2s walk; 2–4s run').replaceAll('{{description}}',job.description||'').replaceAll('{{keyColor}}','#FF00FF')+'\n'+job.prompt;return {ok:true};}
   if(method==='uploadMotionAsset'){
     const job=motions.find(item=>item.id===payload.jobId);
-    if(payload.kind==='video'){job.sourceVideo={file:'imported.mp4',duration:4};job.videoRange={start:0,end:4,frameCount:24};job.inputMode='video';job.rangesConfirmed=false;}
+    if(payload.kind==='video'){job.sourceVideo={file:job.sourceVideo?.file?'replacement.mp4':'imported.mp4',duration:4};job.videoRange={start:0,end:4,frameCount:24};job.inputMode='video';job.rangesConfirmed=false;}
     else if(payload.kind.startsWith('remove-')){const key=payload.kind.slice(7);if(key==='video'){delete job.sourceVideo;job.inputMode='generate';}else delete job[key];}
     else job[payload.kind]=payload.kind+'-replacement.png';
     return {ok:true};
@@ -79,9 +91,25 @@ const invoke=async(method,payload)=>{
     const parent=payload.module==='sprite'?motions.find(j=>j.id===payload.jobId):sequences.find(j=>j.id===payload.jobId);
     const n=conversations[payload.module].length+1,childId=parent.id+'child'+n;
     const job=clone(parent);job.id=childId;const r={id:payload.module+'round'+n,childId,createdAt:Date.now(),prompt:parent.prompt,request:{prompt:parent.prompt,settings:parent.settings,segments:parent.segments,reviewMode:parent.reviewMode,videoModel:parent.videoModel},status:'ready',versions:[{id:'raw'+n,kind:'raw',files:['raw.png','raw2.png']},{id:'keyed'+n,kind:'keyed',files:['keyed.png','keyed2.png']},{id:'sheet'+n,kind:'sheet',files:['sheet.png']}],job,assetBase:'/assets/'+childId+'/'};
+    if(payload.module==='sprite'&&payload.localOnly){
+      r.localOnly=true;r.prompt='';r.request.prompt='';r.request.sourceVideo=job.sourceVideo;
+      job.video={status:'ready',model:'local-import',...job.sourceVideo};
+      job.frames=[];job.rangesConfirmed=false;job.ranges=[{action:'video',...job.videoRange}];
+      r.stage='awaiting-ranges';r.versions=[{id:'video'+n,kind:'video',files:['out/versions/video'+n+'/imported.mp4']}];
+    }
     conversations[payload.module].push(r);if(!(payload.module==='sprite'&&payload.localOnly))parent.prompt='';return {roundId:r.id,childId};
   }
-  if(method==='runWorkflowRoundStep'){if(payload.planOnly&&payload.step==='process')return {kind:'local-processing',steps:['extract','export'],actions:payload.ranges.map(r=>r.action),changed:true};const r=conversations[payload.module].find(r=>r.id===payload.roundId);r.versions.push({id:'manual'+Date.now(),kind:'keyed',files:['rekeyed.png']});return {ok:true};}
+  if(method==='runWorkflowRoundStep'){
+    if(payload.planOnly&&payload.step==='process')return {kind:'local-processing',steps:['extract','export'],actions:payload.ranges.map(r=>r.action),changed:true};
+    const r=conversations[payload.module].find(r=>r.id===payload.roundId);
+    if(payload.step==='redraw'){
+      assert.equal(payload.planOnly,true,'model selection and preview do not start a redraw');
+      const plan=motionRedrawPlan(r.job,payload.targets,payload.scheme,payload.regenerate,payload.image1k);
+      return config.motionRedrawModel?{...plan,modelSelection:redrawSelection(config.motionRedrawModel)}:{...plan,modelSelection:null,blocker:'请先配置 1K 重绘模型。'};
+    }
+    r.versions.push({id:'manual'+Date.now(),kind:'keyed',files:['rekeyed.png']});
+    return {ok:true};
+  }
   if(method==='reuseWorkflowRound'){const r=conversations[payload.module].find(r=>r.id===payload.roundId);Object.assign(payload.module==='sprite'?motions[0]:sequences[0],r.request);return {ok:true};}
   if(method==='listMapProjects')return {projects:[{id:'m1',name:'我的地图'}]};
   if(method==='listIsoProjects')return {projects:[{id:'t1',name:'我的45度地图'}]};
@@ -156,7 +184,21 @@ try{
   check('text credentials are password inputs',await configDialog.locator('input[type=password]').count()===1);
   check('drawer uses themed dropdowns',await configDialog.locator('select').count()===0);await page.keyboard.press('Escape');
   await motionView.getByRole('button',{name:'审核模式',exact:true}).click();
-  await page.getByRole('menuitemradio',{name:/^人工审核/}).click();
+  const manualReviewChoice=page.getByRole('menuitemradio',{name:'人工审核',exact:true});
+  const manualReviewTip=page.getByRole('tooltip').filter({hasText:'生成视频后暂停'});
+  const autoReviewTip=page.getByRole('tooltip').filter({hasText:'生成后自动抽帧与合成'});
+  check('review menu opens with option labels and no descriptions',
+    await manualReviewChoice.isVisible() && !await manualReviewTip.isVisible() && !await autoReviewTip.isVisible());
+  await manualReviewChoice.hover();
+  await manualReviewTip.waitFor();
+  check('the selected review description appears in a themed tool tip on hover',
+    await manualReviewTip.evaluate(element=>element.matches(':popover-open')) && !await autoReviewTip.isVisible());
+  await motionView.getByRole('button',{name:'审核模式',exact:true}).hover();
+  await manualReviewTip.waitFor({state:'hidden'});
+  await page.keyboard.press('ArrowDown');
+  await manualReviewTip.waitFor();
+  check('keyboard focus also exposes the review description',await manualReviewChoice.evaluate(element=>element.matches(':focus-visible')));
+  await manualReviewChoice.click();
   await motionView.getByRole('button',{name:'切换模型',exact:true}).click();
   const officialVideoOption=page.getByRole('menu',{name:'切换模型',exact:true}).getByRole('menuitemradio').filter({has:page.getByText('MiniMax-H3',{exact:true})});
   check('video picker offers compatible models only',await officialVideoOption.count()===1&&await page.getByRole('menuitemradio',{name:/H3-Max|Hailuo/}).count()===0);
@@ -326,6 +368,10 @@ try{
   await page.evaluate(()=>document.documentElement.style.cssText='');await page.setViewportSize({width:1440,height:1000});
   check('no native dropdowns or browser dialogs',await page.locator('select').count()===0&&!errors.length);
   check('all requests stayed inside the synthetic fixture',!outbound.length);
+  await page.evaluate(()=>root.render(React.createElement(bundle.__test.AssetTransferButton,{api,source:{module:'sprite',jobId:'sprite-round',file:'out/saved-frame.png'},name:'八方向结果'})));
+  await transferTrigger.click();await transferMenu.waitFor();
+  check('sprite result only offers the two map editors',JSON.stringify(await transferMenu.getByRole('menuitem').allTextContents())===JSON.stringify(['俯视地图编辑器','45°地图编辑器']));
+  await page.keyboard.press('Escape');
   // New composer: blank selections, one file per role, video-only parsing and snapshots.
   const priorReferenceCalls=calls.filter(c=>c.method==='previewMotionReference').length;
   const fresh={...clone(motion),id:'wnew',name:'新建角色动作',prompt:'',segments:segments.map(s=>({...s,action:''})),ranges:segments.map(s=>({...s,action:''})),composerVersion:1,inputMode:'generate',frames:[],character:undefined,directions:undefined,video:undefined,prepared:undefined};
@@ -496,6 +542,24 @@ try{
   await page.keyboard.press('Escape');
   check('parse mode has no action picker',await page.locator('.SPR_motionActionTrigger').count()===0&&await page.getByText('按四列两行布局解析，不会自动识别动作。',{exact:true}).count()===0);
   check('parsing keeps review but hides both generation model selectors',await page.getByRole('button',{name:'审核模式',exact:true}).count()===1&&await page.getByRole('button',{name:'切换模型',exact:true}).count()===0);
+  const redrawModelLabel='1K 重绘模型', composerRedraw=page.locator('.SPR_flowComposer').getByRole('button',{name:redrawModelLabel,exact:true});
+  const paidRedrawCalls=()=>calls.filter(({method,payload})=>method==='runWorkflowRoundStep'&&payload.step==='redraw'&&!payload.planOnly);
+  const beforeModelSelect=calls.filter(c=>c.method==='saveConfig').length;
+  const beforeModelGeneration=calls.filter(c=>c.method==='submitWorkflowRound').length;
+  await composerRedraw.filter({hasText:redrawModels[0].label}).waitFor();
+  await page.setViewportSize({width:390,height:760});
+  await page.evaluate(()=>document.querySelector('.SPR_root').setAttribute('data-sidebar-collapsed','true'));
+  await page.waitForFunction(()=>document.querySelector('.SPR_side').getBoundingClientRect().right<=0);
+  check('the parse redraw model button fits the narrow composer without colliding with send',await composerRedraw.evaluate(button=>{const r=button.getBoundingClientRect(),send=button.closest('.SPR_flowComposer').querySelector('.SPR_flowSend').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&(r.right<=send.left||r.bottom<=send.top||send.bottom<=r.top);}));
+  await composerRedraw.click();
+  const nextRedraw=page.getByRole('menuitemradio',{name:redrawModels[1].label,exact:true});
+  check('parse mode can inspect available redraw routes within a narrow screen',await nextRedraw.evaluate(option=>{const r=option.closest('[role=menu]').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1;}));
+  await nextRedraw.click();
+  await composerRedraw.filter({hasText:redrawModels[1].label}).waitFor();
+  const modelWrites=calls.filter(c=>c.method==='saveConfig');
+  check('selecting a separate 1K model saves only the route and never generates',modelWrites.length===beforeModelSelect+1&&JSON.stringify(modelWrites.at(-1).payload)===JSON.stringify({motionRedrawSelection:redrawSelection(redrawModels[1])})&&calls.filter(c=>c.method==='submitWorkflowRound').length===beforeModelGeneration&&paidRedrawCalls().length===0);
+  await page.setViewportSize({width:1440,height:1000});
+  await page.evaluate(()=>document.querySelector('.SPR_root').setAttribute('data-sidebar-collapsed','false'));
   check('parse mode has no action-count control',await page.getByRole('button',{name:'动作数量',exact:true}).count()===0&&await files.count()===1);
   check('parse mode hides reference-video assembly',await referenceTrigger.count()===0);
   await page.waitForFunction(()=>!document.querySelector('.SPR_flowSend').disabled).catch(async error=>{console.log('parse disabled reason',await page.locator('.SPR_flowSend').getAttribute('title'));throw error;});
@@ -504,18 +568,49 @@ try{
   const parseConfig=page.getByRole('dialog',{name:'处理配置',exact:true});
   check('parse configuration has one neutral range and no action confirmation',await parseConfig.getByText('视频范围',{exact:true}).count()===1&&await parseConfig.getByText('开始秒',{exact:true}).count()===1&&await parseConfig.getByRole('checkbox',{name:'已观看并确认这些动作范围',exact:true}).count()===0);
   check('parse defaults to the whole video',await parseConfig.getByRole('spinbutton').nth(0).inputValue()==='0'&&await parseConfig.getByRole('spinbutton').nth(1).inputValue()==='4');
-  await parseConfig.getByRole('switch').nth(0).uncheck();
+  check('parse setup hides automatic extraction and atlas switches',await parseConfig.getByRole('switch',{name:'提取序列帧',exact:true}).count()===0&&await parseConfig.getByRole('switch',{name:'合成整图',exact:true}).count()===0);
   await parseConfig.getByRole('button',{name:'完成',exact:true}).click();
   await page.waitForFunction(()=>!document.querySelector('.SPR_flowSend').disabled);
   const submittedBefore=calls.filter(c=>c.method==='submitWorkflowRound').length;
   await page.locator('.SPR_flowSend').click();await page.locator('.SPR_flowRound').waitFor();
   const parseCall=calls.filter(c=>c.method==='submitWorkflowRound').at(-1),savedCall=calls.filter(c=>c.method==='saveMotionJob').at(-1);
   check('confirmed video-only parsing sends without a paid confirmation dialog',parseCall.payload.localOnly===true&&calls.filter(c=>c.method==='submitWorkflowRound').length===submittedBefore+1&&await page.getByRole('dialog').count()===0);
-  check('parsing saves only clip settings without hidden generation actions',savedCall.payload.segments===undefined&&savedCall.payload.processing.extract===false&&savedCall.payload.videoRange.end===4);
+  check('parsing saves only clip settings without hidden generation actions',savedCall.payload.segments===undefined&&savedCall.payload.processing.key===true&&savedCall.payload.videoRange.end===4);
+  const importedRound=page.locator('.SPR_flowRound').filter({has:page.getByRole('button',{name:'预览本轮导入的视频',exact:true})});
+  const importedTrigger=importedRound.getByRole('button',{name:'预览本轮导入的视频',exact:true});
+  const importedClip=importedTrigger.locator('video');
+  await importedClip.waitFor();
+  const frozenClip=await importedClip.getAttribute('src');
+  check('the message shows its frozen uploaded clip',frozenClip?.includes('/out/versions/')&&frozenClip.endsWith('/imported.mp4')&&await importedRound.getByText('导入已有视频',{exact:true}).isVisible());
+  check('after sending the round highlights the video processing text and only has the original',await importedRound.getByRole('button',{name:'视频处理',exact:true}).getAttribute('data-pending-range')==='true'&&await importedRound.getByRole('button',{name:'结果版本',exact:true}).innerText()==='视频');
+  await importedTrigger.click();
+  const originalDialog=page.getByRole('dialog',{name:'预览本轮导入的视频',exact:true});
+  await originalDialog.waitFor();
+  check('the message opens the same clip with playback controls',(await originalDialog.locator('video[controls]').getAttribute('src'))===frozenClip);
+  await page.keyboard.press('Escape');await originalDialog.waitFor({state:'hidden'});
   await page.screenshot({path:'.verify/motion-composer-video-only.png'});
+  const parsedOutput=conversations.sprite.at(-1);
+  const processedRange={action:'video',start:0,end:4,frameCount:4,targetFps:1};
+  parsedOutput.job.frames=Array.from({length:4},(_,index)=>({id:'video-front-'+index,action:'video',direction:'front',index,time:index+.5,target:'raw.png',keyed:'keyed.png'}));
+  parsedOutput.job.ranges=[processedRange];
+  parsedOutput.stage='done';
+  parsedOutput.versions.push({id:'processed',kind:'keyed',frames:parsedOutput.job.frames,ranges:[processedRange],files:parsedOutput.job.frames.map(frame=>frame.keyed)});
+  await importedRound.getByRole('button',{name:'图片 API 1K 重绘',exact:true}).click();
+  const parsedRedraw=page.getByRole('dialog',{name:'图片 API 1K 重绘',exact:true});
+  await parsedRedraw.getByText('1 次调用 · 4 帧',{exact:true}).waitFor();
+  const dialogRedraw=parsedRedraw.getByRole('button',{name:redrawModelLabel,exact:true});
+  const redrawPlans=()=>calls.filter(({method,payload})=>method==='runWorkflowRoundStep'&&payload.step==='redraw'&&payload.planOnly);
+  check('the redraw dialog automatically uses the model selected in the parse composer',await dialogRedraw.innerText().then(text=>text.includes(redrawModels[1].label))&&JSON.stringify(redrawPlans().at(-1).payload.expectedImageModel)===JSON.stringify(redrawSelection(redrawModels[1]))&&paidRedrawCalls().length===0);
+  await dialogRedraw.click();await page.getByRole('menuitemradio',{name:redrawModels[0].label,exact:true}).click();
+  await dialogRedraw.filter({hasText:redrawModels[0].label}).waitFor();
+  await parsedRedraw.getByText('1 次调用 · 4 帧',{exact:true}).waitFor();
+  await parsedRedraw.getByRole('button',{name:'关闭',exact:true}).click();
+  await composerRedraw.filter({hasText:redrawModels[0].label}).waitFor();
+  check('changing the same route in the dialog updates the composer without billing',JSON.stringify(redrawPlans().at(-1).payload.expectedImageModel)===JSON.stringify(redrawSelection(redrawModels[0]))&&paidRedrawCalls().length===0);
   await files.first().setInputFiles({name:'replacement.mp4',mimeType:'video/mp4',buffer:Buffer.from('replacement fixture')});
   await page.waitForFunction(()=>!document.querySelector('.SPR_flowSend').disabled);
   check('replacing a source video resets to the whole clip without action confirmation',await page.locator('.SPR_flowSend').isEnabled());
+  check('replacing the composer input keeps the completed round clip',(await importedClip.getAttribute('src'))===frozenClip&&(await page.locator('.SPR_motionAttachmentPreview video').getAttribute('src')).endsWith('/replacement.mp4'));
   await page.getByRole('button',{name:'执行方式',exact:true}).click();await page.getByRole('menuitemradio',{name:'生成新视频',exact:true}).click();
   check('returning to generation retains its prompt and selected actions',await page.getByRole('textbox',{name:'本轮补充要求',exact:true}).inputValue()==='切回生成时保留的草稿'&&JSON.stringify(await page.locator('.SPR_motionActionTrigger').allTextContents())===JSON.stringify(generationActions));
   const paidBefore=calls.filter(c=>c.method==='submitWorkflowRound').length, optimizationsBefore=calls.filter(c=>c.method==='optimizeMotionPrompt').length;

@@ -44,6 +44,9 @@ export async function sourceImage(source: AssetSource): Promise<Buffer> {
   return bytes;
 }
 export async function transferAsset(input: { source: AssetSource; target: Destination; targetId?: string; targetRole?: "character" | "directions"; name?: string }): Promise<any> {
+  if (input.source.module === "sprite" && input.target !== "map" && input.target !== "iso") {
+    throw new Error("八方向图只能流转到地图编辑器");
+  }
   const config = await loadConfig();
   if (config.hiddenModules.includes(input.target) || config.hiddenModules.includes(input.source.module)) throw new Error("Module disabled");
   const bytes = await sourceImage(input.source), data = bytes.toString("base64");

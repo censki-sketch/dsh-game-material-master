@@ -4,6 +4,7 @@ import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:http';
+import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import { Readable, Writable } from 'node:stream';
 import { gunzipSync, inflateRawSync } from 'node:zlib';
@@ -12,6 +13,7 @@ const home = await mkdtemp(join(tmpdir(), 'dsh-motion-'));
 process.env.DSH_HOME = home;
 const config = await import('../lib/config.js');
 const motion = await import('../lib/motiongen.js');
+const { cleanMotionKeySpill } = await import('../lib/motionmatte.js');
 const { encodePng } = await import('../lib/png.js');
 const media = await import('../lib/media.js');
 const wire = await import('../lib/wire.js');
@@ -54,10 +56,26 @@ const server = createServer(async (req, res) => {
   } else if (req.url === '/v1/images/edits') {
     imagePosts++; postedImage = raw.toString('latin1');
     if (failImage) { res.writeHead(404); res.end('{"error":"dummy-image-key unsupported"}'); return; }
-    const editing=await motion.readMotion(redrawJobId),frame=editing.frames.find(f=>f.redraw?.status==='attempted');
+    const editing=await motion.readMotion(redrawJobId);
+    const attempted=editing.frames.filter(f=>f.redraw?.status==='attempted').sort((a,b)=>a.index-b.index);
+    const frame=attempted[0];
     // Simulate an edit of this exact submitted frame, rather than returning
     // an unrelated pose for every direction and timestamp.
-    const reply=blankImage?png(1024,1024,[255,0,255]):await readFile(motion.motionAssetPath(redrawJobId,frame.keyed));
+    let reply;
+    if (!blankImage && frame?.redraw.image1k && attempted.length===4) {
+      const sheet=Buffer.alloc(1024*1024*4);
+      for (const [index, pose] of attempted.entries()) {
+        const { rgba }=await media.decodeToRgba(motion.motionAssetPath(redrawJobId,pose.keyed));
+        // Change one color channel without touching silhouette so the test can
+        // distinguish an API result from accidental reuse of the original matte.
+        for (let p=0;p<rgba.length;p+=4) if (rgba[p+3]>127) rgba[p]^=32;
+        for (let y=0;y<512;y++) {
+          const offset=((Math.floor(index/2)*512+y)*1024+(index%2)*512)*4;
+          rgba.copy(sheet,offset,y*512*4,(y+1)*512*4);
+        }
+      }
+      reply=encodePng(sheet,1024,1024);
+    } else reply=blankImage?png(1024,1024,[255,0,255]):await readFile(motion.motionAssetPath(redrawJobId,frame.keyed));
     res.end(JSON.stringify({ data: [{ b64_json: reply.toString('base64') }] }));
   } else { res.writeHead(404); res.end('{"error":"unexpected endpoint"}'); }
 });
@@ -114,6 +132,60 @@ async function request(url, headers = {}) {
   return { status: status ?? res.statusCode, bytes: Buffer.concat(parts), headers: responseHeaders };
 }
 try {
+  const diagonalSize = 12;
+  const rawDiagonal = Buffer.alloc(diagonalSize * diagonalSize * 4);
+  const keyedDiagonal = Buffer.alloc(rawDiagonal.length);
+  for (let y = 0; y < diagonalSize; y++) {
+    for (let x = 0; x < diagonalSize; x++) {
+      const offset = (y * diagonalSize + x) * 4;
+      const color = x > y ? [40, 60, 50, 255] : x === y ? [148, 30, 153, 255] : [255, 0, 255, 255];
+      rawDiagonal.set(color, offset);
+      if (x >= y) keyedDiagonal.set(color, offset);
+    }
+  }
+  cleanMotionKeySpill(keyedDiagonal, diagonalSize, diagonalSize, '#FF00FF', rawDiagonal);
+  const diagonalEdge = (5 * diagonalSize + 5) * 4;
+  check('magenta cleanup restores fractional diagonal coverage without modifying clean neighbors',
+    keyedDiagonal[diagonalEdge + 3] >= 122 && keyedDiagonal[diagonalEdge + 3] <= 133 &&
+    keyedDiagonal.subarray(diagonalEdge - 4, diagonalEdge).equals(Buffer.alloc(4)) &&
+    keyedDiagonal.subarray(diagonalEdge, diagonalEdge + 3).equals(Buffer.from([40, 60, 50])) &&
+    keyedDiagonal.subarray(diagonalEdge + 4, diagonalEdge + 8).equals(Buffer.from([40, 60, 50, 255])));
+  const frameSize = 32;
+  const rawWarm = Buffer.alloc(frameSize * frameSize * 4), keyedWarm = Buffer.alloc(rawWarm.length);
+  const screenColor = [240, 26, 194, 255], shoeOutline = [27, 17, 18, 255], strap = [164, 91, 54, 255];
+  for (let y = 0; y < frameSize; y++) {
+    for (let x = 0; x < frameSize; x++) {
+      const p = (y * frameSize + x) * 4;
+      const foreground = x > 18 ? strap : shoeOutline;
+      rawWarm.set(x < 10 ? screenColor : x === 10 ? [230, 27, 174, 255] : foreground, p);
+      if (x >= 10) keyedWarm.set(x === 10 ? [196, 64, 64, 108] : foreground, p);
+    }
+  }
+  cleanMotionKeySpill(keyedWarm, frameSize, frameSize, '#FF00FF', rawWarm);
+  const warmEdge = (16 * frameSize + 10) * 4, innerStrap = (16 * frameSize + 19) * 4;
+  check('magenta cleanup refits brown coverage using the actual screen while preserving opaque outline and strap',
+    keyedWarm[warmEdge + 3] > 0 && keyedWarm[warmEdge + 3] <= 32 &&
+    keyedWarm.subarray(warmEdge, warmEdge + 3).equals(Buffer.from(shoeOutline.slice(0, 3))) &&
+    keyedWarm.subarray(warmEdge + 4, warmEdge + 8).equals(Buffer.from(shoeOutline)) &&
+    keyedWarm.subarray(innerStrap, innerStrap + 4).equals(Buffer.from(strap)));
+  const gapSize = 48;
+  const gapRaw = Buffer.alloc(gapSize * gapSize * 4), gapKeyed = Buffer.alloc(gapRaw.length);
+  for (let y = 0; y < gapSize; y++) {
+    for (let x = 0; x < gapSize; x++) {
+      const p = (y * gapSize + x) * 4;
+      const outside = x < 12 || x >= 40 || y < 12 || y >= 40;
+      const gap = x >= 22 && x <= 26 && y >= 16 && y <= 28;
+      const mixed = x === 21 && y >= 18 && y <= 26;
+      gapRaw.set(outside ? screenColor : gap ? [238, 30, 196, 255] : mixed ? [124, 21, 99, 255] : shoeOutline, p);
+      if (!outside) gapKeyed.set(gap ? [166, 99, 76, 104] : mixed ? [79, 43, 28, 221] : shoeOutline, p);
+    }
+  }
+  cleanMotionKeySpill(gapKeyed, gapSize, gapSize, '#FF00FF', gapRaw);
+  const gapInterior = (22 * gapSize + 24) * 4, gapEdge = (22 * gapSize + 21) * 4;
+  check('enclosed screen residue clears while preserving the adjacent opaque outline and a soft edge',
+    gapKeyed.subarray(gapInterior, gapInterior + 4).equals(Buffer.alloc(4)) &&
+    gapKeyed[gapEdge + 3] > 110 && gapKeyed[gapEdge + 3] < 200 &&
+    gapKeyed.subarray(gapEdge - 4, gapEdge).equals(Buffer.from(shoeOutline)));
   await config.saveConfig({ comfyVideo: false, toapisVideo: false, minimaxBaseUrl: base, minimaxModel: 'MiniMax-H3-Lite', minimaxApiKey: 'dummy-video-key', imageProvider: 'custom', customProtocol: 'openai', customBaseUrl: base + '/v1', customModel: 'mock-image', customApiKey: 'dummy-image-key' });
   const catalog = await motion.motionCatalog();
   check('bundled 40 CC0 action templates', catalog.actions.length === 40 && catalog.license === 'CC0-1.0');
@@ -275,6 +347,69 @@ try {
   const blank = (await motion.readMotion(id)).frames[25].redraw;
   check('empty redraw rejected while raw paid result preserved', blank.status==='unknown' && !!blank.raw);
   await step(id,'export',{ useRedraw:true },/未完成帧/);
+  blankImage=false;
+  const api1kTargets=job.frames.filter(f=>f.action===first.action && f.direction==='right').map(f=>f.id);
+  assert.equal(api1kTargets.length,4);
+  const api1kPlan=motion.motionRedrawPlan(await motion.readMotion(id),api1kTargets,'sheet',false,true);
+  check('1K plan explicitly confirms one square request for four poses without relabeling old single edits',
+    api1kPlan.image1k && api1kPlan.requestedSize==='1024x1024' && api1kPlan.requestCount===1 && api1kPlan.frameCount===4);
+  assert.throws(()=>motion.motionRedrawPlan(job,api1kTargets,'sheet8',false,true),/最多重绘 4 帧/);
+  const beforeApi1k=imagePosts;
+  const api1kInput={targets:api1kTargets,scheme:'sheet',confirmed:true,image1k:true};
+  await step(id,'redraw',api1kInput);
+  const api1kJob=await motion.readMotion(id);
+  const api1kFrames=api1kJob.frames.filter(f=>api1kTargets.includes(f.id));
+  check('four poses use a single 1024×1024 request instead of four submissions or a 2K sheet',
+    imagePosts===beforeApi1k+1 && /name="size"\r\n\r\n1024x1024\r\n/.test(postedImage) && api1kFrames.every(f=>f.redraw?.status==='ready' && f.redraw.image1k && f.redraw.batchId===api1kFrames[0].redraw.batchId));
+  const api1kHashes={};
+  for (const frame of api1kFrames) {
+    const aligned=await readFile(motion.motionAssetPath(id,frame.redraw.file));
+    const original=await readFile(motion.motionAssetPath(id,frame.keyed));
+    assert.equal(aligned.readUInt32BE(16),512);
+    assert.equal(aligned.readUInt32BE(20),512);
+    assert.deepEqual(frame.redraw.translation,[0,0]);
+    assert.equal(frame.redraw.scale,1);
+    assert.ok(!aligned.equals(original));
+    api1kHashes[frame.id+'.png']=createHash('sha256').update(aligned).digest('hex');
+  }
+  check('same-pose 1K cells align to 512×512 while keeping the edited foreground',Object.keys(api1kHashes).length===4);
+  await step(id,'redraw',api1kInput);
+  check('ready 1K poses can be selected again without reposting the paid request',imagePosts===beforeApi1k+1);
+
+  // The fake engine validates integration/provenance without requiring Python
+  // or claiming that the test fixture is a real enhanced output.
+  const fakeSr=join(home,'fake-sr.mjs');
+  await writeFile(fakeSr,`
+    import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+    import { createHash } from 'node:crypto';
+    import { join } from 'node:path';
+    import { encodePng } from ${JSON.stringify(new URL('../lib/png.js',import.meta.url).href)};
+    const option=name=>process.argv[process.argv.indexOf(name)+1];
+    const source=option('--source'), out=option('--output');
+    const inputHashes={};
+    const transparent=encodePng(Buffer.alloc(1024*1024*4),1024,1024);
+    await mkdir(out,{recursive:true});
+    for(const file of await readdir(source)){
+      inputHashes[file]=createHash('sha256').update(await readFile(join(source,file))).digest('hex');
+      await writeFile(join(out,file),transparent);
+    }
+    await writeFile(join(out,'sr-report.json'),JSON.stringify({frame_count:Object.keys(inputHashes).length,native_scale:2,inputHashes}));
+  `);
+  const upscaleEnv={GMM_LOCAL_UPSCALE_SCRIPT:fakeSr,GMM_LOCAL_UPSCALE_PYTHON:process.execPath};
+  const savedUpscaleEnv=Object.fromEntries(Object.keys(upscaleEnv).map(key=>[key,process.env[key]]));
+  Object.assign(process.env,upscaleEnv);
+  try {
+    await step(id,'upscale',{useRedraw:true,targets:[...api1kTargets.slice(1),first.id]},/全部是有效且已完成的 1K/);
+    await step(id,'upscale',{useRedraw:true,targets:api1kTargets});
+    const {localUpscale}=await motion.readMotion(id);
+    const report=JSON.parse(await readFile(motion.motionAssetPath(id,localUpscale.report),'utf8'));
+    assert.deepEqual(report.inputHashes,api1kHashes);
+    assert.deepEqual(Object.keys(localUpscale.files).sort(),[...api1kTargets].sort());
+    check('API-to-local upscale reads only the exact aligned 1K edit files and never charges again',
+      localUpscale.sourceKind==='redraw' && report.sourceKind==='redraw' && report.cleanup.enabled===false && imagePosts===beforeApi1k+1);
+  } finally {
+    for(const [key,value] of Object.entries(savedUpscaleEnv)) if(value===undefined) delete process.env[key]; else process.env[key]=value;
+  }
   job = await step(id,'export');
   const files = unzip(await readFile(motion.motionAssetPath(id,job.archive)));
   const metadata = JSON.parse(files.get('animation.json'));
@@ -295,6 +430,34 @@ try {
   check('agent review supports motion frames', review.stages.find(s=>s.stage==='frames').cells.length===64);
   const intake = await tool.execute({action:'intake',module:'sprite',id},{});
   check('motion intake uses references and per-step confirmation', intake.workflow==='motion' && intake.reviewModeQuestion===null && !intake.questions.some(q=>q.key==='source'||q.key==='generateMode'));
+  const selectedClips = [
+    {action:'video',start:.25,end:.75,frameCount:1,targetFps:4},
+    {action:'video-2',start:1.25,end:1.75,frameCount:1,targetFps:6},
+    {action:'video-3',start:3,end:3.5,frameCount:1,targetFps:8},
+  ];
+  await assert.rejects(()=>gw('saveMotionJob',{jobId:id,ranges:selectedClips.slice(0,2)}),/Unknown or duplicate motion template/);
+  const importedId=(await gw('createMotionJob',{name:'Trimmed local actions'})).jobId;
+  await gw('uploadMotionAsset',{jobId:importedId,kind:'video',data:videoBytes.toString('base64')});
+  const imported=await motion.readMotion(importedId);
+  const clipPlans=await Promise.all([1,2,3].map(count=>motion.motionLocalProcessingPlan(imported,{ranges:selectedClips.slice(0,count),processing:{sheet:false}})));
+  check('imported plans support one, two, or three ordered ranges at independent frame rates',
+    JSON.stringify(clipPlans.map(plan=>plan.frameCount))===JSON.stringify([16,40,72]) &&
+    JSON.stringify(clipPlans[2].ranges.map(r=>[r.start,r.end,r.targetFps,r.frameCount]))===JSON.stringify([[.25,.75,4,2],[1.25,1.75,6,3],[3,3.5,8,4]]));
+  const importedBefore=await readFile(motion.motionAssetPath(importedId,'job.json'));
+  await assert.rejects(()=>gw('saveMotionJob',{jobId:importedId,processing:{...motion.motionProcessing(),cropInset:.07},ranges:[selectedClips[0],{...selectedClips[1],start:.5}]}),/overlap/);
+  await assert.rejects(()=>gw('saveMotionJob',{jobId:importedId,ranges:[selectedClips[0],selectedClips[2]]}),/顺序/);
+  await assert.rejects(()=>gw('saveMotionJob',{jobId:importedId,ranges:[selectedClips[0],{...selectedClips[1],action:defaults[1].action}]}),/顺序/);
+  await assert.rejects(()=>gw('saveMotionJob',{jobId:importedId,ranges:[{...selectedClips[0],end:imported.video.duration+1}]}),/Invalid video range/);
+  check('invalid imported ranges leave the saved job and processing options untouched',
+    importedBefore.equals(await readFile(motion.motionAssetPath(importedId,'job.json'))));
+  await gw('saveMotionJob',{jobId:importedId,ranges:selectedClips,rangesConfirmed:true,processing:{...motion.motionProcessing(),sheet:false,key:false}});
+  const importedFrames=(await step(importedId,'extract')).frames;
+  check('imported extraction skips the two discarded gaps and keeps stable action and frame IDs',
+    importedFrames.length===72 && new Set(importedFrames.map(f=>f.id)).size===72 &&
+    clipPlans[2].ranges.every(range=>{
+      const all=importedFrames.filter(frame=>frame.action===range.action);
+      return all.length===range.frameCount*8 && all.every(frame=>frame.time>range.start && frame.time<range.end && frame.id===`${range.action}-${frame.direction}-${frame.index}`);
+    }));
   await gw('uploadMotionAsset',{jobId:id,kind:'video',data:videoBytes.toString('base64')});
   job = await motion.readMotion(id);
   check('local import clears pending pointer and downstream products', !job.video.taskId && !job.frames.length && !job.archive && !job.rangesConfirmed);

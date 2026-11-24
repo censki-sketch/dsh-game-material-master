@@ -9,6 +9,13 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
 const browser = await chromium.launch({ headless: true, ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}) });
 let checks=0;const check=(name,value)=>{assert.ok(value,name);console.log('✓ '+name);checks++;};
 const order=['back','upRight','right','downRight','front','downLeft','left','upLeft'];
+const redrawLabel='图片 API 1K 重绘';
+const redrawModelLabel='1K 重绘模型';
+const redrawModels=[
+  {connectionId:'redraw-a',model:'fixture-1k',label:'重绘模型 A',connectionName:'本地测试连接 A'},
+  {connectionId:'redraw-b',model:'fixture-1k',label:'重绘模型 B',connectionName:'本地测试连接 B'},
+];
+const redrawSelection=({connectionId,model})=>({connectionId,model});
 const ranges=[{action:'walk',start:0,end:2,frameCount:48,targetFps:24},{action:'run',start:2,end:4,frameCount:48,targetFps:24}];
 const frames=ranges.flatMap(({action})=>order.flatMap((direction,d)=>Array.from({length:48},(_,index)=>({id:`${action}-${direction}-${index}`,action,direction,index,file:`${action}-${d}-${index}.png`,keyed:`${action}-${d}-${index}.png`}))));
 const calls=[],plans=[],errors=[],network=[];
@@ -54,25 +61,52 @@ try {
   await page.addScriptTag({path:'lib/client.js'});
   let planningFrames=frames;
   let legacyPlan=null;
+  let failUpscaleStop=false;
+  let pendingLocalProcess,failLocalProcess=false;
+  let activeRedrawModel=redrawModels[0], availableRedrawModels=redrawModels;
+  const redrawConfig=()=>({hiddenModules:[],motionRedrawModels:availableRedrawModels,motionRedrawModel:activeRedrawModel});
   const savedRanges={};let failRangeSave=false,dropRangeSave=false,navigationRounds=[],failVersionDelete=false,holdVersionDelete=false,releaseVersionDelete,localPlanMode='extract';
   await page.exposeFunction('invokeLocal',async(method,payload)=>{
-    if(method==='getConfig')return {hiddenModules:[]};
+    if(method==='getConfig')return redrawConfig();
     if(method==='getMotionVideoTimeline')return payload.page===undefined?sourceTimeline:previewPage(payload.page);
     if(method==='getWorkflowConversation')return {rounds:navigationRounds};
-    if(method==='runWorkflowRoundStep'&&payload.planOnly&&payload.step==='process')return localPlanMode==='stale'?{ok:true}:{kind:'local-processing',steps:localPlanMode==='none'?[]:['extract','export'],actions:payload.ranges.map(r=>r.action),changed:localPlanMode!=='none'};
-    if(method==='runWorkflowRoundStep'&&payload.planOnly){plans.push(payload);const plan=motionRedrawPlan({frames:planningFrames,validFrameRanges:savedRanges.wchild},payload.targets,legacyPlan==='frame'?'frame':payload.scheme,payload.regenerate);if(legacyPlan==='missing')delete plan.scheme;return plan;}
+    if(method==='runWorkflowRoundStep'&&payload.planOnly&&payload.step==='process')return localPlanMode==='stale'?{ok:true}:{kind:'local-processing',steps:localPlanMode==='none'?[]:Object.hasOwn(payload,'autoUpscale')?['extract',...(payload.autoUpscale?['upscale']:[])]:['extract','export'],actions:payload.ranges.map(r=>r.action),frameCount:payload.ranges.reduce((sum,r)=>sum+r.frameCount,0)*8,changed:localPlanMode!=='none'};
+    if(method==='runWorkflowRoundStep'&&payload.planOnly){
+      plans.push(payload);
+      const plan=motionRedrawPlan({frames:planningFrames,validFrameRanges:savedRanges.wchild},payload.targets,legacyPlan==='frame'?'frame':payload.scheme,payload.regenerate,legacyPlan!=='size'&&payload.image1k);
+      if(legacyPlan==='missing')delete plan.scheme;
+      if(!activeRedrawModel)return {...plan,modelSelection:null,blocker:'请先配置 1K 重绘模型。'};
+      const plannedModel=legacyPlan==='other-route'?redrawModels.find(model=>model.connectionId!==activeRedrawModel.connectionId):activeRedrawModel;
+      return {...plan,modelSelection:redrawSelection(plannedModel)};
+    }
     calls.push({method,payload});
+    if(method==='saveConfig'){
+      const selected=availableRedrawModels.find(model=>model.connectionId===payload.motionRedrawSelection?.connectionId&&model.model===payload.motionRedrawSelection?.model);
+      assert.ok(selected,'redraw configuration saves an available connection and model');
+      activeRedrawModel=selected;
+      return redrawConfig();
+    }
     if(method==='deleteWorkflowVersion'){
       if(failVersionDelete)throw Error('本地测试：删除失败');
       if(holdVersionDelete)await new Promise(resolve=>releaseVersionDelete=resolve);
       const round=navigationRounds.find(r=>r.id===payload.roundId),version=round?.versions.find(v=>v.id===payload.versionId);
-      assert.ok(payload.confirmed&&['raw','keyed','redraw'].includes(version?.kind));
-      round.versionCounters=Object.fromEntries(['video','raw','keyed','redraw'].map(kind=>[kind,Math.max(0,...round.versions.filter(v=>v.kind===kind).map(v=>v.number||1))]));
+      assert.ok(payload.confirmed&&['raw','keyed','redraw','upscale'].includes(version?.kind));
+      round.versionCounters=Object.fromEntries(['video','raw','keyed','redraw','upscale'].map(kind=>[kind,Math.max(0,...round.versions.filter(v=>v.kind===kind).map(v=>v.number||1))]));
       round.versions=round.versions.filter(v=>v.id!==payload.versionId);return {ok:true};
     }
     if(method==='saveMotionJob'){if(failRangeSave)throw Error('本地测试：范围保存失败');if(!dropRangeSave)savedRanges[payload.jobId]=structuredClone(payload.validFrameRanges);return {ok:true};}
     if(method==='getMotionJob')return {validFrameRanges:savedRanges[payload.jobId]};
-    if(method==='runWorkflowRoundStep')return {ok:true};throw Error('Unexpected RPC '+method);
+    if(method==='runWorkflowRoundStep'&&payload.step==='cancel'&&failUpscaleStop)throw Error('本地测试：停止失败');
+    if(method==='runWorkflowRoundStep'&&payload.step==='process'){
+      if(pendingLocalProcess)await pendingLocalProcess;
+      if(failLocalProcess)throw Error('本地测试：处理提交失败');
+    }
+    if(method==='runMotionStep'&&payload.step==='cancel')return {started:true};
+    if(method==='runWorkflowRoundStep'){
+      if(payload.step==='redraw')assert.deepEqual(payload.expectedImageModel,redrawSelection(activeRedrawModel));
+      return {ok:true};
+    }
+    throw Error('Unexpected RPC '+method);
   });
   const round={id:'round',childId:'wchild',createdAt:1,prompt:'行走和奔跑',assetBase:'/assets/',status:'ready',request:{ranges,segments:ranges},job:{frames,ranges,processing:{},video:{file:'video.mp4',duration:4},templates:[{key:'walk',name:'行走'},{key:'run',name:'奔跑'}]},versions:[{id:'keyed',kind:'keyed',files:frames.map(f=>f.file),frames,ranges},{id:'zip',kind:'export',sourceKind:'keyed',files:['sprites.zip']}]};
   await page.evaluate(round=>{
@@ -81,8 +115,16 @@ try {
     window.showRound=round=>root.render(h('div',{className:'SPR_root'},h('div',{className:'SPR_flowScroll',style:{height:'100vh',boxSizing:'border-box'}},h(bundle.__test.WorkflowRound,{key:round.id,api,module:'sprite',jobId:'wparent',round,number:1,busy:false,onRefresh:async()=>{},onReuse:async()=>{}}))));showRound(round);
   },round);
   const player=page.locator('.SPR_flowAnimation'),canvas=player.locator('canvas');
+  const controlsOverlayCanvas=()=>player.evaluate(el=>{
+    const media=el.querySelector('canvas').getBoundingClientRect();
+    const controls=el.querySelector('.SPR_flowPlayback');
+    const rect=controls.getBoundingClientRect();
+    return getComputedStyle(controls).position==='absolute'&&Math.abs(rect.left+rect.width/2-(media.left+media.width/2))<=1
+      &&rect.left>=media.left&&rect.right<=media.right&&rect.top>=media.top+media.height/2&&media.bottom-rect.bottom>=4;
+  });
   await player.waitFor();await page.getByText('正在载入动画…',{exact:true}).waitFor({state:'hidden'});
   check('result automatically plays without expanding a panel',await player.getByRole('button',{name:'暂停',exact:true}).isVisible());
+  check('playback controls overlay the lower center of the single-direction preview',await controlsOverlayCanvas());
   check('24 FPS is based on the saved two-second/48-frame range',(await player.getByTestId('workflow-frame').innerText()).includes('24 FPS'));
   const runningFrames = frames.map((frame, index) => ({ ...frame, ...(index < 4 ? { redraw: { status: 'ready', file: frame.file } } : {}) }));
   const runningRound = { ...round, status: 'running', stage: 'redraw', job: { ...round.job, active: true, progress: '2/6 · walk-back-4', redrawTargets: frames.slice(0, 24).map(frame => frame.id), frames: runningFrames } };
@@ -119,9 +161,12 @@ try {
   await page.getByRole('button',{name:'预览方式',exact:true}).click();await page.getByRole('menuitemradio',{name:'八方向同时预览',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.SPR_flowAnimation canvas')?.width===1024);
   check('eight-direction preview draws a real four-by-two canvas',await canvas.evaluate(el=>el.width===1024&&el.height===576));
+  check('playback controls overlay the eight-direction preview',await controlsOverlayCanvas());
   check('eight-direction preview hides the direction selector',await page.getByRole('button',{name:'选择方向',exact:true}).count()===0);
   await page.getByRole('button',{name:'预览方式',exact:true}).click();await page.getByRole('menuitemradio',{name:'行走试玩',exact:true}).click();
   check('walk preview hides both action and direction',await page.getByRole('button',{name:'选择方向',exact:true}).count()===0&&await page.getByRole('button',{name:'筛选动作',exact:true}).count()===0);
+  await page.waitForFunction(()=>document.querySelector('.SPR_flowAnimation canvas')?.width===800);
+  check('playback controls stay within the walking preview',await controlsOverlayCanvas());
   await canvas.focus();await page.keyboard.down('ArrowRight');await page.waitForTimeout(400);await page.keyboard.up('ArrowRight');
   await page.getByRole('button',{name:'预览方式',exact:true}).click();await page.getByRole('menuitemradio',{name:'单方向',exact:true}).click();
   check('single preview restores the final direction and remembers WASD facing',(await page.getByRole('button',{name:'选择方向',exact:true}).innerText())==='东');
@@ -140,11 +185,23 @@ try {
   const waitCompare=(start,current)=>page.waitForFunction(({start,current})=>{const figures=[...document.querySelectorAll('.SPR_motionCompareGrid figure')];return figures.length===2&&figures.every((figure,i)=>figure.getAttribute('aria-busy')==='false'&&figure.querySelector('canvas')?.dataset.frameIndex===String((i?current:start)-1));},{start,current});
   const comparisonPixels=locator=>locator.evaluate(canvas=>canvas.toDataURL());
   const videoPixels=()=>mainVideo.evaluate(node=>{const c=document.createElement('canvas');c.width=node.videoWidth;c.height=node.videoHeight;c.getContext('2d').drawImage(node,0,0);return c.toDataURL();});
-  const openCompare=async()=>{await dialog.locator('.SPR_flowRangeEntry').getByRole('button',{name:'展开帧对比',exact:true}).click();await compare.waitFor();};
+  const compareEntry=dialog.locator('.SPR_flowRangeEntry > button');
+  const comparePulse=()=>compareEntry.locator('span').evaluate(label=>{
+    const style=getComputedStyle(label);
+    return {animation:style.animationName,iterations:style.animationIterationCount,duration:parseFloat(style.animationDuration),underlined:style.textDecorationLine==='underline'};
+  });
+  const openCompare=async()=>{await compareEntry.click();await compare.waitFor();};
   await waitSource(49);
   check('outer processing keeps output settings and a comparison entry without duplicated frame controls',await dialog.getByRole('switch').count()===2&&await dialog.getByRole('spinbutton',{name:'起始帧',exact:true}).count()===0&&await dialog.locator('.SPR_flowFramePicker').count()===0&&await dialog.getByRole('button',{name:'校准动作范围',exact:true}).count()===0);
   check('processing starts with every action awaiting explicit confirmation',await dialog.getByRole('button',{name:'应用并处理',exact:true}).isDisabled()&&await dialog.getByText('已确认 0/2 个动作',{exact:true}).isVisible());
   check('the video has one comparison entry and no separate start thumbnail',await dialog.getByRole('button',{name:'展开帧对比',exact:true}).count()===1&&await dialog.getByRole('figure',{name:'开始帧预览',exact:true}).count()===0);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  const cornerPulse=await comparePulse();
+  check('the corner comparison label pulses while the action ranges are unconfirmed',cornerPulse.animation==='SPR_pendingRangePulse'&&cornerPulse.iterations==='infinite'&&cornerPulse.underlined);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  const reducedCornerPulse=await comparePulse();
+  check('the corner label shares the slower pulse under reduced motion',reducedCornerPulse.animation===cornerPulse.animation&&reducedCornerPulse.duration>cornerPulse.duration);
+  await page.emulateMedia({reducedMotion:'no-preference'});
   await openCompare();await waitCompare(49,49);
   check('the corner entry opens full-resolution comparison',await comparisonPixels(left.locator('canvas'))===await videoPixels()&&await left.locator('canvas').evaluate(c=>c.width+'x'+c.height)===await mainVideo.evaluate(v=>v.videoWidth+'x'+v.videoHeight));
   check('all range tools appear once inside comparison and retain the preview action',await compare.getByRole('button',{name:'校准动作范围',exact:true}).innerText()==='奔跑'&&await compare.getByRole('spinbutton',{name:'起始帧',exact:true}).count()===1&&await compare.getByRole('spinbutton',{name:'结束帧',exact:true}).count()===1&&await compare.getByRole('spinbutton',{name:'抽帧 FPS',exact:true}).count()===1);
@@ -208,15 +265,19 @@ try {
   await jump.fill('67');await jump.press('Enter');await waitSource(67);await waitCompare(67,67);
   await compare.getByRole('button',{name:'确认当前动作',exact:true}).click();
   check('confirming one action does not enable processing',await compare.getByText('已确认 1/2 个动作',{exact:true}).isVisible()&&await compare.getByRole('button',{name:'已确认',exact:true}).isDisabled()&&await dialog.getByRole('button',{name:'应用并处理',exact:true}).isDisabled());
+  check('the corner label still pulses while another action needs confirmation',(await comparePulse()).animation===cornerPulse.animation);
   await jump.fill('70');await jump.press('Enter');await waitSource(70);await waitCompare(67,70);
   check('preview-only navigation keeps the action confirmation',await compare.getByRole('button',{name:'已确认',exact:true}).isDisabled());
   await compare.getByRole('button',{name:'校准动作范围',exact:true}).click();await page.getByRole('menuitemradio',{name:'行走',exact:true}).click();await waitCompare(1,1);
   check('action selection stays in the comparison and updates images and eligible frames',await compare.isVisible()&&await startField.inputValue()==='1'&&await strip.getAttribute('data-first-frame')==='0'&&await left.locator('figcaption>span').innerText()==='第 1 帧');
   await compare.getByRole('button',{name:'确认当前动作',exact:true}).click();
   check('both separately confirmed actions enable apply without sending a request',await compare.getByText('已确认 2/2 个动作',{exact:true}).isVisible()&&!await dialog.getByRole('button',{name:'应用并处理',exact:true}).isDisabled()&&calls.length===0);
+  const confirmedCorner=await comparePulse();
+  check('the corner label stops pulsing and returns to regular text after all confirmations',confirmedCorner.animation==='none'&&!confirmedCorner.underlined);
   await fpsField.fill('12');await fpsField.press('Enter');
   await compare.getByText('已确认 1/2 个动作',{exact:true}).waitFor();
   check('editing output FPS invalidates only the changed action and disables apply',await dialog.getByRole('button',{name:'应用并处理',exact:true}).isDisabled()&&await compare.getByRole('button',{name:'确认当前动作',exact:true}).isVisible());
+  check('the corner label pulses again when a range edit invalidates its confirmation',(await comparePulse()).animation===cornerPulse.animation);
   await fpsField.fill('24');await fpsField.press('Enter');
   check('restoring an old value does not silently restore its confirmation',await compare.getByText('已确认 1/2 个动作',{exact:true}).isVisible());
   await compare.getByRole('button',{name:'确认当前动作',exact:true}).click();
@@ -252,10 +313,24 @@ try {
   }
   await page.setViewportSize({width:1280,height:600});await dialog.evaluate(el=>el.scrollTop=el.scrollHeight);
   check('short-window output settings leave close and apply reachable',await dialog.evaluate(el=>{const r=el.getBoundingClientRect(),close=el.querySelector('.SPR_chatRequestHead button').getBoundingClientRect(),apply=el.querySelector('.SPR_flowProcessFooterActions>.SPR_btn').getBoundingClientRect();return close.top>=r.top&&close.bottom<=r.bottom&&apply.top>=r.top&&apply.bottom<=r.bottom;}));
-  await dialog.getByRole('button',{name:'应用并处理',exact:true}).click();const extraction=calls.find(c=>c.payload?.step==='process');
-  check('outer apply uses comparison draft ranges with source PTS and independent output FPS',extraction?.payload.ranges[1].start===2.75&&extraction.payload.ranges[1].end===4&&extraction.payload.ranges[1].targetFps===24&&extraction.payload.ranges[1].frameCount===30);calls.length=0;
   await page.setViewportSize({width:1280,height:900});await dialog.getByRole('button',{name:'更多处理',exact:true}).click();
-  check('standalone local processing remains in the outer settings',await page.getByRole('menuitem',{name:'重新抠图',exact:true}).isVisible()&&await page.getByRole('menuitem',{name:'重新合成',exact:true}).isVisible());await page.keyboard.press('Escape');await dialog.getByRole('button',{name:'关闭',exact:true}).click();
+  check('standalone local processing remains in the outer settings',await page.getByRole('menuitem',{name:'重新抠图',exact:true}).isVisible()&&await page.getByRole('menuitem',{name:'重新合成',exact:true}).isVisible());await page.keyboard.press('Escape');
+  let acceptLocalProcess;
+  pendingLocalProcess=new Promise(resolve=>{acceptLocalProcess=resolve;});
+  await dialog.getByRole('button',{name:'应用并处理',exact:true}).click();
+  const submittingProcess=dialog.getByRole('button',{name:'处理中…',exact:true});
+  await submittingProcess.waitFor();
+  check('the processing dialog stays open and blocks resubmission while awaiting acceptance',await submittingProcess.isDisabled());
+  acceptLocalProcess();
+  await dialog.waitFor({state:'hidden'});pendingLocalProcess=undefined;
+  check('the processing dialog closes when the host accepts the job without waiting for completion',await dialog.count()===0);
+  const extraction=calls.find(c=>c.payload?.step==='process');
+  check('outer apply uses comparison draft ranges with source PTS and independent output FPS',extraction?.payload.ranges[1].start===2.75&&extraction.payload.ranges[1].end===4&&extraction.payload.ranges[1].targetFps===24&&extraction.payload.ranges[1].frameCount===30);calls.length=0;
+  await page.evaluate(round=>showRound({...round,status:'running',stage:'extract'}),round);
+  await page.locator('.SPR_flowRound .SPR_flowProcessing').waitFor();
+  check('running progress appears on the round with the processing dialog closed',await dialog.count()===0);
+  await page.evaluate(round=>showRound(round),round);
+  await page.locator('.SPR_flowRound .SPR_flowProcessing').waitFor({state:'hidden'});
   localPlanMode='none';await page.getByRole('button',{name:'视频处理',exact:true}).click();await dialog.getByText('已确认 0/2 个动作',{exact:true}).waitFor();check('reopening processing does not reuse confirmations from the previous review session',await dialog.getByRole('button',{name:'应用并处理',exact:true}).isDisabled());
   await dialog.getByRole('button',{name:'更多处理',exact:true}).click();check('standalone local actions cannot bypass range confirmation',await page.getByRole('menuitem',{name:'重新抠图',exact:true}).isDisabled()&&await page.getByRole('menuitem',{name:'重新合成',exact:true}).isDisabled());await page.keyboard.press('Escape');await dialog.getByRole('button',{name:'关闭',exact:true}).click();
   localPlanMode='stale';await page.getByRole('button',{name:'视频处理',exact:true}).click();await dialog.getByText('插件后台尚未更新，请完全退出 DSH（包括托盘）后重新打开。',{exact:true}).waitFor();check('old hosts still block incorrectly interpreted processing',await dialog.getByRole('button',{name:'应用并处理',exact:true}).isDisabled());await dialog.getByRole('button',{name:'关闭',exact:true}).click();localPlanMode='extract';
@@ -269,12 +344,92 @@ try {
   failComparisonVideo=false;await left.getByRole('button',{name:'重试',exact:true}).click();await waitCompare(1,1);
   await compare.getByRole('button',{name:'确认当前动作',exact:true}).click();
   check('one neutral parsing range needs exactly one explicit confirmation',await compare.getByText('已确认 1/1 个动作',{exact:true}).isVisible()&&!await dialog.getByRole('button',{name:'应用并处理',exact:true}).isDisabled());
-  await page.keyboard.press('Escape');await page.keyboard.press('Escape');await page.evaluate(round=>showRound(round),round);
+  await page.keyboard.press('Escape');await page.keyboard.press('Escape');
+
+  const importedRound={...round,id:'import-action-count',localOnly:true,stage:'awaiting-ranges',request:{ranges:oneRange},versions:[{id:'source',kind:'video',files:['video.mp4']}],job:{...round.job,frames:[],ranges:oneRange,localUpscaleAvailable:true}};
+  await page.evaluate(round=>showRound(round),importedRound);
+  const pendingProcessing=page.getByRole('button',{name:'视频处理',exact:true});
+  await pendingProcessing.and(page.locator('[data-pending-range="true"]')).waitFor();
+  const pendingAppearance=()=>pendingProcessing.evaluate(el=>{
+    const style=getComputedStyle(el);
+    return {underlined:style.textDecorationLine==='underline',weight:Number(style.fontWeight),plain:style.backgroundColor==='rgba(0, 0, 0, 0)'&&style.borderTopWidth==='0px'&&style.boxShadow==='none',animation:style.animationName,iterations:style.animationIterationCount,duration:parseFloat(style.animationDuration)};
+  });
+  const activePresentation={...await pendingAppearance(),text:await pendingProcessing.innerText(),description:await pendingProcessing.getAttribute('aria-description'),pending:await pendingProcessing.getAttribute('data-pending-range')};
+  const {duration:normalDuration,...activeStyle}=activePresentation;
+  assert.deepEqual(activeStyle,{underlined:true,weight:600,plain:true,animation:'SPR_pendingRangePulse',iterations:'infinite',text:'视频处理',description:'待选帧',pending:'true'});
+  check('the pending action is an underlined toolbar label with a quick continuous pulse',normalDuration>0&&normalDuration<2);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  const reducedAppearance=await pendingAppearance();
+  check('reduced motion uses a slower continuous text pulse',reducedAppearance.plain&&reducedAppearance.underlined&&reducedAppearance.animation==='SPR_pendingRangePulse'&&reducedAppearance.iterations==='infinite'&&reducedAppearance.duration>normalDuration);
+  const samplePulse=()=>pendingProcessing.evaluate(el=>{
+    const [pulse]=el.getAnimations();
+    const duration=Number(pulse.effect.getTiming().duration);
+    pulse.pause();
+    pulse.currentTime=duration*4.1;
+    const accent=getComputedStyle(el).color;
+    const rect=el.getBoundingClientRect();
+    pulse.currentTime=duration*4.5;
+    const foreground=getComputedStyle(el).color;
+    const mid=el.getBoundingClientRect();
+    pulse.play();
+    return {accent,foreground,stationary:rect.x===mid.x&&rect.y===mid.y&&rect.width===mid.width&&rect.height===mid.height};
+  });
+  for(const [dark,foreground] of [[true,'rgb(239, 239, 241)'],[false,'rgb(36, 36, 40)']]){
+    await applyTheme(page,dark);
+    const pulse=await samplePulse();
+    check(`the pending text holds at both full theme colors without movement (${dark?'dark':'light'})`, pulse.stationary&&pulse.accent==='rgb(73, 119, 255)'&&pulse.foreground===foreground);
+  }
+  await pendingProcessing.hover();
+  check('hover keeps the text action free of a button background', (await pendingAppearance()).plain);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await pendingProcessing.click();await waitSource(1);await openCompare();await waitCompare(1,1);
+  const actionCount=compare.getByRole('button',{name:'动作数量',exact:true});
+  const calibration=compare.getByRole('button',{name:'校准动作范围',exact:true});
+  check('an imported clip defaults to one action named Action 1 in the comparison',await actionCount.innerText()==='1 个动作'&&await calibration.innerText()==='动作 1'&&await dialog.getByRole('button',{name:'应用并处理',exact:true}).isDisabled());
+  await page.setViewportSize({width:390,height:900});await applyTheme(page,true);await actionCount.click();
+  const countMenu=page.getByRole('menu',{name:'动作数量',exact:true});
+  check('themed action count options fit a narrow dark viewport',await countMenu.evaluate(el=>{const rect=el.getBoundingClientRect();return rect.left>=0&&rect.right<=innerWidth&&Array.from(el.querySelectorAll('[role=menuitemradio]'),button=>button.innerText.trim()).join('|')==='1 个动作|2 个动作|3 个动作';}));
+  await page.keyboard.press('Escape');check('Escape closes action count without leaving comparison',await compare.isVisible()&&await countMenu.count()===0);
+  await page.setViewportSize({width:1280,height:900});await applyTheme(page,false);
+  await actionCount.focus();await page.keyboard.press('Enter');await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+  await compare.getByText('已确认 0/2 个动作',{exact:true}).waitFor();
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('.SPR_motionCompareDialog .SPR_field')).some(field=>field.querySelector('.SPR_fieldLabel')?.textContent==='结束帧'&&field.querySelector('input')?.value==='48'));
+  check('choosing two actions with the keyboard snaps draft intervals to source frames',await endField.inputValue()==='48'&&await calibration.innerText()==='动作 1');
+  await actionCount.click();await page.getByRole('menuitemradio',{name:'3 个动作',exact:true}).click();
+  await compare.getByText('已确认 0/3 个动作',{exact:true}).waitFor();
+  await endField.fill('12');await endField.press('Enter');await waitCompare(1,12);await compare.getByRole('button',{name:'确认当前动作',exact:true}).click();
+  const switchImported=async(action,frame)=>{await calibration.click();await page.getByRole('menuitemradio',{name:action,exact:true}).click();await waitCompare(frame,frame);};
+  await switchImported('动作 2',49);await startField.fill('55');await startField.press('Enter');await waitCompare(55,55);await compare.getByRole('button',{name:'确认当前动作',exact:true}).click();
+  await switchImported('动作 3',73);await compare.getByRole('button',{name:'确认当前动作',exact:true}).click();
+  check('three imported ranges need review and range edits make no processing calls',await compare.getByText('已确认 3/3 个动作',{exact:true}).isVisible()&&calls.length===0);
+  await page.keyboard.press('Escape');
+  const autoUpscaleSwitch=dialog.getByRole('switch',{name:'完成后本地清晰化',exact:true});
+  check('apply lists the reviewed frame count, defaults to local upscale, and defers atlas',await dialog.getByText('每方向 54 帧，共 432 帧',{exact:true}).isVisible()&&await autoUpscaleSwitch.isChecked()&&await dialog.getByRole('switch',{name:'生成图集',exact:true}).count()===0);
+  failLocalProcess=true;
+  await autoUpscaleSwitch.uncheck();await dialog.getByRole('button',{name:'应用并处理',exact:true}).click();
+  const submitError=dialog.getByRole('alert').filter({hasText:'本地测试：处理提交失败'});
+  await submitError.waitFor();
+  check('a rejected submission keeps confirmed ranges and the local upscale setting available for retry',calls.find(c=>c.payload?.step==='process')?.payload?.autoUpscale===false&&await dialog.getByRole('button',{name:'应用并处理',exact:true}).isEnabled()&&!await autoUpscaleSwitch.isChecked()&&await dialog.getByText('每方向 54 帧，共 432 帧',{exact:true}).isVisible());
+  calls.length=0;failLocalProcess=false;
+  await autoUpscaleSwitch.check();
+  await dialog.getByRole('button',{name:'应用并处理',exact:true}).click();
+  await dialog.waitFor({state:'hidden'});
+  const importedProcess=calls.find(c=>c.payload?.step==='process')?.payload;
+  check('apply submits only reviewed intervals, preserves the source gap and enables local upscale',importedProcess?.autoUpscale===true&&importedProcess.processing.sheet===false&&importedProcess.ranges.map(range=>range.action).join('|')==='video|video-2|video-3'&&importedProcess.ranges[0].end===.5&&importedProcess.ranges[1].start===2.25&&importedProcess.ranges[2].end===4);
+  calls.length=0;await page.evaluate(round=>showRound(round),round);
   await page.getByRole('button',{name:'筛选动作',exact:true}).click();await page.getByRole('menuitemradio',{name:'奔跑',exact:true}).click();
   await page.getByRole('button',{name:'选择方向',exact:true}).click();await page.getByRole('menuitemradio',{name:'东',exact:true}).click();
-  await page.getByRole('button',{name:'AI清晰化',exact:true}).click();
-  const hdDialog=page.getByRole('dialog',{name:'AI清晰化',exact:true});
+  await page.getByRole('button',{name:redrawLabel,exact:true}).click();
+  const hdDialog=page.getByRole('dialog',{name:redrawLabel,exact:true});
   await hdDialog.getByText('6 次调用 · 24 帧',{exact:true}).waitFor();
+  const redrawModel=hdDialog.getByRole('button',{name:redrawModelLabel,exact:true});
+  check('the 1K dialog displays the configured route',await redrawModel.innerText().then(text=>text.includes(redrawModels[0].label))&&plans.at(-1).expectedImageModel?.connectionId===redrawModels[0].connectionId);
+  await redrawModel.click();
+  await page.getByRole('menuitemradio',{name:redrawModels[1].label,exact:true}).click();
+  await redrawModel.filter({hasText:redrawModels[1].label}).waitFor();
+  await hdDialog.getByText('6 次调用 · 24 帧',{exact:true}).waitFor();
+  check('switching routes plans with the new connection without sending a redraw',calls.length===1&&calls[0].method==='saveConfig'&&JSON.stringify(calls[0].payload.motionRedrawSelection)===JSON.stringify(redrawSelection(redrawModels[1]))&&JSON.stringify(plans.at(-1).expectedImageModel)===JSON.stringify(redrawSelection(redrawModels[1])));
+  calls.length=0;
   check('redraw method and scope have separate compact selectors',await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).innerText()==='4 帧一张'&&await hdDialog.getByRole('button',{name:'处理范围',exact:true}).innerText()==='当前方向');
   check('enhancement starts with the preview action explicitly selected',await hdDialog.getByRole('button',{name:'选择动作',exact:true}).innerText()==='奔跑');
   await hdDialog.getByRole('button',{name:'选择动作',exact:true}).click();
@@ -293,13 +448,13 @@ try {
   await hdDialog.getByRole('button',{name:'处理范围',exact:true}).click();await page.getByRole('menuitemradio',{name:'当前方向',exact:true}).click();
   await hdDialog.getByText('12 次调用 · 48 帧',{exact:true}).waitFor();
   await hdDialog.getByRole('button',{name:'开始重绘',exact:true}).click();
-  await page.getByRole('dialog',{name:'确认高清重绘',exact:true}).getByText('将提交 12 次付费请求，处理 48 帧。',{exact:true}).waitFor();
+  await page.getByRole('dialog',{name:'确认高清重绘',exact:true}).getByText('将提交 12 次付费请求，处理 48 帧。 重绘模型：重绘模型 B · 本地测试连接 B',{exact:true}).waitFor();
   check('selecting all actions still requires confirmation and sends nothing early',calls.length===0);
   await page.getByRole('dialog',{name:'确认高清重绘',exact:true}).getByRole('button',{name:'确认',exact:true}).click();
   await hdDialog.waitFor({state:'hidden'});
-  check('confirming all actions submits both actions with the planned scope',calls.length===1&&calls[0].payload.targets.length===48&&calls[0].payload.targets.some(id=>id.startsWith('walk-'))&&calls[0].payload.targets.some(id=>id.startsWith('run-')));
+  check('confirming all actions submits both actions with the planned 1K scope and route',plans.at(-1).image1k===true&&calls.length===1&&calls[0].payload.image1k===true&&JSON.stringify(calls[0].payload.expectedImageModel)===JSON.stringify(redrawSelection(redrawModels[1]))&&calls[0].payload.targets.length===48&&calls[0].payload.targets.some(id=>id.startsWith('walk-'))&&calls[0].payload.targets.some(id=>id.startsWith('run-')));
   calls.length=0;
-  await page.getByRole('button',{name:'AI清晰化',exact:true}).click();
+  await page.getByRole('button',{name:redrawLabel,exact:true}).click();
   await hdDialog.getByText('6 次调用 · 24 帧',{exact:true}).waitFor();
   check('single-group trial action has been removed',await hdDialog.getByRole('button',{name:'先试一组',exact:true}).count()===0);
   await hdDialog.getByRole('button',{name:'每方向帧数',exact:true}).click();
@@ -314,24 +469,11 @@ try {
   }
   await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();await page.getByRole('menuitemradio',{name:'逐帧重绘',exact:true}).click();
   await hdDialog.getByText('24 次调用 · 24 帧',{exact:true}).waitFor();
-  await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();await page.getByRole('menuitemradio',{name:'8 帧一张',exact:true}).click();
-  await hdDialog.getByText('3 次调用 · 24 帧',{exact:true}).waitFor();
-  await hdDialog.getByRole('button',{name:'每方向帧数',exact:true}).click();
-  check('eight-frame sheets offer only 8, 16 and 24 frames',(await page.getByRole('menuitemradio').allTextContents()).map(t=>t.trim()).join('|')==='8 帧|16 帧|24 帧');
-  await page.keyboard.press('Escape');
-  for(const count of [8,16,24]){
-    await hdDialog.getByRole('button',{name:'每方向帧数',exact:true}).click();await page.getByRole('menuitemradio',{name:count+' 帧',exact:true}).click();
-    await hdDialog.getByText((count/8)+' 次调用 · '+count+' 帧',{exact:true}).waitFor();
-    check(count+' frames require '+count/8+' eight-cell requests across the full motion',plans.at(-1).scheme==='sheet8'&&JSON.stringify(plans.at(-1).targets.map(id=>Number(id.split('-').at(-1))))===JSON.stringify(expectedSamples[count]));
-  }
-  for(const [before,after] of [[4,8],[12,16],[20,24]]){
-    await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();await page.getByRole('menuitemradio',{name:'4 帧一张',exact:true}).click();
-    await hdDialog.getByRole('button',{name:'每方向帧数',exact:true}).click();await page.getByRole('menuitemradio',{name:before+' 帧',exact:true}).click();
-    await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();await page.getByRole('menuitemradio',{name:'8 帧一张',exact:true}).click();
-    await hdDialog.getByText((after/8)+' 次调用 · '+after+' 帧',{exact:true}).waitFor();
-    check('switching to eight-frame sheets rounds '+before+' up to '+after,await hdDialog.getByRole('button',{name:'每方向帧数',exact:true}).innerText()===after+' 帧'&&plans.at(-1).targets.length===after);
-  }
-  await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();await page.getByRole('menuitemradio',{name:'4 帧一张',exact:true}).click();
+  await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();
+  check('1K redraw offers only four-frame sheets and single-frame edits',(await page.getByRole('menuitemradio').allTextContents()).map(t=>t.trim()).join('|')==='4 帧一张|逐帧重绘');
+  await page.getByRole('menuitemradio',{name:'4 帧一张',exact:true}).click();
+  await hdDialog.getByText('6 次调用 · 24 帧',{exact:true}).waitFor();
+  check('switching back to grouped requests retains the selected frame count',await hdDialog.getByRole('button',{name:'每方向帧数',exact:true}).innerText()==='24 帧'&&plans.at(-1).targets.length===24);
   await hdDialog.getByRole('button',{name:'处理范围',exact:true}).click();
   check('all actions removed from scope menu',await page.getByRole('menuitemradio',{name:'全部动作',exact:true}).count()===0);
   await page.getByRole('menuitemradio',{name:'八方向',exact:true}).click();
@@ -344,6 +486,9 @@ try {
     check(`redraw panel fits ${width} ${dark?'dark':'light'}`,await hdDialog.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&el.scrollWidth<=el.clientWidth+1;}));
     check('automatic selectors use two aligned rows at '+width+' '+dark,await hdDialog.locator('.SPR_flowRedrawFields').evaluate(el=>{const buttons=[...el.querySelectorAll('.SPR_settingsSelect button[aria-haspopup="menu"]')],r=buttons.map(n=>n.getBoundingClientRect());return buttons.map(n=>n.getAttribute('aria-label')).join('|')==='重绘方案|每方向帧数|选择动作|处理范围'&&Math.abs(r[0].top-r[1].top)<1&&Math.abs(r[2].top-r[3].top)<1&&r[2].top>r[0].bottom&&Math.abs(r[0].left-r[2].left)<1&&Math.abs(r[1].left-r[3].left)<1&&r.every(n=>n.left>=0&&n.right<=innerWidth&&n.height<=33&&n.width<=230)&&Math.abs(r[0].width-r[1].width)<1;}));
     if(width===1280)check('two-row selectors keep the original dialog width',await hdDialog.locator('.SPR_flowRedrawFields').evaluate(el=>el.closest('dialog').getBoundingClientRect().width<=480));
+    await redrawModel.click();
+    check('the redraw route menu fits '+width+' '+dark,await page.getByRole('menuitemradio',{name:redrawModels[0].label,exact:true}).evaluate(el=>{const r=el.closest('[role=menu]').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1;}));
+    await page.keyboard.press('Escape');
     await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();
     check(`redraw menu fits ${width} ${dark?'dark':'light'}`,await page.getByRole('menuitemradio',{name:'逐帧重绘',exact:true}).evaluate(el=>{const r=el.closest('[role=menu]').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1;}));
     await page.screenshot({path:`.verify/motion-redraw-${width}-${dark?'dark':'light'}.png`});
@@ -362,7 +507,7 @@ try {
   const presetCall=calls.find(c=>c.payload?.step==='redraw');
   check('four-frame preset samples the full 48-frame cycle',presetCall.payload.targets.length===4&&presetCall.payload.targets.map(id=>Number(id.split('-').at(-1))).join(',')==='0,12,24,36');
   calls.length=0;
-  await page.getByRole('button',{name:'AI清晰化',exact:true}).click();
+  await page.getByRole('button',{name:redrawLabel,exact:true}).click();
   await hdDialog.getByRole('button',{name:'处理范围',exact:true}).click();await page.getByRole('menuitemradio',{name:'手动选帧',exact:true}).click();
   check('empty manual selection disables submit',await hdDialog.getByRole('button',{name:'开始重绘',exact:true}).isDisabled());
   await hdDialog.getByRole('button',{name:'筛选动作',exact:true}).click();await page.getByRole('menuitemradio',{name:'行走',exact:true}).click();
@@ -383,8 +528,8 @@ try {
   await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();await page.getByRole('menuitemradio',{name:'逐帧重绘',exact:true}).click();
   await hdDialog.getByText('8 次调用 · 8 帧',{exact:true}).waitFor();
   check('manual scheme changes grouping without changing the eight selected frames',plans.at(-1).scheme==='frame'&&plans.at(-1).targets.length===8&&await hdDialog.locator('.SPR_flowSelection input:checked').count()===8&&calls.length===0);
-  await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();await page.getByRole('menuitemradio',{name:'8 帧一张',exact:true}).click();
-  await hdDialog.getByText('1 次调用 · 8 帧',{exact:true}).waitFor();
+  await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();await page.getByRole('menuitemradio',{name:'4 帧一张',exact:true}).click();
+  await hdDialog.getByText('2 次调用 · 8 帧',{exact:true}).waitFor();
   for(const dark of [false,true])for(const width of [1280,390]){
     await applyTheme(page,dark);await page.setViewportSize({width,height:700});
     check('manual list keeps four frames per row within the original dialog width at '+width+' '+dark,await hdDialog.evaluate(el=>{const r=el.getBoundingClientRect(),list=el.querySelector('.SPR_flowSelection'),filters=el.querySelector('.SPR_flowRedrawFields'),cards=[...list.querySelectorAll('label')].slice(0,5).map(n=>n.getBoundingClientRect());return r.width<=480&&r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&list.clientHeight<=241&&list.scrollWidth<=list.clientWidth+1&&filters.scrollWidth<=filters.clientWidth+1&&cards.length===5&&cards.slice(0,4).every(c=>Math.abs(c.top-cards[0].top)<1)&&cards[4].top>cards[0].bottom;}));
@@ -395,25 +540,33 @@ try {
 
   await hdDialog.getByRole('button',{name:'开始重绘',exact:true}).click();
   check('opening redraw confirmation submits nothing',calls.length===0);
-  check('confirmation separates one request from eight output frames',await page.getByRole('dialog',{name:'确认高清重绘',exact:true}).getByText('将提交 1 次付费请求，处理 8 帧。',{exact:true}).isVisible());
+  check('confirmation separates two requests from eight output frames',await page.getByRole('dialog',{name:'确认高清重绘',exact:true}).getByText('将提交 2 次付费请求，处理 8 帧。').isVisible());
   await page.getByRole('dialog',{name:'确认高清重绘',exact:true}).getByRole('button',{name:'确认',exact:true}).click();
   await page.waitForFunction(()=>document.querySelectorAll('[role=dialog]').length<2);
   const redraw=calls.find(c=>c.method==='runWorkflowRoundStep');
-  check('confirmation sends eight selected frames and the eight-frame scheme',redraw?.payload.confirmed===true&&redraw.payload.scheme==='sheet8'&&redraw.payload.targets.length===8&&redraw.payload.targets.every((id,i)=>id===`walk-back-${i}`));
+  check('confirmation sends eight selected frames in four-frame 1K groups',redraw?.payload.confirmed===true&&redraw.payload.image1k===true&&redraw.payload.scheme==='sheet'&&redraw.payload.targets.length===8&&redraw.payload.targets.every((id,i)=>id===`walk-back-${i}`));
   await hdDialog.waitFor({state:'hidden'});
   for(const dark of [false,true])for(const width of [1280,390]){
     await page.setViewportSize({width,height:900});
     await page.evaluate(dark=>document.documentElement.style.cssText=dark?'--dsw-alias-label-primary:#efeff1;--dsw-alias-label-secondary:#aaaab1;--dsw-alias-label-tertiary:#9999a1;--dsw-alias-bg-layer-1:#1d1d20;--dsw-alias-bg-layer-2:#232326;--dsw-alias-bg-layer-3:#2e2e33;--dsw-alias-border-l2:#3b3b42;--dsw-alias-state-business-primary:#4977ff':'--dsw-alias-label-primary:#242428;--dsw-alias-label-secondary:#66666b;--dsw-alias-label-tertiary:#8c8c92;--dsw-alias-bg-layer-1:#fafafa;--dsw-alias-bg-layer-2:#f3f3f5;--dsw-alias-bg-layer-3:#eee;--dsw-alias-border-l2:#dedee2;--dsw-alias-state-business-primary:#4977ff',dark);
     await canvas.scrollIntoViewIfNeeded();
     check(`player fits ${width} ${dark?'dark':'light'}`,await player.evaluate(el=>{const r=el.getBoundingClientRect(),c=el.querySelector('canvas').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&el.scrollWidth<=el.clientWidth+1&&c.left>=r.left&&c.right<=r.right;}));
+    check(`playback controls stay inside the lower center at ${width} ${dark?'dark':'light'}`,await controlsOverlayCanvas());
     check(`selectors and actions fit ${width} ${dark?'dark':'light'}`,await page.locator('.SPR_flowRound').evaluate(el=>{const controls=el.querySelector('.SPR_flowFilters'),actions=el.querySelector('.SPR_flowResultActions');return controls.scrollWidth<=controls.clientWidth+1&&actions.scrollWidth<=actions.clientWidth+1&&[...controls.querySelectorAll('button'),...actions.children].every(n=>{const r=n.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;});}));
-    check(`actions stay on one row and selectors align right at ${width} ${dark?'dark':'light'}`,await page.locator('.SPR_flowResultBar').evaluate(el=>{const actions=el.querySelector('.SPR_flowResultActions'),filters=el.querySelector('.SPR_flowFilters');return new Set([...actions.children].map(n=>Math.round(n.getBoundingClientRect().top))).size===1&&Math.abs(filters.getBoundingClientRect().right-el.getBoundingClientRect().right)<1;}));
+    check(`actions stay accessible and selectors align right at ${width} ${dark?'dark':'light'}`,await page.locator('.SPR_flowResultBar').evaluate((el,wide)=>{const actions=el.querySelector('.SPR_flowResultActions'),filters=el.querySelector('.SPR_flowFilters'),bounds=actions.getBoundingClientRect(),buttons=[...actions.children].map(n=>n.getBoundingClientRect());return (wide?new Set(buttons.map(r=>Math.round(r.top))).size===1:buttons.every(r=>r.right<=bounds.right+1&&r.bottom<=bounds.bottom+1))&&Math.abs(filters.getBoundingClientRect().right-el.getBoundingClientRect().right)<1;},width===1280));
     if(width===1280)check('wide toolbar places actions left and compact selectors right in one row',await page.locator('.SPR_flowResultBar').evaluate(el=>{const actions=el.querySelector('.SPR_flowResultActions').getBoundingClientRect(),filters=el.querySelector('.SPR_flowFilters').getBoundingClientRect();return Math.abs(actions.top+actions.height/2-filters.top-filters.height/2)<1&&actions.right<filters.left&&filters.width<el.clientWidth*.65;}));
     await player.getByRole('button',{name:'暂停',exact:true}).hover();
     const tip=page.getByRole('tooltip').filter({hasText:'暂停'});await tip.waitFor();
     check('themed hover tip fits '+width+' '+dark,await tip.evaluate(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return el.matches(':popover-open')&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&s.borderRadius==='8px';})&&await player.getByRole('button',{name:'暂停',exact:true}).getAttribute('title')===null);
     await page.screenshot({path:`.verify/motion-playback-${width}-${dark?'dark':'light'}.png`});
     await canvas.hover();
+    const speed=player.getByRole('button',{name:'播放速度',exact:true});
+    await speed.press('ArrowDown');
+    const speedMenu=page.getByRole('menu',{name:'播放速度',exact:true});
+    await speedMenu.waitFor();
+    check(`overlay speed menu remains unclipped via keyboard at ${width} ${dark?'dark':'light'}`,await speedMenu.evaluate(el=>{const r=el.getBoundingClientRect();return el.matches(':popover-open')&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}));
+    await page.keyboard.press('Escape');await speedMenu.waitFor({state:'hidden'});
+    check('closing the speed menu restores focus to its overlay control',await speed.evaluate(el=>el===document.activeElement));
     await page.getByRole('button',{name:'预览方式',exact:true}).click();
     const choice=page.getByRole('menuitemradio',{name:'八方向同时预览',exact:true});await choice.waitFor();
     check(`preview menu fits ${width} ${dark?'dark':'light'}`,await choice.evaluate(el=>{const r=el.closest('[role=menu]').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1;}));
@@ -433,7 +586,7 @@ try {
   await page.evaluate(round=>showRound(round),failed);
   await page.getByText('本地测试：图片结果未知',{exact:true}).waitFor();
   await page.getByRole('button',{name:'筛选动作',exact:true}).click();await page.getByRole('menuitemradio',{name:'行走',exact:true}).click();
-  await page.getByRole('button',{name:'AI清晰化',exact:true}).click();
+  await page.getByRole('button',{name:redrawLabel,exact:true}).click();
   await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();await page.getByRole('menuitemradio',{name:'4 帧一张',exact:true}).click();
   await hdDialog.getByRole('button',{name:'处理范围',exact:true}).click();await page.getByRole('menuitemradio',{name:'八方向',exact:true}).click();
   await hdDialog.getByRole('button',{name:'每方向帧数',exact:true}).click();await page.getByRole('menuitemradio',{name:'24 帧',exact:true}).click();
@@ -443,7 +596,7 @@ try {
   await page.waitForFunction(()=>document.querySelector('.SPR_flowRedrawFooter button:last-child')?.disabled===false);
   check('explicit regeneration can be selected without submitting a request',calls.filter(c=>c.payload?.step==='redraw').length===1);
   await hdDialog.getByRole('button',{name:'关闭',exact:true}).click();
-  const partial={...round,job:{...round.job,frames:round.job.frames.map((f,i)=>({...f,...(i<6?{redraw:{status:'ready',file:f.file}}:{})}))},versions:[...round.versions,{id:'pilot',kind:'redraw',files:frames.slice(0,6).map(f=>f.file),frames:frames.slice(0,6),ranges}]};
+  const partial={...round,job:{...round.job,frames:round.job.frames.map((f,i)=>({...f,...(i<6?{redraw:{status:'ready',file:f.file,image1k:true}}:{})}))},versions:[...round.versions,{id:'pilot',kind:'redraw',files:frames.slice(0,6).map(f=>f.file),frames:frames.slice(0,6),ranges}]};
   planningFrames=partial.job.frames;
   await page.evaluate(round=>showRound(round),partial);
   await page.getByRole('button',{name:'结果版本',exact:true}).filter({hasText:'AI高清帧'}).waitFor();
@@ -451,7 +604,7 @@ try {
   check('a pilot selects an autoplaying AI version with an exact completed count',await page.getByRole('button',{name:'结果版本',exact:true}).innerText()==='AI高清帧'&&await player.getByRole('button',{name:'暂停',exact:true}).isVisible());
   check('partial AI output does not claim eight directions or enable a false playground',await page.getByRole('button',{name:'预览方式',exact:true}).count()===0);
   const submitsBeforeOtherAction=calls.length;
-  await page.getByRole('button',{name:'AI清晰化',exact:true}).click();
+  await page.getByRole('button',{name:redrawLabel,exact:true}).click();
   await hdDialog.getByRole('button',{name:'选择动作',exact:true}).click();
   check('a one-action HD version still offers the other source action',await page.getByRole('menuitemradio',{name:'行走',exact:true}).isVisible()&&await page.getByRole('menuitemradio',{name:'奔跑',exact:true}).isVisible());
   await page.getByRole('menuitemradio',{name:'奔跑',exact:true}).click();
@@ -472,27 +625,41 @@ try {
     planningFrames=source;
     await page.evaluate(round=>showRound(round),{...round,job:{...round.job,frames:source},versions:[{id:'keyed',kind:'keyed',files:source.map(f=>f.file),frames:source,ranges}]});
     await page.getByRole('button',{name:'结果版本',exact:true}).filter({hasText:'抠图帧'}).waitFor();
-    await page.getByRole('button',{name:'AI清晰化',exact:true}).click();
-    await hdDialog.getByRole('button',{name:'重绘方案',exact:true}).click();await page.getByRole('menuitemradio',{name:'8 帧一张',exact:true}).click();
+    await page.getByRole('button',{name:redrawLabel,exact:true}).click();
     await hdDialog.getByRole('button',{name:'每方向帧数',exact:true}).click();await page.getByRole('menuitemradio',{name:'8 帧',exact:true}).click();
-    await hdDialog.getByText('1 次调用 · '+expected.length+' 帧',{exact:true}).waitFor();
+    await hdDialog.getByText('2 次调用 · '+expected.length+' 帧',{exact:true}).waitFor();
     check('eight-frame sampling sorts and spans '+sourceCount+' source frames without duplication',JSON.stringify(plans.at(-1).targets.map(id=>Number(id.split('-').at(-1))))===JSON.stringify(expected)&&new Set(plans.at(-1).targets).size===expected.length);
     await hdDialog.getByRole('button',{name:'关闭',exact:true}).click();
   }
 
   const submittedBeforeLegacy=calls.length;
-  for(const mode of ['frame','missing']){
+  for(const mode of ['frame','missing','size']){
     legacyPlan=mode;
-    await page.getByRole('button',{name:'AI清晰化',exact:true}).click();
+    await page.getByRole('button',{name:redrawLabel,exact:true}).click();
     await hdDialog.getByText('插件后台尚未更新，请完全退出 DSH（包括托盘）后重新打开。',{exact:true}).waitFor();
-    check('legacy '+mode+' plans cannot silently submit a different paid scheme',await hdDialog.getByRole('button',{name:'开始重绘',exact:true}).isDisabled()&&await hdDialog.locator('.SPR_flowRedrawFooter .SPR_spinSm').count()===0&&calls.length===submittedBeforeLegacy);
+    check('legacy '+mode+' plans cannot silently submit a different paid scheme or size',await hdDialog.getByRole('button',{name:'开始重绘',exact:true}).isDisabled()&&await hdDialog.locator('.SPR_flowRedrawFooter .SPR_spinSm').count()===0&&calls.length===submittedBeforeLegacy);
     await hdDialog.getByRole('button',{name:'关闭',exact:true}).click();
   }
   legacyPlan=null;
-  await page.getByRole('button',{name:'AI清晰化',exact:true}).click();
-  await hdDialog.getByText('1 次调用 · 5 帧',{exact:true}).waitFor();
+  await page.getByRole('button',{name:redrawLabel,exact:true}).click();
+  await hdDialog.getByText('2 次调用 · 5 帧',{exact:true}).waitFor();
   check('a matching backend plan restores normal redraw without submitting',await hdDialog.getByRole('button',{name:'开始重绘',exact:true}).isEnabled()&&calls.length===submittedBeforeLegacy);
   await hdDialog.getByRole('button',{name:'关闭',exact:true}).click();
+  legacyPlan='other-route';
+  const beforeMismatchPlan=plans.length;
+  await page.getByRole('button',{name:redrawLabel,exact:true}).click();
+  await hdDialog.getByText('1K 重绘模型已变更，请重新确认。',{exact:true}).waitFor();
+  check('a plan for another connection cannot enable a paid action',plans.length>beforeMismatchPlan&&await hdDialog.getByRole('button',{name:'开始重绘',exact:true}).isDisabled()&&calls.length===submittedBeforeLegacy);
+  await hdDialog.getByRole('button',{name:'关闭',exact:true}).click();
+  legacyPlan=null;
+  activeRedrawModel=null;availableRedrawModels=[];
+  await page.evaluate(round=>showRound(round),{...round,id:'no-redraw-model'});
+  await page.getByRole('button',{name:redrawLabel,exact:true}).click();
+  await redrawModel.filter({hasText:'未配置'}).waitFor();
+  await hdDialog.getByText('请先在设置的「生图连接」中配置 OpenAI 兼容图片编辑模型。',{exact:true}).waitFor();
+  check('an unconfigured 1K route disables paid redraw',await hdDialog.getByRole('button',{name:'开始重绘',exact:true}).isDisabled()&&calls.length===submittedBeforeLegacy);
+  await hdDialog.getByRole('button',{name:'关闭',exact:true}).click();
+  activeRedrawModel=redrawModels[1];availableRedrawModels=redrawModels;
 
   await page.setViewportSize({width:1280,height:900});
   const complete={...round,job:{...round.job,frames:round.job.frames.map(f=>({...f,redraw:{status:'ready',file:f.file}}))},versions:[...round.versions,{id:'hd',kind:'redraw',files:frames.map(f=>f.file),frames,ranges},{id:'hdzip',kind:'export',sourceKind:'redraw',files:['hd.zip']},{id:'legacyzip',kind:'export',files:['legacy.zip']}]};
@@ -502,6 +669,132 @@ try {
   await page.getByRole('button',{name:'下载',exact:true}).click();
   check('completed HD, original video-frame and unknown older packs have distinct truthful labels',await page.getByRole('menuitem',{name:'AI高清素材包',exact:true}).isVisible()&&await page.getByRole('menuitem',{name:'视频抽帧素材包',exact:true}).isVisible()&&await page.getByRole('menuitem',{name:'素材包',exact:true}).isVisible());
   await page.screenshot({path:'.verify/motion-hd-downloads.png'});
+  await page.keyboard.press('Escape');
+
+  const latest1kFrames=frames.slice(4,8).map(frame=>({...frame,image1k:true,sourceFile:frame.file}));
+  const latest1kIds=latest1kFrames.map(frame=>frame.id);
+  const upscaleRound={...complete,id:'upscale-1k',job:{...complete.job,localUpscaleAvailable:true,frames:complete.job.frames.map(frame=>
+    latest1kIds.includes(frame.id)?{...frame,redraw:{...frame.redraw,image1k:true}}:frame)},
+    versions:[...complete.versions,{id:'hd1k',kind:'redraw',files:latest1kFrames.map(frame=>frame.file),frames:latest1kFrames,ranges}]};
+  await page.evaluate(round=>showRound(round),upscaleRound);
+  const continueUpscale=page.getByRole('button',{name:'继续本地超分',exact:true}),confirmLocalUpscale=page.getByRole('dialog',{name:'确认本地清晰化',exact:true});
+  const beforeUpscale=calls.length;
+  await continueUpscale.click();
+  check('1K continuation confirms its exact frame count before sending a request',await confirmLocalUpscale.getByText('将对 4 张 1K 重绘帧执行本地 2 倍超分，生成独立版本。',{exact:true}).isVisible()&&calls.length===beforeUpscale);
+  await confirmLocalUpscale.getByRole('button',{name:'取消',exact:true}).click();
+  check('dismissing local upscale does not start processing',calls.length===beforeUpscale);
+  await continueUpscale.click();await confirmLocalUpscale.getByRole('button',{name:'确认',exact:true}).click();await confirmLocalUpscale.waitFor({state:'hidden'});
+  const continued=calls.at(-1)?.payload;
+  check('latest completed 1K version continues local upscale with its exact frame IDs',continued?.step==='upscale'&&continued.confirmed===true&&continued.useRedraw===true&&JSON.stringify(continued.targets)===JSON.stringify(latest1kIds));
+  await page.getByRole('button',{name:'结果版本',exact:true}).click();
+  await page.getByRole('menuitemradio',{name:'AI高清帧 · v1',exact:true}).click();
+  check('an older redraw version does not continue the newer 1K batch',await page.getByRole('button',{name:'继续本地超分',exact:true}).count()===0);
+  await page.getByRole('button',{name:'结果版本',exact:true}).click();
+  await page.getByRole('menuitemradio',{name:'抠图帧',exact:true}).click();
+  const primaryActions=await page.locator('.SPR_flowResultActions > button').allTextContents();
+  check('the result actions start with video processing, local upscale and 1K redraw',primaryActions.slice(0,3).map(text=>text.trim()).join('|')==='视频处理|本地清晰化|1K 重绘');
+  await page.getByRole('button',{name:'本地清晰化',exact:true}).click();
+  check('standalone local upscale confirms all eligible original frames',await confirmLocalUpscale.getByText(`将对 ${frames.length} 帧执行本地 2 倍超分，生成独立版本。`,{exact:true}).isVisible());
+  await confirmLocalUpscale.getByRole('button',{name:'确认',exact:true}).click();await confirmLocalUpscale.waitFor({state:'hidden'});
+  const local=calls.at(-1)?.payload;
+  check('original matte frames still use the standalone local route',local?.step==='upscale'&&local.confirmed===true&&local.useRedraw===undefined&&local.targets===undefined);
+  const runningUpscale={...upscaleRound,status:'running',stage:'upscale',job:{...upscaleRound.job,active:true}};
+  await page.evaluate(round=>showRound(round),runningUpscale);
+  const upscaleProgress=page.getByRole('progressbar',{name:'本地清晰化进度',exact:true});
+  await upscaleProgress.waitFor();
+  check('local upscale is indeterminate until actual progress arrives',await upscaleProgress.getAttribute('aria-valuenow')===null);
+  await page.evaluate(round=>showRound(round),{...runningUpscale,job:{...runningUpscale.job,upscaleProgress:{phase:'enhance',completed:3,total:4}}});
+  await upscaleProgress.getByText('已完成 3/4 帧',{exact:true}).waitFor();
+  check('local upscale progress uses reported phase and frame counts',await upscaleProgress.getAttribute('aria-valuenow')==='3'&&await upscaleProgress.getAttribute('aria-valuemax')==='4'&&await upscaleProgress.getByText('正在执行本地超分',{exact:true}).isVisible()&&await upscaleProgress.locator('.SPR_progressFill').evaluate(el=>el.style.width==='75%'));
+  const progressFollows=selector=>upscaleProgress.evaluate((bar,selector)=>{
+    const preview=bar.previousElementSibling, tools=bar.nextElementSibling;
+    if(!preview?.matches(selector)||!tools?.matches('.SPR_flowResultBar'))return false;
+    const rect=bar.getBoundingClientRect(),media=preview.getBoundingClientRect();
+    return media.bottom<=rect.top&&rect.bottom<=tools.getBoundingClientRect().top
+      &&Math.abs(rect.left-media.left)<=1&&Math.abs(rect.right-media.right)<=1;
+  },selector);
+  check('local upscale progress spans the full width below the animation',await progressFollows('.SPR_flowAnimation'));
+  await page.getByRole('button',{name:'结果版本',exact:true}).click();
+  await page.getByRole('menuitemradio',{name:'视频',exact:true}).click();
+  check('local upscale progress spans the full width below the video',await progressFollows('video.SPR_flowVideo'));
+  check('the progress bar does not render a second stop action',await page.getByRole('button',{name:'停止本地清晰化',exact:true}).count()===0);
+  navigationRounds=[round,{...runningUpscale,job:{...runningUpscale.job,upscaleProgress:{phase:'enhance',completed:3,total:4}}}];
+  await page.evaluate(()=>{
+    const h=React.createElement;
+    root.render(h('div',{className:'SPR_root'},h(bundle.__test.WorkflowConversation,{
+      key:'upscale-cancel',api:playbackApi,module:'sprite',job:{id:'wparent'},prompt:'',
+      motion:{mode:'generate',canSend:false},onPrompt:()=>{},onSave:async()=>{},onConsumed:()=>{},onReuse:()=>{}
+    })));
+  });
+  const sendSlot=page.locator('.SPR_flowComposerBar > .SPR_flowSend');
+  const stopButton=page.getByRole('button',{name:'停止本地清晰化',exact:true});
+  await stopButton.waitFor();
+  check('local upscale reuses the send slot and can be stopped with an empty prompt',await sendSlot.getAttribute('aria-label')==='停止本地清晰化'&&await stopButton.isEnabled()&&await stopButton.locator('svg rect').count()===1&&await stopButton.count()===1);
+  failUpscaleStop=true;
+  await stopButton.click();
+  await page.getByRole('alert').filter({hasText:'本地测试：停止失败'}).waitFor();
+  check('a failed stop is visible and can be retried',await stopButton.isEnabled());
+  failUpscaleStop=false;
+  const beforeStop=calls.length;
+  await stopButton.focus();await stopButton.press('Enter');
+  const stopPending=page.getByRole('button',{name:'正在停止…',exact:true});
+  await stopPending.waitFor();
+  const stopped=calls.at(-1)?.payload;
+  check('the stop button targets the running round and blocks duplicate requests while pending',calls.length===beforeStop+1&&stopped?.step==='cancel'&&stopped.jobId==='wparent'&&stopped.roundId===upscaleRound.id&&await stopPending.isDisabled()&&await page.getByRole('dialog').count()===0);
+  navigationRounds=[round,{...upscaleRound,status:'stopped',stage:'done'}];
+  await page.getByText('本地清晰化已停止。可在「结果版本」查看已有结果。',{exact:true}).waitFor();
+  check('after stopping, the same slot returns to send mode and retains the previous animation',await sendSlot.getAttribute('aria-label')==='生成新视频'&&await sendSlot.isDisabled()&&await upscaleProgress.count()===0&&await player.last().isVisible());
+
+  const extractStart=Date.now()-6700, parseStart=extractStart-120000, importEnd=parseStart+1300;
+  const parseTimings=[{step:'import',startedAt:parseStart,endedAt:importEnd,status:'ready'},{step:'extract',startedAt:extractStart,status:'running'}];
+  const decodeTiming={step:'decode',startedAt:extractStart,endedAt:extractStart+2500,elapsedMs:1800};
+  const parsingRound={...round,id:'parsing-round',childId:'wparse-child',localOnly:true,status:'running',stage:'extract',
+    timings:parseTimings,job:{...round.job,active:true,processingTiming:{operation:'extract',completed:[decodeTiming],active:{step:'frames',startedAt:decodeTiming.endedAt,completed:9,total:32}}},
+    versions:[{id:'import-video',kind:'video',files:['video.mp4'],createdAt:importEnd}]};
+  navigationRounds=[round,parsingRound];
+  await page.evaluate(()=>{
+    const h=React.createElement;
+    root.render(h('div',{className:'SPR_root'},h(bundle.__test.WorkflowConversation,{
+      key:'parse-stop',api:playbackApi,module:'sprite',job:{id:'wparent'},prompt:'',
+      motion:{mode:'video',canSend:true},onPrompt:()=>{},onSave:async()=>{},onConsumed:()=>{},onReuse:()=>{}
+    })));
+  });
+  const stopExtraction=page.getByRole('button',{name:'停止后续处理',exact:true});
+  await stopExtraction.waitFor();
+  const parseCard=page.locator('#workflow-round-parsing-round');
+  const parseStatus=parseCard.getByRole('status');
+  check('local extraction keeps its status above the video and its only stop in the composer',await parseStatus.innerText().then(text=>text.includes('裁切与保存抽帧'))&&await parseCard.getByRole('button',{name:/停止后续处理/}).count()===0&&await stopExtraction.count()===1&&await sendSlot.getAttribute('aria-label')==='停止后续处理'&&await stopExtraction.getAttribute('title')==='停止后续处理');
+  const liveElapsed=parseStatus.locator('.SPR_flowElapsed');
+  const initialElapsed=await liveElapsed.innerText();
+  const totalElapsed=parseCard.locator('.SPR_flowRoundHead .SPR_flowElapsed');
+  const initialTotal=await totalElapsed.innerText();
+  await page.waitForFunction(initial=>document.querySelector('#workflow-round-parsing-round .SPR_flowProcessing .SPR_flowElapsed')?.textContent!==initial,initialElapsed);
+  check('the extraction header shows live seconds and actual processed frames',initialElapsed.startsWith('已用 ')&&await parseStatus.getByText('已完成 9/32 帧',{exact:true}).isVisible());
+  await page.waitForFunction(initial=>document.querySelector('#workflow-round-parsing-round .SPR_flowRoundHead .SPR_flowElapsed')?.textContent!==initial,initialTotal);
+  check('the total updates during processing and excludes the manual wait between steps',/^总用时 \d+ 秒$/.test(initialTotal));
+  await parseCard.getByRole('button',{name:'执行详情',exact:true}).click();
+  const timingDetails=parseCard.getByRole('region',{name:'阶段耗时'});
+  check('execution details retain earlier steps and use measured duration for an interleaved substep',await timingDetails.getByText('载入本地视频',{exact:true}).isVisible()&&await timingDetails.getByText('1.3 秒',{exact:true}).isVisible()&&await timingDetails.getByText('视频解码',{exact:true}).isVisible()&&await timingDetails.getByText('1.8 秒',{exact:true}).isVisible());
+  await stopExtraction.click();await stopPending.waitFor();
+  const stopParse=calls.at(-1);
+  check('stopping extraction still cancels the exact child motion job',stopParse?.method==='runMotionStep'&&stopParse.payload.jobId===parsingRound.childId&&stopParse.payload.step==='cancel'&&await stopPending.isDisabled());
+  const extractEnd=extractStart+6100, upscaleEnd=extractEnd+4900;
+  navigationRounds=[round,{...parsingRound,status:'ready',stage:'done',job:{...parsingRound.job,active:false},
+    timings:[parseTimings[0],{...parseTimings[1],status:'ready',endedAt:extractEnd,details:[decodeTiming,{step:'frames',startedAt:decodeTiming.endedAt,endedAt:extractEnd},{step:'keyed',startedAt:decodeTiming.endedAt,endedAt:extractEnd,elapsedMs:1100}]},
+      {step:'upscale',status:'ready',startedAt:extractEnd,endedAt:upscaleEnd}],
+    versions:[...parsingRound.versions,{...round.versions[0],id:'parse-raw',kind:'raw',number:2,createdAt:extractEnd-200},
+      {...round.versions[0],number:2,createdAt:extractEnd},{...round.versions[0],id:'parse-upscale',kind:'upscale',number:2,createdAt:upscaleEnd,elapsedMs:4300}]}];
+  const parseSend=page.getByRole('button',{name:'解析视频',exact:true});
+  await parseSend.waitFor();
+  check('the composer restores the parse button after extraction ends',await parseSend.isEnabled()&&await stopExtraction.count()===0);
+  check('finished timings stay visible without the stale live counter',await timingDetails.getByText('6.1 秒',{exact:true}).isVisible()&&await timingDetails.getByText('3.6 秒',{exact:true}).isVisible()&&await timingDetails.getByText(/^已用 /).count()===0);
+  check('finished total counts top-level steps once',await totalElapsed.innerText()==='总用时 12.3 秒');
+  const timedVersionPicker=parseCard.getByRole('button',{name:'结果版本',exact:true});
+  await timedVersionPicker.click();
+  const timedVersions=parseCard.getByRole('menu',{name:'结果版本',exact:true});
+  const shownVersionTimes=await timedVersions.getByRole('menuitemradio').evaluateAll(rows=>Object.fromEntries(rows.map(row=>[row.getAttribute('aria-label'),row.querySelector('.SPR_choiceDetail')?.textContent])));
+  assert.deepEqual(shownVersionTimes,{'视频':'1.3 秒','视频抽帧 · v2':'5.4 秒','抠图帧 · v2':'1.1 秒','本地高清帧 · v2':'4.3 秒'});
+  check('the menu shows distinct durations without crowding the closed picker',await timedVersionPicker.innerText()==='本地高清帧 · v2');
   await page.keyboard.press('Escape');
 
   // Pin the actual drawn source frame, persist on the child, and compare while stepping.
@@ -534,7 +827,7 @@ try {
   await player.getByText('有效帧 2-10',{exact:true}).waitFor();
   check('stepping and setting the end keeps the initial thumbnail pinned',await pin.locator('img').getAttribute('src')===pinnedSource&&savedRanges.wchild['walk::front'].end===9);
   check('the pinned thumbnail is at the player upper right and stays inside it',await pin.evaluate(el=>{const p=el.closest('.SPR_flowAnimation').getBoundingClientRect(),r=el.getBoundingClientRect();return p.right-r.right>=8&&p.right-r.right<=12&&r.top-p.top>=46&&r.top-p.top<=50&&r.width>=64&&r.bottom<p.bottom;}));
-  await page.getByRole('button',{name:'AI清晰化',exact:true}).click();
+  await page.getByRole('button',{name:redrawLabel,exact:true}).click();
   await hdDialog.getByText('3 次调用 · 9 帧',{exact:true}).waitFor();
   check('AI selection and request counts include only the inclusive start/end range',plans.at(-1).targets.length===9&&plans.at(-1).targets.every(id=>/^walk-front-([1-9])$/.test(id)));
   await hdDialog.getByRole('button',{name:'处理范围',exact:true}).click();await page.getByRole('menuitemradio',{name:'手动选帧',exact:true}).click();
@@ -579,7 +872,7 @@ try {
   check('round numbers remain a compact vertical navigation at the right edge',await locator.evaluate(el=>{const r=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect(),b=[...el.querySelectorAll('button')].map(n=>n.getBoundingClientRect());return r.width<=22&&p.right-r.right<=8&&b.length===2&&b[1].top>=b[0].bottom;}));
 
   const deletable=source.filter(f=>f.direction==='front').slice(0,3),deleteRound={...round,id:'delete-round',job:{...round.job,frames:deletable},versions:[]};
-  for(const [i,[kind,number]] of [['video',1],['raw',1],['keyed',1],['raw',2],['keyed',2],['redraw',1],['redraw',2],['redraw',3],['redraw',4]].entries())deleteRound.versions.push({id:`00000000-0000-4000-8000-${String(i).padStart(12,'0')}`,kind,number,files:kind==='video'?['video.mp4']:deletable.map(f=>f.file),...(kind==='video'?{}:{frames:deletable,ranges})});
+  for(const [i,[kind,number]] of [['video',1],['raw',1],['keyed',1],['raw',2],['keyed',2],['redraw',1],['redraw',2],['redraw',3],['upscale',1],['upscale',2],['redraw',4]].entries())deleteRound.versions.push({id:`00000000-0000-4000-8000-${String(i).padStart(12,'0')}`,kind,number,files:kind==='video'?['video.mp4']:deletable.map(f=>f.file),...(kind==='video'?{}:{frames:deletable,ranges})});
   navigationRounds=[deleteRound];
   const initialDeleteId=deleteRound.versions.at(-1).id;
   await page.evaluate(()=>root.render(React.createElement('div',{className:'SPR_root'},React.createElement(bundle.__test.WorkflowConversation,{key:'deletion',api:playbackApi,module:'sprite',job:{id:'wparent'},prompt:'',onPrompt:()=>{},onSave:async()=>{},onConsumed:()=>{},onReuse:()=>{}}))));
@@ -618,8 +911,14 @@ try {
   await versionPicker.click();await versionMenu.getByRole('menuitemradio',{name:'抠图帧 · v1',exact:true}).click();
   await versionPicker.click();await versionMenu.getByRole('menuitem',{name:'删除当前版本',exact:true}).click();await deleteDialog.getByRole('button',{name:'确认',exact:true}).click();await deleteDialog.waitFor({state:'hidden'});
   check('keyed versions use the same confirmed delete flow',!navigationRounds[0].versions.some(v=>v.kind==='keyed'&&v.number===1));
+  await versionPicker.click();await versionMenu.getByRole('menuitemradio',{name:'本地高清帧 · v2',exact:true}).click();
+  await versionPicker.click();await versionMenu.getByRole('menuitem',{name:'删除当前版本',exact:true}).click();await deleteDialog.waitFor();
+  check('local HD deletion names the selected version',await deleteDialog.getByText('删除「本地高清帧 · v2」的全部帧？此操作无法撤销，生成的视频将保留。',{exact:true}).isVisible());
+  await deleteDialog.getByRole('button',{name:'确认',exact:true}).click();await deleteDialog.waitFor({state:'hidden'});
+  check('local HD deletion keeps the earlier local version and original video',!navigationRounds[0].versions.some(v=>v.kind==='upscale'&&v.number===2)&&navigationRounds[0].versions.some(v=>v.kind==='upscale'&&v.number===1)&&navigationRounds[0].versions.some(v=>v.kind==='video'));
   await versionPicker.click();await versionMenu.getByRole('menuitemradio',{name:'视频',exact:true}).click();await versionPicker.click();
   check('the generated video never exposes a delete command',await versionMenu.getByRole('menuitem',{name:'删除当前版本',exact:true}).count()===0);await page.keyboard.press('Escape');
+  check('viewing the video does not pulse while any frame version is available',await pendingProcessing.getAttribute('data-pending-range')===null&&(await pendingAppearance()).animation==='none');
   const runningDelete={...navigationRounds[0],status:'running',stage:'redraw'};navigationRounds=[runningDelete];
   await page.waitForFunction(()=>!!document.querySelector('.SPR_flowProcessing'));
   await versionPicker.click();await versionMenu.getByRole('menuitemradio',{name:'AI高清帧 · v3',exact:true}).click();await versionPicker.click();
@@ -627,13 +926,24 @@ try {
   navigationRounds=[{...navigationRounds[0],status:'ready'}];
   await page.waitForFunction(()=>!document.querySelector('.SPR_flowProcessing'));
   for(let guard=0;guard<8;guard++){
-    const next=navigationRounds[0].versions.find(v=>['raw','keyed','redraw'].includes(v.kind));if(!next)break;
-    const label=({raw:'视频抽帧',keyed:'抠图帧',redraw:'AI高清帧'})[next.kind]+(next.number>1||navigationRounds[0].versions.filter(v=>v.kind===next.kind).length>1?' · v'+next.number:'');
+    const next=navigationRounds[0].versions.find(v=>['raw','keyed','redraw','upscale'].includes(v.kind));if(!next)break;
+    const label=({raw:'视频抽帧',keyed:'抠图帧',redraw:'AI高清帧',upscale:'本地高清帧'})[next.kind]+(next.number>1||navigationRounds[0].versions.filter(v=>v.kind===next.kind).length>1?' · v'+next.number:'');
     await versionPicker.click();await versionMenu.getByRole('menuitemradio',{name:label,exact:true}).click();await versionPicker.click();await versionMenu.getByRole('menuitem',{name:'删除当前版本',exact:true}).click();await deleteDialog.getByRole('button',{name:'确认',exact:true}).click();await deleteDialog.waitFor({state:'hidden'});
   }
   await versionPicker.filter({hasText:'视频'}).waitFor();await page.waitForTimeout(3200);await versionPicker.click();
-  check('polling after every frame version is deleted retains only the video without resurrecting working frames',(await versionMenu.getByRole('menuitemradio').allTextContents()).map(t=>t.trim()).join('|')==='视频'&&navigationRounds[0].versions.length===1);
+  check('polling after every frame version is deleted retains only the video without resurrecting working frames',await versionMenu.getByRole('menuitemradio').count()===1&&await versionMenu.getByRole('menuitemradio',{name:'视频',exact:true}).getByText('未记录用时',{exact:true}).isVisible()&&navigationRounds[0].versions.length===1);
   await page.keyboard.press('Escape');
+  check('the video-only round highlights processing even if working frames are still on disk',navigationRounds[0].job.frames.length>0&&await pendingProcessing.getAttribute('data-pending-range')==='true'&&(await pendingAppearance()).underlined);
+  const stoppedVideo={...navigationRounds[0],id:'stopped-video',status:'stopped'};
+  await page.evaluate(round=>showRound(round),stoppedVideo);
+  await page.locator('.SPR_flowRound').getByRole('status').filter({hasText:'本地清晰化已停止'}).waitFor();
+  check('a stopped round with only the original video still highlights video processing text',await pendingProcessing.getAttribute('data-pending-range')==='true'&&(await pendingAppearance()).underlined);
+  await page.evaluate(round=>showRound(round),{...stoppedVideo,id:'interrupted-video',status:'error',stage:'export',error:'本地处理已停止。'});
+  await page.locator('.SPR_flowRound').getByRole('alert').waitFor();
+  check('an interruption recorded as an error still highlights the video-only round',await pendingProcessing.getAttribute('data-pending-range')==='true'&&(await pendingAppearance()).underlined);
+  await page.evaluate(round=>showRound(round),{...stoppedVideo,id:'processing-video',status:'running',stage:'extract'});
+  await page.locator('.SPR_flowRound .SPR_flowProcessing').waitFor();
+  check('video-only rounds stop pulsing during active processing',await pendingProcessing.getAttribute('data-pending-range')===null&&(await pendingAppearance()).animation==='none');
   check('no browser errors or external requests',errors.length===0&&network.length===0);
   console.log(`${checks} playback checks passed; no paid requests.`);
 } finally {await browser.close();}

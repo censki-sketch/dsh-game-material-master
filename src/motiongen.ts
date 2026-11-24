@@ -1,10 +1,11 @@
 /** White-model workflow for the existing sprite module. No agent required. */
-import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
-import { join, resolve, sep } from "node:path";
+import { copyFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { isAbsolute, join, resolve, sep } from "node:path";
+import { execFile, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { randomUUID, createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
-import { dataRoot, loadConfig, saveConfig, MINIMAX_MODEL_PRESETS, type Config } from "./config.js";
+import { customConnectionConfig, dataRoot, loadConfig, MINIMAX_MODEL_PRESETS, motionRedrawModel, motionRedrawRoutes, saveConfig, type Config, type MotionRedrawSelection } from "./config.js";
 import { readJson, writeJsonAtomic } from "./jsonio.js";
 import {
   decodeToRgba,
@@ -19,7 +20,7 @@ import {
 import { encodePng } from "./png.js";
 import { sniffImage } from "./imagegen.js";
 import { DEFAULT_KEY_OPTIONS, keyGreen, composeSheet } from "./chroma.js";
-import { generateImageWithProvider } from "./imageprovider.js";
+import { assertMaskedImageEditProvider, generateImageWithProvider } from "./imageprovider.js";
 import {
   capabilityOf,
   normalizeDuration,
@@ -38,6 +39,7 @@ import { MOTION_PROMPT_TEMPLATES, validateMotionTemplates, motionRedrawPrompt } 
 import type { ImagePromptTemplate } from "./imageprompts.js";
 import { templatesOfType } from "./prompttemplates.js";
 import { processMotionEdits } from "./motionimage.js";
+import { cleanMotionKeySpill, supportsMotionKeySpillCleanup } from "./motionmatte.js";
 
 export const MOTION_DIRS = new Set([
   "refs",
@@ -68,6 +70,7 @@ type Segment = {
   frameCount: number;
   targetFps?: number;
 };
+const importedActionKeys = ["video", "video-2", "video-3"];
 type Frame = {
   id: string;
   action: string;
@@ -87,9 +90,14 @@ type Frame = {
     background?: "alpha" | "keyed";
     scheme?: "frame" | "sheet" | "sheet8";
     batchId?: string;
+    image1k?: boolean;
+    imageModel?: MotionRedrawSelection;
   };
 };
 type ValidFrameRange = { start: number; end: number };
+export type MotionPhaseTiming = { step: string; startedAt: number; endedAt: number; elapsedMs?: number };
+type MotionActiveTiming = { step: string; startedAt: number; elapsedMs?: number; completed?: number; total?: number };
+type MotionProcessingTiming = { operation: string; active?: MotionActiveTiming; completed: MotionPhaseTiming[] };
 interface MotionJob {
   reviewMode?: "auto" | "manual";
   videoModel?: string;
@@ -128,11 +136,14 @@ interface MotionJob {
   frames: Frame[];
   /** Per action/direction inclusive frame ranges kept for preview and paid redraws. */
   validFrameRanges?: Record<string, ValidFrameRange>;
+  localUpscale?: { files: Record<string, string>; elapsedMs: number; report: string; sourceKind?: "keyed" | "redraw" };
+  localUpscaleCancelled?: boolean;
   redrawTargets?: string[];
   archive?: string;
   archiveKind?: "raw" | "keyed" | "redraw";
   operation?: string;
   progress?: string;
+  processingTiming?: MotionProcessingTiming;
   error?: string;
 }
 export function motionFrameRangeKey(frame: Pick<Frame, "action" | "direction">): string {
@@ -196,10 +207,23 @@ function rememberLocalArtifacts(job: MotionJob) {
   job.localArtifacts = { raw: localRawSignature(job), keyed: processing.key ? localKeySignature(job) : null, archive: job.archive && job.archiveKind !== "redraw" ? localArchiveSignature(job) : null };
 }
 async function localRanges(job: MotionJob, input: Segment[]) {
-  const clip = job.inputMode === "video" && input.length === 1 && input[0]?.action === "video";
-  const ranges = clip ? [{ action: "video", ...motionVideoRange(job, input[0]) }] : await validateSegments(input, false, true);
-  if (!clip && (ranges.length !== job.segments.length || ranges.some((r, i) => r.action !== job.segments[i]?.action))) throw new Error("Extract ranges must match selected actions");
-  if (ranges.some(r => r.end > (job.video?.duration || job.sourceVideo?.duration || 120) + .001)) throw new Error("Range exceeds actual video duration");
+  const imported = job.inputMode === "video" || job.video?.model === "local-import";
+  const clips = imported && Array.isArray(input) && input.some(value => importedActionKeys.includes(value?.action));
+  let ranges: Segment[];
+  if (clips) {
+    if (input.length > importedActionKeys.length || input.some((value, i) => value?.action !== importedActionKeys[i])) {
+      throw new Error("导入视频须按顺序选择一至三段动作");
+    }
+    ranges = input.map(value => ({ action: value.action, ...motionVideoRange(job, value) }));
+    assertRangeOrder(ranges);
+  } else {
+    ranges = await validateSegments(input, false, true);
+    if (ranges.length !== job.segments.length || ranges.some((r, i) => r.action !== job.segments[i]?.action)) {
+      throw new Error("Extract ranges must match selected actions");
+    }
+  }
+  const duration = job.video?.duration ?? (imported ? job.sourceVideo?.duration : undefined);
+  if (duration && ranges.some(r => r.end > duration + .001)) throw new Error("Range exceeds actual video duration");
   return ranges;
 }
 /** Shared by the read-only preview and execution; never plans a paid step. */
@@ -217,6 +241,69 @@ export async function motionLocalProcessingPlan(job: MotionJob, input: any) {
 }
 const active = new Set<string>();
 const cancelled = new Set<string>();
+const processingTimings = new Map<string, MotionProcessingTiming>();
+const timedOperations = new Set(["extract", "keyed", "export", "upscale"]);
+
+function finishMotionPhase(timing: MotionProcessingTiming, now: number) {
+  const phase = timing.active;
+  if (!phase) return;
+  const elapsedMs = (phase.elapsedMs ?? 0) + Math.max(0, now - phase.startedAt);
+  const previous = timing.completed.find(item => item.step === phase.step);
+  if (previous) {
+    previous.endedAt = now;
+    previous.elapsedMs = elapsedMs;
+  } else timing.completed.push({ step: phase.step, startedAt: phase.startedAt, endedAt: now, elapsedMs });
+  timing.active = undefined;
+}
+
+/** Extract interleaves decode, source PNG writes and keying. Sum only the
+ * slices when each phase was active, rather than its first-to-last wall span. */
+function beginMotionPhase(id: string, step: string, total?: number, completed?: number) {
+  const timing = processingTimings.get(id);
+  if (!timing) return;
+  if (timing.active?.step === step) return;
+  const now = Date.now();
+  finishMotionPhase(timing, now);
+  const elapsedMs = timing.completed.find(item => item.step === step)?.elapsedMs ?? 0;
+  timing.active = { step, startedAt: now, elapsedMs, completed, total };
+}
+
+function motionPhaseProgress(id: string, completed: number) {
+  const phase = processingTimings.get(id)?.active;
+  if (phase) phase.completed = completed;
+}
+
+type UpscaleProgress = { phase: "prepare" | "enhance" | "finish"; completed: number; total: number };
+type UpscaleRun = {
+  progress: UpscaleProgress;
+  progressFile: string;
+  cancelFile: string;
+  frameCount: number;
+  stopWorker?: () => Promise<void>;
+  committing?: boolean;
+};
+const upscaleRuns = new Map<string, UpscaleRun>();
+class LocalUpscaleCancelled extends Error {}
+function checkUpscaleStopped(id: string) {
+  if (disposed || cancelled.has(id)) throw new LocalUpscaleCancelled();
+}
+async function upscaleProgressOf(id: string): Promise<UpscaleProgress | undefined> {
+  const run = upscaleRuns.get(id);
+  if (!run) return undefined;
+  if (run.stopWorker) {
+    const report = await readJson<UpscaleProgress>(run.progressFile);
+    if (upscaleRuns.get(id) !== run) return undefined;
+    if (run.stopWorker && report && (report.phase === "finish" || report.phase === "enhance" && run.progress.phase !== "finish") &&
+      Number.isSafeInteger(report.total) && Number.isSafeInteger(report.completed) &&
+      report.total > 0 && report.total <= run.frameCount && report.completed >= 0 && report.completed <= report.total &&
+      (report.phase !== "finish" || report.total === run.frameCount) &&
+      (report.phase !== run.progress.phase || report.completed >= run.progress.completed)) {
+      const { phase, completed, total } = report;
+      run.progress = { phase, completed, total };
+    }
+  }
+  return { ...run.progress };
+}
 const pollTimers = new Map<string, ReturnType<typeof setTimeout>>();
 let disposed = false;
 export function isMotionId(id: string): boolean {
@@ -401,9 +488,7 @@ async function validateSegments(
       sampling = motionSampling({ ...value, start, end });
     return { action: value.action, start, end, ...sampling };
   });
-  for (let i = 1; i < segments.length; i++)
-    if (segments[i].start < segments[i - 1].end - 1e-6)
-      throw new Error("Action intervals overlap");
+  assertRangeOrder(segments);
   if (
     reference &&
     (segments[0].start !== 0 ||
@@ -416,6 +501,11 @@ async function validateSegments(
       "Reference timeline must continuously cover exactly 4 seconds",
     );
   return segments;
+}
+function assertRangeOrder(ranges: Segment[]) {
+  for (let i = 1; i < ranges.length; i++) {
+    if (ranges[i].start < ranges[i - 1].end - 1e-6) throw new Error("Action intervals overlap");
+  }
 }
 async function exclusive<T>(
   id: string,
@@ -440,6 +530,7 @@ function invalidate(job: MotionJob, reference: boolean): void {
   if (reference) job.prepared = undefined;
   job.video = undefined;
   job.frames = []; job.validFrameRanges = undefined; job.redrawTargets = undefined;
+  job.localUpscale = undefined;
   job.archive = undefined;
   job.rangesConfirmed = false;
   job.revision++;
@@ -498,21 +589,11 @@ export async function saveMotionJob(id: string, input: any): Promise<void> {
     if (!job.composerVersion && (referenceChanged || videoChanged) && job.prompt === oldDefault)
       job.prompt = await defaultMotionPrompt(job);
     if (input.ranges !== undefined) {
-      const videoClip = job.inputMode === "video" && input.ranges.length === 1 && input.ranges[0]?.action === "video";
-      const ranges = videoClip ? [{ action: "video", ...motionVideoRange(job, input.ranges[0]) }] : await validateSegments(input.ranges, false, true);
-      if (!videoClip && (
-        ranges.some((s, i) => s.action !== job.segments[i]?.action) ||
-        ranges.length !== job.segments.length
-      ))
-        throw new Error("Extract ranges must match selected actions");
-      if (
-        (job.inputMode === "video" ? job.sourceVideo?.duration || job.video?.duration : job.video?.duration) &&
-        ranges.some((s) => s.end > (job.inputMode === "video" ? job.sourceVideo?.duration || job.video!.duration! : job.video!.duration!) + 0.001)
-      )
-        throw new Error("Range exceeds actual video duration");
+      const ranges = await localRanges(job, input.ranges);
       if (JSON.stringify(ranges) !== JSON.stringify(job.ranges)) {
         job.ranges = ranges;
         job.frames = []; job.validFrameRanges = undefined; job.redrawTargets = undefined;
+        job.localUpscale = undefined;
         job.archive = undefined;
         job.rangesConfirmed = false;
       }
@@ -663,6 +744,7 @@ export async function uploadMotionAsset(
         duration,
       };
       job.frames = []; job.validFrameRanges = undefined; job.redrawTargets = undefined;
+      job.localUpscale = undefined;
       job.archive = undefined;
       job.rangesConfirmed = false;
     } else {
@@ -725,8 +807,21 @@ export async function motionView(id: string): Promise<any> {
     config = await loadConfig(),
     prices = await settings();
   const pending = motionValidFrames(job).filter((f) => f.redraw?.status !== "ready").length;
+  const upscaleProgress = await upscaleProgressOf(id);
+  const timing = processingTimings.get(id);
+  const phase = timing?.active;
+  const livePhase = phase && upscaleProgress && phase.step === "upscale-" + upscaleProgress.phase
+    ? { ...phase, completed: upscaleProgress.completed, total: upscaleProgress.total }
+    : phase;
   return {
     ...job,
+    localUpscaleAvailable: motionLocalUpscaleAvailable(),
+    upscaleProgress,
+    processingTiming: timing ? {
+      operation: timing.operation,
+      active: livePhase ? { ...livePhase } : undefined,
+      completed: timing.completed.filter(item => item.step !== livePhase?.step).map(item => ({ ...item })),
+    } : job.processingTiming,
     processing: motionProcessing(job.processing), finalPrompt: await composeMotionPrompt(job),
     templates: (await motionCatalog()).actions,
     costs: {
@@ -1091,6 +1186,7 @@ async function submit(
     endpoint: config.minimaxBaseUrl,
   };
   job.frames = []; job.validFrameRanges = undefined; job.redrawTargets = undefined;
+  job.localUpscale = undefined;
   job.archive = undefined;
   job.rangesConfirmed = false;
   await save(job);
@@ -1185,6 +1281,7 @@ function schedulePoll(id: string): void {
 function keyMotionCanvas(canvas: Buffer, processing: MotionProcessing): Buffer {
   const cell = crop(canvas, 512, 40, 16, 432, 480);
   const keyed = keyGreen(cell, 432, 480, { ...DEFAULT_KEY_OPTIONS, ...processing, refineEdges: true }).rgba;
+  if (processing.despill > 0) cleanMotionKeySpill(keyed, 432, 480, processing.keyColor, cell);
   const output = Buffer.alloc(512 * 512 * 4);
   blit(keyed, 432, 480, output, 512, 512, 40, 16);
   return output;
@@ -1194,6 +1291,10 @@ async function extract(job: MotionJob): Promise<void> {
     throw new Error("请先生成或导入视频");
   if (!job.rangesConfirmed)
     throw new Error("请观看视频、调整动作分段后确认抽帧范围");
+  const totalSamples = job.ranges.reduce((count, segment) => count + segment.frameCount, 0);
+  const totalFrames = totalSamples * MOTION_ORDER.length;
+  let decodedSamples = 0;
+  beginMotionPhase(job.id, "decode", totalSamples, decodedSamples);
   const duration = await probeDuration(path(job.id, job.video.file));
   const size = await probeSize(path(job.id, job.video.file));
   // Keep native per-cell detail up to the output content size. In particular,
@@ -1215,6 +1316,7 @@ async function extract(job: MotionJob): Promise<void> {
     // the selected batch so its pixels match a single uninterrupted extraction.
     for (let batch = 0; batch < n; batch += 12) {
     checkStopped(job.id);
+    beginMotionPhase(job.id, "decode", totalSamples, decodedSamples);
     const batchCount = Math.min(12, n - batch);
     const { stdout } = await runFfmpeg([
       "-ss",
@@ -1235,8 +1337,12 @@ async function extract(job: MotionJob): Promise<void> {
     ]);
     if (stdout.length !== batchCount * width * height * 4)
       throw new Error("抽帧数量不完整，请调整动作范围");
+    decodedSamples += batchCount;
+    motionPhaseProgress(job.id, decodedSamples);
     for (let j = 0; j < batchCount; j++)
       for (let d = 0; d < 8; d++) {
+        checkStopped(job.id);
+        beginMotionPhase(job.id, "frames", totalFrames, frames.length);
         const i = batch + j;
         let raw = crop(
           stdout.subarray(j * width * height * 4, (j + 1) * width * height * 4),
@@ -1259,6 +1365,11 @@ async function extract(job: MotionJob): Promise<void> {
           target = `${dir}/${key}-target.png`,
           keyed = `${dir}/${key}.png`;
         await writeFile(path(job.id, target), encodePng(canvas, 512, 512));
+        if (processing.key) {
+          motionPhaseProgress(job.id, frames.length + 1);
+          checkStopped(job.id);
+          beginMotionPhase(job.id, "keyed", totalFrames, frames.length);
+        }
         await writeFile(
           path(job.id, keyed),
           encodePng(processing.key ? keyMotionCanvas(canvas, processing) : canvas, 512, 512),
@@ -1272,39 +1383,266 @@ async function extract(job: MotionJob): Promise<void> {
           target,
           keyed,
         });
+        motionPhaseProgress(job.id, frames.length);
       }
     }
   }
   job.frames = frames; job.validFrameRanges = undefined; job.redrawTargets = undefined;
+  job.localUpscale = undefined;
   job.archive = undefined;
   job.localArtifacts = { raw: localRawSignature(job), keyed: processing.key ? localKeySignature(job, processing) : null, archive: null };
   await save(job);
 }
 async function rekey(job: MotionJob): Promise<void> {
   if (!job.frames.length) throw new Error("请先抽帧");
+  beginMotionPhase(job.id, "keyed", job.frames.length, 0);
   const processing = motionProcessing(job.processing), dir = `frames/${token()}`;
   await mkdir(path(job.id, dir), { recursive: true });
-  for (const frame of job.frames) {
+  for (const [index, frame] of job.frames.entries()) {
     checkStopped(job.id);
     const decoded = await decodeToRgba(path(job.id, frame.target));
     const keyed = `${dir}/${frame.id}.png`;
     await writeFile(path(job.id, keyed), encodePng(keyMotionCanvas(decoded.rgba, processing), 512, 512));
     frame.keyed = keyed;
+    motionPhaseProgress(job.id, index + 1);
   }
   job.processing = { ...processing, key: true }; job.archive = undefined;
+  job.localUpscale = undefined;
   job.localArtifacts = { ...job.localArtifacts, keyed: localKeySignature(job, processing), archive: null }; await save(job);
+}
+function localUpscaleCommand() {
+  const script = process.env.GMM_LOCAL_UPSCALE_SCRIPT;
+  const python = process.env.GMM_LOCAL_UPSCALE_PYTHON;
+  return script && python && isAbsolute(script) && isAbsolute(python) ? { script, python } : undefined;
+}
+export function motionLocalUpscaleAvailable(): boolean {
+  return !!localUpscaleCommand();
+}
+
+/** Decode only a bounded batch of the plugin's 512px frame PNGs at a time. */
+async function decodeUpscaleInputs(pattern: string, count: number): Promise<Buffer> {
+  const { stdout } = await runFfmpeg([
+    "-hide_banner", "-loglevel", "error", "-f", "image2", "-start_number", "0", "-i", pattern,
+    "-frames:v", String(count), "-f", "rawvideo", "-pix_fmt", "rgba", "-",
+  ], 30_000);
+  if (stdout.length !== count * 512 * 512 * 4) throw new Error("本地清晰化的输入帧尺寸不完整。");
+  return stdout;
+}
+
+async function stageUpscaleInputs(job: MotionJob, frames: Frame[], sources: string, staging: string, progress: UpscaleProgress) {
+  const keyColor = motionProcessing(job.processing).keyColor;
+  const cleanup = supportsMotionKeySpillCleanup(keyColor);
+  const inputDir = path(job.id, `${staging}/input`);
+  if (cleanup) await mkdir(inputDir, { recursive: true });
+  const startedAt = Date.now();
+  let changedFrames = 0, removedPixels = 0, correctedPixels = 0;
+  const frameBytes = 512 * 512 * 4;
+  const batchSize = 16;
+  for (let start = 0; start < frames.length; start += batchSize) {
+    checkUpscaleStopped(job.id);
+    const batch = frames.slice(start, start + batchSize);
+    if (!cleanup) {
+      await Promise.all(batch.map(frame => copyFile(path(job.id, frame.keyed), join(sources, `${frame.id}.png`))));
+      progress.completed += batch.length;
+      continue;
+    }
+    await Promise.all(batch.flatMap((frame, index) => [
+      copyFile(path(job.id, frame.target), join(inputDir, `raw-${index}.png`)),
+      copyFile(path(job.id, frame.keyed), join(inputDir, `keyed-${index}.png`)),
+    ]));
+    const [raw, keyed] = await Promise.all([
+      decodeUpscaleInputs(join(inputDir, "raw-%d.png"), batch.length),
+      decodeUpscaleInputs(join(inputDir, "keyed-%d.png"), batch.length),
+    ]);
+    for (const [index, frame] of batch.entries()) {
+      checkUpscaleStopped(job.id);
+      const from = index * frameBytes, to = from + frameBytes;
+      const rgba = keyed.subarray(from, to);
+      const audit = cleanMotionKeySpill(rgba, 512, 512, keyColor, raw.subarray(from, to));
+      const destination = join(sources, `${frame.id}.png`);
+      if (audit.removedPixels || audit.correctedPixels) {
+        changedFrames++;
+        removedPixels += audit.removedPixels;
+        correctedPixels += audit.correctedPixels;
+        await writeFile(destination, encodePng(rgba, 512, 512));
+      } else await copyFile(path(job.id, frame.keyed), destination);
+      progress.completed++;
+    }
+  }
+  return { enabled: cleanup, changedFrames, removedPixels, correctedPixels, elapsedMs: Date.now() - startedAt };
+}
+
+const PNG_SIGNATURE = Buffer.from("89504e470d0a1a0a", "hex");
+function isMotionRgbaPng(contents: Buffer | undefined, size: number): contents is Buffer {
+  return !!contents && contents.length >= 33 && contents.subarray(0, 8).equals(PNG_SIGNATURE) &&
+    contents.toString("ascii", 12, 16) === "IHDR" && contents.readUInt32BE(16) === size &&
+    contents.readUInt32BE(20) === size && contents[24] === 8 && contents[25] === 6;
+}
+
+function upscaleRedrawFrames(job: MotionJob, targets: string[] | undefined): Frame[] {
+  const selection = targets ?? job.redrawTargets;
+  if (!selection?.length || new Set(selection).size !== selection.length) throw new Error("请选择有效的 1K 重绘帧。");
+  const ids = new Set(selection);
+  const frames = job.frames.filter(frame => ids.has(frame.id));
+  if (frames.length !== ids.size || frames.some(frame => !motionFrameIsValid(job, frame) ||
+    frame.redraw?.status !== "ready" || frame.redraw.image1k !== true || !frame.redraw.file ||
+    !frame.redraw.file.startsWith("redraw/") || [frame.target, frame.keyed].includes(frame.redraw.file))) {
+    throw new Error("所选帧必须全部是有效且已完成的 1K 图片 API 重绘帧。");
+  }
+  return frames;
+}
+
+function runLocalUpscaleWorker(id: string, run: UpscaleRun, executable: string, args: string[], cwd: string, env: NodeJS.ProcessEnv): Promise<void> {
+  checkUpscaleStopped(id);
+  return new Promise((resolve, reject) => {
+    const windows = process.platform === "win32";
+    const child = spawn(executable, args, { cwd, env, shell: false, windowsHide: true, stdio: "ignore", detached: !windows });
+    let settled = false, timedOut = false, grace: ReturnType<typeof setTimeout> | undefined;
+    let signal: Promise<void> | undefined;
+    const stop = () => {
+      if (settled) return Promise.resolve();
+      if (signal) return signal;
+      // Let Python reap its Vulkan worker before falling back to the owned process tree.
+      signal = writeFile(run.cancelFile, "", { flag: "wx" }).catch(() => {});
+      grace = setTimeout(() => {
+        const pid = child.pid;
+        if (settled || !pid || child.exitCode !== null || child.signalCode !== null) return;
+        if (windows) execFile("taskkill.exe", ["/PID", String(pid), "/T", "/F"], { windowsHide: true }, () => {});
+        else {
+          try { process.kill(-pid, "SIGKILL"); } catch { /* already exited */ }
+        }
+      }, 3000);
+      grace.unref();
+      return signal;
+    };
+    run.stopWorker = stop;
+    const deadline = setTimeout(() => { timedOut = true; void stop(); }, 180_000);
+    deadline.unref();
+    function finish(code: number | string | null) {
+      if (settled) return;
+      settled = true;
+      run.stopWorker = undefined;
+      clearTimeout(deadline);
+      if (grace) clearTimeout(grace);
+      try {
+        checkUpscaleStopped(id);
+        if (timedOut) throw new Error("本地清晰化超时。");
+        if (code !== 0) throw new Error(`本地清晰化未完成（${code ?? "运行错误"}）。请检查 Python、Pillow 与 RealESRGAN 本机环境。`);
+        resolve();
+      } catch (error) { reject(error); }
+    }
+    child.once("error", (error: NodeJS.ErrnoException) => finish(error.code ?? null));
+    child.once("close", finish);
+  });
+}
+
+/** Run the configured batch engine against staged transparent frames. Publish
+ * only a complete output bank. Interrupted staging never replaces a version. */
+async function upscaleMotion(job: MotionJob, useRedraw: boolean, targets?: string[]): Promise<void> {
+  checkUpscaleStopped(job.id);
+  beginMotionPhase(job.id, "upscale-prepare");
+  const command = localUpscaleCommand();
+  if (!command) throw new Error("请先配置本地清晰化的 Python 和处理脚本路径。");
+  for (const item of [command.python, command.script]) {
+    const info = await stat(item).catch(() => undefined);
+    checkUpscaleStopped(job.id);
+    if (!info?.isFile()) throw new Error("找不到本地清晰化的 Python 或处理脚本。");
+  }
+  const frames = useRedraw ? upscaleRedrawFrames(job, targets) : motionValidFrames(job);
+  if (!useRedraw && (!motionProcessing(job.processing).key || !frames.length || frames.some(frame => frame.keyed === frame.target))) {
+    throw new Error("请先生成透明抠图帧，再运行本地清晰化。");
+  }
+  if (new Set(frames.map(frame => frame.id)).size !== frames.length || frames.some(frame => !/^[a-zA-Z0-9_-]{1,120}$/.test(frame.id))) {
+    throw new Error("本地清晰化的帧标识无效。");
+  }
+  const startedAt = Date.now();
+  const batch = token();
+  const staging = `.local-upscale/${batch}`;
+  const result = `frames/${batch}-upscaled`;
+  const sources = path(job.id, `${staging}/source`);
+  const output = path(job.id, `${staging}/output`);
+  const run: UpscaleRun = {
+    progress: { phase: "prepare", completed: 0, total: frames.length },
+    progressFile: path(job.id, `${staging}/progress.json`),
+    cancelFile: path(job.id, `${staging}/cancel`),
+    frameCount: frames.length,
+  };
+  upscaleRuns.set(job.id, run);
+  const sourceKind = useRedraw ? "redraw" : "keyed";
+  let moved = false, published = false;
+  const previous = job.localUpscale;
+  try {
+    await mkdir(sources, { recursive: true });
+    let cleanup: Awaited<ReturnType<typeof stageUpscaleInputs>>;
+    if (useRedraw) {
+      const inputStartedAt = Date.now();
+      for (const frame of frames) {
+        checkUpscaleStopped(job.id);
+        const contents = await readFile(path(job.id, frame.redraw!.file!)).catch(() => undefined);
+        if (!isMotionRgbaPng(contents, 512)) throw new Error(`缺少有效的 512×512 透明重绘帧：${frame.id}`);
+        await writeFile(join(sources, `${frame.id}.png`), contents);
+        run.progress.completed++;
+      }
+      cleanup = { enabled: false, changedFrames: 0, removedPixels: 0, correctedPixels: 0, elapsedMs: Date.now() - inputStartedAt };
+    } else cleanup = await stageUpscaleInputs(job, frames, sources, staging, run.progress);
+    const inferenceStartedAt = Date.now();
+    // Only pass the environment needed by the Python and Vulkan runtimes.
+    const env = Object.fromEntries(Object.entries(process.env).filter(
+      ([key]) => /^(PATH|PATHEXT|SYSTEMROOT|WINDIR|TEMP|TMP|APPDATA|LOCALAPPDATA|PROGRAMDATA|PROGRAMFILES|USERPROFILE|HOME)$/i.test(key),
+    ));
+    run.progress = { phase: "enhance", completed: 0, total: frames.length };
+    beginMotionPhase(job.id, "upscale-enhance");
+    await runLocalUpscaleWorker(job.id, run, command.python, [
+      command.script, "--source", sources, "--output", output, "--work", path(job.id, `${staging}/work`),
+      "--progress-file", run.progressFile, "--cancel-file", run.cancelFile,
+    ], path(job.id, staging), env);
+    checkUpscaleStopped(job.id);
+    beginMotionPhase(job.id, "upscale-finish", frames.length, 0);
+    const workerProgress = upscaleRuns.get(job.id)?.progress;
+    if (workerProgress?.phase !== "finish") run.progress = { phase: "finish", completed: 0, total: frames.length };
+    const files: Record<string, string> = {};
+    let verifiedFrames = 0;
+    for (const frame of frames) {
+      checkUpscaleStopped(job.id);
+      const name = `${frame.id}.png`;
+      const contents = await readFile(join(output, name)).catch(() => undefined);
+      if (!isMotionRgbaPng(contents, 1024)) throw new Error(`本地清晰化缺少有效的 1024×1024 透明帧：${frame.id}`);
+      files[frame.id] = `${result}/${name}`;
+      run.progress.completed = Math.max(run.progress.completed, ++verifiedFrames);
+      motionPhaseProgress(job.id, verifiedFrames);
+    }
+    const report = await readJson<{ frame_count: number; native_scale: number }>(join(output, "sr-report.json"));
+    if (report?.frame_count !== frames.length || report.native_scale !== 2) throw new Error("本地清晰化报告与实际帧数或倍率不匹配。");
+    await writeJsonAtomic(join(output, "sr-report.json"), { ...report, sourceKind, cleanup, batchEngineElapsedMs: Date.now() - inferenceStartedAt });
+    checkUpscaleStopped(job.id);
+    await rename(output, path(job.id, result));
+    moved = true;
+    checkUpscaleStopped(job.id);
+    run.committing = true;
+    job.localUpscale = { files, elapsedMs: Date.now() - startedAt, report: `${result}/sr-report.json`, sourceKind };
+    await save(job);
+    published = true;
+  } finally {
+    upscaleRuns.delete(job.id);
+    if (!published) {
+      job.localUpscale = previous;
+      await rm(path(job.id, staging), { recursive: true, force: true }).catch(() => {});
+      if (moved) await rm(path(job.id, result), { recursive: true, force: true }).catch(() => {});
+    }
+  }
 }
 /** Read-only request plan, also used by execution. Sampled frames are ordered
  * within each action/direction; a group never mixes actions or directions. */
-export function motionRedrawPlan(job: Pick<MotionJob, "frames" | "validFrameRanges">, targets: string[], scheme: "frame" | "sheet" | "sheet8" = "frame", regenerate = false) {
+export function motionRedrawPlan(job: Pick<MotionJob, "frames" | "validFrameRanges">, targets: string[], scheme: "frame" | "sheet" | "sheet8" = "frame", regenerate = false, image1k = false) {
   if (!["frame", "sheet", "sheet8"].includes(scheme)) throw new Error("Unknown redraw scheme");
+  if (image1k && scheme === "sheet8") throw new Error("1K 图片 API 每次最多重绘 4 帧。");
   if (!targets?.length || targets.length > 17280 || new Set(targets).size !== targets.length) throw new Error("请选择需要重绘的帧");
   const frames = new Map(job.frames.map(f => [f.id, f]));
   const selected = targets.map(id => frames.get(id));
   if (selected.some(f => !f)) throw new Error("Unknown frame selection");
   const validSelected = (selected as Frame[]).filter(frame => motionFrameIsValid(job, frame));
   if (!validSelected.length) throw new Error("请选择至少一张有效帧");
-  const pending = validSelected.filter(f => regenerate || f.redraw?.status !== "ready" || !f.redraw.file);
+  const pending = validSelected.filter(f => regenerate || f.redraw?.status !== "ready" || !f.redraw.file || image1k && f.redraw.image1k !== true);
   const buckets = new Map<string, Frame[]>();
   for (const frame of pending) {
     const key = JSON.stringify([frame.action, frame.direction]);
@@ -1322,8 +1660,24 @@ export function motionRedrawPlan(job: Pick<MotionJob, "frames" | "validFrameRang
     if (group.length) groups.push(group.map(f => f.id));
   }
   return { scheme, targets: validSelected.map(frame => frame.id), selectionCount: validSelected.length, frameCount: pending.length, requestCount: groups.length, groups,
-    unknownCount: regenerate ? 0 : pending.filter(f => !!f.redraw?.status).length };
+    ...(image1k ? { image1k: true, requestedSize: "1024x1024" } : {}),
+    unknownCount: regenerate ? 0 : pending.filter(f => !!f.redraw?.status && (f.redraw.status !== "ready" || !f.redraw.file)).length };
 }
+export function motionImage1kReadiness(job: MotionJob, targets: string[], config: Config, expected?: MotionRedrawSelection) {
+  const routes = motionRedrawRoutes(config);
+  const modelSelection = motionRedrawModel(config, routes);
+  if (!modelSelection) return { modelSelection, blocker: routes.length ? "请选择 1K 重绘模型。" : "请先在设置的「生图连接」中配置 OpenAI 兼容图片编辑模型。" };
+  if (expected && (expected.connectionId !== modelSelection.connectionId || expected.model !== modelSelection.model)) {
+    return { modelSelection, blocker: "1K 重绘模型已变更，请重新确认。" };
+  }
+  if (!job.character) return { modelSelection, blocker: "请先提供角色参考图，再进行 1K 重绘。" };
+  const selected = new Set(targets);
+  if (!motionProcessing(job.processing).key || job.frames.some(frame => selected.has(frame.id) && (!frame.keyed || frame.keyed === frame.target))) {
+    return { modelSelection, blocker: "请先生成透明抠图帧，再运行 1K 图片 API 重绘。" };
+  }
+  return { modelSelection, blocker: null };
+}
+
 function redrawMask(src: Buffer): Buffer {
   let alpha = Uint8Array.from({ length: 512 * 512 }, (_, i) => src[i * 4 + 3] > 127 ? 1 : 0);
   for (let step = 0; step < 3; step++) {
@@ -1338,18 +1692,23 @@ function redrawMask(src: Buffer): Buffer {
   for (let p = 0; p < alpha.length; p++) mask[p * 4 + 3] = alpha[p] ? 0 : 255;
   return mask;
 }
-async function redraw(job: MotionJob, targets: string[], confirmed: boolean, regenerate: boolean, scheme: "frame" | "sheet" | "sheet8" = "frame"): Promise<void> {
+async function redraw(job: MotionJob, targets: string[], confirmed: boolean, regenerate: boolean, scheme: "frame" | "sheet" | "sheet8" = "frame", image1k = false, expectedImageModel?: MotionRedrawSelection): Promise<void> {
   if (!confirmed) throw new Error("请确认高清重绘的图片调用数量和费用");
-  const plan = motionRedrawPlan(job, targets, scheme, regenerate);
+  const plan = motionRedrawPlan(job, targets, scheme, regenerate, image1k);
   if (plan.unknownCount) throw new Error("存在结果未知的图片请求，请检查后显式重新生成选中帧");
-  job.redrawTargets = [...plan.targets];
-  if (!plan.requestCount) { await save(job); return; }
-  const config = await loadConfig();
-  if (config.imageProvider !== "custom" || config.customProtocol !== "openai") throw new Error("高清重绘需要自定义OpenAI兼容images/edits后端，请先在设置配置");
+  const processing = motionProcessing(job.processing), frames = new Map(job.frames.map(f => [f.id, f]));
+  if (!plan.requestCount) { job.redrawTargets = [...plan.targets]; await save(job); return; }
+  const current = await loadConfig();
+  const readiness = image1k ? motionImage1kReadiness(job, plan.targets, current, expectedImageModel) : null;
+  if (readiness?.blocker) throw new Error(readiness.blocker);
+  const selection = readiness?.modelSelection;
+  const imageConfig = selection ? customConnectionConfig(current, selection.connectionId, selection.model) : current;
+  assertMaskedImageEditProvider(imageConfig);
   if (!job.character) throw new Error("请上传角色细节图");
+  job.redrawTargets = [...plan.targets];
+  const modelRecord = selection ? { image1k: true, imageModel: { connectionId: selection.connectionId, model: selection.model } } : {};
   const dir = `redraw/${token()}`;
   await mkdir(path(job.id, dir), { recursive: true });
-  const processing = motionProcessing(job.processing), frames = new Map(job.frames.map(f => [f.id, f]));
   const directionRefs = new Map<string, string>();
   if (job.directions) {
     const decoded = await decodeToRgba(path(job.id, job.directions));
@@ -1364,7 +1723,8 @@ async function redraw(job: MotionJob, targets: string[], confirmed: boolean, reg
     checkStopped(job.id);
     const group = plan.groups[groupIndex].map(id => frames.get(id)!), first = group[0], batchId = token();
     const columns = group.length > 4 ? 4 : group.length > 1 ? 2 : 1, rows = group.length > 1 ? 2 : 1;
-    const width = columns * 1024, height = rows * 1024;
+    const cellSize = image1k && group.length > 1 ? 512 : 1024;
+    const width = columns * cellSize, height = rows * cellSize;
     const rgba = Buffer.alloc(width * height * 4), mask = Buffer.alloc(rgba.length, 255);
     const background = processing.keyColor.match(/[a-f0-9]{2}/gi)!.map(v => parseInt(v, 16));
     rgba.fill(Buffer.from([...background, 255]));
@@ -1374,11 +1734,11 @@ async function redraw(job: MotionJob, targets: string[], confirmed: boolean, reg
       checkStopped(job.id);
       const frame = group[i], decoded = await decodeToRgba(path(job.id, frame.target)), src = await decodeToRgba(path(job.id, frame.keyed));
       originals.push(src.rgba);
-      blit(resize(decoded.rgba, decoded.width, decoded.height, 1024, 1024), 1024, 1024, rgba, width, height, (i % columns) * 1024, Math.floor(i / columns) * 1024);
+      blit(resize(decoded.rgba, decoded.width, decoded.height, cellSize, cellSize), cellSize, cellSize, rgba, width, height, (i % columns) * cellSize, Math.floor(i / columns) * cellSize);
       // Masks require copying transparent interior pixels too; blit intentionally
       // skips them and therefore cannot be used here.
-      const cellMask = resize(redrawMask(src.rgba), 512, 512, 1024, 1024);
-      for (let y = 0; y < 1024; y++) cellMask.copy(mask, ((Math.floor(i / columns) * 1024 + y) * width + (i % columns) * 1024) * 4, y * 1024 * 4, (y + 1) * 1024 * 4);
+      const cellMask = resize(redrawMask(src.rgba), 512, 512, cellSize, cellSize);
+      for (let y = 0; y < cellSize; y++) cellMask.copy(mask, ((Math.floor(i / columns) * cellSize + y) * width + (i % columns) * cellSize) * 4, y * cellSize * 4, (y + 1) * cellSize * 4);
     }
     const name = group.length > 1 ? batchId : first.id;
     const prompt = motionRedrawPrompt({ direction: first.direction, description: job.description, instructions: job.prompt, keyColor: processing.keyColor, hasDirection: directionRefs.has(first.direction), frameCount: group.length });
@@ -1387,12 +1747,13 @@ async function redraw(job: MotionJob, targets: string[], confirmed: boolean, reg
     await writeFile(path(job.id, input), encodePng(rgba, width, height));
     await writeFile(path(job.id, maskFile), encodePng(mask, width, height));
     // Persist ONE shared attempt across every frame in this image request.
-    for (const frame of group) frame.redraw = { status: "attempted", prompt: promptFile, scheme, batchId };
+    for (const frame of group) frame.redraw = { status: "attempted", prompt: promptFile, scheme, batchId, ...modelRecord };
+    if (job.localUpscale?.sourceKind === "redraw" && group.some(frame => Object.hasOwn(job.localUpscale!.files, frame.id))) job.localUpscale = undefined;
     job.archive = undefined; job.archiveKind = undefined; await save(job);
     try {
       const result = await generateImageWithProvider({ prompt,
         images: [await imageUri(job.id, input), await imageUri(job.id, job.character), ...(directionRefs.has(first.direction) ? [await imageUri(job.id, directionRefs.get(first.direction)!)] : [])],
-        mask: await imageUri(job.id, maskFile), quality: "high", size: `${width}x${height}`, watermark: false });
+        mask: await imageUri(job.id, maskFile), quality: "high", size: `${width}x${height}`, watermark: false }, undefined, selection ? imageConfig : undefined);
       const raw = `${dir}/${name}-raw.${result.ext}`;
       await writeFile(path(job.id, raw), result.bytes);
       for (const frame of group) frame.redraw!.raw = raw;
@@ -1412,11 +1773,11 @@ async function redraw(job: MotionJob, targets: string[], confirmed: boolean, reg
         const { rgba, scale, translation, background } = processed[i];
         const file = `${dir}/${group[i].id}.png`;
         await writeFile(path(job.id, file), encodePng(rgba, 512, 512));
-        completed.push({ status: "ready", file, raw, prompt: promptFile, translation, scale, background, scheme, batchId });
+        completed.push({ status: "ready", file, raw, prompt: promptFile, translation, scale, background, scheme, batchId, ...modelRecord });
       }
       group.forEach((frame, i) => { frame.redraw = completed[i]; }); await save(job);
     } catch (error) {
-      const message = "请求可能已计费；未自动重试。" + redact(String(error instanceof Error ? error.message : error), config.customApiKey);
+      const message = "请求可能已计费；未自动重试。" + redact(String(error instanceof Error ? error.message : error), imageConfig.customApiKey);
       for (const frame of group) frame.redraw = { ...frame.redraw, status: "unknown", error: message };
       await save(job); throw new Error(message);
     }
@@ -1433,6 +1794,8 @@ async function exportJob(job: MotionJob, useRedraw: boolean): Promise<void> {
   const selectedFrames = useRedraw ? motionRedrawFrames(job) : job.frames;
   if (useRedraw && selectedFrames.some((f) => f.redraw?.status !== "ready" || !f.redraw.file))
     throw new Error("高清版本还有未完成帧，请补齐或选择原视频帧导出");
+  beginMotionPhase(job.id, "atlas", selectedFrames.length, 0);
+  let composedFrames = 0;
   const processing = motionProcessing(job.processing), width = processing.cellWidth, height = processing.cellHeight;
   const sourceSize = await probeSize(path(job.id, job.video!.file!));
   const entries: ZipEntry[] = [],
@@ -1464,6 +1827,7 @@ async function exportJob(job: MotionJob, useRedraw: boolean): Promise<void> {
     const rowOrder = directions.slice(firstRow, firstRow + rows), count = Math.min(columns, frameCount - firstFrame);
     const sheet = Buffer.alloc(width * count * height * rowOrder.length * 4);
     for (const direction of rowOrder) for (let index = firstFrame; index < firstFrame + count; index++) {
+      checkStopped(job.id);
       const frame = byDirection.get(direction)![index];
       if (!frame) { if (useRedraw) continue; throw new Error("序列帧不完整，请重新抽帧后导出。"); }
       if (!useRedraw && frame.index !== index) throw new Error("序列帧不完整，请重新抽帧后导出。");
@@ -1485,6 +1849,7 @@ async function exportJob(job: MotionJob, useRedraw: boolean): Promise<void> {
         (index - firstFrame) * width,
         rowOrder.indexOf(frame.direction) * height,
       );
+      motionPhaseProgress(job.id, ++composedFrames);
     }
     const singlePage = frameCount <= columns && rows >= directions.length;
     const png = encodePng(sheet, width * count, height * rowOrder.length),
@@ -1506,6 +1871,8 @@ async function exportJob(job: MotionJob, useRedraw: boolean): Promise<void> {
       loopVerified: false,
     });
   }
+  checkStopped(job.id);
+  beginMotionPhase(job.id, "zip");
   entries.push(
     {
       path: "animation.json",
@@ -1533,7 +1900,12 @@ export async function runMotionStep(
 ): Promise<{ started: true }> {
   if (!isMotionId(id)) throw new Error("Invalid motion job ID");
   if (input.step === "cancel") {
-    if (active.has(id)) cancelled.add(id);
+    const upscale = upscaleRuns.get(id);
+    if (upscale?.committing) throw new Error("本地清晰化正在保存，无法取消。");
+    if (active.has(id)) {
+      cancelled.add(id);
+      await upscale?.stopWorker?.();
+    }
     return { started: true };
   }
   if (
@@ -1544,6 +1916,7 @@ export async function runMotionStep(
       "poll",
       "extract",
       "keyed",
+      "upscale",
       "redraw",
       "export",
     ].includes(input.step)
@@ -1554,12 +1927,15 @@ export async function runMotionStep(
   // before the first file read. Repeated button/RPC clicks cannot queue bills.
   active.add(id);
   cancelled.delete(id);
+  const timing: MotionProcessingTiming | undefined = timedOperations.has(input.step) ? { operation: input.step, completed: [] } : undefined;
+  if (timing) processingTimings.set(id, timing);
   const run = async () => {
     let job: MotionJob | undefined;
     try {
       job = await readMotion(id);
       job.operation = input.step;
       job.error = undefined;
+      job.localUpscaleCancelled = undefined;
       job.progress = "";
       rememberLocalArtifacts(job);
       if (["extract", "keyed", "export"].includes(input.step)) {
@@ -1579,6 +1955,7 @@ export async function runMotionStep(
       else if (input.step === "poll") await poll(job);
       else if (input.step === "extract") await extract(job);
       else if (input.step === "keyed") await rekey(job);
+      else if (input.step === "upscale") await upscaleMotion(job, input.useRedraw === true, input.targets);
       else if (input.step === "redraw")
         await redraw(
           job,
@@ -1586,10 +1963,14 @@ export async function runMotionStep(
           input.confirmed === true,
           input.regenerate === true,
           input.scheme || "frame",
+          input.image1k === true,
+          input.expectedImageModel,
         );
       else await exportJob(job, input.useRedraw === true);
     } catch (error) {
-      if (job) {
+      if (job && error instanceof LocalUpscaleCancelled) {
+        job.localUpscaleCancelled = true;
+      } else if (job) {
         let message = error instanceof Error ? error.message : String(error);
         const config = await loadConfig().catch(() => undefined);
         const privateSettings = await settings().catch(() => undefined);
@@ -1608,11 +1989,16 @@ export async function runMotionStep(
         if (job) {
           job.operation = undefined;
           job.progress = undefined;
+          if (timing) {
+            finishMotionPhase(timing, Date.now());
+            job.processingTiming = timing;
+          }
           await save(job);
         }
       } finally {
         active.delete(id);
         cancelled.delete(id);
+        if (timing) processingTimings.delete(id);
         if (
           job?.video?.taskId &&
           ["pending", "running"].includes(job.video.status)
@@ -1632,6 +2018,11 @@ export function activateMotion(): void {
 }
 export function disposeMotion(): void {
   disposed = true;
+  for (const [id, run] of upscaleRuns) {
+    if (run.committing) continue;
+    cancelled.add(id);
+    void run.stopWorker?.();
+  }
   for (const timer of pollTimers.values()) clearTimeout(timer);
   pollTimers.clear();
 }

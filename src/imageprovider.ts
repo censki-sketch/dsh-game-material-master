@@ -125,6 +125,12 @@ export function assertImageProviderReady(config: Config): void {
   if (blocker !== undefined) throw new Error(blocker);
 }
 
+export function assertMaskedImageEditProvider(config: Config): void {
+  if (config.imageProvider !== "custom" || config.customProtocol !== "openai") {
+    throw new Error("高清重绘需要自定义OpenAI兼容images/edits后端，请先在设置配置");
+  }
+}
+
 /** 一句话摘要（界面角标与工具面共用）。 */
 export function imageProviderSummary(config: Config): string {
   if (config.imageProvider === "toapis") return `ToAPIs · ${config.toapisImageModel}`;

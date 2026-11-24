@@ -388,7 +388,7 @@ for (const file of files) {
   if (broken.length > 0) {
     console.log(`     ↳ ${broken.join("\n     ↳ ")}`);
   }
-  check(`${label}：动画聊天提交有忙碌锁和发送反馈`, text.includes('setSubmitting(true)') && text.includes('setSubmitting(false)') && text.includes('await api.submitWorkflowRound(') && text.includes('className: "SPR_flowSend", disabled: busy'));
+  check(`${label}：动画聊天提交有忙碌锁和发送反馈`, text.includes('setSubmitting(true)') && text.includes('setSubmitting(false)') && text.includes('await api.submitWorkflowRound(') && text.includes('className: "SPR_flowSend"') && text.includes('disabled: stopRound ? stopping : busy ||'));
 }
 
 // ── Hook 必须全在早退之前：漏一个就白屏 ────────────────────────────────

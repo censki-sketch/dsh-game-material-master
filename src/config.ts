@@ -165,6 +165,7 @@ export const CUSTOM_PROTOCOL_DEFAULTS: Record<CustomProtocol, { baseUrl: string;
 
 export const CUSTOM_IMAGE_FIELDS = ["customProtocol", "customBaseUrl", "customApiKey", "customModel", "customSize", "customNegativePrompt", "customSteps", "customCfgScale", "customSampler", "customDenoising", "customSeed", "customWorkflow", "customTimeoutMs"] as const;
 export type CustomImageConnection = Pick<Config, typeof CUSTOM_IMAGE_FIELDS[number]> & { id: string; name: string; models: string[]; modelConfigs: ImageModelDefinition[]; enabled: boolean };
+export type MotionRedrawSelection = { connectionId: string; model: string };
 export interface Config {
   imageConnectionPresets: ("ark" | "toapis")[];
   arkImageModels: ImageModelDefinition[];
@@ -173,6 +174,7 @@ export interface Config {
   toapisImageEnabled: boolean;
   customImageConnections: CustomImageConnection[];
   activeCustomImageConnectionId: string;
+  motionRedrawSelection: MotionRedrawSelection | null;
   imagePromptTemplates: ImagePromptTemplate[];
   promptTemplates: PromptTemplate[];
   toapisBaseUrl: string;
@@ -442,6 +444,7 @@ export const DEFAULT_CONFIG: Config = {
   imageProvider: "ark",
   customImageConnections: [],
   activeCustomImageConnectionId: "",
+  motionRedrawSelection: null,
   customProtocol: "openai",
   customBaseUrl: CUSTOM_PROTOCOL_DEFAULTS.openai.baseUrl,
   customApiKey: "",
@@ -672,6 +675,7 @@ export function normalizeConfig(input: unknown): Config {
     imageProvider: raw.imageProvider === "toapis" ? "toapis" : raw.imageProvider === "custom" ? "custom" : "ark",
     customImageConnections: [],
     activeCustomImageConnectionId: "",
+    motionRedrawSelection: normalizeMotionRedrawSelection(raw.motionRedrawSelection),
     customProtocol: (CUSTOM_PROTOCOLS as readonly string[]).includes(String(raw.customProtocol))
       ? (raw.customProtocol as CustomProtocol)
       : DEFAULT_CONFIG.customProtocol,
@@ -803,6 +807,28 @@ export function customConnectionConfig(config: Config, id: string, model?: strin
   return result;
 }
 
+function normalizeMotionRedrawSelection(value: any): MotionRedrawSelection | null {
+  const connectionId = asString(value?.connectionId, "");
+  const model = asString(value?.model, "");
+  return /^[a-zA-Z0-9_-]{1,80}$/.test(connectionId) && model.trim() === model && model.length > 0 && model.length <= 300
+    ? { connectionId, model } : null;
+}
+
+export function motionRedrawRoutes(config: Config) {
+  return config.customImageConnections.flatMap(connection => {
+    if (!connection.enabled || connection.customProtocol !== "openai" || !connection.customBaseUrl.trim()) return [];
+    return connection.modelConfigs.filter(model => model.enabled && !!model.id).map(model => ({
+      connectionId: connection.id, model: model.id, label: model.name, connectionName: connection.name,
+    }));
+  });
+}
+
+export function motionRedrawModel(config: Config, routes = motionRedrawRoutes(config)) {
+  const selection = config.motionRedrawSelection;
+  if (!selection) return routes.length === 1 ? routes[0] : null;
+  return routes.find(route => route.connectionId === selection.connectionId && route.model === selection.model) ?? null;
+}
+
 export function builtinModelConfig(config: Config, provider: "ark" | "toapis", model: string): Config {
   const result = { ...config, imageProvider: provider, [provider === "ark" ? "arkModel" : "toapisImageModel"]: model };
   for (const key of Object.values(provider === "ark" ? ARK_MODEL_PARAM_KEYS : TOAPIS_MODEL_PARAM_KEYS)) if (key !== "toapisTimeoutMs") result[key] = DEFAULT_CONFIG[key] as never;
@@ -924,6 +950,8 @@ async function writeConfig(patch: ConfigPatch): Promise<Config> {
   const cleared = customConnection?.op === "delete" && !connections.length
     ? Object.fromEntries(CUSTOM_IMAGE_FIELDS.map(key => [key, DEFAULT_CONFIG[key]])) : {};
   const next = normalizeConfig({ ...current, ...fields, ...cleared, customImageConnections: connections, activeCustomImageConnectionId: activeId });
+  if (fields.motionRedrawSelection !== undefined && fields.motionRedrawSelection !== null &&
+      (!next.motionRedrawSelection || !motionRedrawModel(next))) throw new Error("所选 1K 重绘模型不可用，请重新选择。");
   if (customConnection?.op === "delete" && !connections.length && next.imageProvider === "custom") next.imageProvider = "ark";
   await mkdir(dataRoot(), { recursive: true });
   const target = configPath();
