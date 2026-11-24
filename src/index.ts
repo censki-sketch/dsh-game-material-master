@@ -103,6 +103,7 @@ import { SFX_FORMATS, SFX_LIMITS, SFX_SAMPLE_RATES, sfxBlocker, testSfxConnectio
 import { MANIFEST, METHODS, SERVICE_NAME } from "./wire.js";
 import { assetBasePath, originForLinks, rememberClientOrigin } from "./links.js";
 import { registerStudioTools } from "./tools.js";
+import { startGptBridge, type GptToolDefinition } from "./gptbridge.js";
 /**
  * 游戏素材大师 —— 宿主半区。
  *
@@ -3342,15 +3343,29 @@ export function apply(ctx) {
    * `tools` / `systemPrompt` 都是可选服务：最小化的测试组合里可能没有，
    * 缺了就只是没有对话调用面，插件本体照常工作。
    */
+  const gptTools = new Map<string, GptToolDefinition>();
   ctx.effect(() => {
+    const dshTools = ctx.get("tools");
     const disposers = registerStudioTools(
-      { tools: ctx.get("tools"), systemPrompt: ctx.get("systemPrompt") },
+      { tools: { register(definition) {
+          gptTools.set(definition.name, definition);
+          const dispose = dshTools?.register(definition);
+          return () => { gptTools.delete(definition.name); dispose?.(); };
+        } }, systemPrompt: ctx.get("systemPrompt") },
       gateway
     );
     return () => {
       for (const dispose of disposers) dispose();
     };
   }, "dsh-game-material-master: 对话调用面");
+  ctx.effect(() => {
+    let disposed = false;
+    const starting = startGptBridge({ dataDirectory: dataRoot(), tools: () => [...gptTools.values()] });
+    starting.then(bridge => { if (disposed) void bridge.close(); }).catch(() => {
+      process.stderr.write("[game-material-master] GPT local bridge unavailable; existing DSH workflow remains available.\n");
+    });
+    return () => { disposed = true; void starting.then(bridge => bridge.close()).catch(() => undefined); };
+  }, "dsh-game-material-master: GPT local bridge");
   const webServer = ctx.get("webServer");
   if (webServer !== undefined) {
     ctx.effect(() => webServer.register({ kind: "prefix", path: ROUTE_PREFIX, handler: handleAsset }), "dsh-8dir-sprites: asset route");

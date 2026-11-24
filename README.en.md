@@ -502,6 +502,34 @@ the `projectId` / `jobId` to the clipboard so you can paste it to the agent.
 
 ---
 
+## GPT / Codex adapter (gpt branch)
+
+`deepseek` remains the original plugin's development branch. `gpt` adds a local
+Codex adapter that uses the same `game_material` tool, action references, rounds,
+processing and exports as the DSH interface. Characters and actions do not need
+separate scripts; prepared results keep the original configuration fingerprints.
+
+Run `npm install` and `npm run build` on `gpt`, load that folder into DSH using the
+local installation method below, then fully quit and restart DSH. Load the
+repository folder as a local Codex plugin through
+[`.codex-plugin/plugin.json`](.codex-plugin/plugin.json) and [`.mcp.json`](.mcp.json).
+The adapter does not install itself, change global Codex settings or restart DSH.
+See the [GPT adapter guide](gpt-plugin/README.md) for connection details and overrides.
+
+The bridge listens only on loopback and writes discovery information to
+`<DSH_HOME>/game-material-master/gpt-bridge.json`, defaulting to
+`<user-home>/.dsh/game-material-master/gpt-bridge.json`. Provider API keys stay in
+the original plugin. Existing rounds and outputs remain visible in DSH. Each GPT
+call also records its operation ID, method, task ID, timestamp and outcome in
+`gpt-operations.jsonl` beside the discovery file, without full arguments or credentials.
+Its `tool-call-only` duration measures a gateway call, not asynchronous generation.
+
+Original paid confirmations, submission receipts and unknown-result guards remain
+in effect; the adapter cannot enable paid generation. Successful configurations
+are reusable, while visual quality, motion consistency, blinks and video ranges
+still require review. `npm run verify:gpt` uses isolated folders and local fake
+services without real model calls or real provider configuration.
+
 ## Installation
 
 **Use the GitHub release or source command at the top of this page for this fork.** The npm commands below install upstream and do not include this fork's white-model workflow.

@@ -34,8 +34,8 @@ import { isoSnapshot, listIsoProjects, readIsoProject } from "./isogen.js";
 import { listMapProjects, mapSnapshot, readMapProject } from "./mapgen.js";
 import { listMusicJobs, musicSnapshot, readMusicJob } from "./musicgen.js";
 import { listSfxJobs, readSfxJob, sfxNextActions, sfxSnapshot } from "./sfxgen.js";
-import { isMotionId, listMotionJobs, motionView } from "./motiongen.js";
-import { TOOL_METHODS } from "./wire.js";
+import { isMotionId, listMotionJobs, motionView, readMotion } from "./motiongen.js";
+import { METHODS, TOOL_METHODS, WORKFLOW_TOOL_METHODS } from "./wire.js";
 import { MUSIC_STAGES, MAP_STAGES, SFX_STAGES, SPRITE_STAGES, ISO_STAGES, PANEL_KEY, STUDIO_MODULES, assetBasePath, buildOpenLink, originForLinks, type OpenIntent } from "./links.js";
 import { loadConfig } from "./config.js";
 import { buildGuide, GUIDE_TOPICS, guideTopicList, isGuideTopic, type GuideTopic } from "./toolguides.js";
@@ -71,6 +71,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
  */
 export const METHOD_MODULE: Record<string, ModuleKey> = {
   listMotionJobs: "sprite", createMotionJob: "sprite", getMotionJob: "sprite", saveMotionJob: "sprite", uploadMotionAsset: "sprite", runMotionStep: "sprite",
+  getMotionVideoTimeline: "sprite", getMotionTemplatePreview: "sprite", previewMotionReference: "sprite", previewMotionPrompt: "sprite",
   // 模块一 八方向图
   listProjects: "sprite",
   createProject: "sprite",
@@ -265,7 +266,12 @@ export const METHOD_MODULE: Record<string, ModuleKey> = {
  * 不隶属于任何模块的方法：配置类 + 跨模块的审核模式
  * （`setReviewMode` 的模块在 payload 里，另外判）。
  */
+/** Module is required in each payload; these are not unguarded shared methods. */
+export const MODULE_WORKFLOW_METHODS: ReadonlySet<string> = new Set([
+  "getWorkflowConversation", "reuseWorkflowRound", "submitWorkflowRound", "runWorkflowRoundStep"
+]);
 export const SHARED_TOOL_METHODS: ReadonlySet<string> = new Set([
+  ...MODULE_WORKFLOW_METHODS,
   "getConfig",
   "saveConfig",
   "testArk",
@@ -308,6 +314,12 @@ async function assertModuleVisible(module: ModuleKey | undefined): Promise<void>
 
 /** 方法属于哪个模块（共享方法返回 undefined）。 */
 export function moduleOfMethod(method: string, payload?: Record<string, any>): ModuleKey | undefined {
+  if (MODULE_WORKFLOW_METHODS.has(method)) {
+    if (payload?.module !== "sprite" && payload?.module !== "sequence") throw new Error("轮次方法需要 module:sprite 或 sequence");
+    const owner = moduleForId(asString(payload.jobId));
+    if (owner !== undefined && owner !== payload.module) throw new Error("轮次的 module 与 jobId 不一致");
+    return payload.module;
+  }
   if (method === "setReviewMode") return moduleOf(payload?.module);
   return METHOD_MODULE[method];
 }
@@ -378,6 +390,8 @@ const TOOL_STAGES: string[] = Array.from(
 
 const TOOL_UPLOAD_KINDS = [
   "source",
+  "character",
+  "directions",
   "video",
   "ref",
   "item",
@@ -414,6 +428,8 @@ async function runGuide(args: any): Promise<Record<string, any>> {
     await assertModuleVisible("map");
   } else if (topic === "iso-ai-asset") {
     await assertModuleVisible("iso");
+  } else if (topic === "motion") {
+    await assertModuleVisible("sprite");
   } else if ((MODULES as readonly string[]).includes(topic)) {
     await assertModuleVisible(topic as ModuleKey);
   }
@@ -430,6 +446,7 @@ async function runGuide(args: any): Promise<Record<string, any>> {
     methods: TOOL_METHODS,
     moduleOf: (method) => METHOD_MODULE[method],
     sharedMethods: SHARED_TOOL_METHODS,
+    workflowMethods: MODULE_WORKFLOW_METHODS,
     module: filterModule
   });
   return { topic, ...guide };
@@ -852,9 +869,17 @@ function sfxStageOf(method: string): "generate" | "export" | undefined {
  *
  * `value` 只有少数方法用得上：链接里要带的**产物路径**是算出来的，不在入参里。
  */
-function intentFromCall(method: string, payload: Record<string, any>, value?: any): OpenIntent | undefined {
-  if (["listMotionJobs", "createMotionJob", "getMotionJob", "saveMotionJob", "uploadMotionAsset", "runMotionStep"].includes(method)) {
-    const targetId = asString(payload.jobId) || asString(value?.jobId);
+async function intentFromCall(method: string, payload: Record<string, any>, value?: any): Promise<OpenIntent | undefined> {
+  if (MODULE_WORKFLOW_METHODS.has(method)) {
+    // A round lives under its visible parent; childId is an implementation detail.
+    return { module: payload.module, jobId: payload.jobId };
+  }
+  if (METHOD_MODULE[method] === "sprite" && (WORKFLOW_TOOL_METHODS.has(method) || ["listMotionJobs", "createMotionJob", "getMotionJob", "saveMotionJob", "uploadMotionAsset", "runMotionStep"].includes(method))) {
+    let targetId = asString(value?.workflowParent) || asString(payload.jobId) || asString(value?.jobId);
+    if (isMotionId(targetId) && !value?.workflowParent) {
+      const saved = await readMotion(targetId).catch(() => undefined);
+      targetId = saved?.workflowParent || targetId;
+    }
     return { module: "sprite", ...(targetId ? { jobId: targetId } : {}) };
   }
   const projectId = asString(payload.projectId);
@@ -1041,10 +1066,14 @@ export function registerStudioTools(host: StudioToolHost, gateway: GameStudioGat
         const method = asString(args?.method);
         const spec = TOOL_METHODS.find((entry) => entry.method === method);
         if (spec === undefined) throw new Error(`未知方法：${method}`);
-        const payload = args?.payload === undefined ? undefined : asRecord(args.payload);
+        let payload = args?.payload === undefined ? undefined : asRecord(args.payload);
         if (spec.payload && payload === undefined) throw new Error(`${method} 需要一个 payload 对象`);
         if (!spec.payload && payload !== undefined && Object.keys(payload).length > 0) {
           throw new Error(`${method} 不接受 payload`);
+        }
+        if (WORKFLOW_TOOL_METHODS.has(method)) {
+          // Same-process tools do not pass through Typert: keep the wire checks here.
+          payload = asRecord(METHODS.find(entry => entry.method === method)!.payload!.parse(payload));
         }
         // 「功能管理」的两道闸：被隐藏的模块整体拒掉；可见性本身只许用户在设置页里改。
         await assertModuleVisible(moduleOfMethod(method, payload));
@@ -1065,9 +1094,9 @@ export function registerStudioTools(host: StudioToolHost, gateway: GameStudioGat
           throw new Error(`${method} 调用失败：${error instanceof Error ? error.message : String(error)}`);
         }
         const result: Record<string, any> = { method, ok: true, value: value ?? null };
-        const intent = intentFromCall(method, payload ?? {}, value);
+        const intent = await intentFromCall(method, payload ?? {}, value);
         if (intent !== undefined) {
-          const hint = method === "composeMapAsset" ? "点开回到俯视地图编辑器：「新增素材」已经打开并预填好这张图，确认一下就能用" : "点开可以看到这一步的实际产物并打「通过」";
+          const hint = WORKFLOW_TOOL_METHODS.has(method) || (intent.module === "sprite" && isMotionId(intent.jobId || "")) ? "打开父任务查看对应轮次、参考或处理计划；查看本身不代表通过验收。" : method === "composeMapAsset" ? "点开回到俯视地图编辑器：「新增素材」已经打开并预填好这张图，确认一下就能用" : "点开可以看到这一步的实际产物并打「通过」";
           Object.assign(result, openInfo(intent, hint));
         }
         return result;

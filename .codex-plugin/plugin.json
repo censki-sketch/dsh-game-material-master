@@ -1,0 +1,18 @@
+{
+  "name": "game-material-master-gpt",
+  "version": "0.1.0",
+  "description": "Use the existing Game Material Master workflow, previews and operation records from Codex through one local tool.",
+  "author": { "name": "censki-sketch" },
+  "repository": "https://github.com/censki-sketch/dsh-game-material-master",
+  "license": "MIT",
+  "skills": "./gpt-plugin/skills/",
+  "mcpServers": "./.mcp.json",
+  "requires_local_executor": true,
+  "interface": {
+    "displayName": "游戏素材大师 · GPT",
+    "shortDescription": "复用现有素材流程，并在原界面查看每次操作与产物。",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": ["使用游戏素材大师继续已有角色动作任务，先读取当前状态和流程指南。"]
+  }
+}

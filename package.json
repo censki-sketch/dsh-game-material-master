@@ -33,6 +33,9 @@
     "dsh": ">=0.2.0-rc.2 <0.3.0-0"
   },
   "files": [
+    ".codex-plugin",
+    ".mcp.json",
+    "gpt-plugin",
     "assets/motion-templates",
     "docs/MOTION_WORKFLOW.md",
     "lib",
@@ -43,6 +46,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/strip-client-export.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify:gpt": "node scripts/verify-gpt-bridge.mjs && node scripts/verify-gpt-workflow.mjs && node scripts/verify-gpt-mcp.mjs",
     "verify:rig:runtime": "node scripts/verify-rig-runtime.mjs"
   },
   "devDependencies": {

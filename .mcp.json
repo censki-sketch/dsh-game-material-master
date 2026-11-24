@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "game_material_master": {
+      "command": "node",
+      "args": ["${PLUGIN_ROOT}/gpt-plugin/server.mjs"],
+      "cwd": "${PLUGIN_ROOT}",
+      "env_vars": ["DSH_HOME", "DSH_GPT_BRIDGE_CONFIG"],
+      "startup_timeout_sec": 10,
+      "tool_timeout_sec": 120
+    }
+  }
+}

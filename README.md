@@ -434,6 +434,28 @@ game_material({ action: "call", method: "mapRender", payload: { projectId, regio
 
 ---
 
+## GPT / Codex 接入（gpt 分支）
+
+`deepseek` 是原插件的主开发分支；`gpt` 在其上增加本机 Codex 接入层。
+GPT 和 DSH 界面使用同一个 `game_material` 工具、动作参考、任务轮次、处理与导出逻辑，
+不需要为每个角色或动作新写脚本。已有准备结果按原流程的配置指纹复用。
+
+在 `gpt` 分支执行 `npm install`、`npm run build` 后，按下方本地目录方式在 DSH 加载，
+完全退出并重启 DSH。再将仓库目录作为 Codex 本地插件加载；入口为
+[`.codex-plugin/plugin.json`](.codex-plugin/plugin.json) 和 [`.mcp.json`](.mcp.json)。
+接入层不会自行安装插件、修改全局 Codex 设置或重启 DSH。
+完整连接步骤和环境变量见 [GPT 接入说明](gpt-plugin/README.md)。
+
+桥接只监听本机回环地址，连接信息自动写入 `<DSH_HOME>/game-material-master/gpt-bridge.json`
+（默认 `<用户目录>/.dsh/game-material-master/gpt-bridge.json`）。API 密钥留在原插件中。
+原任务界面继续显示轮次与产物；每次 GPT 调用额外记录操作 ID、方法、任务 ID、时间和结果状态，
+保存在同目录的 `gpt-operations.jsonl`，不记录完整参数或凭据。
+日志的 `tool-call-only` 耗时只代表一次网关调用，不代表异步模型生成的总耗时。
+
+付费确认、提交回执和结果未知时的防重试仍由原流程执行；接入层不会自动开启付费开关。
+固定流程能够复用成功配置，生成画质、动作一致性、眨眼和分段范围仍需逐次验收。
+`npm run verify:gpt` 使用隔离目录和本机假服务验证，不调用真实模型或读取真实服务商配置。
+
 ## 安装
 
 **本 Fork 请使用页首的 GitHub 版本包或源码安装命令。** 以下 npm 命令安装的是上游版本，不包含此 Fork 的白模流程。

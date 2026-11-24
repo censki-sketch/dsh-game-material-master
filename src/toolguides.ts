@@ -16,6 +16,7 @@ import { STUDIO_MODULES, type StudioModule } from "./links.js";
 export const GUIDE_TOPICS = [
   "overview",
   "workflow",
+  "motion",
   "config",
   "methods",
   "ai-asset",
@@ -45,6 +46,8 @@ export interface GuideOptions {
   moduleOf: (method: string) => StudioModule | undefined;
   /** 共享方法（配置、测试、审核模式）。 */
   sharedMethods: ReadonlySet<string>;
+  /** Shared workflow methods are guarded by their payload.module. */
+  workflowMethods?: ReadonlySet<string>;
   /** topic=methods 时只看某一个模块。 */
   module?: StudioModule;
 }
@@ -64,11 +67,12 @@ function methodLine(entry: { method: string; payload: boolean }): string {
 }
 
 function methodsOfModule(module: StudioModule, options: GuideOptions): Array<{ method: string; payload: boolean }> {
-  return options.methods.filter((entry) => options.moduleOf(entry.method) === module);
+  return options.methods.filter((entry) => options.moduleOf(entry.method) === module ||
+    ((module === "sprite" || module === "sequence") && options.workflowMethods?.has(entry.method)));
 }
 
 function sharedMethodsOf(options: GuideOptions): Array<{ method: string; payload: boolean }> {
-  return options.methods.filter((entry) => options.sharedMethods.has(entry.method));
+  return options.methods.filter((entry) => options.sharedMethods.has(entry.method) && !options.workflowMethods?.has(entry.method));
 }
 
 /** 模块主题末尾自动附上方法名，防止「方法做了但手册没提」。 */
@@ -114,6 +118,7 @@ function overviewText(options: GuideOptions): string {
     "",
     "## 其它主题",
     "- `workflow` — 固定流程、审核模式、计费与验收规则。",
+    ...(!options.hidden.has("sprite") ? ["- `motion` — GPT/其它 Agent 共用的八方向动作轮次、现有模板复用与本地处理指南；动作任务先读此主题。"] : []),
     "- `config` — 配置方法、生图后端与连接测试。",
     "- `methods` — 全部可见方法目录（可按 `module` 过滤）。",
     "- `ai-asset` — 俯视地图编辑器「AI 生成素材」自动任务。",
@@ -209,30 +214,46 @@ function methodsText(options: GuideOptions): string {
     "调用方式：`game_material({action:\"call\", method:\"<方法名>\", payload:{…}})`；`payload` 为对象，没有 payload 的方法不要传。",
     ""
   ];
-  let count = 0;
+  const included = new Set<string>();
   for (const module of modules) {
     const entries = methodsOfModule(module, options);
-    count += entries.length;
+    entries.forEach(entry => included.add(entry.method));
     lines.push(`## ${options.labels[module]}（${module}）`);
     lines.push(...(entries.length === 0 ? ["（暂无）"] : entries.map(methodLine)));
     lines.push("");
   }
   if (options.module === undefined) {
     const shared = sharedMethodsOf(options);
-    count += shared.length;
+    shared.forEach(entry => included.add(entry.method));
     lines.push("## 共用");
     lines.push(...(shared.length === 0 ? ["（暂无）"] : shared.map(methodLine)));
     lines.push("");
   }
-  lines.push(`共 ${count} 个方法。隐藏模块的方法不会出现在这里。`);
+  lines.push(`共 ${included.size} 个方法。隐藏模块的方法不会出现在这里。`);
   return lines.join("\n");
 }
+
+const MOTION_AGENT_TEXT = [
+  "# 八方向动作 · 共用轮次流程（motion）",
+  "GPT 与其它 Agent 只编排宿主已有接口，不另写白模、抽帧、抠图或导出脚本，不直接读写任务 JSON 或调用收费服务。",
+  "1. 先 getMotionJob({jobId}) 和 getWorkflowConversation({module:'sprite',jobId}) 查看当前任务、可见轮次、请求快照和版本；已有可用结果优先复用。要沿用某轮输入，用 reuseWorkflowRound({module:'sprite',jobId,roundId})，它不生成素材。任务配置保存在父jobId，产物在round.childId；查看单轮视频/帧可读childId，但验收openUrl回到父任务。",
+  "2. 动作key与原始时长从getMotionJob返回的templates选择；getMotionTemplatePreview({action,direction:'downRight'})查看本地真实模板。不要凭名称重画动作、把编码帧数当独立姿势，或把其它角色/品质图当成本角色外观。新任务沿用createMotionJob、uploadMotionAsset与saveMotionJob；完整字段见sprite主题。",
+  "3. previewMotionReference({jobId,segments,keyColor})只在本地预览当前草稿，不保存任务或提交生成；previewMotionPrompt({jobId,prompt,…})免费查看最终提示词。保存后，submitWorkflowRound内部以prepared.signature核对参考指纹并复用当前有效准备结果，不要每轮强制prepare或手工伪造指纹。模板、八方向身份图和本次输入不变时沿用已有资产。",
+  "4. 生成前说明本次实际模型、分辨率、4秒时长、请求数及费用；付费总开关仅用户可在界面开启。本次授权后submitWorkflowRound({module:'sprite',jobId,requestId,automatic:false,confirmed:true,expectedVideoModel})创建可见轮次；requestId对同一次意图保持不变，响应丢失先查轮次再用同一ID查询，不能换ID重试扣费。automatic按用户已有选择；人工验收期间用false。",
+  "5. 用getWorkflowConversation观察对应round.status/stage及round.job.video/error，已有远端任务可runWorkflowRoundStep({module:'sprite',jobId,roundId,step:'poll'})续查。不要将旧父任务wait的settled或一次started:true当成子轮次完成。unknown只查已有任务、导入已取得视频或交用户处理，不重新提交生成；regenerate:true仅在明确获准重做所选项时使用。",
+  "6. 有视频后，以getMotionVideoTimeline({jobId:childId,page?})读取真实帧时间及只读缩略图，查看实际画面再决定动作边界，不能把计划秒数当识别结果。先runWorkflowRoundStep({module:'sprite',jobId,roundId,step:'process',ranges,processing?,planOnly:true})查看必要本地步骤；确认实际范围后去掉planOnly执行相同process计划，复用未变的抽帧/抠图/图集，不重复生成视频。",
+  "7. 已有本地四列两行视频用uploadMotionAsset({jobId,kind:'video',data})或upload动作导入；submitWorkflowRound({module:'sprite',jobId,requestId,automatic:false,localOnly:true})不要求身份图/动作选择、不调用生成模型，按videoRange解析中性video片段，不自动识别动作。",
+  "8. 高清重绘先runWorkflowRoundStep({module:'sprite',jobId,roundId,step:'redraw',targets,scheme,planOnly:true})核对新增requestCount；得到本次费用授权后才confirmed:true执行。已完成帧默认跳过，未知请求不自动重试；完成帧数或尺寸合格不代表姿态、眨眼及邻帧一致性通过。",
+  "9. 导出复用runWorkflowRoundStep({module:'sprite',jobId,roundId,step:'export',useRedraw})，读取轮次版本中的PNG、分页图集、animation.json v2及ZIP。loopVerified:false仍需实际播放检查；不得把运行成功、导出成功或自动模式说成视觉验收通过。贴回工具返回的父任务openUrl。",
+  "sequence的轮次复用同一组getWorkflowConversation/reuseWorkflowRound/submitWorkflowRound/runWorkflowRoundStep，payload.module必须为sequence；它与sprite的隐藏限制分别生效，不能互换module绕过。只读planOnly的process/redraw规划当前仅支持sprite。"
+].join("\n\n");
 
 const MODULE_TEXTS: Record<StudioModule, string> = {
   sprite: [
     "## 白模动作流程（默认入口，w…任务）",
+    "Agent处理动作先读game_material({action:'guide',topic:'motion'})；优先使用可见workflow轮次保存历史与requestId幂等，以下runMotionStep为底层接口，不另建一套流程。",
     "所有付费视频默认锁定（allowPaidVideoGeneration:false），只能由用户在右上角设置的「生视频」页签或设置→游戏素材大师→生视频里手动开启。工具禁止代为开启。先向用户说明本次模型、时长、分辨率、请求数量与平台计费，得到本次授权后才传confirmed:true；未获授权只能配置、准备和预览，不得真实生成。",
-    "此流程直接在 DSH 操作，不需要 agent。新任务动作留空，必须手动选择；2种动作各2秒；最多3种动作，仍为实验性。八方向放在四列两行中，同时生成4秒视频；H3-Lite输出480P，H3输出768P。",
+    "界面和Agent复用同一宿主流程。新任务动作留空，必须明确选择；2种动作各2秒；最多3种动作，仍为实验性。八方向放在四列两行中，同时生成4秒视频；H3-Lite输出480P，H3输出768P。",
     "`createMotionJob({name?})` → `uploadMotionAsset({jobId,kind:'project',data:<已有八方向项目ID>})` 或 `action:'upload',module:'sprite',id:jobId,kind:'character'|'directions',path:<本机图片>`。directions为四列两行：北/东北/东/东南，南/西南/西/西北。",
     "`getMotionJob({jobId})` 返回40种templates、segments、ranges、frames、costs、assetBase。`saveMotionJob({jobId,name?,description?,prompt?,segments?,inputMode?,videoRange?,processing?,promptTemplate?})`。每段为{action,start,end,frameCount,targetFps?}，2~3段连续覆盖0~4秒；动作key从templates选择。新任务默认targetFps:24，两秒动作自动计算48帧；支持1~60 FPS、单段最多720帧。旧数据未传targetFps时保留原frameCount。",
     "`runMotionStep({jobId,step:'prepare'})` 本地拼白模；step:'prompt'为旧任务重建提示词，新任务使用promptTemplate快照填入timeline/description/keyColor，prompt只作本轮补充；useModel:true可用用户在界面配置的本地/第三方文字模型整理角色描述。确认提示词后step:'video',confirmed:true提交所选兼容MiniMax型号；saveMotionJob的videoModel按任务选择，reviewMode保存auto/manual，聊天轮次以automatic控制继续处理，生成前必须确认实际型号和输出分辨率。",
@@ -597,6 +618,7 @@ const ISO_AI_ASSET_TEXT = [
 export function buildGuide(topic: GuideTopic, options: GuideOptions): GuideResult {
   if (topic === "overview") return { title: "游戏素材大师 · 总览", text: overviewText(options) };
   if (topic === "workflow") return { title: "游戏素材大师 · 固定流程", text: workflowText() };
+  if (topic === "motion") return { title: "游戏素材大师 · 八方向动作轮次", text: MOTION_AGENT_TEXT };
   if (topic === "config") return { title: "游戏素材大师 · 配置", text: configText(options) };
   if (topic === "methods") return { title: "游戏素材大师 · 方法目录", text: methodsText(options) };
   if (topic === "ai-asset") return { title: "游戏素材大师 · AI 生成素材", text: AI_ASSET_TEXT };
