@@ -21,7 +21,7 @@ export interface ImagePromptTemplate {
 }
 
 /** Never silently truncate an authored prompt. One language may use the other as fallback. */
-function parseImagePromptTemplates(input: unknown, maxCount = 24): ImagePromptTemplate[] {
+export function parseImagePromptTemplates(input: unknown, maxCount = 24): ImagePromptTemplate[] {
   if (!Array.isArray(input) || input.length > maxCount) throw new Error("提示词模板最多24个。");
   const ids = new Set<string>();
   return input.map(raw => {

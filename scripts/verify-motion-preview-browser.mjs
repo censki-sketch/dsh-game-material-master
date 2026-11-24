@@ -58,9 +58,36 @@ try {
     return img?.complete && img.naturalWidth > 0 && document.querySelector('.SPR_motionTemplateStage canvas') && document.querySelector('.SPR_motionPreviewViewport').dataset.loading === 'false';
   });
   await trigger.click(); await waitImage();
+  const hiddenScrollbar = await list.evaluate(el => getComputedStyle(el).scrollbarColor);
+  check('the action scrollbar is transparent before scrolling', hiddenScrollbar === 'rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)');
+  const listBeforeScroll = await list.boundingBox();
+  await list.hover(); await page.mouse.wheel(0, 160);
+  await page.waitForFunction(() => document.querySelector('.SPR_motionActionList').dataset.scrolling === 'true');
+  check('wheeling reveals only the active scrollbar', await list.evaluate(el => el.scrollTop > 0 && getComputedStyle(el).scrollbarColor !== 'rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)' && !el.closest('dialog').hasAttribute('data-scrolling')));
+  await page.waitForFunction(() => !document.querySelector('.SPR_motionActionList').hasAttribute('data-scrolling'));
+  const listAfterScroll = await list.boundingBox();
+  check('the thumb hides after scrolling without changing list geometry', await list.evaluate(el => getComputedStyle(el).scrollbarColor) === hiddenScrollbar && JSON.stringify(listBeforeScroll) === JSON.stringify(listAfterScroll));
+  await list.evaluate(el => { el.scrollTop = 0; });
   await page.screenshot({ path: '.verify/motion-preview-structure.png' });
   check('preview and action list are two sibling columns', await dialog.locator('.SPR_motionActionLayout').evaluate(el =>
-    el.children.length === 2 && el.children[0].classList.contains('SPR_motionActionList') && el.children[1].classList.contains('SPR_motionActionPreview')));
+    el.children.length === 2 && el.children[0].classList.contains('SPR_motionActionSidebar') && el.children[1].classList.contains('SPR_motionActionPreview')));
+  const search=dialog.getByRole('searchbox',{name:'搜索动作',exact:true});
+  check('search receives focus without opening the explanation',await search.evaluate(el=>document.activeElement===el)&&await dialog.getByRole('tooltip').count()===0);
+  const help=dialog.getByRole('button',{name:'查看动作预览说明',exact:true});
+  await help.hover();await dialog.getByRole('tooltip').waitFor();
+  check('local-only explanation is inside the title tooltip',await dialog.getByRole('tooltip').innerText()==='内置动作预览，不会调用生成模型'&&await dialog.locator('.SPR_motionActionHint').count()===0);
+  await page.mouse.move(1,1);await dialog.getByRole('tooltip').waitFor({state:'hidden'});await search.click();
+  const searchesBefore=calls.length;
+  await search.fill(catalog.actions[0].name);
+  check('search filters Chinese action names',await list.getByRole('option').count()===1&&await list.getByRole('option').first().innerText().then(text=>text.includes(catalog.actions[0].originalName)));
+  await search.fill(catalog.actions[0].originalName.toUpperCase());
+  check('search accepts case-insensitive original names',await list.getByRole('option').count()===1);
+  await page.keyboard.press('ArrowDown');
+  check('search and action list support keyboard navigation',await list.getByRole('option').first().evaluate(el=>document.activeElement===el));
+  await search.fill('no-such-action-xyz');
+  check('empty search results show a themed empty state',await list.getByRole('option').count()===0&&await dialog.getByText('没有匹配的动作',{exact:true}).count()===1);
+  await dialog.getByRole('button',{name:'清除搜索',exact:true}).click();
+  check('clearing search restores the catalog without model or preview calls',await list.getByRole('option').count()===catalog.actions.length&&calls.length===searchesBefore&&commits.length===0);
   check('preview is never nested inside the scroll list', await list.locator('.SPR_motionActionPreview').count() === 0);
   check('the bundled PNG draws one visible frame', await canvas.evaluate(canvas => {
     const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
@@ -110,6 +137,25 @@ try {
     const expected = measured.elapsed / spec.frameDurationsMs[0] % spec.frames;
     check('playback uses the template frame duration for ' + key, Math.min(Math.abs(moved - expected), spec.frames - Math.abs(moved - expected)) < 3);
   }
+  await dialog.getByRole('button',{name:'八方向同时预览',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelectorAll('.SPR_motionDirectionCell canvas').length===8);
+  check('all directions use the eight real local template views',await dialog.locator('.SPR_motionDirectionCell').count()===8&&new Set(calls.slice(-8).map(call=>call.direction)).size===8);
+  check('eight directions expose one shared set of playback controls',await dialog.getByRole('group',{name:'播放控制',exact:true}).count()===1&&await dialog.locator('.SPR_motionDirectionGrid').count()===0);
+  await page.waitForFunction(()=>Number(document.querySelector('.SPR_motionDirectionCell canvas')?.dataset.frame)>1);
+  check('all direction animations advance on the same frame',await dialog.locator('.SPR_motionDirectionCell canvas').evaluateAll(nodes=>new Set(nodes.map(el=>el.dataset.frame)).size===1));
+  await dialog.getByRole('button',{name:'暂停',exact:true}).click();
+  const eightPaused=await dialog.locator('.SPR_motionDirectionCell canvas').first().getAttribute('data-frame');await page.waitForTimeout(160);
+  check('one pause holds all eight directions',await dialog.locator('.SPR_motionDirectionCell canvas').evaluateAll((nodes,frame)=>nodes.every(el=>el.dataset.frame===frame),eightPaused));
+  check('each direction matches the exact corresponding atlas cell',await dialog.locator('.SPR_motionTemplatePlayer').evaluate(el=>{
+    const images=[...el.querySelectorAll('img')],canvases=[...el.querySelectorAll('canvas')];
+    return canvases.every((canvas,i)=>{const index=Number(canvas.dataset.frame),image=images[i],expected=document.createElement('canvas');expected.width=canvas.width;expected.height=canvas.height;const context=expected.getContext('2d');context.drawImage(image,index%8*canvas.width,Math.floor(index/8)*canvas.height,canvas.width,canvas.height,0,0,canvas.width,canvas.height);const a=context.getImageData(0,0,canvas.width,canvas.height).data,b=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;return a.every((value,p)=>value===b[p]);});
+  }));
+  const eightCalls=calls.length;
+  await dialog.getByRole('button',{name:'重播',exact:true}).click();
+  check('shared replay starts every direction without additional requests',await dialog.locator('.SPR_motionDirectionCell canvas').evaluateAll(nodes=>nodes.every(el=>Number(el.dataset.frame)<5))&&calls.length===eightCalls);
+  await page.screenshot({path:'.verify/motion-preview-eight-directions.png'});
+  await dialog.getByRole('button',{name:'单方向',exact:true}).click();await waitImage();
+  check('single-direction preview remains available',await canvas.count()===1&&await dialog.locator('.SPR_motionDirectionGrid button').count()===8);
   check('close button uses the X icon', await dialog.getByRole('button', { name: '关闭', exact: true }).locator('svg path').getAttribute('d') === 'm6 6 12 12M6 18 18 6');
   const before = await dialog.locator('.SPR_motionActionPreview').boundingBox();
   await list.evaluate(el => { el.scrollTop = el.scrollHeight; });
@@ -146,6 +192,11 @@ try {
       check('playback controls stay under the animation at ' + label, geometry.controls.top >= geometry.img.bottom && geometry.controls.bottom <= geometry.viewport.bottom);
       check('action list scrolls independently at ' + label, await list.evaluate(el => el.scrollHeight > el.clientHeight));
       await page.screenshot({ path: `.verify/motion-preview-${width}x${height}-${dark ? 'dark' : 'light'}.png` });
+      await dialog.getByRole('button',{name:'八方向同时预览',exact:true}).click();
+      await page.waitForFunction(()=>document.querySelectorAll('.SPR_motionDirectionCell canvas').length===8);
+      await page.screenshot({path:`.verify/motion-preview-eight-${width}x${height}-${dark?'dark':'light'}.png`});
+      check('eight directions and shared controls fit at '+label,await dialog.evaluate(el=>{const viewport=el.querySelector('.SPR_motionPreviewViewport').getBoundingClientRect(),controls=el.querySelector('.SPR_motionPlaybackControls').getBoundingClientRect(),cells=[...el.querySelectorAll('.SPR_motionDirectionCell')];return cells.length===8&&controls.bottom<=viewport.bottom&&cells.every(cell=>{const r=cell.getBoundingClientRect();return r.width>20&&r.height>24&&r.left>=viewport.left&&r.right<=viewport.right&&r.top>=viewport.top&&r.bottom<=controls.top;});}));
+      await page.screenshot({path:`.verify/motion-preview-eight-${width}x${height}-${dark?'dark':'light'}.png`});
       await page.keyboard.press('Escape');
       check('Escape closes and restores focus at ' + label, await dialog.count() === 0 && await trigger.evaluate(el => el === document.activeElement));
     }
@@ -162,6 +213,12 @@ try {
   check('late response cannot replace a newer action preview', await image.getAttribute('src') === latestSrc);
   await dialog.getByRole('button', { name: '关闭', exact: true }).click();
   check('X closes without another commit', await dialog.count() === 0 && commits.length === 1);
+  await page.evaluate(templates=>{
+    root.render(React.createElement(bundle.__test.MotionActionPicker,{api:{getMotionTemplatePreview:payload=>previewLocal(payload)},action:templates[0].key,templates,compact:true,onChange:value=>commitLocal(value)}));
+  },catalog.actions);
+  await page.waitForFunction(()=>document.querySelector('[data-compact=true] canvas'));
+  check('selected action animation fills the card behind its caption',await page.locator('.SPR_motionActionControl').evaluate(el=>{const card=el.getBoundingClientRect(),thumb=el.querySelector('.SPR_motionActionThumb').getBoundingClientRect(),caption=el.querySelector('.SPR_motionActionTriggerText').getBoundingClientRect();return thumb.height>=card.height-2&&caption.top<thumb.bottom&&caption.bottom<=card.bottom&&getComputedStyle(el.querySelector('.SPR_motionActionTriggerText')).position==='absolute';}));
+  await page.screenshot({path:'.verify/motion-action-card-expanded.png'});
   check('no native dialogs or browser errors', errors.length === 0);
   check('no external requests', outbound.length === 0);
   console.log(`Motion preview browser: ${checks} checks passed.`);

@@ -1,15 +1,16 @@
 /** White-model workflow for the existing sprite module. No agent required. */
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID, createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
-import { dataRoot, loadConfig } from "./config.js";
+import { dataRoot, loadConfig, saveConfig, MINIMAX_MODEL_PRESETS, type Config } from "./config.js";
 import { readJson, writeJsonAtomic } from "./jsonio.js";
 import {
   decodeToRgba,
   probeDuration,
   probeSize,
+  probeVideoFrameTimeline,
   runFfmpeg,
   sniffVideo,
   toDataUri,
@@ -22,7 +23,7 @@ import { generateImageWithProvider } from "./imageprovider.js";
 import {
   capabilityOf,
   normalizeDuration,
-  normalizeResolution,
+  gatewayOf,
 } from "./minimax.js";
 import {
   assertVideoBackendReady,
@@ -33,6 +34,10 @@ import {
 } from "./videogen.js";
 import { assetPath, readProject, type VideoBackend } from "./store.js";
 import { zipEntries, type ZipEntry } from "./zip.js";
+import { MOTION_PROMPT_TEMPLATES, validateMotionTemplates, motionRedrawPrompt } from "./motionprompts.js";
+import type { ImagePromptTemplate } from "./imageprompts.js";
+import { templatesOfType } from "./prompttemplates.js";
+import { processMotionEdits } from "./motionimage.js";
 
 export const MOTION_DIRS = new Set([
   "refs",
@@ -61,6 +66,7 @@ type Segment = {
   start: number;
   end: number;
   frameCount: number;
+  targetFps?: number;
 };
 type Frame = {
   id: string;
@@ -77,9 +83,25 @@ type Frame = {
     prompt?: string;
     error?: string;
     translation?: number[];
+    scale?: number;
+    background?: "alpha" | "keyed";
+    scheme?: "frame" | "sheet" | "sheet8";
+    batchId?: string;
   };
 };
+type ValidFrameRange = { start: number; end: number };
 interface MotionJob {
+  reviewMode?: "auto" | "manual";
+  videoModel?: string;
+  videoGeneration?: { model: string; endpoint: string; resolution: string };
+  composerVersion?: number;
+  inputMode?: "generate" | "video";
+  sourceVideo?: { file: string; duration: number };
+  videoRange?: { start: number; end: number; frameCount: number; targetFps?: number };
+  promptTemplate?: { id: string; lang: "zh" | "en"; content: string };
+  processing?: MotionProcessing;
+  /** Signatures of successfully produced local artifacts; null marks an interrupted stage. */
+  localArtifacts?: { raw?: string | null; keyed?: string | null; archive?: string | null };
   workflowParent?: string;
   id: string;
   name: string;
@@ -104,17 +126,94 @@ interface MotionJob {
     error?: string;
   };
   frames: Frame[];
+  /** Per action/direction inclusive frame ranges kept for preview and paid redraws. */
+  validFrameRanges?: Record<string, ValidFrameRange>;
+  redrawTargets?: string[];
   archive?: string;
+  archiveKind?: "raw" | "keyed" | "redraw";
   operation?: string;
   progress?: string;
   error?: string;
 }
+export function motionFrameRangeKey(frame: Pick<Frame, "action" | "direction">): string {
+  return `${frame.action}::${frame.direction}`;
+}
+export function motionFrameIsValid(job: Pick<MotionJob, "validFrameRanges">, frame: Pick<Frame, "action" | "direction" | "index">): boolean {
+  const range = job.validFrameRanges?.[motionFrameRangeKey(frame)];
+  return !range || frame.index >= range.start && frame.index <= range.end;
+}
+export function motionValidFrames(job: Pick<MotionJob, "frames" | "validFrameRanges">): Frame[] {
+  return job.frames.filter(frame => motionFrameIsValid(job, frame));
+}
+/** Share the actual four-second/reference-video constraints with the composer. */
+export function motionVideoModels() {
+  return MINIMAX_MODEL_PRESETS.flatMap(preset => {
+    const caps = capabilityOf(preset.id);
+    if (caps.protocol !== "v2" || normalizeDuration(preset.id, 4) !== 4) return [];
+    const resolution = caps.resolutions.includes("480P") ? "480P" : caps.resolutions.includes("768P") ? "768P" : null;
+    return resolution ? [{ id: preset.id, label: preset.id, resolution }] : [];
+  });
+}
+export function motionVideoSelection(job: Pick<MotionJob, "videoModel">, config: Config) {
+  if (!job.videoModel && videoBackendOf(config) !== "minimax") throw new Error("此流程需要支持参考视频的 MiniMax 模型，请在输入栏选择视频模型");
+  const model = job.videoModel || config.minimaxModel;
+  const option = motionVideoModels().find(item => item.id === model);
+  if (!option) throw new Error("当前模型不支持4秒参考视频，请在输入栏选择兼容的视频模型");
+  return { model, endpoint: gatewayOf(model, config.minimaxBaseUrl), resolution: option.resolution };
+}
+export function motionVideoConfig(job: MotionJob, config: Config): Config {
+  const selection = job.workflowParent && job.videoGeneration || motionVideoSelection(job, config);
+  return { ...config, comfyVideo: false, toapisVideo: false, minimaxModel: selection.model, minimaxBaseUrl: selection.endpoint, minimaxResolution: selection.resolution };
+}
 interface MotionSettings {
+  templates?: ImagePromptTemplate[];
   baseUrl: string;
   model: string;
   apiKey: string;
   videoRate: number;
   imageRate: number;
+}
+export interface MotionProcessing {
+  extract: boolean; key: boolean; sheet: boolean;
+  keyColor: string; keyLow: number; keyHigh: number; despill: number; edgeShrink: number; bgTolerance: number;
+  cropInset: number; cellWidth: number; cellHeight: number;
+}
+export function motionProcessing(input: any = {}): MotionProcessing {
+  const result = { extract: input.extract !== false, key: input.key !== false, sheet: input.sheet !== false,
+    keyColor: input.keyColor ?? "#FF00FF", keyLow: number(input.keyLow ?? 14, 0, 255), keyHigh: number(input.keyHigh ?? 80, 1, 255),
+    despill: number(input.despill ?? .65, 0, 1), edgeShrink: number(input.edgeShrink ?? 0, 0, 8), bgTolerance: number(input.bgTolerance ?? 40, 0, 255),
+    cropInset: number(input.cropInset ?? 0, 0, .2), cellWidth: number(input.cellWidth ?? 512, 16, 1024), cellHeight: number(input.cellHeight ?? 512, 16, 1024) };
+  if (!/^#[0-9a-fA-F]{6}$/.test(result.keyColor) || result.keyHigh <= result.keyLow || !Number.isInteger(result.cellWidth) || !Number.isInteger(result.cellHeight)) throw new Error("Invalid motion processing settings");
+  return result;
+}
+const localHash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+const localRawSignature = (job: MotionJob, ranges = job.ranges, processing = motionProcessing(job.processing)) => localHash([job.video?.file, ranges.map(r => [r.action, r.start, r.end, motionSampling(r).frameCount, r.targetFps ?? null]), processing.cropInset]);
+const localKeySignature = (job: MotionJob, processing = motionProcessing(job.processing)) => localHash([job.frames.map(f => f.target), processing.keyColor.toUpperCase(), processing.keyLow, processing.keyHigh, processing.despill, processing.edgeShrink, processing.bgTolerance]);
+const localArchiveSignature = (job: MotionJob, processing = motionProcessing(job.processing)) => localHash([job.ranges, job.frames.map(f => processing.key ? f.keyed : f.target), processing.key, processing.cellWidth, processing.cellHeight]);
+function rememberLocalArtifacts(job: MotionJob) {
+  if (job.localArtifacts || !job.frames.length) return;
+  const processing = motionProcessing(job.processing);
+  job.localArtifacts = { raw: localRawSignature(job), keyed: processing.key ? localKeySignature(job) : null, archive: job.archive && job.archiveKind !== "redraw" ? localArchiveSignature(job) : null };
+}
+async function localRanges(job: MotionJob, input: Segment[]) {
+  const clip = job.inputMode === "video" && input.length === 1 && input[0]?.action === "video";
+  const ranges = clip ? [{ action: "video", ...motionVideoRange(job, input[0]) }] : await validateSegments(input, false, true);
+  if (!clip && (ranges.length !== job.segments.length || ranges.some((r, i) => r.action !== job.segments[i]?.action))) throw new Error("Extract ranges must match selected actions");
+  if (ranges.some(r => r.end > (job.video?.duration || job.sourceVideo?.duration || 120) + .001)) throw new Error("Range exceeds actual video duration");
+  return ranges;
+}
+/** Shared by the read-only preview and execution; never plans a paid step. */
+export async function motionLocalProcessingPlan(job: MotionJob, input: any) {
+  if (job.video?.status !== "ready" || !job.video.file) throw new Error("请先生成或导入视频");
+  const ranges = await localRanges(job, input.ranges || job.ranges), processing = motionProcessing({ ...job.processing, ...input.processing, extract: true });
+  const baseline = structuredClone(job); rememberLocalArtifacts(baseline);
+  const rawChanged = !job.frames.length || baseline.localArtifacts?.raw !== localRawSignature(job, ranges, processing);
+  const keyChanged = processing.key && baseline.localArtifacts?.keyed !== localKeySignature(job, processing);
+  const sheetChanged = processing.sheet && (!job.archive || job.archiveKind === "redraw" || baseline.localArtifacts?.archive !== localArchiveSignature({ ...job, ranges }, processing));
+  const force = input.forceLocal;
+  const steps: string[] = rawChanged ? ["extract"] : keyChanged || force === "keyed" ? ["keyed"] : [];
+  if (processing.sheet && (steps.length || sheetChanged || force === "export")) steps.push("export");
+  return { kind: "local-processing", steps, ranges, processing, changed: JSON.stringify(processing) !== JSON.stringify(motionProcessing(job.processing)), actions: ranges.map(r => r.action), frameCount: ranges.reduce((count, r) => count + r.frameCount * 8, 0) };
 }
 const active = new Set<string>();
 const cancelled = new Set<string>();
@@ -133,6 +232,52 @@ export function motionAssetPath(id: string, relative: string): string {
   return target;
 }
 const path = (id: string, relative: string) => motionAssetPath(id, relative);
+const videoTimelines = new Map<string, Promise<{ times: number[]; duration: number }>>();
+export async function motionVideoTimeline(id: string) {
+  const job = await readMotion(id);
+  if (!job.video?.file) throw new Error("请先生成或导入视频");
+  const file = path(id, job.video.file), info = await stat(file), key = `${file}:${info.size}:${info.mtimeMs}`;
+  let timeline = videoTimelines.get(key);
+  if (!timeline) {
+    timeline = probeVideoFrameTimeline(file).catch(error => { videoTimelines.delete(key); throw error; });
+    videoTimelines.set(key, timeline);
+    if (videoTimelines.size > 8) videoTimelines.delete(videoTimelines.keys().next().value!);
+  }
+  return { file: job.video.file, ...await timeline };
+}
+const videoPreviewPages = new Map<string, Promise<any>>();
+/** Small contact sheets of consecutive source frames, independent of extraction or AI results. */
+export async function motionVideoFramePreviews(id: string, page: number) {
+  if (!Number.isInteger(page) || page < 0) throw new Error("Invalid frame preview page");
+  const timeline = await motionVideoTimeline(id), firstFrame = page * 12;
+  if (firstFrame >= timeline.times.length) throw new Error("Frame preview page out of range");
+  const source = path(id, timeline.file), info = await stat(source);
+  const signature = createHash("sha256").update(`${source}:${info.size}:${info.mtimeMs}:192x108-v1`).digest("hex").slice(0, 24);
+  const key = `${source}:${signature}:${page}`;
+  let pending = videoPreviewPages.get(key);
+  if (!pending) {
+    pending = (async () => {
+      const count = Math.min(12, timeline.times.length - firstFrame), columns = Math.min(6, count), rows = Math.ceil(count / columns);
+      const sheet = `out/video-frame-previews/${signature}-${page}.png`, target = path(id, sheet);
+      if (!await stat(target).then(value => value.size > 0, () => false)) {
+        // Select by decoder frame index, never resample by FPS: VFR thumbnails
+        // must represent the exact same source frame as the timeline and player.
+        const { stdout } = await runFfmpeg(["-v", "error", "-i", source, "-map", "0:v:0", "-an", "-sn", "-vf",
+          `select='between(n,${firstFrame},${firstFrame + count - 1})',scale=192:108:force_original_aspect_ratio=decrease,pad=192:108:(ow-iw)/2:(oh-ih)/2,tile=${columns}x${rows}:nb_frames=${count}`,
+          "-frames:v", "1", "-fps_mode", "vfr", "-c:v", "png", "-f", "image2pipe", "pipe:1"], 60000);
+        if (!stdout.length) throw new Error("无法生成帧预览");
+        await mkdir(path(id, "out/video-frame-previews"), { recursive: true });
+        const temporary = `${target}.${randomUUID()}.tmp`;
+        try { await writeFile(temporary, stdout); await rename(temporary, target); }
+        finally { await rm(temporary, { force: true }).catch(() => {}); }
+      }
+      return { kind: "video-frame-previews", file: timeline.file, page, firstFrame, count, columns, rows, sheet, width: 192, height: 108 };
+    })().catch(error => { videoPreviewPages.delete(key); throw error; });
+    videoPreviewPages.set(key, pending);
+    if (videoPreviewPages.size > 16) videoPreviewPages.delete(videoPreviewPages.keys().next().value!);
+  }
+  return pending;
+}
 const file = (id: string) => path(id, "job.json");
 const save = async (job: MotionJob) => {
   job.updatedAt = Date.now();
@@ -216,11 +361,13 @@ export async function createMotionJob(name = ""): Promise<MotionJob> {
   for (const sub of MOTION_DIRS)
     await mkdir(path(id, sub), { recursive: true });
   const segments = [
-    { action: "walkfoward", start: 0, end: 2, frameCount: 12 },
-    { action: "runforward", start: 2, end: 4, frameCount: 12 },
+    { action: "", start: 0, end: 2, frameCount: 48, targetFps: 24 },
+    { action: "", start: 2, end: 4, frameCount: 48, targetFps: 24 },
   ];
   const job: MotionJob = {
     id,
+    composerVersion: 1, inputMode: "generate", reviewMode: "auto", processing: motionProcessing(),
+    promptTemplate: { id: "motion-video", lang: "zh", content: (await settings()).templates!.find(t => t.id === "motion-video")!.prompt.zh },
     name: name.trim().slice(0, 80) || "白模角色动画",
     updatedAt: Date.now(),
     revision: 1,
@@ -231,13 +378,13 @@ export async function createMotionJob(name = ""): Promise<MotionJob> {
     rangesConfirmed: false,
     frames: [],
   };
-  job.prompt = await defaultMotionPrompt(job);
   await save(job);
   return job;
 }
 async function validateSegments(
   values: Segment[],
   reference: boolean,
+  allowBlank = false,
 ): Promise<Segment[]> {
   if (!Array.isArray(values) || values.length < 2 || values.length > 3)
     throw new Error("4秒视频只允许2或3种动作");
@@ -245,17 +392,14 @@ async function validateSegments(
   const keys = new Set<string>();
   const segments = values.map((value) => {
     if (
-      !catalog.actions.some((a) => a.key === value.action) ||
-      keys.has(value.action)
+      !(allowBlank && value.action === "") && (!catalog.actions.some((a) => a.key === value.action) || keys.has(value.action))
     )
       throw new Error("Unknown or duplicate motion template");
-    keys.add(value.action);
+    if (value.action) keys.add(value.action);
     const start = number(value.start, 0, 120),
       end = number(value.end, 0, 120),
-      frameCount = number(value.frameCount, 4, 24);
-    if (end - start < 0.2 || !Number.isInteger(frameCount))
-      throw new Error("Invalid action interval or frame count");
-    return { action: value.action, start, end, frameCount };
+      sampling = motionSampling({ ...value, start, end });
+    return { action: value.action, start, end, ...sampling };
   });
   for (let i = 1; i < segments.length; i++)
     if (segments[i].start < segments[i - 1].end - 1e-6)
@@ -295,15 +439,38 @@ function assertEditable(job: MotionJob): void {
 function invalidate(job: MotionJob, reference: boolean): void {
   if (reference) job.prepared = undefined;
   job.video = undefined;
-  job.frames = [];
+  job.frames = []; job.validFrameRanges = undefined; job.redrawTargets = undefined;
   job.archive = undefined;
   job.rangesConfirmed = false;
   job.revision++;
 }
 export async function saveMotionJob(id: string, input: any): Promise<void> {
   await exclusive(id, async (job) => {
+    rememberLocalArtifacts(job);
     assertEditable(job);
+    if (input.reviewMode !== undefined) {
+      if (!["auto", "manual"].includes(input.reviewMode)) throw new Error("Invalid review mode");
+      job.reviewMode = input.reviewMode;
+    }
+    if (input.videoModel !== undefined) {
+      if (input.videoModel !== "" && !motionVideoModels().some(item => item.id === input.videoModel)) throw new Error("当前模型不支持4秒参考视频");
+      job.videoModel = input.videoModel;
+    }
     const oldDefault = await defaultMotionPrompt(job);
+    if (input.composerVersion === 1) job.composerVersion = 1;
+    if (input.inputMode !== undefined) {
+      if (!["generate", "video"].includes(input.inputMode)) throw new Error("Invalid input mode");
+      job.inputMode = input.inputMode;
+    }
+    if (input.processing !== undefined) {
+      const next = motionProcessing(input.processing);
+      if (next.keyColor !== motionProcessing(job.processing).keyColor) job.prepared = undefined;
+      job.processing = next;
+    }
+    if (input.promptTemplate !== undefined) {
+      if (typeof input.promptTemplate.content !== "string" || input.promptTemplate.content.length > 6000) throw new Error("Invalid prompt template");
+      job.promptTemplate = { id: String(input.promptTemplate.id).slice(0, 64), lang: input.promptTemplate.lang === "en" ? "en" : "zh", content: input.promptTemplate.content };
+    }
     let referenceChanged = false,
       videoChanged = false;
     if (input.name !== undefined)
@@ -316,7 +483,7 @@ export async function saveMotionJob(id: string, input: any): Promise<void> {
       videoChanged = true;
     }
     if (input.segments !== undefined) {
-      const next = await validateSegments(input.segments, true);
+      const next = await validateSegments(input.segments, true, true);
       if (JSON.stringify(next) !== JSON.stringify(job.segments)) {
         job.segments = next;
         job.ranges = structuredClone(next);
@@ -328,29 +495,51 @@ export async function saveMotionJob(id: string, input: any): Promise<void> {
       videoChanged = true;
     }
     if (referenceChanged || videoChanged) invalidate(job, referenceChanged);
-    if ((referenceChanged || videoChanged) && job.prompt === oldDefault)
+    if (!job.composerVersion && (referenceChanged || videoChanged) && job.prompt === oldDefault)
       job.prompt = await defaultMotionPrompt(job);
     if (input.ranges !== undefined) {
-      const ranges = await validateSegments(input.ranges, false);
-      if (
+      const videoClip = job.inputMode === "video" && input.ranges.length === 1 && input.ranges[0]?.action === "video";
+      const ranges = videoClip ? [{ action: "video", ...motionVideoRange(job, input.ranges[0]) }] : await validateSegments(input.ranges, false, true);
+      if (!videoClip && (
         ranges.some((s, i) => s.action !== job.segments[i]?.action) ||
         ranges.length !== job.segments.length
-      )
+      ))
         throw new Error("Extract ranges must match selected actions");
       if (
-        job.video?.duration &&
-        ranges.some((s) => s.end > job.video!.duration! + 0.001)
+        (job.inputMode === "video" ? job.sourceVideo?.duration || job.video?.duration : job.video?.duration) &&
+        ranges.some((s) => s.end > (job.inputMode === "video" ? job.sourceVideo?.duration || job.video!.duration! : job.video!.duration!) + 0.001)
       )
         throw new Error("Range exceeds actual video duration");
       if (JSON.stringify(ranges) !== JSON.stringify(job.ranges)) {
         job.ranges = ranges;
-        job.frames = [];
+        job.frames = []; job.validFrameRanges = undefined; job.redrawTargets = undefined;
         job.archive = undefined;
         job.rangesConfirmed = false;
       }
     }
     if (input.rangesConfirmed !== undefined)
       job.rangesConfirmed = input.rangesConfirmed === true;
+    if (input.videoRange !== undefined) job.videoRange = motionVideoRange(job, input.videoRange);
+    if (input.validFrameRanges !== undefined) {
+      if (!input.validFrameRanges || typeof input.validFrameRanges !== "object" || Array.isArray(input.validFrameRanges)) throw new Error("Invalid frame ranges");
+      const groups = new Map<string, Frame[]>();
+      for (const frame of job.frames) {
+        const key = motionFrameRangeKey(frame);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(frame);
+      }
+      const next: Record<string, ValidFrameRange> = {};
+      for (const [key, raw] of Object.entries(input.validFrameRanges).slice(0, 256)) {
+        const frames = groups.get(key);
+        if (!frames?.length || !raw || typeof raw !== "object") continue;
+        const values = raw as any;
+        const start = Number(values.start), end = Number(values.end);
+        if (!Number.isInteger(start) || !Number.isInteger(end)) continue;
+        const min = Math.min(...frames.map(frame => frame.index)), max = Math.max(...frames.map(frame => frame.index));
+        next[key] = { start: Math.max(min, Math.min(max, Math.min(start, end))), end: Math.max(min, Math.min(max, Math.max(start, end))) };
+      }
+      job.validFrameRanges = Object.keys(next).length ? next : undefined;
+    }
     await save(job);
   });
 }
@@ -443,6 +632,12 @@ export async function uploadMotionAsset(
       await save(job);
       return;
     }
+    if (["remove-character", "remove-directions", "remove-video"].includes(kind)) {
+      assertEditable(job);
+      if (kind === "remove-video") { job.sourceVideo = undefined; job.videoRange = undefined; job.inputMode = "generate"; invalidate(job, false); }
+      else { job[kind.slice(7)] = undefined; invalidate(job, true); }
+      await save(job); return;
+    }
     if (!["character", "directions", "video"].includes(kind))
       throw new Error("Invalid asset role");
     if (kind !== "video") assertEditable(job);
@@ -458,6 +653,8 @@ export async function uploadMotionAsset(
       if (Math.abs(size.width / size.height - 1.8) > 0.04)
         throw new Error("需要四列两行的16:9八方向视频");
       const duration = await probeDuration(path(id, relative));
+      job.sourceVideo = { file: relative, duration }; job.inputMode = "video";
+      job.videoRange = { start: 0, end: duration, frameCount: Math.max(1, Math.round(duration * 24)), targetFps: 24 };
       job.video = {
         status: "ready",
         file: relative,
@@ -465,7 +662,7 @@ export async function uploadMotionAsset(
         endpoint: "",
         duration,
       };
-      job.frames = [];
+      job.frames = []; job.validFrameRanges = undefined; job.redrawTargets = undefined;
       job.archive = undefined;
       job.rangesConfirmed = false;
     } else {
@@ -478,7 +675,7 @@ export async function uploadMotionAsset(
 
 const settingsFile = () => join(dataRoot(), "motion-settings.json");
 async function settings(): Promise<MotionSettings> {
-  return {
+  const value = {
     baseUrl: "http://127.0.0.1:11434/v1",
     model: "",
     apiKey: "",
@@ -486,6 +683,7 @@ async function settings(): Promise<MotionSettings> {
     imageRate: 0,
     ...(await readJson<Partial<MotionSettings>>(settingsFile())),
   };
+  return { ...value, templates: templatesOfType((await loadConfig()).promptTemplates, "video") };
 }
 export async function motionSettings(input: any = {}): Promise<any> {
   const value = await settings();
@@ -509,10 +707,15 @@ export async function motionSettings(input: any = {}): Promise<any> {
       value.videoRate = number(input.videoRate, 0, 1000);
     if (input.imageRate !== undefined)
       value.imageRate = number(input.imageRate, 0, 1000);
-    await writeJsonAtomic(settingsFile(), value);
+    if (input.templates !== undefined) {
+      const saved = await saveConfig({ promptTemplateEdit: { type: "video", templates: validateMotionTemplates(input.templates) } });
+      value.templates = templatesOfType(saved.promptTemplates, "video");
+    } else await saveConfig({}); // Persist migrated templates before removing the legacy copy.
+    const { templates: _, ...modelSettings } = value;
+    await writeJsonAtomic(settingsFile(), modelSettings);
   }
   const { apiKey, ...publicValue } = value;
-  return { ...publicValue, apiKeySet: apiKey !== "" };
+  return { ...publicValue, templateDefaults: MOTION_PROMPT_TEMPLATES, apiKeySet: apiKey !== "" };
 }
 export async function motionView(id: string): Promise<any> {
   // The operation can finish while the job/config files are being read. Keep
@@ -521,9 +724,10 @@ export async function motionView(id: string): Promise<any> {
   const job = await readMotion(id),
     config = await loadConfig(),
     prices = await settings();
-  const pending = job.frames.filter((f) => f.redraw?.status !== "ready").length;
+  const pending = motionValidFrames(job).filter((f) => f.redraw?.status !== "ready").length;
   return {
     ...job,
+    processing: motionProcessing(job.processing), finalPrompt: await composeMotionPrompt(job),
     templates: (await motionCatalog()).actions,
     costs: {
       video: prices.videoRate * 8,
@@ -534,6 +738,8 @@ export async function motionView(id: string): Promise<any> {
       estimateOnly: true,
     },
     videoBackend: videoBackendOf(config),
+    videoModels: motionVideoModels(),
+    videoConfig: (() => { try { return job.workflowParent && job.videoGeneration || motionVideoSelection(job, config); } catch (error) { return { model: job.videoModel || config.minimaxModel, blocker: (error as Error).message }; } })(),
     imageProvider: config.imageProvider,
     imageModel:
       config.imageProvider === "custom" ? config.customModel : config.arkModel,
@@ -546,15 +752,74 @@ async function defaultMotionPrompt(job: MotionJob): Promise<string> {
   const timeline = job.segments
     .map(
       (s) =>
-        `${s.start}–${s.end}秒：${catalog.actions.find((a) => a.key === s.action).name}`,
+        `${s.start}–${s.end}秒：${catalog.actions.find((a) => a.key === s.action)?.name || "请选择动作"}`,
     )
     .join("；");
   return `将参考视频的灰白人物替换成参考图片中的同一个角色。参考视频只决定动作、时间顺序、八格布局和朝向；角色图片只决定外观、服装、配色和画风。\n时间顺序：${timeline}。严格跟随各段参考姿势，短动作按参考重复，不新增动作、不漏动作、不混合前后两段。\n四列两行：上排北、东北、东、东南；下排南、西南、西、西北。每格一个完整人物，全程保持各自朝向，禁止转身、串格、合并或消失。固定相机、人物大小和格内位置。角色完整露出头脚，不复制白模的拳套和短裤。\n角色说明：${job.description || "保持角色参考图的全部外观特征"}\n背景及格间空隙全程纯品红#FF00FF，无地面、阴影、边框、文字、特效、镜头切换或缩放。`;
 }
+export async function composeMotionPrompt(job: MotionJob): Promise<string> {
+  if (!job.composerVersion) return job.prompt;
+  const catalog = await motionCatalog();
+  const values = { timeline: job.segments.map(s => `${s.start}–${s.end}s: ${catalog.actions.find(a => a.key === s.action)?.name || "…"}`).join("; "),
+    description: job.description || (job.promptTemplate?.lang === "en" ? "Keep the appearance in the reference images" : "保持角色参考图的全部外观特征"), keyColor: motionProcessing(job.processing).keyColor };
+  const body = job.promptTemplate?.content ?? MOTION_PROMPT_TEMPLATES[0].prompt.zh;
+  return [body.replace(/\{\{(timeline|description|keyColor)\}\}/g, (_, key) => values[key]), job.prompt.trim()].filter(Boolean).join("\n\n");
+}
+/** Read-only draft preview, using the same assembly as video submission. Never saves or prepares media. */
+export async function motionPromptContext(id: string, input: any): Promise<any> {
+  const job = structuredClone(await readMotion(id));
+  if (typeof input.prompt !== "string" || input.prompt.length > 12000) throw new Error("Invalid motion prompt");
+  job.prompt = input.prompt;
+  if (input.description !== undefined) job.description = String(input.description).slice(0, 8000);
+  if (input.segments !== undefined) job.segments = await validateSegments(input.segments, true, true);
+  if (input.processing !== undefined) job.processing = motionProcessing(input.processing);
+  if (input.promptTemplate !== undefined) {
+    if (typeof input.promptTemplate.content !== "string" || input.promptTemplate.content.length > 6000) throw new Error("Invalid prompt template");
+    job.promptTemplate = { id: String(input.promptTemplate.id).slice(0, 64), lang: input.promptTemplate.lang === "en" ? "en" : "zh", content: input.promptTemplate.content };
+  }
+  if (input.composerVersion === 1) job.composerVersion = 1;
+  const en = job.promptTemplate?.lang === "en";
+  const references = [[job.character, en ? "Character details" : "角色细节参考图"], [job.directions, en ? "Eight-direction appearance (4×2)" : "八方向外观图（四列两行）"]]
+    .filter(([file]) => !!file).map(([file, name], i) => ({ file, name, label: `@图片${i + 1}` }));
+  const labels = [...job.prompt.matchAll(/@图片\d+/g)].map(match => match[0]);
+  if (labels.some(label => !references.some(ref => ref.label === label))) throw new Error("引用的图片不存在，请重新选择参考图。");
+  const finalPrompt = await composeMotionPrompt(job);
+  const suffix = await composeMotionPrompt({ ...job, prompt: "" });
+  return { prompt: finalPrompt, suffix, references, background: { enabled: motionProcessing(job.processing).key, keyColor: motionProcessing(job.processing).keyColor,
+    instruction: "The template supplies the exact uniform background; do not alter it." },
+    context: { description: job.description, segments: job.segments, duration: 4, layout: "4 columns × 2 rows: N, NE, E, SE / S, SW, W, NW", keyColor: motionProcessing(job.processing).keyColor } };
+}
+export function motionSampling(value: { start: number; end: number; frameCount: number; targetFps?: number }) {
+  const duration = value.end - value.start;
+  if (!Number.isFinite(duration) || duration < .2) throw new Error("Invalid action interval or frame count");
+  if (value.targetFps !== undefined && (!Number.isInteger(value.targetFps) || value.targetFps < 1 || value.targetFps > 60)) throw new Error("目标帧率必须为1–60 FPS");
+  const frameCount = value.targetFps === undefined ? value.frameCount : Math.max(1, Math.round(duration * value.targetFps));
+  if (!Number.isInteger(frameCount) || frameCount < 1) throw new Error("Invalid action interval or frame count");
+  if (frameCount > 720) throw new Error("单段最多720帧，请缩短范围或降低目标帧率。");
+  return { frameCount, ...(value.targetFps === undefined ? {} : { targetFps: value.targetFps }) };
+}
+export function motionVideoRange(job: MotionJob, value = job.videoRange) {
+  const duration = job.sourceVideo?.duration ?? job.video?.duration ?? 0;
+  const range = value || { start: 0, end: duration, frameCount: 24 };
+  if (!Number.isFinite(duration) || duration < .2 || !Number.isFinite(range.start) || !Number.isFinite(range.end) || range.start < 0 || range.end - range.start < .2 || range.end > duration + .001 || !Number.isInteger(range.frameCount) || range.frameCount < 1) throw new Error("Invalid video range or frame count");
+  return { start: range.start, end: range.end, ...motionSampling(range) };
+}
+export async function validateMotionSubmission(job: MotionJob, localOnly: boolean): Promise<void> {
+  if (localOnly) {
+    if (!job.sourceVideo?.file && !job.video?.file) throw new Error("请先导入视频");
+    motionVideoRange(job);
+  } else {
+    await validateSegments(job.segments, true);
+    if (!job.character || !job.directions) throw new Error("请先提供角色图和八方向外观图");
+  }
+}
 function signature(job: MotionJob): string {
   return createHash("sha256")
-    .update(JSON.stringify([job.segments, job.character, job.directions]))
+    .update(JSON.stringify([job.segments, job.character, job.directions, motionProcessing(job.processing).keyColor]))
     .digest("hex");
+}
+export function motionPreparedCurrent(job: MotionJob): boolean {
+  return !!job.prepared && job.prepared.signature === signature(job);
 }
 function blit(
   source: Buffer,
@@ -622,13 +887,10 @@ function matte(rgba: Buffer, w: number, h: number): Buffer {
     edgeShrink: 0,
   }).rgba;
 }
-async function prepare(job: MotionJob): Promise<void> {
-  if (!job.character || !job.directions)
-    throw new Error("请上传角色细节图和四列两行八方向外观图");
-  const size = await probeSize(path(job.id, job.directions));
-  if (Math.abs(size.width / size.height - 1.8) > 0.04)
-    throw new Error("八方向外观图需为四列两行16:9布局");
+async function renderMotionReference(job: MotionJob): Promise<NonNullable<MotionJob["prepared"]>> {
+  await validateSegments(job.segments, true);
   const dir = `prepared/${token()}`;
+  const background = motionProcessing(job.processing).keyColor.match(/[a-f0-9]{2}/gi)!.map(v => parseInt(v, 16));
   await mkdir(path(job.id, dir), { recursive: true });
   const catalog = await motionCatalog();
   const sources = new Map<string, { raw: Buffer; spec: any }>();
@@ -666,8 +928,7 @@ async function prepare(job: MotionJob): Promise<void> {
     }
     const canvas = Buffer.alloc(864 * 480 * 4);
     for (let p = 0; p < canvas.length; p += 4) {
-      canvas[p] = 255;
-      canvas[p + 2] = 255;
+      canvas[p] = background[0]; canvas[p + 1] = background[1]; canvas[p + 2] = background[2];
       canvas[p + 3] = 255;
     }
     for (let d = 0; d < 8; d++) {
@@ -717,14 +978,34 @@ async function prepare(job: MotionJob): Promise<void> {
     "+faststart",
     path(job.id, video),
   ]);
-  job.prepared = { video, first: `${dir}/f000.png`, signature: signature(job) };
+  return { video, first: `${dir}/f000.png`, signature: signature(job) };
+}
+/** Preview only the unsaved action draft; never changes the job or submits to a provider. */
+export async function previewMotionReference(id: string, input: { segments: Segment[]; keyColor: string }) {
+  if ((await loadConfig()).hiddenModules.includes("sprite")) throw new Error("Module disabled");
+  return exclusive(id, async saved => {
+    const job = structuredClone(saved);
+    job.segments = await validateSegments(input.segments, true);
+    job.processing = motionProcessing({ ...job.processing, keyColor: input.keyColor });
+    return { ...await renderMotionReference(job), duration: 4, width: 864, height: 480 };
+  });
+}
+async function prepare(job: MotionJob): Promise<void> {
+  await validateSegments(job.segments, true);
+  if (!job.character || !job.directions)
+    throw new Error("请上传角色细节图和四列两行八方向外观图");
+  // Reference images describe appearance; four columns/two rows do not imply
+  // a particular image aspect ratio. Only the rendered/output video has a
+  // fixed canvas. Keep the uploaded reference intact instead of stretching it.
+  await probeSize(path(job.id, job.directions));
+  job.prepared = await renderMotionReference(job);
   await save(job);
 }
 async function buildPrompt(job: MotionJob, useModel: boolean): Promise<void> {
   assertEditable(job);
   const base = await defaultMotionPrompt(job);
   if (!useModel) {
-    job.prompt = base;
+    if (!job.composerVersion) job.prompt = base;
     invalidate(job, false);
     await save(job);
     return;
@@ -763,7 +1044,8 @@ async function buildPrompt(job: MotionJob, useModel: boolean): Promise<void> {
   const text = payload?.choices?.[0]?.message?.content;
   if (typeof text !== "string" || !text.trim())
     throw new Error("文字模型未返回提示词");
-  job.prompt = base + `\n角色约束补充：${text.trim().slice(0, 6000)}`;
+  if (job.composerVersion) job.description = text.trim().slice(0, 6000);
+  else job.prompt = base + `\n角色约束补充：${text.trim().slice(0, 6000)}`;
   invalidate(job, false);
   await save(job);
 }
@@ -772,6 +1054,7 @@ async function submit(
   confirmed: boolean,
   regenerate: boolean,
 ): Promise<void> {
+  await validateMotionSubmission(job, false);
   if (!confirmed) throw new Error("请确认本次视频生成费用");
   if (
     job.video &&
@@ -781,34 +1064,23 @@ async function submit(
   if (job.video && !regenerate) throw new Error("已有视频，请显式选择重新生成");
   if (!job.prepared || job.prepared.signature !== signature(job))
     throw new Error("请先准备并查看白模参考视频");
-  if (!job.prompt.trim()) throw new Error("请先查看并保存提示词");
-  const config = await loadConfig();
-  if (videoBackendOf(config) !== "minimax")
-    throw new Error(
-      "此白模流程需要支持参考视频的MiniMax后端；当前ComfyUI/ToAPIs工作流不能保证传入参考视频",
-    );
+  const finalPrompt = await composeMotionPrompt(job);
+  if (!finalPrompt.trim()) throw new Error("请先查看并保存提示词");
+  const config = motionVideoConfig(job, await loadConfig());
   assertVideoBackendReady(config);
-  if (
-    capabilityOf(config.minimaxModel).protocol !== "v2" ||
-    normalizeDuration(config.minimaxModel, 4) !== 4 ||
-    normalizeResolution(config.minimaxModel, "480P") !== "480P"
-  )
-    throw new Error(
-      "当前视频模型不支持本流程的4秒480P多模态参考，请在设置选择MiniMax-H3-Lite",
-    );
   if (!config.minimaxApiKey.trim())
     throw new Error("请先在设置填写MiniMax API Key");
   const request = {
-    prompt: job.prompt,
+    prompt: finalPrompt,
     referenceImages: [
-      await imageUri(job.id, job.directions!),
       await imageUri(job.id, job.character!),
+      await imageUri(job.id, job.directions!),
     ],
     referenceVideos: [
       await toDataUri(path(job.id, job.prepared.video), "video/mp4"),
     ],
     duration: 4,
-    resolution: "480P",
+    resolution: config.minimaxResolution,
     promptOptimizer: false,
     model: config.minimaxModel,
     ratio: "16:9",
@@ -818,7 +1090,7 @@ async function submit(
     model: config.minimaxModel,
     endpoint: config.minimaxBaseUrl,
   };
-  job.frames = [];
+  job.frames = []; job.validFrameRanges = undefined; job.redrawTargets = undefined;
   job.archive = undefined;
   job.rangesConfirmed = false;
   await save(job);
@@ -909,12 +1181,27 @@ function schedulePoll(id: string): void {
   timer.unref();
   pollTimers.set(id, timer);
 }
+/** Sample the video's actual background, not the synthetic 512px canvas border. */
+function keyMotionCanvas(canvas: Buffer, processing: MotionProcessing): Buffer {
+  const cell = crop(canvas, 512, 40, 16, 432, 480);
+  const keyed = keyGreen(cell, 432, 480, { ...DEFAULT_KEY_OPTIONS, ...processing, refineEdges: true }).rgba;
+  const output = Buffer.alloc(512 * 512 * 4);
+  blit(keyed, 432, 480, output, 512, 512, 40, 16);
+  return output;
+}
 async function extract(job: MotionJob): Promise<void> {
   if (job.video?.status !== "ready" || !job.video.file)
     throw new Error("请先生成或导入视频");
   if (!job.rangesConfirmed)
     throw new Error("请观看视频、调整动作分段后确认抽帧范围");
   const duration = await probeDuration(path(job.id, job.video.file));
+  const size = await probeSize(path(job.id, job.video.file));
+  // Keep native per-cell detail up to the output content size. In particular,
+  // 768P video must not be reduced to 480P before cutting its eight cells.
+  const width = Math.min(1728, Math.max(4, Math.floor(size.width / 4) * 4));
+  const height = Math.min(960, Math.max(2, Math.floor(size.height / 2) * 2));
+  const cellWidth = width / 4, cellHeight = height / 2;
+  const processing = motionProcessing(job.processing), color = processing.keyColor.match(/[a-f0-9]{2}/gi)!.map(v => parseInt(v, 16));
   const dir = `frames/${token()}`;
   await mkdir(path(job.id, dir), { recursive: true });
   const frames: Frame[] = [];
@@ -922,40 +1209,49 @@ async function extract(job: MotionJob): Promise<void> {
     checkStopped(job.id);
     if (seg.end > duration + 0.001) throw new Error("抽帧范围超出实际视频时长");
     const n = seg.frameCount;
+    // Limit raw-video memory even when a range contains hundreds of frames.
+    // Keep one sampling origin: seeking anew at each batch changes fps rounding
+    // when the source and target rates differ. Trim after fps, then scale only
+    // the selected batch so its pixels match a single uninterrupted extraction.
+    for (let batch = 0; batch < n; batch += 12) {
+    checkStopped(job.id);
+    const batchCount = Math.min(12, n - batch);
     const { stdout } = await runFfmpeg([
       "-ss",
       String(seg.start),
       "-i",
       path(job.id, job.video.file),
       "-t",
-      String(seg.end - seg.start),
+      String(batchCount * (seg.end - seg.start) / n),
       "-vf",
-      `scale=864:480:flags=lanczos,fps=${n / (seg.end - seg.start)},format=rgba`,
+      `fps=${n / (seg.end - seg.start)},trim=start_frame=${batch}:end_frame=${batch + batchCount},setpts=PTS-STARTPTS,scale=${width}:${height}:flags=lanczos,format=rgba`,
       "-frames:v",
-      String(n),
+      String(batchCount),
       "-f",
       "rawvideo",
       "-pix_fmt",
       "rgba",
       "-",
     ]);
-    if (stdout.length !== n * 864 * 480 * 4)
+    if (stdout.length !== batchCount * width * height * 4)
       throw new Error("抽帧数量不完整，请调整动作范围");
-    for (let i = 0; i < n; i++)
+    for (let j = 0; j < batchCount; j++)
       for (let d = 0; d < 8; d++) {
-        const raw = crop(
-          stdout.subarray(i * 864 * 480 * 4, (i + 1) * 864 * 480 * 4),
-          864,
-          (d % 4) * 216,
-          Math.floor(d / 4) * 240,
-          216,
-          240,
+        const i = batch + j;
+        let raw = crop(
+          stdout.subarray(j * width * height * 4, (j + 1) * width * height * 4),
+          width,
+          (d % 4) * cellWidth,
+          Math.floor(d / 4) * cellHeight,
+          cellWidth,
+          cellHeight,
         );
-        const cell = resize(raw, 216, 240, 432, 480),
+        const inset = Math.round(processing.cropInset * cellWidth);
+        if (inset) raw = resize(crop(raw, cellWidth, inset, inset, cellWidth - inset * 2, cellHeight - inset * 2), cellWidth - inset * 2, cellHeight - inset * 2, cellWidth, cellHeight);
+        const cell = resize(raw, cellWidth, cellHeight, 432, 480),
           canvas = Buffer.alloc(512 * 512 * 4);
         for (let p = 0; p < canvas.length; p += 4) {
-          canvas[p] = 255;
-          canvas[p + 2] = 255;
+          canvas[p] = color[0]; canvas[p + 1] = color[1]; canvas[p + 2] = color[2];
           canvas[p + 3] = 255;
         }
         blit(cell, 432, 480, canvas, 512, 512, 40, 16);
@@ -965,7 +1261,7 @@ async function extract(job: MotionJob): Promise<void> {
         await writeFile(path(job.id, target), encodePng(canvas, 512, 512));
         await writeFile(
           path(job.id, keyed),
-          encodePng(matte(canvas, 512, 512), 512, 512),
+          encodePng(processing.key ? keyMotionCanvas(canvas, processing) : canvas, 512, 512),
         );
         frames.push({
           id: key,
@@ -977,190 +1273,179 @@ async function extract(job: MotionJob): Promise<void> {
           keyed,
         });
       }
+    }
   }
-  job.frames = frames;
+  job.frames = frames; job.validFrameRanges = undefined; job.redrawTargets = undefined;
   job.archive = undefined;
+  job.localArtifacts = { raw: localRawSignature(job), keyed: processing.key ? localKeySignature(job, processing) : null, archive: null };
   await save(job);
 }
-function head(rgba: Buffer): number[] {
-  let top = 512,
-    bottom = 0;
-  for (let y = 0; y < 512; y++)
-    for (let x = 0; x < 512; x++)
-      if (rgba[(y * 512 + x) * 4 + 3] > 127) {
-        top = Math.min(top, y);
-        bottom = Math.max(bottom, y);
-      }
-  let sx = 0,
-    sy = 0,
-    n = 0;
-  for (let y = top; y < top + (bottom - top) * 0.4; y++)
-    for (let x = 0; x < 512; x++)
-      if (rgba[(y * 512 + x) * 4 + 3] > 127) {
-        sx += x;
-        sy += y;
-        n++;
-      }
-  return n ? [sx / n, sy / n] : [256, 128];
+async function rekey(job: MotionJob): Promise<void> {
+  if (!job.frames.length) throw new Error("请先抽帧");
+  const processing = motionProcessing(job.processing), dir = `frames/${token()}`;
+  await mkdir(path(job.id, dir), { recursive: true });
+  for (const frame of job.frames) {
+    checkStopped(job.id);
+    const decoded = await decodeToRgba(path(job.id, frame.target));
+    const keyed = `${dir}/${frame.id}.png`;
+    await writeFile(path(job.id, keyed), encodePng(keyMotionCanvas(decoded.rgba, processing), 512, 512));
+    frame.keyed = keyed;
+  }
+  job.processing = { ...processing, key: true }; job.archive = undefined;
+  job.localArtifacts = { ...job.localArtifacts, keyed: localKeySignature(job, processing), archive: null }; await save(job);
 }
-async function redraw(
-  job: MotionJob,
-  targets: string[],
-  confirmed: boolean,
-  regenerate: boolean,
-): Promise<void> {
+/** Read-only request plan, also used by execution. Sampled frames are ordered
+ * within each action/direction; a group never mixes actions or directions. */
+export function motionRedrawPlan(job: Pick<MotionJob, "frames" | "validFrameRanges">, targets: string[], scheme: "frame" | "sheet" | "sheet8" = "frame", regenerate = false) {
+  if (!["frame", "sheet", "sheet8"].includes(scheme)) throw new Error("Unknown redraw scheme");
+  if (!targets?.length || targets.length > 17280 || new Set(targets).size !== targets.length) throw new Error("请选择需要重绘的帧");
+  const frames = new Map(job.frames.map(f => [f.id, f]));
+  const selected = targets.map(id => frames.get(id));
+  if (selected.some(f => !f)) throw new Error("Unknown frame selection");
+  const validSelected = (selected as Frame[]).filter(frame => motionFrameIsValid(job, frame));
+  if (!validSelected.length) throw new Error("请选择至少一张有效帧");
+  const pending = validSelected.filter(f => regenerate || f.redraw?.status !== "ready" || !f.redraw.file);
+  const buckets = new Map<string, Frame[]>();
+  for (const frame of pending) {
+    const key = JSON.stringify([frame.action, frame.direction]);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key)!.push(frame);
+  }
+  const groups: string[][] = [];
+  for (const values of buckets.values()) {
+    values.sort((a, b) => a.index - b.index);
+    let group: Frame[] = [];
+    for (const frame of values) {
+      if (group.length === (scheme === "sheet8" ? 8 : scheme === "sheet" ? 4 : 1)) { groups.push(group.map(f => f.id)); group = []; }
+      group.push(frame);
+    }
+    if (group.length) groups.push(group.map(f => f.id));
+  }
+  return { scheme, targets: validSelected.map(frame => frame.id), selectionCount: validSelected.length, frameCount: pending.length, requestCount: groups.length, groups,
+    unknownCount: regenerate ? 0 : pending.filter(f => !!f.redraw?.status).length };
+}
+function redrawMask(src: Buffer): Buffer {
+  let alpha = Uint8Array.from({ length: 512 * 512 }, (_, i) => src[i * 4 + 3] > 127 ? 1 : 0);
+  for (let step = 0; step < 3; step++) {
+    const out = new Uint8Array(alpha.length);
+    for (let y = 1; y < 511; y++) for (let x = 1; x < 511; x++) {
+      const p = y * 512 + x;
+      out[p] = alpha[p] & alpha[p - 1] & alpha[p + 1] & alpha[p - 512] & alpha[p + 512];
+    }
+    alpha = out;
+  }
+  const mask = Buffer.alloc(512 * 512 * 4, 255);
+  for (let p = 0; p < alpha.length; p++) mask[p * 4 + 3] = alpha[p] ? 0 : 255;
+  return mask;
+}
+async function redraw(job: MotionJob, targets: string[], confirmed: boolean, regenerate: boolean, scheme: "frame" | "sheet" | "sheet8" = "frame"): Promise<void> {
   if (!confirmed) throw new Error("请确认高清重绘的图片调用数量和费用");
-  if (
-    !targets?.length ||
-    targets.length > 576 ||
-    new Set(targets).size !== targets.length
-  )
-    throw new Error("请选择需要重绘的帧");
-  const selected = targets.map((id) => job.frames.find((f) => f.id === id));
-  if (selected.some((f) => !f)) throw new Error("Unknown frame selection");
+  const plan = motionRedrawPlan(job, targets, scheme, regenerate);
+  if (plan.unknownCount) throw new Error("存在结果未知的图片请求，请检查后显式重新生成选中帧");
+  job.redrawTargets = [...plan.targets];
+  if (!plan.requestCount) { await save(job); return; }
   const config = await loadConfig();
-  if (config.imageProvider !== "custom" || config.customProtocol !== "openai")
-    throw new Error(
-      "本轮验证的高清重绘需要自定义OpenAI兼容images/edits后端，请先在设置配置",
-    );
+  if (config.imageProvider !== "custom" || config.customProtocol !== "openai") throw new Error("高清重绘需要自定义OpenAI兼容images/edits后端，请先在设置配置");
   if (!job.character) throw new Error("请上传角色细节图");
-  if (
-    selected.some((f) => f!.redraw?.status && f!.redraw.status !== "ready") &&
-    !regenerate
-  )
-    throw new Error("存在结果未知的图片请求，请检查后显式重新生成选中帧");
   const dir = `redraw/${token()}`;
   await mkdir(path(job.id, dir), { recursive: true });
-  for (const f of selected as Frame[]) {
-    checkStopped(job.id);
-    if (f.redraw?.status === "ready" && !regenerate) continue;
-    job.progress = `${(selected as Frame[]).indexOf(f) + 1}/${selected.length} · ${f.id}`;
-    await save(job);
-    const decoded = await decodeToRgba(path(job.id, f.target));
-    const rgba = resize(
-      decoded.rgba,
-      decoded.width,
-      decoded.height,
-      1024,
-      1024,
-    );
-    const src = await decodeToRgba(path(job.id, f.keyed));
-    let alpha = Uint8Array.from({ length: 512 * 512 }, (_, i) =>
-      src.rgba[i * 4 + 3] > 127 ? 1 : 0,
-    );
-    for (let step = 0; step < 3; step++) {
-      const out = new Uint8Array(alpha.length);
-      for (let y = 1; y < 511; y++)
-        for (let x = 1; x < 511; x++) {
-          const p = y * 512 + x;
-          out[p] =
-            alpha[p] &
-            alpha[p - 1] &
-            alpha[p + 1] &
-            alpha[p - 512] &
-            alpha[p + 512];
-        }
-      alpha = out;
-    }
-    const mask = Buffer.alloc(512 * 512 * 4, 255);
-    for (let p = 0; p < alpha.length; p++) mask[p * 4 + 3] = alpha[p] ? 0 : 255;
-    const prompt = `高清重绘图片1中的单个人物，保持图片1的朝向、身体姿势、手脚位置、人物大小与构图。图片2只提供角色身份、服装、配色与画风，不复制站立姿势。只补清晰细节，动作保持优先。${job.description}\n保持原轮廓附近的位置，不添加装备、阴影、地面、文字或特效，背景纯品红#FF00FF。`;
-    const promptFile = `${dir}/${f.id}-prompt.txt`;
-    await writeFile(path(job.id, promptFile), prompt);
-    const input = `${dir}/${f.id}-input.png`,
-      maskFile = `${dir}/${f.id}-mask.png`;
-    await writeFile(path(job.id, input), encodePng(rgba, 1024, 1024));
-    await writeFile(
-      path(job.id, maskFile),
-      encodePng(resize(mask, 512, 512, 1024, 1024), 1024, 1024),
-    );
-    f.redraw = { status: "attempted", prompt: promptFile };
-    job.archive = undefined;
-    await save(job);
-    try {
-      const result = await generateImageWithProvider({
-        prompt,
-        images: [
-          await imageUri(job.id, input),
-          await imageUri(job.id, job.character),
-        ],
-        mask: await imageUri(job.id, maskFile),
-        quality: "high",
-        size: "1024x1024",
-        watermark: false,
-      });
-      const raw = `${dir}/${f.id}-raw.${result.ext}`;
-      await writeFile(path(job.id, raw), result.bytes);
-      f.redraw.raw = raw;
-      await save(job);
-      const { stdout } = await runFfmpeg([
-        "-i",
-        path(job.id, raw),
-        "-vf",
-        "scale=512:512:flags=lanczos,format=rgba",
-        "-frames:v",
-        "1",
-        "-f",
-        "rawvideo",
-        "-pix_fmt",
-        "rgba",
-        "-",
-      ]);
-      if (stdout.length !== 512 * 512 * 4)
-        throw new Error("Invalid generated image");
-      const clean = matte(stdout, 512, 512);
-      let opaque = 0;
-      for (let p = 3; p < clean.length; p += 4) if (clean[p] > 127) opaque++;
-      if (opaque < 64)
-        throw new Error("重绘未得到可用人物，请检查保留的原始回图");
-      const a = head(src.rgba),
-        b = head(clean),
-        dx = Math.round(a[0] - b[0]),
-        dy = Math.round(a[1] - b[1]);
-      const aligned = Buffer.alloc(clean.length),
-        small = Math.abs(dx) <= 20 && Math.abs(dy) <= 20;
-      blit(clean, 512, 512, aligned, 512, 512, small ? dx : 0, small ? dy : 0);
-      const output = `${dir}/${f.id}.png`;
-      await writeFile(path(job.id, output), encodePng(aligned, 512, 512));
-      f.redraw = {
-        status: "ready",
-        file: output,
-        raw,
-        prompt: promptFile,
-        translation: small ? [dx, dy] : [0, 0],
-      };
-      await save(job);
-    } catch (error) {
-      f.redraw = {
-        ...f.redraw,
-        status: "unknown",
-        error:
-          "请求可能已计费；未自动重试。" +
-          redact(
-            String(error instanceof Error ? error.message : error),
-            config.customApiKey,
-          ),
-      };
-      await save(job);
-      throw new Error(f.redraw.error);
+  const processing = motionProcessing(job.processing), frames = new Map(job.frames.map(f => [f.id, f]));
+  const directionRefs = new Map<string, string>();
+  if (job.directions) {
+    const decoded = await decodeToRgba(path(job.id, job.directions));
+    const width = Math.floor(decoded.width / 4), height = Math.floor(decoded.height / 2);
+    for (const direction of new Set(plan.groups.map(ids => frames.get(ids[0])!.direction))) {
+      const d = MOTION_ORDER.indexOf(direction), file = `${dir}/${direction}-reference.png`;
+      await writeFile(path(job.id, file), encodePng(crop(decoded.rgba, decoded.width, (d % 4) * width, Math.floor(d / 4) * height, width, height), width, height));
+      directionRefs.set(direction, file);
     }
   }
+  for (let groupIndex = 0; groupIndex < plan.groups.length; groupIndex++) {
+    checkStopped(job.id);
+    const group = plan.groups[groupIndex].map(id => frames.get(id)!), first = group[0], batchId = token();
+    const columns = group.length > 4 ? 4 : group.length > 1 ? 2 : 1, rows = group.length > 1 ? 2 : 1;
+    const width = columns * 1024, height = rows * 1024;
+    const rgba = Buffer.alloc(width * height * 4), mask = Buffer.alloc(rgba.length, 255);
+    const background = processing.keyColor.match(/[a-f0-9]{2}/gi)!.map(v => parseInt(v, 16));
+    rgba.fill(Buffer.from([...background, 255]));
+    const originals: Buffer[] = [];
+    job.progress = `${groupIndex + 1}/${plan.requestCount} · ${first.id}`; await save(job);
+    for (let i = 0; i < group.length; i++) {
+      checkStopped(job.id);
+      const frame = group[i], decoded = await decodeToRgba(path(job.id, frame.target)), src = await decodeToRgba(path(job.id, frame.keyed));
+      originals.push(src.rgba);
+      blit(resize(decoded.rgba, decoded.width, decoded.height, 1024, 1024), 1024, 1024, rgba, width, height, (i % columns) * 1024, Math.floor(i / columns) * 1024);
+      // Masks require copying transparent interior pixels too; blit intentionally
+      // skips them and therefore cannot be used here.
+      const cellMask = resize(redrawMask(src.rgba), 512, 512, 1024, 1024);
+      for (let y = 0; y < 1024; y++) cellMask.copy(mask, ((Math.floor(i / columns) * 1024 + y) * width + (i % columns) * 1024) * 4, y * 1024 * 4, (y + 1) * 1024 * 4);
+    }
+    const name = group.length > 1 ? batchId : first.id;
+    const prompt = motionRedrawPrompt({ direction: first.direction, description: job.description, instructions: job.prompt, keyColor: processing.keyColor, hasDirection: directionRefs.has(first.direction), frameCount: group.length });
+    const promptFile = `${dir}/${name}-prompt.txt`, input = `${dir}/${name}-input.png`, maskFile = `${dir}/${name}-mask.png`;
+    await writeFile(path(job.id, promptFile), prompt);
+    await writeFile(path(job.id, input), encodePng(rgba, width, height));
+    await writeFile(path(job.id, maskFile), encodePng(mask, width, height));
+    // Persist ONE shared attempt across every frame in this image request.
+    for (const frame of group) frame.redraw = { status: "attempted", prompt: promptFile, scheme, batchId };
+    job.archive = undefined; job.archiveKind = undefined; await save(job);
+    try {
+      const result = await generateImageWithProvider({ prompt,
+        images: [await imageUri(job.id, input), await imageUri(job.id, job.character), ...(directionRefs.has(first.direction) ? [await imageUri(job.id, directionRefs.get(first.direction)!)] : [])],
+        mask: await imageUri(job.id, maskFile), quality: "high", size: `${width}x${height}`, watermark: false });
+      const raw = `${dir}/${name}-raw.${result.ext}`;
+      await writeFile(path(job.id, raw), result.bytes);
+      for (const frame of group) frame.redraw!.raw = raw;
+      await save(job);
+      if (group.length > 1) {
+        const size = await probeSize(path(job.id, raw));
+        if (Math.abs(size.width * rows - size.height * columns) > Math.max(columns, rows) || size.width < columns * 512 || size.height < rows * 512) throw new Error("分组重绘回图尺寸或布局不匹配，请检查原始回图");
+      }
+      const outputWidth = columns * 512, outputHeight = rows * 512;
+      const { stdout } = await runFfmpeg(["-i", path(job.id, raw), "-vf", `scale=${outputWidth}:${outputHeight}:flags=lanczos,format=rgba`, "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgba", "-"]);
+      if (stdout.length !== outputWidth * outputHeight * 4) throw new Error("Invalid generated image");
+      const completed: NonNullable<Frame["redraw"]>[] = [];
+      // Validate every cell before committing any of this shared request.
+      const cells = group.map((_, i) => crop(stdout, outputWidth, (i % columns) * 512, Math.floor(i / columns) * 512, 512, 512));
+      const processed = processMotionEdits(cells, originals, processing);
+      for (let i = 0; i < group.length; i++) {
+        const { rgba, scale, translation, background } = processed[i];
+        const file = `${dir}/${group[i].id}.png`;
+        await writeFile(path(job.id, file), encodePng(rgba, 512, 512));
+        completed.push({ status: "ready", file, raw, prompt: promptFile, translation, scale, background, scheme, batchId });
+      }
+      group.forEach((frame, i) => { frame.redraw = completed[i]; }); await save(job);
+    } catch (error) {
+      const message = "请求可能已计费；未自动重试。" + redact(String(error instanceof Error ? error.message : error), config.customApiKey);
+      for (const frame of group) frame.redraw = { ...frame.redraw, status: "unknown", error: message };
+      await save(job); throw new Error(message);
+    }
+  }
+}
+export function motionRedrawFrames(job: Pick<MotionJob, "frames" | "redrawTargets" | "validFrameRanges">): Frame[] {
+  if (!job.redrawTargets?.length) return motionValidFrames(job);
+  const targets = new Set(job.redrawTargets), frames = job.frames.filter(f => targets.has(f.id));
+  if (frames.length !== targets.size) throw new Error("重绘选帧已失效，请重新选择");
+  return frames.filter(f => motionFrameIsValid(job, f));
 }
 async function exportJob(job: MotionJob, useRedraw: boolean): Promise<void> {
   if (!job.frames.length) throw new Error("请先抽帧");
-  if (useRedraw && job.frames.some((f) => f.redraw?.status !== "ready"))
+  const selectedFrames = useRedraw ? motionRedrawFrames(job) : job.frames;
+  if (useRedraw && selectedFrames.some((f) => f.redraw?.status !== "ready" || !f.redraw.file))
     throw new Error("高清版本还有未完成帧，请补齐或选择原视频帧导出");
+  const processing = motionProcessing(job.processing), width = processing.cellWidth, height = processing.cellHeight;
+  const sourceSize = await probeSize(path(job.id, job.video!.file!));
   const entries: ZipEntry[] = [],
     metadata: any = {
-      version: 1,
+      version: 2,
       directionOrder: MOTION_ORDER,
-      cellWidth: 512,
-      cellHeight: 512,
+      cellWidth: width,
+      cellHeight: height,
       mode: useRedraw ? "redrawn" : "video-crops",
       actions: [],
       pixelDetail: useRedraw
         ? "AI redrawn; temporal consistency requires review"
-        : "480P crops enlarged locally; not native 512px detail",
+        : `${sourceSize.width}x${sourceSize.height} video crops resized locally; not native 512px detail`,
       source: "Hormelz CC0",
       sourceUrl: "https://hormelz.itch.io/8-directional-melee-character",
     };
@@ -1168,36 +1453,56 @@ async function exportJob(job: MotionJob, useRedraw: boolean): Promise<void> {
   await mkdir(path(job.id, dir), { recursive: true });
   for (const seg of job.ranges) {
     checkStopped(job.id);
-    const sheet = Buffer.alloc(512 * seg.frameCount * 512 * 8 * 4);
-    for (const frame of job.frames.filter((f) => f.action === seg.action)) {
-      const selected = useRedraw ? frame.redraw!.file! : frame.keyed;
-      const bytes = await readFile(path(job.id, selected));
+    const columns = Math.max(1, Math.floor(4096 / width)), rows = Math.max(1, Math.floor(4096 / height));
+    const pages: any[] = [];
+    const byDirection = new Map(MOTION_ORDER.map(direction => [direction, selectedFrames.filter(f => f.action === seg.action && f.direction === direction).sort((a, b) => a.index - b.index)]));
+    const directions = useRedraw ? MOTION_ORDER.filter(d => byDirection.get(d)!.length) : MOTION_ORDER;
+    if (!directions.length) continue;
+    const frameCount = useRedraw ? Math.max(...directions.map(d => byDirection.get(d)!.length)) : seg.frameCount;
+    for (let firstRow = 0; firstRow < directions.length; firstRow += rows) for (let firstFrame = 0; firstFrame < frameCount; firstFrame += columns) {
+    checkStopped(job.id);
+    const rowOrder = directions.slice(firstRow, firstRow + rows), count = Math.min(columns, frameCount - firstFrame);
+    const sheet = Buffer.alloc(width * count * height * rowOrder.length * 4);
+    for (const direction of rowOrder) for (let index = firstFrame; index < firstFrame + count; index++) {
+      const frame = byDirection.get(direction)![index];
+      if (!frame) { if (useRedraw) continue; throw new Error("序列帧不完整，请重新抽帧后导出。"); }
+      if (!useRedraw && frame.index !== index) throw new Error("序列帧不完整，请重新抽帧后导出。");
+      const selected = useRedraw ? frame.redraw!.file! : processing.key ? frame.keyed : frame.target;
+      const decoded = await decodeToRgba(path(job.id, selected));
+      const scaled = resize(decoded.rgba, decoded.width, decoded.height, width, height);
+      const bytes = encodePng(scaled, width, height);
       entries.push({
-        path: `${seg.action}/${frame.direction}/f${String(frame.index).padStart(2, "0")}.png`,
+        path: `${seg.action}/${frame.direction}/f${String(index).padStart(2, "0")}.png`,
         data: bytes,
       });
-      const decoded = await decodeToRgba(path(job.id, selected));
       blit(
-        decoded.rgba,
-        512,
-        512,
+        scaled,
+        width,
+        height,
         sheet,
-        512 * seg.frameCount,
-        512 * 8,
-        frame.index * 512,
-        MOTION_ORDER.indexOf(frame.direction) * 512,
+        width * count,
+        height * rowOrder.length,
+        (index - firstFrame) * width,
+        rowOrder.indexOf(frame.direction) * height,
       );
     }
-    const png = encodePng(sheet, 512 * seg.frameCount, 512 * 8),
-      name = `${seg.action}-sheet.png`;
+    const singlePage = frameCount <= columns && rows >= directions.length;
+    const png = encodePng(sheet, width * count, height * rowOrder.length),
+      name = singlePage ? `${seg.action}-sheet.png` : `${seg.action}-sheet-${pages.length + 1}.png`;
     await writeFile(path(job.id, `${dir}/${name}`), png);
     entries.push({ path: name, data: png });
+    pages.push({ file: name, firstFrame, frameCount: count, rowOrder, columns: count, rows: rowOrder.length });
+    }
     metadata.actions.push({
       ...seg,
-      frameDurationMs: ((seg.end - seg.start) * 1000) / seg.frameCount,
-      sheet: name,
-      rows: 8,
-      columns: seg.frameCount,
+      frameCount,
+      frameDurationMs: ((seg.end - seg.start) * 1000) / frameCount,
+      fps: frameCount / (seg.end - seg.start),
+      ...(useRedraw ? { sampled: true, sourceFrameCount: seg.frameCount, directionFrames: Object.fromEntries(directions.map(d => { const frames = byDirection.get(d)!; return [d, { frameCount: frames.length, fps: frames.length / (seg.end - seg.start), sourceIndices: frames.map(f => f.index), sourceTimes: frames.map(f => f.time) }]; })) } : {}),
+      ...(pages.length === 1 ? { sheet: pages[0].file } : {}),
+      sheets: pages,
+      rows: directions.length,
+      columns: frameCount,
       loopVerified: false,
     });
   }
@@ -1206,7 +1511,7 @@ async function exportJob(job: MotionJob, useRedraw: boolean): Promise<void> {
       path: "animation.json",
       data: Buffer.from(JSON.stringify(metadata, null, 2)),
     },
-    { path: "video-prompt.txt", data: Buffer.from(job.prompt) },
+    { path: "video-prompt.txt", data: Buffer.from(await composeMotionPrompt(job)) },
     {
       path: "source-license.txt",
       data: await readFile(join(TEMPLATE_DIR, "LICENSE.txt")),
@@ -1218,6 +1523,8 @@ async function exportJob(job: MotionJob, useRedraw: boolean): Promise<void> {
   );
   job.archive = `${dir}/sprites.zip`;
   await writeFile(path(job.id, job.archive), zipEntries(entries));
+  job.archiveKind = useRedraw ? "redraw" : processing.key ? "keyed" : "raw";
+  job.localArtifacts = { ...job.localArtifacts, archive: useRedraw ? null : localArchiveSignature(job, processing) };
   await save(job);
 }
 export async function runMotionStep(
@@ -1236,6 +1543,7 @@ export async function runMotionStep(
       "video",
       "poll",
       "extract",
+      "keyed",
       "redraw",
       "export",
     ].includes(input.step)
@@ -1253,6 +1561,13 @@ export async function runMotionStep(
       job.operation = input.step;
       job.error = undefined;
       job.progress = "";
+      rememberLocalArtifacts(job);
+      if (["extract", "keyed", "export"].includes(input.step)) {
+        job.localArtifacts ||= {};
+        job.localArtifacts.archive = null;
+        if (input.step === "extract") job.localArtifacts.raw = null;
+        if (input.step !== "export") job.localArtifacts.keyed = null;
+      }
       await save(job);
       if (input.step === "prepare") {
         assertEditable(job);
@@ -1263,12 +1578,14 @@ export async function runMotionStep(
         await submit(job, input.confirmed === true, input.regenerate === true);
       else if (input.step === "poll") await poll(job);
       else if (input.step === "extract") await extract(job);
+      else if (input.step === "keyed") await rekey(job);
       else if (input.step === "redraw")
         await redraw(
           job,
           input.targets,
           input.confirmed === true,
           input.regenerate === true,
+          input.scheme || "frame",
         );
       else await exportJob(job, input.useRedraw === true);
     } catch (error) {

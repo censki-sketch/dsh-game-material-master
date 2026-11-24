@@ -4,15 +4,18 @@ import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:http';
+import { inflateRawSync } from 'node:zlib';
 const home = await mkdtemp(join(tmpdir(), 'gmm-flow-chat-'));
 process.env.DSH_HOME = home;
 const { Context } = await import('@deepseek-ai/cordis');
 const config = await import('../lib/config.js'), images = await import('../lib/imagegen.js');
 const motion = await import('../lib/motiongen.js'), seq = await import('../lib/seqgen.js');
 const chat = await import('../lib/workflowchat.js'), { encodePng } = await import('../lib/png.js');
-const { runFfmpeg } = await import('../lib/media.js'), wire = await import('../lib/wire.js');
+const { runFfmpeg, decodeToRgba } = await import('../lib/media.js'), wire = await import('../lib/wire.js');
 const plugin = await import('../lib/index.js');
-let posts = 0, checks = 0, videoBytes;
+let posts = 0, checks = 0, videoBytes, editJobId, imagePosts = 0, imageFailAt = 0;
+const imageRequests = [];
+const videoRequests=[];
 const ctx = new Context();
 ctx.provide('typert', { register: () => () => {} });
 ctx.provide('webServer', { register: () => () => {} });
@@ -20,9 +23,20 @@ plugin.apply(ctx); const gateway = ctx.get('gameStudio');
 const originalFetch = globalThis.fetch;
 const server = createServer(async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
-  if (req.url === '/v2/video_generation') { posts++; for await (const _ of req) {} res.end(JSON.stringify({task_id:'mock-'+posts})); }
+  if (req.url === '/v2/video_generation') { posts++; const parts=[];for await (const chunk of req)parts.push(chunk);videoRequests.push(JSON.parse(Buffer.concat(parts)));res.end(JSON.stringify({task_id:'mock-'+posts})); }
   else if (req.url.startsWith('/v2/query/video_generation/')) res.end(JSON.stringify({status:'succeeded',content:{url:base+'/movie.mp4'}}));
   else if (req.url === '/movie.mp4') { res.setHeader('Content-Type','video/mp4');res.end(videoBytes); }
+  else if (req.url === '/v1/images/edits') {
+    imagePosts++; const parts=[];for await (const chunk of req)parts.push(chunk);const body=Buffer.concat(parts);imageRequests.push(body.toString('latin1'));
+    if (imagePosts === imageFailAt) { res.statusCode=502;res.end('{"error":"mock interruption"}'); }
+    else {
+      // Recolor the actual submitted foreground, retaining pose and alpha.
+      const editing=await motion.readMotion(editJobId),frame=editing.frames.find(f=>f.redraw?.status==='attempted');
+      const edited=await decodeToRgba(motion.motionAssetPath(editJobId,frame.keyed));
+      for(let p=0;p<edited.rgba.length;p+=4)if(edited.rgba[p+3])edited.rgba.set([210,60,120],p);
+      res.end(JSON.stringify({data:[{b64_json:encodePng(edited.rgba,edited.width,edited.height).toString('base64')}]}));
+    }
+  }
   else { res.statusCode=500;res.end('{"error":"unexpected test endpoint"}'); }
 });
 await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
@@ -39,10 +53,24 @@ const wait = async (module,jobId) => {
   while(Date.now()<until){const c=await gw('getWorkflowConversation',{module,jobId});if(c.rounds.length&&!c.rounds.some(r=>r.status==='running'))return c;await new Promise(r=>setTimeout(r,80));}
   throw Error('round timed out');
 };
+function unzip(bytes) {
+  const entries = new Map(); let offset = 0;
+  while (bytes.readUInt32LE(offset) === 0x04034b50) {
+    const method=bytes.readUInt16LE(offset+8),size=bytes.readUInt32LE(offset+18),length=bytes.readUInt16LE(offset+26),extra=bytes.readUInt16LE(offset+28);
+    const name=bytes.toString('utf8',offset+30,offset+30+length),start=offset+30+length+extra,value=bytes.subarray(start,start+size);
+    entries.set(name,method===8?inflateRawSync(value):value);offset=start+size;
+  }
+  return entries;
+}
 try {
   const rgba=Buffer.alloc(64*64*4);for(let y=0;y<64;y++)for(let x=0;x<64;x++){const i=(y*64+x)*4;const body=x>20&&x<44&&y>10&&y<58;rgba[i]=body?70:255;rgba[i+1]=body?140:0;rgba[i+2]=body?90:255;rgba[i+3]=255;}
-  const png=encodePng(rgba,64,64), fixture=join(home,'source.png'), movie=join(home,'fixture.mp4');await writeFile(fixture,png);
-  await runFfmpeg(['-loop','1','-i',fixture,'-vf','scale=864:480','-t','4','-r','8','-c:v','libx264','-pix_fmt','yuv420p','-y',movie]);videoBytes=await readFile(movie);
+  const png=encodePng(rgba,64,64), fixture=join(home,'source.png'), movie=join(home,'fixture.mp4');
+  await writeFile(fixture,png);
+  // The fake video has one complete character in each direction cell.
+  const grid=Buffer.alloc(864*480*4);
+  for(let y=0;y<480;y++)for(let x=0;x<864;x++){const p=((Math.floor((y%240)*64/240)*64)+Math.floor((x%216)*64/216))*4;rgba.copy(grid,(y*864+x)*4,p,p+4);}
+  const gridFile=join(home,'eight-directions.png');await writeFile(gridFile,encodePng(grid,864,480));
+  await runFfmpeg(['-loop','1','-i',gridFile,'-t','4','-r','8','-c:v','libx264','-pix_fmt','yuv420p','-y',movie]);videoBytes=await readFile(movie);
   await config.saveConfig({minimaxBaseUrl:base,minimaxApiKey:'fake-key-only',minimaxModel:'MiniMax-H3-Lite',allowPaidVideoGeneration:true,comfyVideo:false,toapisVideo:false,keyColor:'#FF00FF',workingLongEdge:128,frameCount:4,cellWidth:32,cellHeight:32});
   const source=await images.createImageJob('transfer test');await images.addImageToJob(source.id,'original.png',png.toString('base64'));
   let image=await images.readImageJob(source.id);const original=image.items[0].file;
@@ -54,6 +82,20 @@ try {
   await assert.rejects(()=>gw('transferAsset',{source:{module:'image',jobId:source.id,file:'refs/not-a-result.png'},target:'map'}));checks++;
   const mapTransfer=await gw('transferAsset',{source:{module:'image',jobId:source.id,file:original},target:'map',name:'map reference'});
   const isoTransfer=await gw('transferAsset',{source:{module:'image',jobId:source.id,file:keyed},target:'iso',name:'iso reference'});
+  const transferCapabilities=wire.METHODS.find(item=>item.method==='listMotionJobs').result.parse(await gw('listMotionJobs'));
+  check('motion list advertises slot-aware transfers through the real result schema',transferCapabilities.assetTransferRoles?.includes('directions')&&transferCapabilities.assetTransferRoles.includes('character'));
+  const characterTransfer=await gw('transferAsset',{source:{module:'image',jobId:source.id,file:original},target:'sprite',name:'role transfer'});
+  const characterJob=await motion.readMotion(characterTransfer.jobId),characterFile=characterJob.character;
+  check('legacy animation transfer fills only the character slot',!!characterFile&&!characterJob.directions);
+  await gw('transferAsset',{source:{module:'image',jobId:source.id,file:keyed},target:'sprite',targetId:characterJob.id,targetRole:'directions',name:'directions reference'});
+  const withDirections=await motion.readMotion(characterJob.id);
+  check('directions transfer preserves the existing character and owns the selected version',withDirections.character===characterFile&&!!withDirections.directions&&Buffer.compare(await readFile(motion.motionAssetPath(characterJob.id,withDirections.directions)),await readFile(images.imageAssetPath(source.id,keyed)))===0);
+  const directionsFile=withDirections.directions;
+  const explicitCharacter=await gw('transferAsset',{source:{module:'image',jobId:source.id,file:original},target:'sprite',targetId:characterJob.id,targetRole:'character'});
+  check('explicit character transfer leaves the directions slot intact',(await motion.readMotion(characterJob.id)).directions===directionsFile);
+  const roleRecord=await gw('getAssetTransfer',{transferId:explicitCharacter.transferId,module:'sprite',jobId:characterJob.id});
+  check('transfer record retains the explicit destination slot',roleRecord.targetRole==='character');
+  await assert.rejects(()=>gw('transferAsset',{source:{module:'image',jobId:source.id,file:original},target:'sprite',targetRole:'unknown'}));checks++;
   await images.deleteImageJob(source.id);
   const mapData=await gw('getAssetTransfer',{transferId:mapTransfer.transferId,module:'map',jobId:mapTransfer.jobId});
   check('map staging survives deletion of its source',Buffer.compare(Buffer.from(mapData.data,'base64'),png)===0&&mapData.width===64);
@@ -66,6 +108,11 @@ try {
   check('confirmed iso import accepts the owned image',importedIso.tilesets.some(t=>t.name==='confirmed iso object'));
   await assert.rejects(()=>gw('getAssetTransfer',{transferId:mapTransfer.transferId,module:'iso',jobId:mapTransfer.jobId}));checks++;
   check('local transfers make zero generation requests',posts===0);
+  for(const prompt of ['', ' \n\t　 ']){
+    parent.prompt=prompt;await seq.writeSequenceJob(parent);
+    await assert.rejects(()=>gw('submitWorkflowRound',{module:'sequence',jobId:parent.id,requestId:'empty-sequence-prompt',automatic:true,confirmed:true}),/请先填写提示词/);checks++;
+    check('empty sequence instructions create no round or paid request',(await gw('getWorkflowConversation',{module:'sequence',jobId:parent.id})).rounds.length===0&&posts===0&&(await seq.readSequenceJob(parent.id)).prompt===prompt);
+  }
   parent.prompt='walk in place';await seq.writeSequenceJob(parent);
   await assert.rejects(()=>gw('submitWorkflowRound',{module:'sequence',jobId:parent.id,requestId:'no-confirm',automatic:true}));checks++;
   const submitted=await gw('submitWorkflowRound',{module:'sequence',jobId:parent.id,requestId:'first',automatic:true,confirmed:true});
@@ -104,24 +151,197 @@ try {
   const reused=await seq.readSequenceJob(parent.id);
   check('reuse restores the submitted references as well as the prompt',reused.prompt==='walk in place'&&reused.refs.firstFrame.file===c.rounds[0].request.refs.firstFrame.file);
   check('reused references remain owned and readable',(await readFile(seq.sequenceAssetPath(parent.id,reused.refs.firstFrame.file))).length>0);
+  const motionProjectCount=(await gw('listMotionJobs')).jobs.length;
   const w=await motion.createMotionJob('local animation');
   await motion.uploadMotionAsset(w.id,'character',png.toString('base64'));await motion.uploadMotionAsset(w.id,'directions',png.toString('base64'));await motion.uploadMotionAsset(w.id,'video',videoBytes.toString('base64'));
   await motion.saveMotionJob(w.id,{segments:[{action:'walkfoward',start:0,end:2,frameCount:4},{action:'runforward',start:2,end:4,frameCount:4}]});
   // Changing actions invalidates video, as in the existing editor; re-import the fixture.
   await motion.uploadMotionAsset(w.id,'video',videoBytes.toString('base64'));
+  await motion.saveMotionJob(w.id,{rangesConfirmed:true,videoRange:{start:0,end:4,frameCount:4}});
   await gw('submitWorkflowRound',{module:'sprite',jobId:w.id,requestId:'local',automatic:true,localOnly:true});
   const mc=await wait('sprite',w.id);assert.equal(mc.rounds[0].status,'ready',mc.rounds[0].error);
   check('imported motion video auto-processes into one round',mc.rounds.length===1&&mc.rounds[0].versions.some(v=>v.kind==='export'));
   check('local animation incurs no image or video generation',posts===2);
-  check('motion child is hidden from the project list',(await gw('listMotionJobs')).jobs.length===1);
+  check('motion child is hidden from the project list',(await gw('listMotionJobs')).jobs.length===motionProjectCount+1);
+  // Composer rules are enforced through the real wire, not only disabled buttons.
+  const local=await motion.createMotionJob('video without pictures'),chosen=[{action:'walkfoward',start:0,end:2,frameCount:4},{action:'runforward',start:2,end:4,frameCount:4}];
+  for(const prompt of ['', ' \n\t　 ']){
+    await gw('saveMotionJob',{jobId:local.id,prompt});
+    await assert.rejects(()=>gw('submitWorkflowRound',{module:'sprite',jobId:local.id,requestId:'empty-motion-prompt',automatic:true,confirmed:true}),/请先填写提示词/);checks++;
+    check('empty motion instructions create no round or paid request',(await gw('getWorkflowConversation',{module:'sprite',jobId:local.id})).rounds.length===0&&posts===2&&(await motion.readMotion(local.id)).prompt===prompt);
+  }
+  const submitLocal=()=>gw('submitWorkflowRound',{module:'sprite',jobId:local.id,requestId:'video-only',automatic:true,localOnly:true});
+  await assert.rejects(submitLocal,/导入视频/);checks++;
+  await gw('saveMotionJob',{jobId:local.id,segments:chosen,prompt:'Follow the chosen reference actions in place'});
+  await assert.rejects(()=>gw('submitWorkflowRound',{module:'sprite',jobId:local.id,requestId:'missing-images',automatic:true,confirmed:true}),/角色图/);checks++;
+  await gw('uploadMotionAsset',{jobId:local.id,kind:'character',data:png.toString('base64')});
+  await assert.rejects(()=>gw('submitWorkflowRound',{module:'sprite',jobId:local.id,requestId:'one-image',automatic:true,confirmed:true}),/八方向/);checks++;
+  await gw('uploadMotionAsset',{jobId:local.id,kind:'remove-character',data:''});
+  await gw('saveMotionJob',{jobId:local.id,segments:chosen.map(s=>({...s,action:''}))});
+  await gw('uploadMotionAsset',{jobId:local.id,kind:'video',data:videoBytes.toString('base64')});
+  check('uploading a source video creates no premature chat message',(await gw('getWorkflowConversation',{module:'sprite',jobId:local.id})).rounds.length===0);
+  check('video upload defaults to a whole clip without touching generation actions',(await motion.readMotion(local.id)).videoRange.end===4&&(await motion.readMotion(local.id)).segments.every(s=>s.action===''));
+  await assert.rejects(()=>gw('saveMotionJob',{jobId:local.id,videoRange:{start:0,end:5,frameCount:4}}),/Invalid video range/);checks++;
+  await assert.rejects(()=>gw('saveMotionJob',{jobId:local.id,videoRange:{start:0,end:4,frameCount:4.5}}),/Invalid video range/);checks++;
+  const processing={...motion.motionProcessing(),extract:false,key:false,sheet:false,cellWidth:64,cellHeight:80};
+  const settings=await gw('motionSettings',{}),template=structuredClone(settings.templates[0]);template.prompt.zh='{{timeline}} | {{description}} | {{keyColor}}';
+  await gw('motionSettings',{save:true,templates:[template]});
+  const promptTemplate={id:template.id,lang:'zh',content:template.prompt.zh};
+  await gw('saveMotionJob',{jobId:local.id,composerVersion:1,inputMode:'video',processing,promptTemplate,description:'Blue cape',prompt:'Extra instructions',videoRange:{start:0,end:4,frameCount:4}});
+  const ready=await gw('getMotionJob',{jobId:local.id});
+  check('template replaces placeholders and appends only the round instructions',ready.finalPrompt.includes('Blue cape | #FF00FF')&&ready.finalPrompt.endsWith('Extra instructions')&&!ready.finalPrompt.includes('{{'));
+  await submitLocal();let lc=await wait('sprite',local.id),lr=lc.rounds[0];
+  check('video-only parsing works without images, actions, confirmation or paid calls',lc.rounds.length===1&&lr.status==='ready'&&!lr.request.character&&!lr.request.directions&&!lr.request.segments.length&&lr.job.ranges.length===1&&lr.job.ranges[0].action==='video'&&posts===2);
+  check('parsing keeps the unused generation prompt on the parent',(await motion.readMotion(local.id)).prompt==='Extra instructions'&&lr.prompt===''&&lr.request.finalPrompt==='');
+  check('disabled extraction stops after the video',lr.versions.length===1&&lr.versions[0].kind==='video');
+  check('the submitted round owns processing and template snapshots',JSON.stringify(lr.request.processing)===JSON.stringify(processing)&&lr.request.promptTemplate.content===promptTemplate.content);
+  template.prompt.zh='New template {{description}}';await gw('motionSettings',{save:true,templates:[template]});
+  check('editing a global template preserves prior round content',(await gw('getWorkflowConversation',{module:'sprite',jobId:local.id})).rounds[0].request.promptTemplate.content===promptTemplate.content);
+  await assert.rejects(()=>gw('motionSettings',{save:true,templates:[]}));checks++;
+  await assert.rejects(()=>gw('motionSettings',{save:true,templates:[{...template,prompt:{zh:'{{unknown}}',en:'{{unknown}}'}}]}));checks++;
+  await gw('runWorkflowRoundStep',{module:'sprite',jobId:local.id,roundId:lr.id,step:'extract',ranges:[{action:'video',start:0,end:4,frameCount:4}],processing});
+  lc=await wait('sprite',local.id);lr=lc.rounds[0];assert.equal(lr.status,'ready',lr.error);
+  check('manual extraction with keying disabled saves only a raw version',lr.versions.some(v=>v.kind==='raw')&&!lr.versions.some(v=>v.kind==='keyed'||v.kind==='export'));
+  const rawVersion=lr.versions.find(v=>v.kind==='raw'),rawFile=motion.motionAssetPath(lr.childId,rawVersion.files[0]),rawBytes=await readFile(rawFile);
+  check('frame versions snapshot the actual extraction timing',rawVersion.ranges?.[0].frameCount===4&&rawVersion.ranges[0].end===4&&rawVersion.frames.every(f=>Number.isFinite(f.time)));
+  check('disabled keying leaves the actual PNG opaque',(await decodeToRgba(rawFile)).rgba[3]===255);
+  await gw('runWorkflowRoundStep',{module:'sprite',jobId:local.id,roundId:lr.id,step:'keyed',processing:{...processing,key:true}});
+  lc=await wait('sprite',local.id);lr=lc.rounds[0];assert.equal(lr.status,'ready',lr.error);
+  const cleanVersion=lr.versions.find(v=>v.kind==='keyed');
+  check('later processing preserves the original version timing',cleanVersion.ranges[0].frameCount===4&&rawVersion.ranges[0].end===4);
+  check('standalone keying writes transparent pixels while preserving the raw version',(await decodeToRgba(motion.motionAssetPath(lr.childId,cleanVersion.files[0]))).rgba[3]===0&&Buffer.compare(await readFile(rawFile),rawBytes)===0);
+  await gw('runWorkflowRoundStep',{module:'sprite',jobId:local.id,roundId:lr.id,step:'export',processing:{...processing,key:true}});
+  lc=await wait('sprite',local.id);lr=lc.rounds[0];assert.equal(lr.status,'ready',lr.error);
+  const { readdir }=await import('node:fs/promises');const out=motion.motionAssetPath(lr.childId,lr.job.archive).replace(/sprites\.zip$/,'');
+  const metadata=JSON.parse(await readFile(join(out,'animation.json'),'utf8'));
+  const sheet=(await readdir(out)).find(name=>name.endsWith('-sheet.png'));const sheetBytes=await readFile(join(out,sheet));
+  check('configured cell dimensions affect the actual sheet',metadata.cellWidth===64&&metadata.cellHeight===80&&sheetBytes.readUInt32BE(16)===256&&sheetBytes.readUInt32BE(20)===640);
+  check('individual steps retain one message and never submit videos',lc.rounds.length===1&&posts===2);
+  await gw('saveMotionJob',{jobId:local.id,prompt:'New draft'});await gw('reuseWorkflowRound',{module:'sprite',jobId:local.id,roundId:lr.id});
+  const restored=await motion.readMotion(local.id);
+  check('reuse restores original template, source video and processing',restored.prompt==='New draft'&&restored.segments.every(s=>s.action==='')&&restored.processing.key===false&&restored.promptTemplate.content===promptTemplate.content&&!!(await readFile(motion.motionAssetPath(local.id,restored.sourceVideo.file))).length);
+  await gw('runWorkflowRoundStep',{module:'sprite',jobId:w.id,roundId:mc.rounds[0].id,step:'extract',ranges:chosen,processing});
+  const legacyRanges=await wait('sprite',w.id);
+  check('existing multi-action ranges still support standalone extraction',legacyRanges.rounds[0].job.ranges.length===2&&legacyRanges.rounds[0].job.frames.length===64);
   const persisted=JSON.parse(await readFile(join(config.dataRoot(),'workflow-conversations','sprite-'+w.id+'.json'),'utf8'));
   persisted.rounds[0].status='running';persisted.rounds[0].stage='submit';await writeFile(join(config.dataRoot(),'workflow-conversations','sprite-'+w.id+'.json'),JSON.stringify(persisted));
   chat.disposeWorkflowChat();chat.activateWorkflowChat();await chat.resumeWorkflowChats();
   check('restart never replays an interrupted paid submission',(await gw('getWorkflowConversation',{module:'sprite',jobId:w.id})).rounds[0].status==='error'&&posts===2);
+  await gw('saveMotionJob',{jobId:local.id,reviewMode:'manual',processing:{...processing,extract:true,key:true,sheet:true}});
+  await gw('submitWorkflowRound',{module:'sprite',jobId:local.id,requestId:'manual-parse',automatic:false,localOnly:true});
+  let manual=await wait('sprite',local.id);const parsed=manual.rounds.at(-1);
+  check('manual parsing extracts the uploaded video then waits before composition',parsed.status==='ready'&&parsed.versions.some(v=>v.kind==='raw')&&!parsed.versions.some(v=>v.kind==='export')&&posts===2);
+  check('parsed whole-clip frames retain neutral labels and exact count',parsed.job.frames.length===32&&parsed.job.frames.every(f=>f.action==='video'));
+  check('manual review is snapshotted with the local round',parsed.request.reviewMode==='manual'&&parsed.automatic===false);
+  const {stdout:directionPng}=await runFfmpeg(['-i',fixture,'-vf','scale=864:480','-frames:v','1','-c:v','png','-f','image2pipe','pipe:1']);
+  await gw('uploadMotionAsset',{jobId:local.id,kind:'character',data:png.toString('base64')});await gw('uploadMotionAsset',{jobId:local.id,kind:'directions',data:directionPng.toString('base64')});
+  await assert.rejects(()=>gw('saveMotionJob',{jobId:local.id,videoModel:'MiniMax-H3-Max'}),/4秒/);checks++;
+  await gw('saveMotionJob',{jobId:local.id,reviewMode:'manual',videoModel:'MiniMax-H3',inputMode:'generate',segments:chosen});
+  await assert.rejects(()=>gw('submitWorkflowRound',{module:'sprite',jobId:local.id,requestId:'changed-model',automatic:false,confirmed:true,expectedVideoModel:'MiniMax-H3-Lite'}),/模型已变更/);checks++;
+  await gw('submitWorkflowRound',{module:'sprite',jobId:local.id,requestId:'chosen-model',automatic:false,confirmed:true,expectedVideoModel:'MiniMax-H3'});
+  await config.saveConfig({minimaxModel:'MiniMax-H3-Lite',toapisVideo:true});
+  manual=await wait('sprite',local.id);const generated=manual.rounds.at(-1);assert.equal(generated.status,'ready',generated.error);
+  check('the chosen video model reaches the real adapter with a compatible resolution',posts===3&&videoRequests.at(-1).model==='MiniMax-H3'&&videoRequests.at(-1).duration===4&&videoRequests.at(-1).resolution==='768P');
+  check('model changes after send cannot reroute the queued round',generated.request.videoGeneration.model==='MiniMax-H3'&&generated.job.video.backend==='minimax'&&generated.job.video.model==='MiniMax-H3');
+  check('manual generation stops at video without extraction',generated.versions.length===1&&generated.versions[0].kind==='video'&&generated.request.reviewMode==='manual');
+  // Exercise the real image adapter and all downstream local steps with a small
+  // complete eight-direction set. Failed requests never trigger more billing.
+  await config.saveConfig({imageProvider:'custom',customProtocol:'openai',customBaseUrl:base+'/v1',customApiKey:'fake-image-key',customModel:'mock-image'});
+  const hdInput={module:'sprite',jobId:local.id,roundId:generated.id};
+  editJobId=generated.childId;
+  await gw('runWorkflowRoundStep',{...hdInput,step:'extract',ranges:chosen.map(range=>({...range,frameCount:2})),processing:{...processing,key:true}});
+  let hd=(await wait('sprite',local.id)).rounds.at(-1);
+  check('local extraction is never presented as an AI version',hd.job.frames.length===32&&!hd.versions.some(v=>v.kind==='redraw')&&imagePosts===0);
+  const rawBefore=hd.versions.find(v=>v.kind==='raw'),originalFrame=await readFile(motion.motionAssetPath(hd.childId,rawBefore.files[0]));
+  const targets=hd.job.frames.map(f=>f.id);
+  const ledgerBefore=await readFile(motion.motionAssetPath(hd.childId,'job.json'));
+  const conversationBefore=JSON.stringify(await gw('getWorkflowConversation',{module:'sprite',jobId:local.id}));
+  const groupedPlan=await gw('runWorkflowRoundStep',{...hdInput,step:'redraw',targets,scheme:'sheet',planOnly:true});
+  check('read-only redraw plan preserves wire fields and never groups across actions or directions',groupedPlan.frameCount===32&&groupedPlan.requestCount===16&&groupedPlan.scheme==='sheet');
+  check('request planning needs no cost confirmation and changes no job, conversation or requests',imagePosts===0&&Buffer.compare(await readFile(motion.motionAssetPath(hd.childId,'job.json')),ledgerBefore)===0&&JSON.stringify(await gw('getWorkflowConversation',{module:'sprite',jobId:local.id}))===conversationBefore);
+  await assert.rejects(()=>gw('runWorkflowRoundStep',{...hdInput,step:'redraw',targets:targets.slice(0,2)}),/确认/);checks++;
+  check('unconfirmed enhancement sends no image request',imagePosts===0);
+  await assert.rejects(()=>gw('runWorkflowRoundStep',{...hdInput,step:'redraw',targets:['missing'],scheme:'sheet8',confirmed:true}),/Unknown frame/);checks++;
+  check('host rejects invalid frame IDs before writing a paid attempt',imagePosts===0&&Buffer.compare(await readFile(motion.motionAssetPath(hd.childId,'job.json')),ledgerBefore)===0);
+  imageFailAt=2;
+  await gw('runWorkflowRoundStep',{...hdInput,step:'redraw',targets,confirmed:true});
+  hd=(await wait('sprite',local.id)).rounds.at(-1);
+  check('a failed batch preserves a playable successful AI frame',hd.status==='error'&&hd.versions.filter(v=>v.kind==='redraw').at(-1)?.files.length===1&&hd.job.frames.filter(f=>f.redraw?.status==='unknown').length===1);
+  check('partial AI output cannot produce an HD asset pack',imagePosts===2&&!hd.versions.some(v=>v.kind==='export'));
+  await gw('runWorkflowRoundStep',{...hdInput,step:'redraw',targets,confirmed:true});
+  hd=(await wait('sprite',local.id)).rounds.at(-1);
+  check('unknown results block automatic retries and duplicate AI versions',hd.status==='error'&&imagePosts===2&&hd.versions.filter(v=>v.kind==='redraw').length===1);
+  await gw('runWorkflowRoundStep',{...hdInput,step:'export',useRedraw:true});
+  hd=(await wait('sprite',local.id)).rounds.at(-1);
+  check('manual HD export also rejects incomplete frames',hd.status==='error'&&!hd.versions.some(v=>v.kind==='export')&&imagePosts===2);
+  await gw('runWorkflowRoundStep',{...hdInput,step:'redraw',targets:targets.slice(1,25),confirmed:true,regenerate:true});
+  hd=(await wait('sprite',local.id)).rounds.at(-1);
+  check('explicit retry enhances the chosen 24-frame scope',hd.status==='ready'&&imagePosts===26&&hd.versions.filter(v=>v.kind==='redraw').at(-1).files.length===24&&hd.versions.at(-1).sourceKind==='redraw');
+  const recoveringFile=join(config.dataRoot(),'workflow-conversations','sprite-'+local.id+'.json');
+  const recovering=JSON.parse(await readFile(recoveringFile,'utf8')),hdInterrupted=recovering.rounds.at(-1);
+  hdInterrupted.status='running';hdInterrupted.stage='redraw';hdInterrupted.versions.pop();
+  await writeFile(recoveringFile,JSON.stringify(recovering));chat.disposeWorkflowChat();chat.activateWorkflowChat();await chat.resumeWorkflowChats();
+  hd=(await gw('getWorkflowConversation',{module:'sprite',jobId:local.id})).rounds.at(-1);
+  check('restart recovers completed AI frames without replaying paid calls',hd.status==='error'&&hd.versions.filter(v=>v.kind==='redraw').at(-1).files.length===24&&imagePosts===26);
+  await gw('runWorkflowRoundStep',{...hdInput,step:'redraw',targets,confirmed:true});
+  hd=(await wait('sprite',local.id)).rounds.at(-1);assert.equal(hd.status,'ready',hd.error);
+  check('confirmed remaining frames call images/edits and automatically export',imagePosts===33&&posts===3&&hd.versions.at(-1).kind==='export'&&hd.versions.at(-1).sourceKind==='redraw'&&hd.job.archiveKind==='redraw');
+  check('actual image calls include the pose, character, matching appearance and mask',imageRequests.every(body=>(body.match(/name="image\[\]"/g)||[]).length===3&&body.includes('name="mask"')&&body.includes('1024x1024')));
+  const hdOut=motion.motionAssetPath(hd.childId,hd.job.archive).replace(/sprites\.zip$/,'');
+  const hdMeta=JSON.parse(await readFile(join(hdOut,'animation.json'),'utf8'));
+  const hdVersion=hd.versions.filter(v=>v.kind==='redraw').at(-1);
+  const hdPixels=await decodeToRgba(motion.motionAssetPath(hd.childId,hdVersion.files[0]));
+  check('HD output is genuinely keyed, composed and labelled in metadata',hdPixels.rgba[3]===0&&hdMeta.mode==='redrawn'&&hdMeta.actions[0].sheets.length>0&&hdVersion.files.length===32);
+  check('AI versions contain the actual returned image instead of the video crop',hdPixels.rgba[(256*512+256)*4]===210&&hdPixels.rgba[(256*512+256)*4+3]===255);
+  const downloaded=unzip(await readFile(motion.motionAssetPath(hd.childId,hd.versions.at(-1).files[0])));
+  check('downloaded HD ZIP includes all enhanced frames and matching timing metadata',JSON.parse(downloaded.get('animation.json')).mode==='redrawn'&&[...downloaded.keys()].filter(name=>/\/f\d+\.png$/.test(name)).length===32&&hdMeta.actions.every(action=>action.sheets.every(sheet=>downloaded.has(sheet.file))));
+  check('AI output preserves the video frame version byte for byte',Buffer.compare(await readFile(motion.motionAssetPath(hd.childId,rawBefore.files[0])),originalFrame)===0);
+  const fourTargets=hd.job.frames.filter(f=>f.action===hd.job.frames[0].action&&f.index===0).slice(0,4).map(f=>f.id);
+  await gw('runWorkflowRoundStep',{...hdInput,step:'redraw',targets:fourTargets,confirmed:true});
+  hd=(await wait('sprite',local.id)).rounds.at(-1);
+  const fourVersion=hd.versions.filter(v=>v.kind==='redraw').at(-1),fourZip=unzip(await readFile(motion.motionAssetPath(hd.childId,hd.versions.at(-1).files[0]))),fourMeta=JSON.parse(fourZip.get('animation.json'));
+  check('a completed four-frame scope exports without drawing extra frames',hd.status==='ready'&&fourVersion.files.length===4&&imagePosts===33&&[...fourZip.keys()].filter(name=>/\/f\d+\.png$/.test(name)).length===4);
+  check('sampled versions keep full motion duration and actual source indices',fourVersion.ranges.every(range=>range.sampled)&&fourMeta.actions.length===1&&fourMeta.actions[0].sampled&&Object.values(fourMeta.actions[0].directionFrames).every(d=>d.frameCount===1&&d.sourceIndices.length===1&&d.fps===1/(fourMeta.actions[0].end-fourMeta.actions[0].start)));
+  check('local video-frame packages record their actual source',lr.versions.filter(v=>v.kind==='export').at(-1).sourceKind==='keyed');
+  const lastNumber=fourVersion.number,videoBeforeDelete=await readFile(motion.motionAssetPath(hd.childId,hd.job.video.file));
+  await gw('deleteWorkflowVersion',{module:'sprite',jobId:local.id,roundId:hd.id,versionId:fourVersion.id,confirmed:true});
+  hd=(await gw('getWorkflowConversation',{module:'sprite',jobId:local.id})).rounds.at(-1);
+  check('a real paid HD snapshot can be deleted while its source video and earlier HD results remain',!hd.versions.some(v=>v.id===fourVersion.id)&&hd.versions.some(v=>v.kind==='redraw')&&Buffer.compare(videoBeforeDelete,await readFile(motion.motionAssetPath(hd.childId,hd.job.video.file)))===0);
+  await gw('runWorkflowRoundStep',{...hdInput,step:'redraw',targets:fourTargets,confirmed:true});
+  hd=(await wait('sprite',local.id)).rounds.at(-1);
+  check('a new snapshot continues numbering after a deleted latest version without repeating paid requests',hd.versions.filter(v=>v.kind==='redraw').at(-1).number===lastNumber+1&&imagePosts===33);
+  const localInput={...hdInput,step:'process',ranges:hd.job.ranges,processing:{...motion.motionProcessing(hd.job.processing),sheet:true}};
+  const videosBeforeProcessing=posts,imagesBeforeProcessing=imagePosts;
+  let processPlan=await gw('runWorkflowRoundStep',{...localInput,planOnly:true});
+  check('local processing recognizes that the latest HD pack needs a separate ordinary atlas',processPlan.kind==='local-processing'&&processPlan.steps.join(',')==='export');
+  const targetsBeforeLocal=hd.job.frames.map(f=>f.target),keyedBeforeLocal=hd.job.frames.map(f=>f.keyed);
+  await gw('runWorkflowRoundStep',localInput);hd=(await wait('sprite',local.id)).rounds.at(-1);
+  check('apply-only composition preserves source and keyed files and finishes the local queue',hd.status==='ready'&&!hd.localSteps&&hd.job.archiveKind==='keyed'&&JSON.stringify(hd.job.frames.map(f=>f.target))===JSON.stringify(targetsBeforeLocal)&&JSON.stringify(hd.job.frames.map(f=>f.keyed))===JSON.stringify(keyedBeforeLocal));
+  processPlan=await gw('runWorkflowRoundStep',{...localInput,planOnly:true});
+  check('completed local artifacts produce a no-op plan',processPlan.steps.length===0);
+  const changedProcessing={...localInput.processing,keyLow:localInput.processing.keyLow+1};
+  processPlan=await gw('runWorkflowRoundStep',{...localInput,processing:changedProcessing,planOnly:true});
+  check('a keying-only draft skips extraction',processPlan.steps.join(',')==='keyed,export');
+  await gw('runWorkflowRoundStep',{...localInput,processing:changedProcessing});hd=(await wait('sprite',local.id)).rounds.at(-1);
+  check('apply queues actual keying then export as new immutable versions',hd.status==='ready'&&JSON.stringify(hd.job.frames.map(f=>f.target))===JSON.stringify(targetsBeforeLocal)&&JSON.stringify(hd.job.frames.map(f=>f.keyed))!==JSON.stringify(keyedBeforeLocal)&&hd.versions.at(-1).kind==='export'&&hd.versions.at(-2).kind==='keyed');
+  const beforeBadDraft=JSON.stringify(await motion.readMotion(hd.childId));
+  await assert.rejects(()=>gw('runWorkflowRoundStep',{...localInput,ranges:localInput.ranges.map((r,i)=>i===0?{...r,end:99}:r),processing:{...changedProcessing,cellWidth:64}}));
+  check('invalid process drafts are rejected before mutating ranges or settings',JSON.stringify(await motion.readMotion(hd.childId))===beforeBadDraft);
+  const newRanges=localInput.ranges.map(r=>({...r,targetFps:2,frameCount:Math.round((r.end-r.start)*2)}));
+  processPlan=await gw('runWorkflowRoundStep',{...localInput,ranges:newRanges,processing:changedProcessing,planOnly:true});
+  check('changing FPS plans extraction before downstream composition',processPlan.steps.join(',')==='extract,export');
+  await gw('runWorkflowRoundStep',{...localInput,ranges:newRanges,processing:changedProcessing});hd=(await wait('sprite',local.id)).rounds.at(-1);
+  check('apply re-extracts the changed timing and runs through the final atlas',hd.status==='ready'&&!hd.localSteps&&hd.job.ranges.every(r=>r.targetFps===2)&&hd.job.frames.every(f=>!targetsBeforeLocal.includes(f.target))&&hd.versions.slice(-3).map(v=>v.kind).join(',')==='raw,keyed,export');
+  const disabledSheet={...changedProcessing,sheet:false};
+  await gw('runWorkflowRoundStep',{...localInput,ranges:newRanges,processing:disabledSheet});hd=(await wait('sprite',local.id)).rounds.at(-1);
+  const beforeForced=hd.versions.length;
+  await gw('runWorkflowRoundStep',{...localInput,ranges:newRanges,processing:disabledSheet,forceLocal:'keyed'});hd=(await wait('sprite',local.id)).rounds.at(-1);
+  check('more re-key respects the disabled atlas option and adds just one version',hd.status==='ready'&&hd.versions.length===beforeForced+1&&hd.versions.at(-1).kind==='keyed');
+  check('the entire local apply flow preserves the original video and makes zero paid requests',posts===videosBeforeProcessing&&imagePosts===imagesBeforeProcessing&&Buffer.compare(videoBeforeDelete,await readFile(motion.motionAssetPath(hd.childId,hd.job.video.file)))===0);
   const children=c.rounds.map(r=>r.childId);await gw('deleteSequenceJob',{jobId:parent.id});
   check('deleting a conversation cleans its owned round jobs',(await Promise.all(children.map(id=>seq.readSequenceJob(id)))).every(v=>!v));
   console.log(`Passed ${checks} workflow chat checks. Mock requests only.`);
 } finally {
   chat.disposeWorkflowChat();motion.disposeMotion();seq.disposeSequence();globalThis.fetch=originalFetch;
-  server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await rm(home,{recursive:true,force:true});
+  server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await rm(home,{recursive:true,force:true,maxRetries:5,retryDelay:150});
 }

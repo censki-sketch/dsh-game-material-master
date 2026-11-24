@@ -63,10 +63,12 @@ const keys = ["front", "downLeft", "left", "upLeft", "back", "upRight", "right",
 let project = { images: Object.fromEntries(keys.map(key => [key, { file: "mock.png" }])), videos: {} };
 let submitted = [];
 let reads = 0;
+let motionQuote = { videoConfig: { model: 'MiniMax-H3-Lite', resolution: '480P' } };
 let hold;
 const submit = bundle.__test.createVideoSubmitter(async (method, payload) => {
   if (method === "getConfig") { reads++; if (hold) await hold; return config; }
   if (method === "getProject") return project;
+  if (method === "getMotionJob") return motionQuote;
   if (method === "getSequenceJob") return { settings: { duration: 9, resolution: "unsupported" } };
   submitted.push({ method, payload }); return { started: true };
 });
@@ -83,6 +85,10 @@ await submit("runVideos", { projectId: "p1" });
 check("batch quote excludes ready and running directions", () => assert.match(dialogs.at(-1), /6/));
 await submit("runMotionStep", { jobId: "w1", step: "video" });
 check("white-model confirmation includes fixed output and reference input", () => { assert.match(dialogs.at(-1), /4秒 \/ 480P/); assert.match(dialogs.at(-1), /1段/); assert.match(dialogs.at(-1), /4秒参考视频/); });
+motionQuote = { videoConfig: { model: 'MiniMax-H3', resolution: '768P' } };
+config = { ...config, toapisVideo: true };
+await submit("runMotionStep", { jobId: "w1", step: "video" });
+check("direct motion confirmation uses its task model and adapted resolution", () => { assert.match(dialogs.at(-1), /MiniMax-H3/); assert.match(dialogs.at(-1), /4秒 \/ 768P/); });
 config = { ...config, toapisVideo: true, toapisVideoModel: "mock-toapis", toapisVideoDuration: 8, toapisVideoResolution: "720P" };
 await submit("runSequenceVideo", { jobId: "s1" });
 check("ToAPIs quote uses its own actual settings", () => { assert.match(dialogs.at(-1), /mock-toapis/); assert.match(dialogs.at(-1), /8秒 \/ 720P/); });

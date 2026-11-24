@@ -1,0 +1,25 @@
+/** Read-only local plans against production artifact signatures; never calls a provider. */
+import assert from 'node:assert/strict';
+import {motionLocalProcessingPlan,motionProcessing} from '../lib/motiongen.js';
+let checks=0;const check=(name,ok)=>{assert.ok(ok,name);checks++;console.log('✓ '+name);};
+const processing=motionProcessing(),ranges=[{action:'video',start:0,end:4,frameCount:4,targetFps:1}];
+const job={id:'wtest',inputMode:'video',video:{status:'ready',file:'videos/one.mp4',duration:4},ranges,processing,archive:'out/one.zip',archiveKind:'keyed',frames:Array.from({length:32},(_,index)=>({id:'f'+index,index:index%4,action:'video',direction:'front',target:'frames/raw-'+index+'.png',keyed:'frames/key-'+index+'.png'}))};
+const plan=(patch={},source=job)=>motionLocalProcessingPlan(source,{ranges:source.ranges,processing:source.processing,...patch});
+const before=JSON.stringify(job);
+check('unchanged completed artifacts require no work',(await plan()).steps.length===0);
+check('planning is read-only including legacy signature inference',JSON.stringify(job)===before);
+for(const [key,value] of [['keyLow',15],['keyHigh',85],['despill',.3],['bgTolerance',30],['edgeShrink',1],['keyColor','#00FF00']])check(key+' changes only keying and composition',(await plan({processing:{...processing,[key]:value}})).steps.join(',')==='keyed,export');
+check('disabling keying exports the raw frames without extracting again',(await plan({processing:{...processing,key:false}})).steps.join(',')==='export');
+check('cell size changes compose without re-keying or extraction',(await plan({processing:{...processing,cellWidth:256}})).steps.join(',')==='export');
+check('range changes re-extract then compose',(await plan({ranges:[{...ranges[0],start:.25}]})).steps.join(',')==='extract,export');
+check('FPS changes re-extract with the derived frame count',(await plan({ranges:[{...ranges[0],targetFps:2}]})).frameCount===64);
+check('crop changes re-extract before downstream work',(await plan({processing:{...processing,cropInset:.02}})).steps.join(',')==='extract,export');
+check('no frames triggers extraction even with all switches previously off',(await plan({processing:{...processing,extract:false,key:false,sheet:false}},{...job,frames:[]})).steps.join(',')==='extract');
+check('standalone keying does not build a disabled atlas',(await plan({processing:{...processing,sheet:false},forceLocal:'keyed'})).steps.join(',')==='keyed');
+check('standalone composition still re-extracts when upstream time changed',(await plan({ranges:[{...ranges[0],end:3}],forceLocal:'export'})).steps.join(',')==='extract,export');
+check('disabling atlas generation saves settings without regenerating anything',(await plan({processing:{...processing,sheet:false}})).changed&&(await plan({processing:{...processing,sheet:false}})).steps.length===0);
+check('HD archives are not mislabeled as a current raw/keyed atlas',(await plan({}, {...job,archiveKind:'redraw'})).steps.join(',')==='export');
+check('interrupted extraction cannot be mistaken for a fresh result',(await plan({}, {...job,localArtifacts:{raw:null,keyed:null,archive:null}})).steps.join(',')==='extract,export');
+for(const bad of [[{...ranges[0],end:4.5}],[{...ranges[0],start:4}],[{...ranges[0],targetFps:0}],[{...ranges[0],frameCount:0,targetFps:undefined}]])await assert.rejects(()=>plan({ranges:bad}));
+check('invalid times and sampling are rejected without mutating artifacts',JSON.stringify(job)===before);
+console.log(`${checks} local processing plan checks passed.`);

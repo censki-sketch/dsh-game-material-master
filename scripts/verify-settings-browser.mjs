@@ -476,7 +476,7 @@ try {
   const templateSave = templates.getByRole('button', { name: '保存模板', exact: true });
   const templateActions = templates.getByRole('button', { name: '模板操作', exact: true });
   const templateMenu = page.getByRole('menu', { name: '模板操作', exact: true });
-  const templateWrites = () => calls.filter(c => c.method === 'saveConfig' && c.payload.imagePromptTemplates).length;
+  const templateWrites = () => calls.filter(c => c.method === 'saveConfig' && (c.payload.promptTemplates || c.payload.imagePromptTemplates)).length;
   const templateWritesBefore = templateWrites();
   check('template description is hidden behind its title help icon', await templates.locator('.SPR_settingsGroupHead h3 .SPR_descriptionButton').count() === 1 && await templates.getByText('生成页仅选择和查看。内置模板可编辑或恢复，不能删除；自定义模板可新增、编辑和删除。修改后保存，已有任务可手动同步更新。', { exact: true }).count() === 0);
   await templates.getByRole('button', { name: '查看提示词模板管理说明', exact: true }).click();

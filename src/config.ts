@@ -13,6 +13,7 @@ import { DEFAULT_ROW_ORDER } from "./directions.js";
 import { DEFAULT_KEY_COLOR, normalizeKeyColor } from "./keycolor.js";
 import { STUDIO_MODULES } from "./links.js";
 import { normalizeImagePromptTemplates, type ImagePromptTemplate } from "./imageprompts.js";
+import { mergePromptTemplates, normalizePromptTemplates, templatesOfType, validatePromptTemplates, type PromptTemplate, type PromptTemplateType } from "./prompttemplates.js";
 import { MUSIC_DEFAULT_MODEL } from "./musicmodels.js";
 import { applyModelParams, ARK_MODEL_PARAM_KEYS, CUSTOM_MODEL_PARAM_KEYS, TOAPIS_MODEL_PARAM_KEYS, normalizeImageModels, validateImageModel, type ImageModelDefinition } from "./imagemodels.js";
 import {
@@ -173,6 +174,7 @@ export interface Config {
   customImageConnections: CustomImageConnection[];
   activeCustomImageConnectionId: string;
   imagePromptTemplates: ImagePromptTemplate[];
+  promptTemplates: PromptTemplate[];
   toapisBaseUrl: string;
   toapisApiKey: string;
   toapisImageModel: string;
@@ -424,6 +426,7 @@ export const DEFAULT_CONFIG: Config = {
   arkImageEnabled: true,
   toapisImageEnabled: true,
   imagePromptTemplates: normalizeImagePromptTemplates(undefined),
+  promptTemplates: normalizePromptTemplates(undefined),
   toapisBaseUrl: "https://toapis.cn/v1",
   toapisApiKey: "",
   toapisImageModel: "gpt-image-2-vip",
@@ -645,13 +648,15 @@ export function normalizeConfig(input: unknown): Config {
   const comfyWorkflowRaw = asString(raw.comfyWorkflow, DEFAULT_CONFIG.comfyWorkflow);
   const comfyWorkflow = comfyWorkflowRaw.trim() === "" ? DEFAULT_CONFIG.comfyWorkflow : comfyWorkflowRaw;
 
+  const promptTemplates = normalizePromptTemplates(raw.promptTemplates, raw.imagePromptTemplates);
   const config: Config = {
     imageConnectionPresets: [],
     arkImageModels: [],
     toapisImageModels: [],
     arkImageEnabled: asBool(raw.arkImageEnabled, DEFAULT_CONFIG.arkImageEnabled),
     toapisImageEnabled: asBool(raw.toapisImageEnabled, DEFAULT_CONFIG.toapisImageEnabled),
-    imagePromptTemplates: normalizeImagePromptTemplates(raw.imagePromptTemplates),
+    promptTemplates,
+    imagePromptTemplates: templatesOfType(promptTemplates, "image"),
     toapisBaseUrl: asString(raw.toapisBaseUrl, DEFAULT_CONFIG.toapisBaseUrl).trim(),
     toapisApiKey: asString(raw.toapisApiKey, DEFAULT_CONFIG.toapisApiKey).trim(),
     toapisImageModel: asString(raw.toapisImageModel, DEFAULT_CONFIG.toapisImageModel).trim(),
@@ -809,16 +814,19 @@ let cache: Config | undefined;
 
 export async function loadConfig(): Promise<Config> {
   if (cache !== undefined) return cache;
-  try {
-    const text = await readFile(configPath(), "utf8");
-    cache = normalizeConfig(JSON.parse(text));
-  } catch {
-    cache = { ...DEFAULT_CONFIG, rowOrder: [...DEFAULT_ROW_ORDER], hiddenModules: [], moduleOrder: [...STUDIO_MODULES], moduleNames: {} };
+  let raw: any = {};
+  try { raw = JSON.parse(await readFile(configPath(), "utf8")); } catch {}
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) raw = {};
+  if (raw.promptTemplates === undefined) {
+    let legacy: any;
+    try { legacy = JSON.parse(await readFile(join(dataRoot(), "motion-settings.json"), "utf8")); } catch {}
+    raw.promptTemplates = mergePromptTemplates(raw.imagePromptTemplates, legacy?.templates);
   }
+  cache = normalizeConfig(raw);
   return cache;
 }
 
-type ConfigPatch = Partial<Config> & { customConnection?: { op: "create" | "update" | "duplicate" | "delete"; id?: string; values?: Partial<CustomImageConnection> }; imageModelEdit?: { provider: "ark" | "toapis" | "custom"; connectionId?: string; op: "create" | "update" | "delete"; id?: string; values?: Partial<ImageModelDefinition> } };
+type ConfigPatch = Partial<Config> & { promptTemplateEdit?: { type: PromptTemplateType; templates: ImagePromptTemplate[] }; customConnection?: { op: "create" | "update" | "duplicate" | "delete"; id?: string; values?: Partial<CustomImageConnection> }; imageModelEdit?: { provider: "ark" | "toapis" | "custom"; connectionId?: string; op: "create" | "update" | "delete"; id?: string; values?: Partial<ImageModelDefinition> } };
 let configWrites: Promise<unknown> = Promise.resolve();
 export function saveConfig(patch: ConfigPatch): Promise<Config> {
   const write = configWrites.then(() => writeConfig(patch));
@@ -827,7 +835,13 @@ export function saveConfig(patch: ConfigPatch): Promise<Config> {
 }
 async function writeConfig(patch: ConfigPatch): Promise<Config> {
   const current = await loadConfig();
-  const { customConnection, imageModelEdit, ...fields } = patch;
+  const { customConnection, imageModelEdit, promptTemplateEdit, ...fields } = patch;
+  const templateEdit = promptTemplateEdit ?? (fields.imagePromptTemplates !== undefined && fields.promptTemplates === undefined ? { type: "image" as const, templates: fields.imagePromptTemplates } : undefined);
+  if (templateEdit) fields.promptTemplates = validatePromptTemplates([
+    ...current.promptTemplates.filter(item => item.type !== templateEdit.type),
+    ...templateEdit.templates.map(item => ({ ...item, type: templateEdit.type }))
+  ]);
+  if (fields.promptTemplates !== undefined) fields.promptTemplates = validatePromptTemplates(fields.promptTemplates);
   // Never persist UI masking placeholders (including partially edited masks) as credentials.
   for (const value of [fields.arkApiKey, fields.toapisApiKey, fields.minimaxApiKey, fields.customApiKey, fields.musicApiKey, fields.sfxApiKey, customConnection?.values?.customApiKey]) {
     if (typeof value === "string" && (/[•●⋅·…]/u.test(value) || /^\*+$/u.test(value.trim()))) throw new Error("遮罩字符不能作为 Key 保存，请粘贴原 Key。");

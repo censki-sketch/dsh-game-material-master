@@ -1198,6 +1198,15 @@ if (typeof ImageModule === "function") {
     check("自动抠图依据实际文件分类而非历史kind", autoMaterials.some(asset => asset.file === "out/a.png" && asset.kind === "original") && autoMaterials.some(asset => asset.file === "keyed/auto.png" && asset.label === "抠图版本 1"));
     check("没有历史的旧结果也会出现在素材中", materials({ items: [original.item] }, build({ items: [original.item] })).some(asset => asset.file === "out/a.png"));
     check("空素材不产生占位文件", materials({}, build({})).length === 0);
+    const reusedRef = { file: "out/a.png", name: "第一轮.png" };
+    const usedRounds = [{ id: "r1", number: 1, request: { refs: [], referenceFiles: [] }, slots: [{ versions: [original] }] },
+      { id: "r2", number: 2, request: { refs: [reusedRef, ...refs], referenceFiles: [reusedRef.file] }, slots: [] },
+      { id: "r3", number: 3, request: { refs: [reusedRef], referenceFiles: [reusedRef.file] }, slots: [] }];
+    const reusedAssets = materials({ refs: [reusedRef, ...refs] }, usedRounds), reusedGroups = materialGroups(reusedAssets);
+    check("引用第一轮结果的参考图归到使用它的第二轮", reusedGroups.find(group => group.key === "round:2")?.items.some(asset => asset.file === reusedRef.file && asset.kind === "reference" && asset.label === "参考图"));
+    check("同一文件可同时是第一轮结果与后续多轮参考图", reusedAssets.filter(asset => asset.file === reusedRef.file).length === 3 && new Set(reusedAssets.map(asset => asset.id)).size === reusedAssets.length);
+    check("未提交的参考图留在输入参考组，历史只展示实际发送的文件", reusedGroups.find(group => group.key === "references")?.items.length === 1 && !reusedGroups.find(group => group.key === "round:2")?.items.some(asset => asset.file === refs[0].file));
+    check("参考图保留提交时的原编号", reusedAssets.find(asset => asset.roundNumber === 2 && asset.kind === "reference")?.referenceNumber === 1);
   }
   section("模块② 图片生成");
   {
@@ -1296,7 +1305,7 @@ if (typeof ImageModule === "function") {
     const snapshotJob = makeImageJob();
     snapshotJob.history = snapshotJob.items.map((item, index) => ({ id: "actions-" + index, batchId: "round-actions", createdAt: 1, kind: "generated", item: { ...item, index }, request: { prompt: "历史描述", finalPrompt: "历史最终请求", settings: { count: 2 }, refs: [], keying: {} } }));
     const actionsTree = renderModule(ImageModule, snapshotJob, makeTasks()).tree;
-    check("复用本轮直接可见，单独复用提示词保留在本轮更多菜单", byClass(actionsTree, "SPR_chatRoundActions").every(footer => byTag(footer, "button").some(node => textOf(node) === "复用本轮" && !node.props.role && !node.props.disabled) && byTag(footer, "button").some(node => textOf(node) === "复用提示词" && node.props.role === "menuitem") && !textOf(footer).includes("复用参数")));
+    check("复用提示词直接可见，复用本轮收纳在本轮更多菜单", byClass(actionsTree, "SPR_chatRoundActions").every(footer => byTag(footer, "button").some(node => textOf(node) === "复用提示词" && !node.props.role && !node.props.disabled) && byTag(footer, "button").some(node => textOf(node) === "复用本轮" && node.props.role === "menuitem") && !textOf(footer).includes("复用参数")));
     check("成功历史提供重新生成，无快照旧成功记录禁用", byTag(actionsTree, "button").some(node => node.props["aria-label"] === "重新生成" && !node.props.disabled) && byTag(acceptance.tree, "button").some(node => node.props["aria-label"] === "重新生成" && node.props.disabled));
     check("图片顶部移除重复更多菜单和设为当前结果", imageHeads(acceptance.tree).length === 1 && imageHeads(acceptance.tree).every(head => byTag(head, "button").length === 0) && !textOf(acceptance.tree).includes("设为当前结果"));
     const conversation = collect(acceptance.tree, node => node.type?.name === "ImageConversation")[0];
@@ -1942,56 +1951,40 @@ for (const failSave of [false, true]) {
   check(failSave ? "参数保存失败不提交抠像" : "等待保存当前抠像参数后才提交，使用最新强度", failSave ? !calls.some(call => call.type === "key") : calls.map(call => call.type).join(",") === "save,save,key" && calls.at(-1).despill === 0.75);
 }
 
-section("白模动作流程：五阶段、费用确认与选择反馈");
+section("白模动作流程：素材、动作与配置");
 {
   const { MotionModule } = bundle.__test;
   const segments = [{action:'walkfoward',start:0,end:2,frameCount:4},{action:'runforward',start:2,end:4,frameCount:4}];
-  const frames = [{id:'walk-front-0',action:'walkfoward',direction:'front',index:0,keyed:'frames/raw.png'}, {id:'walk-front-1',action:'walkfoward',direction:'front',index:1,keyed:'frames/raw1.png',redraw:{status:'ready',file:'redraw/hd.png'}}];
-  const job = {id:'w123456789',name:'测试角色',description:'白发蓝衣',prompt:'固定动作和颜色',segments,ranges:segments,rangesConfirmed:false,frames,prepared:{video:'prepared/ref.mp4'},costs:{video:1.28,imageRate:.1},templates:[{key:'walkfoward',name:'行走',originalName:'walk'},{key:'runforward',name:'奔跑',originalName:'run'}],assetBase:'/dsh-game-material-master/motion-assets/w123456789/'};
-  const renderMotion = (stage, overrides={}, slotOverrides={}) => {
+  const job = {id:'w123456789',name:'测试角色',description:'白发蓝衣',prompt:'本轮要求',promptTemplate:{id:'motion-video',lang:'zh',content:'{{timeline}}'},segments,ranges:segments,rangesConfirmed:false,frames:[],character:'refs/a.png',directions:'refs/b.png',templates:[{key:'walkfoward',name:'行走'},{key:'runforward',name:'奔跑'}],assetBase:'/assets/'};
+  const renderMotion = overrides => {
     const value={...job,...overrides};
-    HOOK.slots=[0,[value],[],"",value.id,value,stage,{...value},null,{baseUrl:'http://localhost:11434/v1',model:'',videoRate:.16,imageRate:.1},'',false,false,false,false,[],"",'front'];
-    HOOK.slots[20]={}; // usePendingTasks map, after two refs
-    for(const [key,val] of Object.entries(slotOverrides))HOOK.slots[Number(key)]=val;
-    HOOK.cursor=0;
+    HOOK.slots=[0,[value],[],"",value.id,value,{...value},null,{templates:[],model:''},false,null,""];
+    HOOK.slots[14]={}; HOOK.cursor=0;
     return MotionModule({api});
   };
-  const button = (tree,label) => byTag(tree,'button').find(n=>textOf(n)===label);
+  const conversation = tree => collect(tree,n=>n.type?.name==='WorkflowConversation')[0];
   check('白模组件可从构建产物加载',typeof MotionModule==='function');
-  const first=renderMotion(0);
-  check('素材参数导航只保留角色与参考两页',byTag(first,'nav').some(n=>byTag(n,'button').length===2));
-  check('默认选择两动作，最多三动作',collect(first,n=>n.type?.name==='SettingsSelect').some(n=>n.props.value===2 && modeOptions(n).includes(3) && !modeOptions(n).includes(4)));
-  check('已有八方向项目提供免费导入',Boolean(button(first,'导入已有角色和八方向图（免费）')));
-  check('两种角色参考和本地视频输入存在',byTag(first,'input').filter(n=>n.props.type==='file').length===3);
-  const second=renderMotion(1);
-  check('未确认费用时不能生成视频',button(second,'生成八方向多动作视频')?.props.disabled===true);
-  check('已确认且有参考时允许提交',button(renderMotion(1,{}, {11:true}),'生成八方向多动作视频')?.props.disabled===false);
-  check('已有视频须显式重新生成',button(renderMotion(1,{video:{status:'ready'}},{11:true}),'生成八方向多动作视频')?.props.disabled===true);
-  check('手动提示词保持可编辑',byTag(second,'textarea').some(n=>n.props.value==='固定动作和颜色'&&!n.props.disabled));
-  check('未配文字模型时禁用整理，模板仍可用',button(second,'使用文字模型整理角色描述')?.props.disabled===true && !button(second,'按当前动作重建提示词')?.props.disabled);
-  const busy=renderMotion(1,{active:true,operation:'prepare'});
-  check('本地处理显示状态和停止入口',byTag(busy,'p').some(n=>n.props.role==='status')&&Boolean(button(busy,'停止后续处理（已提交请求可能计费）')));
-  check('本地处理时禁止重复提交',button(busy,'正在提交视频…')?.props.disabled===true);
-  const third=renderMotion(2,{video:{status:'ready',file:'videos/test.mp4',duration:4}});
-  check('未验收范围时禁止抽帧',button(third,'按动作抽取八方向帧')?.props.disabled===true);
-  check('确认实际范围后可抽帧',button(renderMotion(2,{video:{status:'ready',duration:4},rangesConfirmed:true}),'按动作抽取八方向帧')?.props.disabled===false);
-  check('视频分段页面支持本地视频导入',byTag(third,'input').some(n=>n.props.accept==='video/mp4,video/webm'));
-  const fourth=renderMotion(3,{}, {15:frames.map(f=>f.id)});
-  check('已完成重绘不重复计入调用数量',textOf(fourth).includes('本次新增图片调用：1张'));
-  check('未确认图片费用禁用重绘',button(fourth,'重绘选中帧')?.props.disabled===true);
-  check('确认图片费用才允许重绘',button(renderMotion(3,{}, {12:true,15:[frames[0].id]}),'重绘选中帧')?.props.disabled===false);
-  HOOK.capture=[];
-  button(fourth,'选择当前可见帧').props.onClick();
-  check('改变批量选择会撤销旧费用确认',HOOK.capture.some(u=>u.index===12&&u.next===false));
-  HOOK.capture=undefined;
-  const fifth=renderMotion(4,{archive:'out/sprites.zip'});
-  check('导出包链接使用相对assetBase',saveHrefs(fifth).some(s=>s.startsWith(job.assetBase)&&s.includes('sprites.zip')));
-  check('空帧任务不能导出',button(renderMotion(4,{frames:[]}),'打包全部动作')?.props.disabled===true);
+  const first=renderMotion({});const flow=conversation(first);
+  check('共用聊天与侧栏',!!flow && collect(first,n=>n.type?.name==='WorkflowSidebar').length===1);
+  check('已上传两图且动作完整可提交',flow.props.motion.canSend);
+  check('缺少角色图禁止提交',!conversation(renderMotion({character:undefined})).props.motion.canSend);
+  check('空动作禁止提交',!conversation(renderMotion({segments:segments.map(s=>({...s,action:''}))})).props.motion.canSend);
+  check('处理中禁止重复提交',!conversation(renderMotion({active:true})).props.motion.canSend);
+  check('视频模式可无图片',conversation(renderMotion({inputMode:'video',character:undefined,directions:undefined,sourceVideo:{file:'v.mp4',duration:4},rangesConfirmed:true})).props.motion.canSend);
+  const parsed=conversation(renderMotion({inputMode:'video',sourceVideo:{file:'v.mp4',duration:4},segments:segments.map(s=>({...s,action:''}))}));
+  check('视频模式无需动作或分段确认',parsed.props.motion.canSend&&collect(parsed.props.motion.composer,n=>n.type?.name==='MotionActionPicker').length===0);
+  check('解析不显示动作数量',collect(parsed.props.motion.toolbar,n=>n.props?.label==='动作数量').length===0);
+  check('审核在工具栏最前',collect(flow.props.motion.toolbar,n=>n.type?.name==='AudioChoice')[0].props.label==='审核模式');
+  check('视频与提示词模型共用一个选择器',collect(flow.props.motion.toolbar,n=>n.type?.name==='ImageModelPicker'&&n.props.videoConfig).length===1&&collect(flow.props.motion.toolbar,n=>n.props?.label==='视频生成模型').length===0);
+  check('生成模式只显示两张参考图',collect(flow.props.motion.composer,n=>n.type?.name==='MotionAttachment').length===2);
+  check('动作使用与上传并排的方形预览选择器',collect(flow.props.motion.composer,n=>n.type?.name==='MotionActionPicker'&&n.props.compact===true).length===2&&collect(flow.props.motion.toolbar,n=>n.type?.name==='MotionActionPicker').length===0);
+  check('处理配置沿用现有参数组件',collect(flow,n=>n.type?.name==='MotionProcessingFields').length===1);
+  check('文字模型未配置时禁用整理',byTag(flow,'button').some(n=>textOf(n)==='使用文字模型整理角色描述'&&n.props.disabled));
+  check('文字模型Key使用密码输入',byTag(flow,'input').some(n=>n.props.type==='password'));
   renderStage(makeProject(),'images',makeTasks(),[],undefined);
-  // Exercise the actual default by omitting the selector fixture.
   HOOK.slots[5]=undefined;HOOK.cursor=0;
   const defaultTree=panel({api});
-  check('插件默认显示白模入口且原流程可切换',collect(defaultTree,n=>n.type===MotionModule).length===1 && Boolean(button(defaultTree,'原有八方向流程')));
+  check('插件默认显示白模入口',collect(defaultTree,n=>n.type===MotionModule).length===1);
 }
 
 // ── 工作台功能缓存（不读写真实浏览器或宿主配置）─────────────────────────

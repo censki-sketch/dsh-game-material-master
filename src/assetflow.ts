@@ -43,7 +43,7 @@ export async function sourceImage(source: AssetSource): Promise<Buffer> {
   if (bytes.length > 20 * 1024 * 1024 || !images.sniffImage(bytes.toString("base64"))) throw new Error("Expected an image under 20 MB");
   return bytes;
 }
-export async function transferAsset(input: { source: AssetSource; target: Destination; targetId?: string; name?: string }): Promise<any> {
+export async function transferAsset(input: { source: AssetSource; target: Destination; targetId?: string; targetRole?: "character" | "directions"; name?: string }): Promise<any> {
   const config = await loadConfig();
   if (config.hiddenModules.includes(input.target) || config.hiddenModules.includes(input.source.module)) throw new Error("Module disabled");
   const bytes = await sourceImage(input.source), data = bytes.toString("base64");
@@ -51,7 +51,7 @@ export async function transferAsset(input: { source: AssetSource; target: Destin
   let jobId = input.targetId;
   if (input.target === "sprite") {
     if (!jobId) jobId = (await motion.createMotionJob(name)).id;
-    await motion.uploadMotionAsset(jobId, "character", data);
+    await motion.uploadMotionAsset(jobId, input.targetRole || "character", data);
   } else if (input.target === "sequence") {
     if (!jobId) jobId = (await sequence.createSequenceJob(name)).id;
     if (sequence.listSequenceTasks(jobId).length) throw new Error("任务正在处理");
@@ -73,7 +73,7 @@ export async function transferAsset(input: { source: AssetSource; target: Destin
   await mkdir(root(), { recursive: true });
   await writeFile(join(root(), id + ".image"), bytes);
   const size = await decodeToRgba(join(root(), id + ".image"));
-  await writeJsonAtomic(join(root(), id + ".json"), { id, source: input.source, target: input.target, jobId, name, createdAt: Date.now(), width: size.width, height: size.height });
+  await writeJsonAtomic(join(root(), id + ".json"), { id, source: input.source, target: input.target, ...(input.target === "sprite" ? { targetRole: input.targetRole || "character" } : {}), jobId, name, createdAt: Date.now(), width: size.width, height: size.height });
   return { transferId: id, module: input.target, jobId, dialog: ["map", "iso"].includes(input.target) ? "add" : undefined };
 }
 export async function getAssetTransfer(id: string, target: string, jobId: string): Promise<any> {

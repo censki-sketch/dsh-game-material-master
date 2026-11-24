@@ -88,6 +88,7 @@ import { assetPath, createProject, deleteProject, listProjects, log, patchProjec
 import * as imagegen from "./imagegen.js";
 import { optimizeImagePrompt, promptOptimizerModels, testPromptOptimizerModel } from "./promptoptimizer.js";
 import { IMAGE_PROMPT_TEMPLATES, validateImagePromptTemplates } from "./imageprompts.js";
+import { PROMPT_TEMPLATE_DEFAULTS, validatePromptTemplates } from "./prompttemplates.js";
 import * as seqgen from "./seqgen.js";
 import * as riggen from "./riggen.js";
 import * as isogen from "./isogen.js";
@@ -287,6 +288,7 @@ export class GameStudioGateway extends TypertRemoteService {
       rowOrder: [...config.rowOrder],
       defaults: { ...DEFAULT_CONFIG },
       imagePromptTemplateDefaults: IMAGE_PROMPT_TEMPLATES,
+      promptTemplateDefaults: PROMPT_TEMPLATE_DEFAULTS,
       arkModels: ARK_MODEL_PRESETS,
       /**
        * 生图后端的呈现材料。
@@ -483,6 +485,7 @@ export class GameStudioGateway extends TypertRemoteService {
     if (input.customConnection !== undefined) patch.customConnection = asRecord(input.customConnection);
     if (input.imageModelEdit !== undefined) patch.imageModelEdit = asRecord(input.imageModelEdit);
     if (input.imagePromptTemplates !== undefined) patch.imagePromptTemplates = validateImagePromptTemplates(input.imagePromptTemplates);
+    if (input.promptTemplates !== undefined) patch.promptTemplates = validatePromptTemplates(input.promptTemplates);
     if (typeof input.toapisApiKey === "string") patch.toapisApiKey = input.toapisApiKey.trim();
     if (input.clearToapisApiKey === true) patch.toapisApiKey = "";
     if (typeof input.arkApiKey === "string")
@@ -1969,14 +1972,30 @@ export class GameStudioGateway extends TypertRemoteService {
 
   // ── 序列帧生成模块 ────────────────────────────────────────────────────
 
-  async listMotionJobs() { return { jobs: await Promise.all((await motiongen.listMotionJobs()).map(async job => ({ ...job, ...await workflowchat.workflowSummary("sprite", job.id) }))) }; }
+  async listMotionJobs() { return { jobs: await Promise.all((await motiongen.listMotionJobs()).map(async job => ({ ...job, ...await workflowchat.workflowSummary("sprite", job.id) }))), assetTransferRoles: ["character", "directions"] }; }
   async createMotionJob(payload) { const job = await motiongen.createMotionJob(asString(asRecord(payload).name, "")); return { jobId: job.id }; }
   async getMotionJob(payload) { const jobId = asString(asRecord(payload).jobId); return { ...await motiongen.motionView(jobId), assetBase: assetBasePath(`${ROUTE_PREFIX}/motion-assets/${jobId}/`) }; }
   async getMotionTemplatePreview(payload) { return motiongen.motionTemplatePreview(payload.action, payload.direction); }
+  async getMotionVideoTimeline(payload) { return payload.page === undefined ? motiongen.motionVideoTimeline(payload.jobId) : motiongen.motionVideoFramePreviews(payload.jobId, payload.page); }
+  async previewMotionReference(payload) {
+    return { ...await motiongen.previewMotionReference(payload.jobId, payload), assetBase: assetBasePath(`${ROUTE_PREFIX}/motion-assets/${payload.jobId}/`) };
+  }
   async saveMotionJob(payload) { const input = asRecord(payload); await motiongen.saveMotionJob(asString(input.jobId), input); return { ok: true }; }
   async uploadMotionAsset(payload) { const input = asRecord(payload); await motiongen.uploadMotionAsset(asString(input.jobId), asString(input.kind), asString(input.data)); return { ok: true }; }
   async runMotionStep(payload) { const input = asRecord(payload); return motiongen.runMotionStep(asString(input.jobId), input); }
   async motionSettings(payload) { return motiongen.motionSettings(asRecord(payload)); }
+  async previewMotionPrompt(payload) {
+    const input = asRecord(payload), draft = await motiongen.motionPromptContext(asString(input.jobId), input);
+    return { prompt: draft.prompt, references: draft.references.map(({ label, name }) => ({ label, name })) };
+  }
+  async optimizeMotionPrompt(payload) {
+    const input = asRecord(payload), jobId = asString(input.jobId);
+    const draft = await motiongen.motionPromptContext(jobId, input);
+    if (!Array.isArray(input.referenceFiles) || input.referenceFiles.length !== draft.references.length || input.referenceFiles.some((file, i) => file !== draft.references[i].file)) throw new Error("参考图引用与当前图片列表不一致，请重新选择。");
+    return optimizeImagePrompt(this.ctx, { jobId, prompt: asString(input.prompt), suffix: draft.suffix, references: draft.references,
+      background: draft.background, modelSelection: input.modelSelection, confirmed: input.confirmed === true },
+      { context: draft.context, referencePath: file => motiongen.motionAssetPath(jobId, file) });
+  }
   async transferAsset(payload) { return transferAsset(payload); }
   async getAssetTransfer(payload) { return getAssetTransfer(payload.transferId, payload.module, payload.jobId); }
   async getWorkflowConversation(payload) {
@@ -1986,6 +2005,7 @@ export class GameStudioGateway extends TypertRemoteService {
   async submitWorkflowRound(payload) { return workflowchat.submitWorkflowRound(payload); }
   async runWorkflowRoundStep(payload) { return workflowchat.runWorkflowRoundStep(payload); }
   async reuseWorkflowRound(payload) { return workflowchat.reuseWorkflowRound(payload.module, payload.jobId, payload.roundId); }
+  async deleteWorkflowVersion(payload) { return workflowchat.deleteWorkflowVersion(payload); }
 
   async listSequenceJobs() {
     return { jobs: await Promise.all((await seqgen.listSequenceJobs()).map(async job => ({ ...job, ...await workflowchat.workflowSummary("sequence", job.id) }))) };
